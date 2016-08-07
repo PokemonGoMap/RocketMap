@@ -49,12 +49,3 @@ Pokemon-Go Map is aiming to bring a live visualization map of nearby Pokémon, P
     :glob:
 
     extras/*
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
-
