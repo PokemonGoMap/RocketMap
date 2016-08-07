@@ -1,14 +1,14 @@
 {
     "alarms":[
         {
-            "active": "True",
+            "active": "False",
             "type":"pushbullet",
             "api_key": "your_api_key"
         },
         {
             "active": "False",
             "type":"slack",
-            "api_key":"",
+            "api_key":"your_api_key",
             "channel":"#general"
         },
         {
