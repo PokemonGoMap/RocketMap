@@ -49,15 +49,9 @@ class Notifications:
 				}
 				total_seconds = (pkinfo['disappear_time'] - datetime.utcnow()).total_seconds()	
 				self.seen[id] = pkinfo
-				if((pkinfo['name'] in self.rare_notify_list) == "True"):
-					print('triggering rare notification...');
-					log.info(pkinfo['name']+" notification has been triggered!")
-					for alarm in self.alarms:
-						alarm.pokemon_alert(pkinfo)
 				if(self.notify_list[pkinfo['name']] == "True"):
 					print('saw ', pkinfo['name'], ' at distance ', str(pkinfo['distance']), ' with ' + str(total_seconds) + ' seconds left: ')
 					if(int(pkinfo['distance']) <= self.maxDistance and int(total_seconds) >= self.minTime):
-						print('triggering notification...');
 						log.info(pkinfo['name']+" notification has been triggered!")
 						for alarm in self.alarms:
 							alarm.pokemon_alert(pkinfo)
