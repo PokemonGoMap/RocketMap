@@ -67,9 +67,9 @@ def get_args():
                         default='127.0.0.1')
     parser.add_argument('-P', '--port', type=int,
                         help='Set web server listening port', default=5000)
-    parser.add_argument('-bu', '--basic-auth_user',
+    parser.add_argument('-bu', '--basic-auth-user',
                         help='Optional basic authentication user to protect web app')
-    parser.add_argument('-bp', '--basic-auth_pass',
+    parser.add_argument('-bp', '--basic-auth-pass',
                         help='Optional basic authentication password to protect web app')
     parser.add_argument('-L', '--locale',
                         help='Locale for Pokemon names (default: {},\
