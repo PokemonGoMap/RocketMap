@@ -10,11 +10,9 @@ class Slack_Alarm(Alarm):
 	def __init__(self, api_key, channel):
 		self.client = Slacker(api_key) 
 		self.channel = channel
-		log.info("Slacker_Alarm intialized.")
 		self.client.chat.post_message(self.channel, 'PokeAlarm activated! We will alert this channel about pokemon.')
 		
 	def pokemon_alert(self, pokemon):
-		print('in slack notify')
 		time_text =  pkmn_time_text(pokemon['disappear_time'])
 		remaining_time = pkmn_time_remaining(pokemon['disappear_time']);
 		notification_text = "A wild " + pokemon['name'].title() + " has appeared " + pokemon['distance'] + " meters " +  pokemon['direction'] + " of you! " + remaining_time

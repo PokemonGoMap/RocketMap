@@ -13,15 +13,12 @@ from ..utils import get_pokemon_name, get_distance_direction
 class Notifications:
 
 	def __init__(self):
-		print('initializing notifications...')
 		filepath = os.path.dirname(os.path.dirname(__file__))
 		with open(os.path.join(filepath, '..', 'alarms.json')) as file:
 			settings = json.load(file)
 			alarm_settings = settings["alarms"]
 			self.notify_list = settings["pokemon"]
-			# self.rare_notify_list = settings["pokemonRare"]
-			# self.maxDistance = settings["maxDistance"]
-			# self.minTime = settings["minTime"]
+			self.rare_notify_list = settings["pokemonRare"]
 			self.maxDistance = 1000
 			self.minTime = 300
 			self.seen = {}
@@ -39,7 +36,6 @@ class Notifications:
 			
 
 	def notify_pkmns(self, pkmn):
-		print('notifying pokemon...')
 		for id in pkmn:
 			if id not in self.seen:
 				distance_direction = get_distance_direction(pkmn[id]['latitude'], pkmn[id]['longitude'])
@@ -53,11 +49,11 @@ class Notifications:
 				}
 				total_seconds = (pkinfo['disappear_time'] - datetime.utcnow()).total_seconds()	
 				self.seen[id] = pkinfo
-				# if((pkinfo['name'] in self.rare_notify_list) == "True"):
-				# 	print('triggering rare notification...');
-				# 	log.info(pkinfo['name']+" notification has been triggered!")
-				# 	for alarm in self.alarms:
-				# 		alarm.pokemon_alert(pkinfo)
+				if((pkinfo['name'] in self.rare_notify_list) == "True"):
+					print('triggering rare notification...');
+					log.info(pkinfo['name']+" notification has been triggered!")
+					for alarm in self.alarms:
+						alarm.pokemon_alert(pkinfo)
 				if(self.notify_list[pkinfo['name']] == "True"):
 					print('saw ', pkinfo['name'], ' at distance ', str(pkinfo['distance']), ' with ' + str(total_seconds) + ' seconds left: ')
 					if(int(pkinfo['distance']) <= self.maxDistance and int(total_seconds) >= self.minTime):
