@@ -1,4 +1,4 @@
-# Behive
+# Beehive
 
 ## Setting up
 

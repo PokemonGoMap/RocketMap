@@ -6,27 +6,49 @@
 Welcome to PokemonGo-Map's documentation!
 =========================================
 
-Some quick links:
- * `Official Homepage <https://jz6.github.io/PoGoMap>`_
- * `Official GitHub <https://github.com/AHAAAAAAA/PokemonGo-Map>`_
+Pokemon-Go Map is aiming to bring a live visualization map of nearby Pokémon, Pokéstops and gyms in a form of a web-app as well as native phone applications.
 
-Downloads
- * `Releases <https://github.com/AHAAAAAAA/PokemonGo-Map/releases>`_
- * `Developer Beta <https://github.com/AHAAAAAAA/PokemonGo-Map/archive/develop.zip>`_
+.. image:: _static/img/cover.png
+    :align: center
 
-Support
- * `Discord Support <https://discord.gg/PWp2bAm>`_
- * `GitHub Issues <https://github.com/AHAAAAAAA/PokemonGo-Map/issues>`_
+[ `Official Homepage <https://pokemongomap.github.io/PoGoMapWebsite/>`_ ] [ `Official GitHub <https://github.com/PokemonGoMap/PokemonGo-Map>`_ ] [ `Discord Support <https://discord.gg/PWp2bAm>`_ ] [ `GitHub Issues <https://github.com/PokemonGoMap/PokemonGo-Map/issues>`_ ]
 
 .. toctree::
     :titlesonly:
-    :maxdepth: 2
-    :caption: Documentation
+    :maxdepth: 1
+    :caption: About
+    :glob:
 
     about/index
+    about/*
+
+.. toctree::
+    :titlesonly:
+    :maxdepth: 1
+    :caption: Basic Installation
+    :glob:
+
     basic-install/index
-    advanced-install/index
-    extras/index
+    basic-install/windows
+    basic-install/osx
+    basic-install/linux
+    basic-install/google-maps
+
+.. toctree::
+    :titlesonly:
+    :maxdepth: 1
+    :caption: Advanced Installation
+    :glob:
+
+    advanced-install/*
+
+.. toctree::
+    :titlesonly:
+    :maxdepth: 1
+    :caption: Extras
+    :glob:
+
+    extras/*
 
 
 Indices and tables

@@ -224,5 +224,10 @@ dummy:
 	@echo
 	@echo "Build finished. Dummy builder generates no files."
 
+.PHONY: clean-auto
+clean-auto:
+	rm -rf _build_html/*
+
+.PHONY: auto
 auto:
 	sphinx-autobuild . _build_html -H 0.0.0.0

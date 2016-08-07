@@ -3,14 +3,9 @@ Basic Installation
 
 Follow one of the guides below to get the basic pre-requisits installed:
 
-.. toctree::
-    :maxdepth: 1
-    :glob:
-
-    osx
-    windows
-    linux
-    google-maps
+ * :doc:`osx`
+ * :doc:`windows`
+ * :doc:`linux`
 
 Credentials and Downloading
 ***************************
