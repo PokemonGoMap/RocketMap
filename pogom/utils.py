@@ -259,6 +259,22 @@ def get_pokemon_data(pokemon_id):
 def get_pokemon_name(pokemon_id):
     return i8ln(get_pokemon_data(pokemon_id)['name'])
 
+def get_distance_direction(latitude, longitude):
+    origin_point = LatLng.from_degrees(config['ORIGINAL_LATITUDE'], config['ORIGINAL_LONGITUDE'])
+    pokemon_point = LatLng.from_degrees(latitude, longitude)
+    diff = pokemon_point - origin_point
+    diff_lat = diff.lat().degrees
+    diff_lng = diff.lng().degrees
+    direction = (('N' if diff_lat >= 0 else 'S') if abs(diff_lat) > 1e-4 else '') + (
+        ('E' if diff_lng >= 0 else 'W') if abs(diff_lng) > 1e-4 else '')
+
+    distance = str(int(origin_point.get_distance(pokemon_point).radians * 6366468.241830914))
+
+    return {
+        'distance': distance,
+        'direction': direction
+    };
+
 def get_pokemon_rarity(pokemon_id):
     return i8ln(get_pokemon_data(pokemon_id)['rarity'])
 
