@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Name of coords file
+# Name of coords file. If you do not have one look at coords-only.sh!!
 coords="coords.txt"
 
 # Webserver Location
