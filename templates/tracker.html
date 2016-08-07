@@ -1,45 +1,45 @@
 <html>
 <head>
-    <title>Nearby Pokémon</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link href="https://fonts.googleapis.com/css?family=Lato" rel="stylesheet" type="text/css">
-    <style type="text/css">
-        body { margin: 0 33%; height: 100%; color: #486567; background: white; background: -webkit-linear-gradient(left top, #fbfefb, #eefdea); background: -o-linear-gradient(bottom right, #fbfefb, #eefdea); background: -moz-linear-gradient(bottom right, #fbfefb, #eefdea); background: linear-gradient(to bottom right, #fbfefb, #eefdea); }
-        @media (max-width: 1200px) {
-          body {
-            margin: 0 20%;
-          }
-        }
-        @media (max-width: 600px) {
-          body {
-            margin: 0 8px;
-          }
-        }
-        h1 { font-family: 'Lato', sans-serif; font-size: 1.2em; letter-spacing: .1em; text-align: center; text-transform: uppercase; border-bottom: 2px solid #486567; margin: 0 25% 24px 25%; padding: 12px 0; font-weight: 100; }
-        .cell { float: left; text-align: center; height: 25%; width: 33%; }
-        .paw { display: inline-block; width: 12px; height: 12px; background-size: cover; background-image: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZlcnNpb249IjEiIHZpZXdCb3g9IjAgMCAxMi44IDEyLjgiPjxwYXRoIGZpbGw9IiM0NzY4NmYiIGQ9Ik0zLjQ4IDEuMjUzQzIuNDIgMS43NSAxLjExMyAzLjEyMy42MTQgNC4xOGMtLjgxIDEuNjgzLS44MSAyLjE4Mi0uMDYyIDMuODY0IDEuMDYgMi4xMTggMy4xNzcgMy42MTMgNi4yOTIgNC4zIDIuMTIuNDM1IDIuNjE3LS4yNSAxLjA2LTEuNTYtMS44MDctMS40OTQtMS4xMjItMi40OSAxLjgwNi0yLjQ5IDMuODYzIDAgNC4xMTItLjk5OC43NDgtMi42MThDOC44MzggNC45MyA3LjU5MiA0LjEyIDcuNTkyIDMuODdjMC0uMzEyLjgxLS45OTcgMS44Ny0xLjYyQzEwLjUyIDEuNjkgMTEuMzMuOTQyIDExLjMzLjY5MmMwLS44NzItNS44NTYtLjQzNi03Ljg1LjU2eiIvPjwvc3ZnPg==); }
-        .paw.offset { position: relative; bottom: -8px; margin: 0 -2px; -webkit-transform: scaleY(-1); -moz-transform: scaleY(-1); -o-transform: scaleY(-1); transform: scaleY(-1); filter: FlipV; -ms-filter: "FlipV"; }
-        .icons-high-res { margin: 0 auto; margin-bottom: 12px; background-repeat: no-repeat; background: url('/static/icons-large-sprite.png'); }
-        .shadow { -webkit-filter: contrast(0%) brightness(100%); -moz-filter: contrast(0%) brightness(100%); -o-filter: contrast(0%) brightness(100%); -ms-filter: contrast(0%) brightness(100%); filter: contrast(0%) brightness(100%); }
-    </style>
+  <title>Nearby Pokémon</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css?family=Lato" rel="stylesheet" type="text/css">
+  <style type="text/css">
+    body { margin: 0 33%; height: 100%; color: #486567; background: white; background: -webkit-linear-gradient(left top, #fbfefb, #eefdea); background: -o-linear-gradient(bottom right, #fbfefb, #eefdea); background: -moz-linear-gradient(bottom right, #fbfefb, #eefdea); background: linear-gradient(to bottom right, #fbfefb, #eefdea); }
+    @media (max-width: 1200px) {
+      body {
+      margin: 0 20%;
+      }
+    }
+    @media (max-width: 600px) {
+      body {
+      margin: 0 8px;
+      }
+    }
+    h1 { font-family: 'Lato', sans-serif; font-size: 1.2em; letter-spacing: .1em; text-align: center; text-transform: uppercase; border-bottom: 2px solid #486567; margin: 0 25% 24px 25%; padding: 12px 0; font-weight: 100; }
+    .cell { float: left; text-align: center; height: 25%; width: 33%; }
+    .paw { display: inline-block; width: 12px; height: 12px; background-size: cover; background-image: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZlcnNpb249IjEiIHZpZXdCb3g9IjAgMCAxMi44IDEyLjgiPjxwYXRoIGZpbGw9IiM0NzY4NmYiIGQ9Ik0zLjQ4IDEuMjUzQzIuNDIgMS43NSAxLjExMyAzLjEyMy42MTQgNC4xOGMtLjgxIDEuNjgzLS44MSAyLjE4Mi0uMDYyIDMuODY0IDEuMDYgMi4xMTggMy4xNzcgMy42MTMgNi4yOTIgNC4zIDIuMTIuNDM1IDIuNjE3LS4yNSAxLjA2LTEuNTYtMS44MDctMS40OTQtMS4xMjItMi40OSAxLjgwNi0yLjQ5IDMuODYzIDAgNC4xMTItLjk5OC43NDgtMi42MThDOC44MzggNC45MyA3LjU5MiA0LjEyIDcuNTkyIDMuODdjMC0uMzEyLjgxLS45OTcgMS44Ny0xLjYyQzEwLjUyIDEuNjkgMTEuMzMuOTQyIDExLjMzLjY5MmMwLS44NzItNS44NTYtLjQzNi03Ljg1LjU2eiIvPjwvc3ZnPg==); }
+    .paw.offset { position: relative; bottom: -8px; margin: 0 -2px; -webkit-transform: scaleY(-1); -moz-transform: scaleY(-1); -o-transform: scaleY(-1); transform: scaleY(-1); filter: FlipV; -ms-filter: "FlipV"; }
+    .icons-high-res { margin: 0 auto; margin-bottom: 12px; background-repeat: no-repeat; background: url('/static/icons-large-sprite.png'); }
+    .shadow { -webkit-filter: contrast(0%) brightness(100%); -moz-filter: contrast(0%) brightness(100%); -o-filter: contrast(0%) brightness(100%); -ms-filter: contrast(0%) brightness(100%); filter: contrast(0%) brightness(100%); }
+  </style>
 </head>
 <body>
-    <h1>Nearby</h1>
+  <h1>Nearby</h1>
 
-    <div data-bind="foreach: $data">
-        <div class="cell">
-            <div class="icons-high-res" data-bind="css: { 'shadow' : sprite.shadow }, style: { height: sprite.icon_height, width: sprite.icon_width, backgroundPosition: sprite.poisition_x + 'px ' + sprite.poisition_y + 'px' }"></div>
-            <div style="display: none;" data-bind="visible: true">
-                <span data-bind="visible: dist() > 40" class="paw"></span>
-                <span data-bind="visible: dist() > 75" class="paw offset"></span>
-                <span data-bind="visible: dist() > 150" class="paw"></span>
-            </div>
-        </div>
+  <div data-bind="foreach: $data">
+    <div class="cell">
+      <div class="icons-high-res" data-bind="css: { 'shadow' : sprite.shadow }, style: { height: sprite.icon_height, width: sprite.icon_width, backgroundPosition: sprite.poisition_x + 'px ' + sprite.poisition_y + 'px' }"></div>
+      <div style="display: none;" data-bind="visible: true">
+        <span data-bind="visible: dist() > 40" class="paw"></span>
+        <span data-bind="visible: dist() > 75" class="paw offset"></span>
+        <span data-bind="visible: dist() > 150" class="paw"></span>
+      </div>
     </div>
+  </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/knockout/3.4.0/knockout-min.js"></script>
-    <script src="static/dist/js/tracker.min.js"></script>
-    <script defer src="https://maps.googleapis.com/maps/api/js?key={{ gmaps_key }}&amp;libraries=places,geometry"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/knockout/3.4.0/knockout-min.js"></script>
+  <script src="static/dist/js/tracker.min.js"></script>
+  <script defer src="https://maps.googleapis.com/maps/api/js?key={{ gmaps_key }}&amp;libraries=places,geometry"></script>
 </body>
 </html>
