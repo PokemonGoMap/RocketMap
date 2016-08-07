@@ -1,5 +1,6 @@
 six==1.10.0
 Flask==0.11.1
+Flask-BasicAuth==0.2.0
 Jinja2==2.8
 MarkupSafe==0.23
 Werkzeug==0.11.10
