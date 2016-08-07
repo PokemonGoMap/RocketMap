@@ -1,0 +1,294 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Behive &mdash; PokemonGo-Map 2.1.0 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="PokemonGo-Map 2.1.0 documentation" href="../index.html"/>
+        <link rel="up" title="Extras" href="index.html"/>
+        <link rel="next" title="Windows ENV Fix" href="environment-variables-fix.html"/>
+        <link rel="prev" title="Extras" href="index.html"/> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> PokemonGo-Map
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <p class="caption"><span class="caption-text">Documentation</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../about/index.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../basic-install/index.html">Basic Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../advanced-install/index.html">Advanced Installation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Extras</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Behive</a></li>
+<li class="toctree-l2"><a class="reference internal" href="environment-variables-fix.html">Windows ENV Fix</a></li>
+<li class="toctree-l2"><a class="reference internal" href="external.html">External Access to Map</a></li>
+<li class="toctree-l2"><a class="reference internal" href="faq.html">Common Questions and Answers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mysql.html">Using a MySQL Server</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx.html">Nginx</a></li>
+<li class="toctree-l2"><a class="reference internal" href="supervisord-config-files.html">Using supervisord</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workers.html">Workers</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">PokemonGo-Map</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+        <li><a href="index.html">Extras</a> &raquo;</li>
+      
+    <li>Behive</li>
+    <li class="wy-breadcrumbs-aside">
+      
+          
+          <a href="../_sources/extras/beehive.txt" rel="nofollow"> View page source</a>
+        
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="behive">
+<span id="behive"></span><h1>Behive<a class="headerlink" href="#behive" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="setting-up">
+<span id="setting-up"></span><h2>Setting up<a class="headerlink" href="#setting-up" title="Permalink to this headline">¶</a></h2>
+<p><strong>Note:</strong> This guide runs on Windows with Python and Git installed.</p>
+<p>First, make a copy of <a class="reference external" href="https://docs.google.com/spreadsheets/d/1Uh4VITpCciSy8pRh9I7OZuNiM-LizyBJcU7WR8oi7yY/edit#gid=263691484">this Google Sheets page</a>. We&#8217;ll come back to that later.</p>
+<p>Now open a Terminal and clone the develop branch to a local directory:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">clone</span> <span class="o">-</span><span class="n">b</span> <span class="n">develop</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">AHAAAAAAA</span><span class="o">/</span><span class="n">PokemonGo</span><span class="o">-</span><span class="n">Map</span><span class="o">.</span><span class="n">git</span>
+</pre></div>
+</div>
+<p>Go to Tools / Hex-Beehive-Generator:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">cd</span> <span class="n">PokemonGo</span><span class="o">-</span><span class="n">Map</span><span class="o">/</span><span class="n">Tools</span><span class="o">/</span><span class="n">Hex</span><span class="o">-</span><span class="n">Beehive</span><span class="o">-</span><span class="n">Generator</span><span class="o">/</span>
+</pre></div>
+</div>
+<p>Now generate coordinates with <code class="docutils literal"><span class="pre">location_generator.py</span></code>:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">location_generator</span><span class="o">.</span><span class="n">py</span> <span class="o">-</span><span class="n">st</span> <span class="n">stepsize</span> <span class="o">-</span><span class="n">lp</span> <span class="n">ringsize</span> <span class="o">-</span><span class="n">lat</span> <span class="n">yourstartinglathere</span> <span class="o">-</span><span class="n">lon</span> <span class="n">yourstartinglonghere</span>
+</pre></div>
+</div>
+<p>For example:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">location_generator</span><span class="o">.</span><span class="n">py</span> <span class="o">-</span><span class="n">st</span> <span class="mi">5</span> <span class="o">-</span><span class="n">lp</span> <span class="mi">4</span> <span class="o">-</span><span class="n">lat</span> <span class="mf">39.949157</span> <span class="o">-</span><span class="n">lon</span> <span class="o">-</span><span class="mf">75.165297</span>
+</pre></div>
+</div>
+<p>Now the terminal will output a list of coordinates. Copy this entire list of coordinates, and then head over to your saved copy of the Google Sheets page we made earlier.</p>
+<p>We are going to paste all of the coords you just copied, into the first section of colored spaces, starting with the Top Pink one (ctrl v will do it automagically!)</p>
+<p>Now, make a file named <code class="docutils literal"><span class="pre">beehive.bat</span></code> with the following content:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>:: Set PythonPath to where your Python is installed, Typically C:\Python27\Python.exe
+:: Set BranchPath to where you have the Pokemon Live Map folder
+
+SET PythonPath=
+SET BranchPath=
+SET Executable=runserver.py
+
+::GAPI is your google map api key
+::auth is the authentication service you are using. PTC or Google
+::Self explanatory, username of the chosen auth service
+::again.. do i need to explain? password of chosen auth
+::Threads default is 1, if you want more, change it here.. 1 is recommended until multithreading is fixed in windows.
+::locale is the language output in your terminal, default is EN (english)
+
+
+SET GAPI=
+SET auth=
+SET username=
+SET password=
+SET thread=-t 1
+SET locale=EN
+
+
+::kill all python processes
+taskkill /IM python.exe /F
+echo Starting worker processes....
+
+
+::title of this command window
+title Pokemon Go Map
+
+::paste the second column of colors here, down to the last space of the color you wanted. Pink = 1 Leap, Purple - 2 Leaps, Blue = 3 Leaps, Green = 4 Leaps, and Yellow = 5 Leaps. The amount of workers required gets silly after 5 Leaps :P)
+
+
+
+::this part is the time it will pause till going back to the start again to restart the servers (edit the 1801 to change the delay in seconds)
+
+echo Waiting 30 minutes to restart all processes
+ping 127.0.0.1 -n 1801 &gt; nul
+
+goto start
+pause
+</pre></div>
+</div>
+<p>Now that we have our .bat created, We need to adjust the Arguments section on the spreadsheet. If you used the command for location_generator.py with -st set to 10, you need to change each line in the spreadsheet to -st 10 as well.</p>
+<p>Now, we are going to copy and paste the last column of the spreadsheet, based on colors, into the space above in the .bat file designated for the commands. Save the file, then double click the .bat to start the workers!</p>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="environment-variables-fix.html" class="btn btn-neutral float-right" title="Windows ENV Fix" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="index.html" class="btn btn-neutral" title="Extras" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Pokemon Masters.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'2.1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
