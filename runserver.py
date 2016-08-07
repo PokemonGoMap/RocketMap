@@ -88,7 +88,7 @@ if __name__ == '__main__':
 
 
     # use lat/lng directly if matches such a pattern
-    prog = re.compile("^(\-?\d+\.\d+),?\s?(\-?\d+\.\d+)$")
+    prog = re.compile("^(\-?\d+\.\d+)[,\s]\s*(\-?\d+\.\d+?)$")
     res = prog.match(args.location)
     if res:
         log.debug('Using coords from CLI directly')
