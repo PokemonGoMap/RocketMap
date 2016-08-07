@@ -334,9 +334,12 @@ def parse_map(map_dict, step_location):
                     encounter_id = f['lure_info']['encounter_id']
                     webhook_data = {
                         'encounter_id': b64encode(str(encounter_id)),
+                        'spawnpoint_id': p['spawn_point_id'],
                         'pokemon_id': active_pokemon_id,
                         'latitude': f['latitude'],
                         'longitude': f['longitude'],
+                        'last_modified_time': p['last_modified_timestamp_ms'],
+                        'time_until_hidden_ms': p['time_till_hidden_ms'],
                         'disappear_time': calendar.timegm(lure_expiration.timetuple()),
                         'is_lured': True
                     }
