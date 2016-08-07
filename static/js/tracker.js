@@ -1,5 +1,11 @@
+function getParameterByName (name) {
+  var match = RegExp('[?&]' + name + '=([^&]*)').exec(window.location.search);
+  return match && decodeURIComponent(match[1].replace(/\+/g, ' '));
+}
+
 $(function () {
   var maxDist = 500; // maximium distance to show in meters
+  var shadowType = getParameterByName('shadow');
   var pokemons = ko.observableArray();
   var nearByPokemon = ko.computed(function () {
     return pokemons()
@@ -15,7 +21,7 @@ $(function () {
 
       var currentLatLng = ko.observable();
       var lastLatLng;
-      var missingPokemon = ko.observable();
+      var notifyPokemon = ko.observable();
 
       function Pokemon(data) {
         var self = this;
@@ -31,7 +37,14 @@ $(function () {
             icon_width: 65,
             icon_height: 65,
             shadow: ko.computed(function () {
-              return $.inArray(data.pokemon_id, missingPokemon()) >= 0;
+              switch (shadowType) {
+                case "notify":
+                  return $.inArray(data.pokemon_id, notifyPokemon()) >= 0;
+                case "not-notify":
+                  return $.inArray(data.pokemon_id, notifyPokemon()) < 0;
+                default:
+                  return false;
+              }
             })
           }
         })();
@@ -119,7 +132,7 @@ $(function () {
         });
 
         var updatePokemon = function () {
-          missingPokemon(JSON.parse(localStorage["remember_select_notify"] || "[]"));
+          notifyPokemon(JSON.parse(localStorage["remember_select_notify"] || "[]"));
           loadRawData(lastLatLng);
         };
 
