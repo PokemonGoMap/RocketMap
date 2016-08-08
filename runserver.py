@@ -128,7 +128,11 @@ if __name__ == '__main__':
 
     # Control the search status (running or not) across threads
     pause_bit = Event()
-    pause_bit.clear()
+
+    if args.stop_search_threads:
+        pause_bit.set()
+    else:
+        pause_bit.clear()
 
     # Setup the location tracking queue and push the first location on
     new_location_queue = Queue()

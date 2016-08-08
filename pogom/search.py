@@ -115,7 +115,12 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
     parse_lock = Lock()
 
     # Create a search_worker_thread per account
-    log.info('Starting search worker threads')
+
+    if args.stop_search_threads:
+        log.info('Waiting for start command')
+    else:
+        log.info('Starting search worker threads')
+
     for i, account in enumerate(args.accounts):
         log.debug('Starting search worker thread %d for user %s', i, account['username'])
         t = Thread(target=search_worker_thread,
