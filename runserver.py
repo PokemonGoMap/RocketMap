@@ -7,6 +7,7 @@ import shutil
 import logging
 import time
 import re
+import requests
 
 # Currently supported pgoapi
 pgoapi_version = "1.1.6"
@@ -96,6 +97,15 @@ if __name__ == '__main__':
     else:
         log.debug('Lookig up coords in API')
         position = util.get_pos_by_name(args.location)
+
+    # Use the latitude and longitude to get the local altitude from Google
+    try:
+        url = 'https://maps.googleapis.com/maps/api/elevation/json?locations=%s,%s'.format(position[0], position[1])
+        altitude = requests.get(url).json()[u'results'][0][u'elevation']
+        log.debug('Local altitude is: %sm', altitude)
+        position = (position[0], position[1], altitude)
+    except:
+        log.error('Unable to retrieve altitude from Google APIs; setting to 0')
 
     if not any(position):
         log.error('Could not get a position by name, aborting')
