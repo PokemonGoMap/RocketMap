@@ -49,7 +49,7 @@ def get_args():
     parser.add_argument('-st', '--step-limit', help='Steps', type=int,
                         default=12)
     parser.add_argument('-ss', '--step-size',
-                        help='Distance between scan points, 70 is default and max for pokemons, use with -np.',
+                        help='Distance between scan points. Default and optimal Pokemon scanning value is 70. Useful for gym/pokestop only scans with a value of 1000. REQUIRES -np.',
                         type=float, default=70)
     parser.add_argument('-sd', '--scan-delay',
                         help='Time delay between requests in scan threads',
@@ -148,7 +148,7 @@ def get_args():
 
         if args.auth_service is None:
             args.auth_service = ['ptc']
-
+            
         num_auths = len(args.auth_service)
         num_usernames = len(args.username)
         num_passwords = len(args.password)
