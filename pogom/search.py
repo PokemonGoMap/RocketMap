@@ -34,6 +34,7 @@ from pgoapi.exceptions import AuthException
 
 from . import config
 from .models import parse_map
+from .utils import get_args
 
 log = logging.getLogger(__name__)
 
@@ -56,17 +57,20 @@ def get_new_coords(init_loc, distance, bearing):
 
     return [math.degrees(new_lat), math.degrees(new_lon)]
 
-def generate_location_steps(initial_loc, step_count, step_size):
+def generate_location_steps(initial_loc, step_count):
+
+    args = get_args()
+
     #Bearing (degrees)
     NORTH = 0
     EAST = 90
     SOUTH = 180
     WEST = 270
 
-    pulse_radius = step_size / 1000	# dist between scan points (-ss), meters to km, default is 70.
+    pulse_radius = args.step_size / 1000.0	# dist between scan points (-ss), meters to km, default is 70.
     xdist = math.sqrt(3)*pulse_radius   # dist between column centers
     ydist = 3*(pulse_radius/2)          # dist between row centers
-
+    
     yield (initial_loc[0], initial_loc[1], 0) #insert initial location
 
     ring = 1
@@ -163,7 +167,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
         # cleared above) -- either way, time to fill it back up
         if search_items_queue.empty():
             log.debug('Search queue empty, restarting loop')
-            for step, step_location in enumerate(generate_location_steps(current_location, args.step_limit, args.step_size), 1):
+            for step, step_location in enumerate(generate_location_steps(current_location, args.step_limit), 1):
                 log.debug('Queueing step %d @ %f/%f/%f', step, step_location[0], step_location[1], step_location[2])
                 search_args = (step, step_location)
                 search_items_queue.put(search_args)
