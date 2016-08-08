@@ -31,11 +31,12 @@ from pgoapi import PGoApi
 from pgoapi.utilities import f2i
 from pgoapi import utilities as util
 from pgoapi.exceptions import AuthException
-
 from . import config
 from .models import parse_map
-
+from pogom.utils import get_args
+args = get_args()
 log = logging.getLogger(__name__)
+
 
 TIMESTAMP = '\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000'
 
@@ -63,7 +64,7 @@ def generate_location_steps(initial_loc, step_count):
     SOUTH = 180
     WEST = 270
 
-    pulse_radius = 0.07                 # km - radius of players heartbeat is 70m
+    pulse_radius = 0.07*args.jump_block# km - radius of players heartbeat is 70m - jump_block is an multiplicator for less accurate jumps for less accurate scans
     xdist = math.sqrt(3)*pulse_radius   # dist between column centers
     ydist = 3*(pulse_radius/2)          # dist between row centers
 

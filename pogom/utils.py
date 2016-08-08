@@ -17,7 +17,6 @@ from s2sphere import LatLng, CellId
 from geopy.geocoders import GoogleV3
 
 from . import config
-
 log = logging.getLogger(__name__)
 
 
@@ -119,6 +118,8 @@ def get_args():
     parser.add_argument('--db-max_connections', help='Max connections for the database', type=int, default=5)
     parser.add_argument('-wh', '--webhook', help='Define URL(s) to POST webhook information to',
                         nargs='*', default=False, dest='webhooks')
+    parser.add_argument('-jb', '--jump-block', required=False, help='Gap measurement of search algorithm (Default is "1")', type=int, default=1)
+
     parser.set_defaults(DEBUG=False)
 
     args = parser.parse_args()
