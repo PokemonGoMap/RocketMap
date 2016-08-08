@@ -100,7 +100,8 @@ if __name__ == '__main__':
 
     # Use the latitude and longitude to get the local altitude from Google
     try:
-        url = 'https://maps.googleapis.com/maps/api/elevation/json?locations=%s,%s'.format(position[0], position[1])
+        url = 'https://maps.googleapis.com/maps/api/elevation/json?locations={},{}'.format(
+            str(position[0]), str(position[1]))
         altitude = requests.get(url).json()[u'results'][0][u'elevation']
         log.debug('Local altitude is: %sm', altitude)
         position = (position[0], position[1], altitude)
