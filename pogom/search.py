@@ -18,6 +18,7 @@ Search Architecture:
 '''
 
 import os
+import sys
 import logging
 import time
 import math
@@ -106,7 +107,7 @@ def fake_search_loop():
 
 
 # The main search loop that keeps an eye on the over all process
-def search_overseer_thread(args, new_location_queue, pause_bit):
+def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_path):
 
     log.info('Search overseer starting')
 
@@ -119,7 +120,8 @@ def search_overseer_thread(args, new_location_queue, pause_bit):
         log.debug('Starting search worker thread %d for user %s', i, account['username'])
         t = Thread(target=search_worker_thread,
                    name='search_worker_{}'.format(i),
-                   args=(args, account, search_items_queue, parse_lock))
+                   args=(args, account, search_items_queue, parse_lock,
+                       encryption_lib_path))
         t.daemon = True
         t.start()
 
@@ -172,7 +174,13 @@ def search_overseer_thread(args, new_location_queue, pause_bit):
         time.sleep(1)
 
 
-def search_worker_thread(args, account, search_items_queue, parse_lock):
+def search_worker_thread(args, account, search_items_queue, parse_lock, encryption_lib_path):
+
+    # If we have more than one account, stagger the logins such that they occur evenly over scan_delay
+    if len(args.accounts) > 1:
+        delay = (args.scan_delay / len(args.accounts)) * args.accounts.index(account)
+        log.debug('Delaying thread startup for %.2f seconds', delay)
+        time.sleep(delay)
 
     log.debug('Search worker thread starting')
 
@@ -216,12 +224,14 @@ def search_worker_thread(args, account, search_items_queue, parse_lock):
                     # Ok, let's get started -- check our login status
                     check_login(args, account, api, step_location)
 
+                    api.activate_signature(encryption_lib_path)
+
                     # Make the actual request (finally!)
                     response_dict = map_request(api, step_location)
 
                     # G'damnit, nothing back. Mark it up, sleep, carry on
                     if not response_dict:
-                        log.error('Search step %d area download failed, retyring request in %g seconds', step, sleep_time)
+                        log.error('Search step %d area download failed, retrying request in %g seconds', step, sleep_time)
                         failed_total += 1
                         time.sleep(sleep_time)
                         continue
@@ -234,7 +244,7 @@ def search_worker_thread(args, account, search_items_queue, parse_lock):
                             search_items_queue.task_done()
                             break # All done, get out of the request-retry loop
                         except KeyError:
-                            log.error('Search step %s map parsing failed, retyring request in %g seconds', step, sleep_time)
+                            log.exception('Search step %s map parsing failed, retrying request in %g seconds', step, sleep_time)
                             failed_total += 1
                             time.sleep(sleep_time)
 
@@ -268,14 +278,6 @@ def check_login(args, account, api, position):
                 i += 1
                 log.error('Failed to login to Pokemon Go with account %s. Trying again in %g seconds', account['username'], args.login_delay)
                 time.sleep(args.login_delay)
-
-    lib_path = ""
-    if os.name is "nt":
-        lib_path = os.path.join(os.path.dirname(__file__), "encrypt.dll")
-    elif os.name is "posix":
-        lib_path = os.path.join(os.path.dirname(__file__), "libencrypt.so")
-
-    api.activate_signature(lib_path)
 
     log.debug('Login for account %s successful', account['username'])
 

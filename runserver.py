@@ -6,6 +6,7 @@ import sys
 import shutil
 import logging
 import time
+import re
 
 # Currently supported pgoapi
 pgoapi_version = "1.1.6"
@@ -42,7 +43,7 @@ from flask_cors import CORS
 
 from pogom import config
 from pogom.app import Pogom
-from pogom.utils import get_args, insert_mock_data
+from pogom.utils import get_args, insert_mock_data, get_encryption_lib_path
 
 from pogom.search import search_overseer_thread, fake_search_loop
 from pogom.models import init_database, create_tables, drop_tables, Pokemon, Pokestop, Gym
@@ -50,6 +51,11 @@ from pogom.models import init_database, create_tables, drop_tables, Pokemon, Pok
 from pgoapi import utilities as util
 
 if __name__ == '__main__':
+    # Check if we have the proper encryption library file and get its path
+    encryption_lib_path = get_encryption_lib_path()
+    if encryption_lib_path is "":
+        sys.exit(1)
+
     args = get_args()
 
     if args.debug:
@@ -60,7 +66,7 @@ if __name__ == '__main__':
     # Let's not forget to run Grunt / Only needed when running with webserver
     if not args.no_server:
         if not os.path.exists(os.path.join(os.path.dirname(__file__), 'static/dist')):
-            log.critical('Please run "grunt build" before starting the server');
+            log.critical('Missing front-end assets (static/dist) -- please run "npm install && npm run build" before starting the server');
             sys.exit();
 
     # These are very noisey, let's shush them up a bit
@@ -81,7 +87,16 @@ if __name__ == '__main__':
         logging.getLogger('rpc_api').setLevel(logging.DEBUG)
 
 
-    position = util.get_pos_by_name(args.location)
+    # use lat/lng directly if matches such a pattern
+    prog = re.compile("^(\-?\d+\.\d+),?\s?(\-?\d+\.\d+)$")
+    res = prog.match(args.location)
+    if res:
+        log.debug('Using coords from CLI directly')
+        position = (float(res.group(1)), float(res.group(2)), 0)
+    else:
+        log.debug('Lookig up coords in API')
+        position = util.get_pos_by_name(args.location)
+
     if not any(position):
         log.error('Could not get a position by name, aborting')
         sys.exit()
@@ -123,7 +138,7 @@ if __name__ == '__main__':
         # Gather the pokemons!
         if not args.mock:
             log.debug('Starting a real search thread')
-            search_thread = Thread(target=search_overseer_thread, args=(args, new_location_queue, pause_bit))
+            search_thread = Thread(target=search_overseer_thread, args=(args, new_location_queue, pause_bit, encryption_lib_path))
         else:
             log.debug('Starting a fake search thread')
             insert_mock_data(position)
