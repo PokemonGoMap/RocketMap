@@ -294,6 +294,12 @@ def get_encryption_lib_path():
         else:
             lib_path = os.path.join(os.path.dirname(__file__), "encrypt32bit.dll")
 
+    elif sys.platform == "cygwin":
+        if platform.architecture()[0] == '64bit':
+            lib_path = os.path.join(os.path.dirname(file), "encrypt64bit.dll")
+        else:
+            lib_path = os.path.join(os.path.dirname(file), "encrypt32bit.dll")
+
     elif sys.platform == "darwin":
         lib_path = os.path.join(os.path.dirname(__file__), "libencrypt-osx-64.so")
 
