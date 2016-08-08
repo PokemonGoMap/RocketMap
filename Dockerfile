@@ -27,7 +27,7 @@ RUN apk add --no-cache build-base \
  && pip install --no-cache-dir -r requirements.txt \
  && apk del build-base
 
-COPY package.json Gruntfile.js /usr/src/app/
+COPY package.json Gruntfile.js .eslintignore .eslintrc.json /usr/src/app/
 COPY static /usr/src/app/static
 
 RUN apk add --no-cache build-base nodejs \
