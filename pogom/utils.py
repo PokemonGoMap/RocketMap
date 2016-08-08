@@ -48,6 +48,9 @@ def get_args():
                         help='Location, can be an address or coordinates')
     parser.add_argument('-st', '--step-limit', help='Steps', type=int,
                         default=12)
+    parser.add_argument('-ss', '--step-size',
+                        help='Distance between scan points, 70 is default and max for pokemons, use with -np.',
+                        type=float, default=70)
     parser.add_argument('-sd', '--scan-delay',
                         help='Time delay between requests in scan threads',
                         type=float, default=10)
