@@ -70,8 +70,7 @@ def generate_location_steps(initial_loc, step_count):
 
     pulse_radius = args.step_size / 1000.0	# dist between scan points (-ss), meters to km, default is 70.
     xdist = math.sqrt(3)*pulse_radius   # dist between column centers
-    ydist = 3*(pulse_radius/2)          # dist between row centers
-    
+    ydist = 3*(pulse_radius/2)          # dist between row centers    
     yield (initial_loc[0], initial_loc[1], 0) #insert initial location
 
     ring = 1
