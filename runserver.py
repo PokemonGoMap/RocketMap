@@ -110,6 +110,8 @@ if __name__ == '__main__':
         log.info('Parsing of Pokestops disabled')
     if args.no_gyms:
         log.info('Parsing of Gyms disabled')
+    if not args.gmaps_key:
+        log.info('No Google Maps Javascript API Key set. Set one using the -k argument or you won\'t be able to use the map.')
 
     config['LOCALE'] = args.locale
     config['CHINA'] = args.china
