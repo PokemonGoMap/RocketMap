@@ -15,7 +15,7 @@ var i8lnDictionary = {}
 var languageLookups = 0
 var languageLookupThreshold = 3
 
-var excludedPokemon = []
+var excludedPokemon = [16,19,21,41,96,124]
 var notifiedPokemon = []
 
 var map
@@ -687,11 +687,11 @@ var StoreTypes = {
 
 var StoreOptions = {
   'map_style': {
-    default: 'roadmap',
+    default: 'style_pgo',
     type: StoreTypes.String
   },
   'remember_select_exclude': {
-    default: [],
+    default: [16,19,21,41,96,124],
     type: StoreTypes.JSON
   },
   'remember_select_notify': {
@@ -711,7 +711,7 @@ var StoreOptions = {
     type: StoreTypes.Boolean
   },
   'showPokestops': {
-    default: true,
+    default: false,
     type: StoreTypes.Boolean
   },
   'showLuredPokestopsOnly': {
@@ -727,15 +727,15 @@ var StoreOptions = {
     type: StoreTypes.Boolean
   },
   'geoLocate': {
-    default: false,
+    default: true,
     type: StoreTypes.Boolean
   },
   'startAtUserLocation': {
-    default: false,
+    default: true,
     type: StoreTypes.Boolean
   },
   'pokemonIcons': {
-    default: 'highres',
+    default: 'normal',
     type: StoreTypes.String
   },
   'iconSizeModifier': {
@@ -885,10 +885,11 @@ function createSearchMarker () {
     },
     map: map,
     animation: google.maps.Animation.DROP,
-    draggable: true,
+    draggable: false,
     zIndex: google.maps.Marker.MAX_ZINDEX + 1
   })
 
+  /*
   var oldLocation = null
   google.maps.event.addListener(marker, 'dragstart', function () {
     oldLocation = marker.getPosition()
@@ -906,6 +907,7 @@ function createSearchMarker () {
         }
       })
   })
+  */
 
   return marker
 }
