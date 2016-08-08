@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Name of coords file. If you do not have one look at coords-only.sh!!
+# Name of coords file. If you do not have one use location_generator.py -or 
 coords="coords.txt"
 
 # Webserver Location

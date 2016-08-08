@@ -43,32 +43,20 @@ In this file, change the variables needed to suit your situation. Below is a sni
     ld=1       # Login Delay per account
     directory='/path/to/your/runserver/directory/' # Path to the folder containing runserver.py
 
-As you saw above you will need to create a coords.txt (or whatever you decide to name it. I personally use city.stepcount.coords as my naming convention). Now we are going to edit your local copy of coords-only.sh:
-
-    nano coords-only.sh
- 
-In this file, change the variables needed to suit your situation. Below is a snippet of the variables:
-
-    output="coords.txt"   # Name of the coords file
-    lat="29.882687"       # Latitiude
-    lon="-97.94071"       # Longitude
-    st="5"                # Steps
-    lp="6"                # Leaps
-    dir="/opt/pokegomap/" # Path to main Pokemon Go Map folder. NOTE THE TRAILING /
-
-Now run the coords-only.sh
-
-    ./coords-only.sh
+As you saw above you will need to create a coords.txt (or whatever you decide to name it. I personally use city.stepcount.coords as my naming convention). We are going to use location_generator.py:
+    
+    cd (your Pokemon Go Map main folder here)
+    python Tools/Hex-Beehive-Generator/location_generator.py -lat "yourlat" -lon "yourlon" -st 5 -lp 4 -or "~/supervisor/coords.txt"
 
 Then re-run the gen-workers.sh script
 
+    cd ~/supervisor
     ./gen-workers.sh
 
 You should now have a bunch of .ini files in `~/supervisor/hex1/`
 
 You can now do:
 
-    cd ~/supervisor
-    supervisord
+    supervisord -c ~/supervisor/supervisord.conf
 
 And you will have a working controllable hive! You should be able to see from the web as well at `http://localhost:5001` Read up on the supervisord link at the top if you want to understand more about supervisorctl and how to control from the web.
