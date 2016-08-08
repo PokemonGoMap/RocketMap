@@ -121,6 +121,8 @@ if __name__ == '__main__':
         log.info('Parsing of Pokestops disabled')
     if args.no_gyms:
         log.info('Parsing of Gyms disabled')
+    if not args.gmaps_key:
+        log.info('No Google Maps Javascript API Key set. Set one using the -k argument or you won\'t be able to use the map.')
 
     config['LOCALE'] = args.locale
     config['CHINA'] = args.china
@@ -139,7 +141,11 @@ if __name__ == '__main__':
 
     # Control the search status (running or not) across threads
     pause_bit = Event()
-    pause_bit.clear()
+
+    if args.stop_search_threads:
+        pause_bit.set()
+    else:
+        pause_bit.clear()
 
     # Setup the location tracking queue and push the first location on
     new_location_queue = Queue()

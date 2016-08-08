@@ -202,7 +202,12 @@
           <div id="pokestopList" style="color: black;"></div>
         </div>
       </nav>
-      <div id="map"></div>
+      <div id="map">
+        <div style="position: absolute; width: 520px; left: calc(50% - 260px); top: 30px; padding: 1.2em" class="ui-state-error ui-widget ui-front ui-widget-content ui-corner-all ui-widget-shadow">
+        <span class="ui-icon ui-icon-alert" style="float: left; margin-right: .3em; margin-top: .3em"></span><strong>Alert</strong><br/>
+        It looks like you don't have a Google Maps Javascript API Key set. Please set one using the -k argument in order to use the maps. If you don't have an API Key please obtain one from <a href="https://console.developers.google.com/">https://console.developers.google.com/</a>. For further instructions and help visit: <a href="https://pgm.readthedocs.io/en/develop/basic-install/google-maps.html">https://pgm.readthedocs.io/en/develop/basic-install/google-maps.html</a>.
+        </div>
+      </div>
     </div>
     <!-- Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-polyfill/6.9.1/polyfill.min.js"></script>
@@ -219,6 +224,13 @@
 
     <script src="static/dist/js/map.min.js"></script>
     <script src="static/dist/js/stats.min.js"></script>
-    <script defer src="https://maps.googleapis.com/maps/api/js?key={{ gmaps_key }}&amp;callback=initMap&amp;libraries=places,geometry"></script>
+    <script>
+      var gmaps_key = "{{ gmaps_key }}";
+
+      if (gmaps_key !== "None") {
+        var src = "https://maps.googleapis.com/maps/api/js?key=" + gmaps_key + "&amp;callback=initMap&amp;libraries=places,geometry";
+        document.write('<' + 'script defer src="' + src + '"><' + '/script>');
+      }
+    </script>
   </body>
 </html>

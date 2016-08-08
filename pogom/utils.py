@@ -91,8 +91,7 @@ def get_args():
                         help='Hides the search bar for use in shared maps.',
                         action='store_true', default=False)
     parser.add_argument('-k', '--gmaps-key',
-                        help='Google Maps Javascript API Key',
-                        required=True)
+                        help='Google Maps Javascript API Key')
     parser.add_argument('-C', '--cors', help='Enable CORS on web server',
                         action='store_true', default=False)
     parser.add_argument('-D', '--db', help='Database filename',
@@ -108,6 +107,9 @@ def get_args():
                         action='store_true', default=False)
     parser.add_argument('-nk', '--no-pokestops',
                         help='Disables PokeStops from the map (including parsing them into local db)',
+                        action='store_true', default=False)
+    parser.add_argument('-sst', '--stop-search-threads',
+                        help='Does not start the search threads',
                         action='store_true', default=False)
     parser.add_argument('--db-type', help='Type of database to be used (default: sqlite)',
                         default='sqlite')
