@@ -91,8 +91,7 @@ def get_args():
                         help='Hides the search bar for use in shared maps.',
                         action='store_true', default=False)
     parser.add_argument('-k', '--gmaps-key',
-                        help='Google Maps Javascript API Key',
-                        required=True)
+                        help='Google Maps Javascript API Key')
     parser.add_argument('-C', '--cors', help='Enable CORS on web server',
                         action='store_true', default=False)
     parser.add_argument('-D', '--db', help='Database filename',
