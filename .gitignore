@@ -13,3 +13,14 @@ src/
 _build
 _build_html
 beehive.*
+
+Tools/PokemapWatcher/.vs/
+Tools/PokemapWatcher/PokemapWatcher/bin/
+Tools/PokemapWatcher/PokemapWatcher/obj/
+PokemapWatcher.exe
+!Tools/PokemapWatcher/PokemapWatcher.exe
+PokemapWatcher.exe.config
+PokemapWatcher.pdb
+PokemapWatcher.vshost.exe
+PokemapWatcher.vshost.exe.config
+PokemapWatcher.vshost.exe.manifest
