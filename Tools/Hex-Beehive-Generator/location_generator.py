@@ -104,7 +104,7 @@ turn_steps = 0          # number of cells required to complete one turn of the r
 turn_steps_so_far = 0   # current cell number in this side of the current ring
 
 total_workers_polygonized=0
-j=0
+k=0
 
 for i in range(1, total_workers):
     if turns == 6 or turn_steps == 0:
@@ -134,9 +134,9 @@ for i in range(1, total_workers):
     #If polygon arg is set, ignore points outside polygon
     if args.polygon :
         if point_in_polygon(loc, literal_eval(args.polygon)) :
-           locations[j] = loc
-           j=j+1
-           total_workers_polygonized = total_workers_polygonized+1
+            locations[k] = loc
+            k=k+1
+            total_workers_polygonized = total_workers_polygonized+1
     else:
         locations[i] = loc
     d = d_s
