@@ -288,17 +288,11 @@ def send_to_webhook(message_type, message):
 def get_encryption_lib_path():
     lib_path = ""
     # win32 doesn't mean necessarily 32 bits
-    if sys.platform == "win32":
+    if sys.platform == "win32" or sys.platform=="cygwin":
         if platform.architecture()[0] == '64bit':
             lib_path = os.path.join(os.path.dirname(__file__), "encrypt64bit.dll")
         else:
             lib_path = os.path.join(os.path.dirname(__file__), "encrypt32bit.dll")
-
-    elif sys.platform == "cygwin":
-        if platform.architecture()[0] == '64bit':
-            lib_path = os.path.join(os.path.dirname(file), "encrypt64bit.dll")
-        else:
-            lib_path = os.path.join(os.path.dirname(file), "encrypt32bit.dll")
 
     elif sys.platform == "darwin":
         lib_path = os.path.join(os.path.dirname(__file__), "libencrypt-osx-64.so")
