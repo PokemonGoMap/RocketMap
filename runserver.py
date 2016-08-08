@@ -29,7 +29,7 @@ if os.path.isdir(oldpgoapiPath):
 try:
     import pgoapi
 except ImportError:
-    log.critical("It seems `pgoapi` is not installed. You must run pip install -r requirements.txt again")
+    log.critical("It seems `pgoapi` is not installed. You must run pip install -r requirements.txt again", exc_info=True)
     sys.exit(1)
 
 # Assert pgoapi >= 1.1.6 is installed
