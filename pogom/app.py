@@ -6,6 +6,7 @@ import logging
 
 from flask import Flask, jsonify, render_template, request
 from flask.json import JSONEncoder
+from flask_basicauth import BasicAuth
 from flask_compress import Compress
 from datetime import datetime
 from s2sphere import *
@@ -24,6 +25,15 @@ class Pogom(Flask):
     def __init__(self, import_name, **kwargs):
         super(Pogom, self).__init__(import_name, **kwargs)
         compress.init_app(self)
+        
+        # optional basic authentication
+        args = get_args()
+        if args.basic_auth_user:
+            self.config['BASIC_AUTH_USERNAME'] = args.basic_auth_user
+            self.config['BASIC_AUTH_PASSWORD'] = args.basic_auth_pass
+            self.config['BASIC_AUTH_FORCE'] = True
+            basic_auth = BasicAuth(self)
+        
         self.json_encoder = CustomJSONEncoder
         self.route("/", methods=['GET'])(self.fullmap)
         self.route("/raw_data", methods=['GET'])(self.raw_data)
