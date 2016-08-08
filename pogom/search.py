@@ -59,8 +59,9 @@ def get_new_coords(init_loc, distance, bearing):
 
 def generate_location_steps(initial_loc, step_count):
 
+    # There's another call to this *not* using args.step_count as second argument, this is for step_size only.
     args = get_args()
-
+    
     #Bearing (degrees)
     NORTH = 0
     EAST = 90
