@@ -68,10 +68,10 @@ def generate_location_steps(initial_loc, step_count):
     SOUTH = 180
     WEST = 270
 
-    if (args.no_pokemon == False): # scan_size requires -np, 70 is default
-        pulse_radius = 0.07
+    if args.no_pokemon: # scan_size requires -np, 70 is default
+        pulse_radius = args.step_size / 1000.0  # dist between scan points (-ss), meters to km, default is 70.
     else:
-        pulse_radius = args.step_size / 1000.0	# dist between scan points (-ss), meters to km, default is 70.
+        pulse_radius = 0.07
         
     xdist = math.sqrt(3)*pulse_radius   # dist between column centers
     ydist = 3*(pulse_radius/2)          # dist between row centers    
