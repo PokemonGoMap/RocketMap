@@ -29,6 +29,7 @@ RUN apk add --no-cache build-base \
 
 COPY package.json Gruntfile.js /usr/src/app/
 COPY static /usr/src/app/static
+COPY .eslintignore .eslintrc.json /usr/src/app/
 
 RUN apk add --no-cache build-base nodejs \
  && npm install -g grunt-cli \
