@@ -1,4 +1,3 @@
-six==1.10.0
 Flask==0.11.1
 Jinja2==2.8
 MarkupSafe==0.23
@@ -14,6 +13,11 @@ gpsoauth==0.3.0
 PyMySQL==0.7.5
 flask-cors==2.1.2
 flask-compress==1.3.0
+pushbullet.py==0.10.0
+slacker==0.9.24
+twilio==5.4.0
+telepot==8.3
+pytz==2013.7
 LatLon==1.0.1
 git+https://github.com/keyphact/pgoapi.git@691aff2543c39ba929e4aa0e325dc43d24cb24df#egg=pgoapi
 xxhash

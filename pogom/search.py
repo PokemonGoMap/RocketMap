@@ -29,6 +29,7 @@ from queue import Queue, Empty
 
 from pgoapi import PGoApi
 from pgoapi.utilities import f2i
+from alarm.notifications import Notifications
 from pgoapi import utilities as util
 from pgoapi.exceptions import AuthException
 
@@ -191,6 +192,7 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
 
             # Create the API instance this will use
             api = PGoApi()
+            alarms = Notifications()
 
             # The forever loop for the searches
             while True:
@@ -239,9 +241,10 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
                     # Got the response, lock for parsing and do so (or fail, whatever)
                     with parse_lock:
                         try:
-                            parsed = parse_map(response_dict, step_location)
+                            pokemons, pokestops, gyms = parse_map(response_dict, step_location)
                             log.debug('Search step %s completed', step)
                             search_items_queue.task_done()
+                            alarms.notify_pkmns(pokemons)
                             break # All done, get out of the request-retry loop
                         except KeyError:
                             log.exception('Search step %s map parsing failed, retrying request in %g seconds', step, sleep_time)

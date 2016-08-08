@@ -401,7 +401,8 @@ def parse_map(map_dict, step_location):
 
     clean_database()
 
-    return True
+    # return True
+    return (pokemons, pokestops, gyms)
 
 
 def clean_database():

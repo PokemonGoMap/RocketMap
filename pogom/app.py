@@ -42,6 +42,8 @@ class Pogom(Flask):
 
     def set_current_location(self, location):
         self.current_location = location
+        config['ORIGINAL_LATITUDE'] = location[0]
+        config['ORIGINAL_LONGITUDE'] = location[1]
 
     def get_search_control(self):
         return jsonify({'status': not self.search_control.is_set()})
