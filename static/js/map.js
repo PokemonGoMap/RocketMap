@@ -1245,7 +1245,7 @@ function updateGymMarker (item, marker) {
   } else {
     gymLevel = 1;
   }
-    var markerPath = 'static/forts/' + gymTypes[item['team_id']] + '_' + gymLevel + '.png';
+  var markerPath = 'static/forts/' + gymTypes[item['team_id']] + '_' + gymLevel + '.png';
 
   marker.setIcon(markerPath)
   marker.infoWindow.setContent(gymLabel(gymTypes[item['team_id']], item['team_id'], item['gym_points'], item['latitude'], item['longitude']))
