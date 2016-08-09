@@ -22,6 +22,7 @@ var map
 var rawDataIsLoading = false
 var locationMarker
 var marker
+var moves
 
 var noLabelsStyle = [{
   featureType: 'poi',
@@ -976,6 +977,9 @@ function pokemonLabel (name, rarity, types, disappearTime, id, latitude, longitu
       <div>
         IV: ${pokemon['iv'].toFixed(2)}  Details: ${pokemon['individual_attack']}/${pokemon['individual_defense']}/${pokemon['individual_stamina']}
       </div>
+      <div>
+        Moves: ${moves[pokemon['move_1']]} / ${moves[pokemon['move_2']]}
+      </div>
       `
   }
   var contentstring = `
@@ -1839,6 +1843,11 @@ $(function () {
   if (Store.get('startAtUserLocation')) {
     centerMapOnLocation()
   }
+
+  $.getJSON('static/dist/data/moves.min.json').done(function (data) {
+    moves = data;
+  });
+
 
   $selectExclude = $('#exclude-pokemon')
   $selectNotify = $('#notify-pokemon')
