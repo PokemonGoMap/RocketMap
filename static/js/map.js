@@ -971,14 +971,17 @@ function pokemonLabel (name, rarity, types, disappearTime, id, latitude, longitu
   $.each(types, function (index, type) {
     typesDisplay += getTypeSpan(type)
   })
-  var details = ""
-  if('iv' in pokemon) {
+  var details = ''
+  if ('iv' in pokemon) {
     details = `
       <div>
         IV: ${pokemon['iv'].toFixed(2)}  Details: ${pokemon['individual_attack']}/${pokemon['individual_defense']}/${pokemon['individual_stamina']}
       </div>
       <div>
         Moves: ${moves[pokemon['move_1']]} / ${moves[pokemon['move_2']]}
+      </div>
+      <div>
+        Probability: ${pokemon['capture_probability_1'].toFixed(2)}/${pokemon['capture_probability_2'].toFixed(2)}/${pokemon['capture_probability_3'].toFixed(3)}
       </div>
       `
   }
@@ -1847,7 +1850,6 @@ $(function () {
   $.getJSON('static/dist/data/moves.min.json').done(function (data) {
     moves = data;
   });
-
 
   $selectExclude = $('#exclude-pokemon')
   $selectNotify = $('#notify-pokemon')

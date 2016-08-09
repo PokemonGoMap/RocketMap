@@ -85,6 +85,9 @@ class Pokemon(BaseModel):
     stamina =  IntegerField()
     stamina_max =  IntegerField()
     weight =  DoubleField()
+    capture_probability_1 = DoubleField()
+    capture_probability_2 = DoubleField()
+    capture_probability_3 = DoubleField()
 
     class Meta:
         indexes = ((('latitude', 'longitude'), False),)
@@ -322,7 +325,7 @@ def parse_map(api, map_dict, step_location):
                                         player_latitude=step_location[0],
                                         player_longitude=step_location[1])
                 ecounter_info = result['responses']['ENCOUNTER']
-                capture_probability = ecounter_info['capture_probability']
+                capture_probability = ecounter_info['capture_probability']['capture_probability']
                 pokemon_info = ecounter_info['wild_pokemon']['pokemon_data']
                 pokemons[p['encounter_id']] = {
                     'encounter_id': b64encode(str(p['encounter_id'])),
@@ -340,7 +343,10 @@ def parse_map(api, map_dict, step_location):
                     'move_2': pokemon_info['move_2'],
                     'stamina': pokemon_info['stamina'],
                     'stamina_max': pokemon_info['stamina_max'],
-                    'weight': pokemon_info['weight_kg']
+                    'weight': pokemon_info['weight_kg'],
+                    'capture_probability_1': capture_probability[0],
+                    'capture_probability_2': capture_probability[1],
+                    'capture_probability_3': capture_probability[2],
                 }
                 webhook_data = {
                     'encounter_id': b64encode(str(p['encounter_id'])),
