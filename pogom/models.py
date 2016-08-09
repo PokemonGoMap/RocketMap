@@ -331,7 +331,7 @@ def parse_map(api, map_dict, step_location):
                     'latitude': p['latitude'],
                     'longitude': p['longitude'],
                     'disappear_time': d_t,
-                    'iv': pokemon_info['cp_multiplier'],
+                    'iv': pokemon_info.get('cp_multiplier',0),
                     'height': pokemon_info['height_m'],
                     'individual_attack': pokemon_info.get('individual_attack',0),
                     'individual_defense': pokemon_info.get('individual_defense',0),

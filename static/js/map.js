@@ -970,6 +970,14 @@ function pokemonLabel (name, rarity, types, disappearTime, id, latitude, longitu
   $.each(types, function (index, type) {
     typesDisplay += getTypeSpan(type)
   })
+  var details = ""
+  if('iv' in pokemon) {
+    details = `
+      <div>
+        IV: ${pokemon['iv'].toFixed(2)}  Details: ${pokemon['individual_attack']}/${pokemon['individual_defense']}/${pokemon['individual_stamina']}
+      </div>
+      `
+  }
   var contentstring = `
     <div>
       <b>${name}</b>
@@ -988,9 +996,7 @@ function pokemonLabel (name, rarity, types, disappearTime, id, latitude, longitu
     <div>
       Location: ${latitude.toFixed(6)}, ${longitude.toFixed(7)}
     </div>
-    <div>
-      IV: ${pokemon['iv'].toFixed(2)}  Details: ${pokemon['individual_attack']}/${pokemon['individual_defense']}/${pokemon['individual_stamina']}
-    </div>
+      ${details}
     <div>
       <a href='javascript:excludePokemon(${id})'>Exclude</a>&nbsp;&nbsp
       <a href='javascript:notifyAboutPokemon(${id})'>Notify</a>&nbsp;&nbsp
