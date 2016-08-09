@@ -16,7 +16,9 @@ from . import config
 from .utils import get_pokemon_name, get_pokemon_rarity, get_pokemon_types, get_args, send_to_webhook
 from .transform import transform_from_wgs_to_gcj
 from .customLog import printPokemon
-
+from pdb import set_trace as bp
+import time
+import pprint
 log = logging.getLogger(__name__)
 
 args = get_args()
@@ -73,6 +75,16 @@ class Pokemon(BaseModel):
     latitude = DoubleField()
     longitude = DoubleField()
     disappear_time = DateTimeField(index=True)
+    iv = DoubleField()
+    height = DoubleField()
+    individual_attack =  IntegerField()
+    individual_defense =  IntegerField()
+    individual_stamina =  IntegerField()
+    move_1 =  IntegerField()
+    move_2 =  IntegerField()
+    stamina =  IntegerField()
+    stamina_max =  IntegerField()
+    weight =  DoubleField()
 
     class Meta:
         indexes = ((('latitude', 'longitude'), False),)
@@ -290,7 +302,7 @@ class ScannedLocation(BaseModel):
         return scans
 
 
-def parse_map(map_dict, step_location):
+def parse_map(api, map_dict, step_location):
     pokemons = {}
     pokestops = {}
     gyms = {}
@@ -305,15 +317,31 @@ def parse_map(map_dict, step_location):
                      p['time_till_hidden_ms']) / 1000.0)
                 printPokemon(p['pokemon_data']['pokemon_id'], p['latitude'],
                              p['longitude'], d_t)
+                result = api.encounter(encounter_id=p['encounter_id'],
+                                        spawn_point_id=p['spawn_point_id'],
+                                        player_latitude=step_location[0],
+                                        player_longitude=step_location[1])
+                ecounter_info = result['responses']['ENCOUNTER']
+                capture_probability = ecounter_info['capture_probability']
+                pokemon_info = ecounter_info['wild_pokemon']['pokemon_data']
                 pokemons[p['encounter_id']] = {
                     'encounter_id': b64encode(str(p['encounter_id'])),
                     'spawnpoint_id': p['spawn_point_id'],
                     'pokemon_id': p['pokemon_data']['pokemon_id'],
                     'latitude': p['latitude'],
                     'longitude': p['longitude'],
-                    'disappear_time': d_t
+                    'disappear_time': d_t,
+                    'iv': pokemon_info['cp_multiplier'],
+                    'height': pokemon_info['height_m'],
+                    'individual_attack': pokemon_info.get('individual_attack',0),
+                    'individual_defense': pokemon_info.get('individual_defense',0),
+                    'individual_stamina': pokemon_info.get('individual_stamina',0),
+                    'move_1': pokemon_info['move_1'],
+                    'move_2': pokemon_info['move_2'],
+                    'stamina': pokemon_info['stamina'],
+                    'stamina_max': pokemon_info['stamina_max'],
+                    'weight': pokemon_info['weight_kg']
                 }
-
                 webhook_data = {
                     'encounter_id': b64encode(str(p['encounter_id'])),
                     'spawnpoint_id': p['spawn_point_id'],
@@ -327,7 +355,7 @@ def parse_map(map_dict, step_location):
                 }
 
                 send_to_webhook('pokemon', webhook_data)
-
+                time.sleep(0.5)
         for f in cell.get('forts', []):
             if config['parse_pokestops'] and f.get('type') == 1:  # Pokestops
                 if 'lure_info' in f:
