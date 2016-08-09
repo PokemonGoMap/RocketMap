@@ -686,8 +686,16 @@ var StoreTypes = {
 }
 
 var StoreOptions = {
+  'last_pos_lng': {
+    default: 0,
+    type: StoreTypes.Number
+  },
+  'last_pos_lat': {
+    default: 0,
+    type: StoreTypes.Number
+  },
   'map_style': {
-    default: 'style_pgo',
+    default: 'roadmap',
     type: StoreTypes.String
   },
   'remember_select_exclude': {
@@ -727,15 +735,15 @@ var StoreOptions = {
     type: StoreTypes.Boolean
   },
   'geoLocate': {
-    default: true,
+    default: false,
     type: StoreTypes.Boolean
   },
   'startAtUserLocation': {
-    default: true,
+    default: false,
     type: StoreTypes.Boolean
   },
   'pokemonIcons': {
-    default: 'normal',
+    default: 'highres',
     type: StoreTypes.String
   },
   'iconSizeModifier': {
@@ -885,11 +893,10 @@ function createSearchMarker () {
     },
     map: map,
     animation: google.maps.Animation.DROP,
-    draggable: false,
+    draggable: true,
     zIndex: google.maps.Marker.MAX_ZINDEX + 1
   })
 
-  /*
   var oldLocation = null
   google.maps.event.addListener(marker, 'dragstart', function () {
     oldLocation = marker.getPosition()
@@ -907,7 +914,6 @@ function createSearchMarker () {
         }
       })
   })
-  */
 
   return marker
 }
@@ -1640,6 +1646,8 @@ function centerMapOnLocation () {
   }, 500)
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(function (position) {
+		changeLocation(position.coords.latitude, position.coords.longitude)
+		
       var latlng = new google.maps.LatLng(position.coords.latitude, position.coords.longitude)
       locationMarker.setVisible(true)
       locationMarker.setOptions({
@@ -1688,6 +1696,9 @@ function addMyLocationButton () {
 }
 
 function changeLocation (lat, lng) {
+  Store.set('last_pos_lng', lng)
+  Store.set('last_pos_lat', lat)
+  
   var loc = new google.maps.LatLng(lat, lng)
   changeSearchLocation(lat, lng).done(function () {
     map.setCenter(loc)
