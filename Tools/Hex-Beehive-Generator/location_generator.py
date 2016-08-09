@@ -103,8 +103,7 @@ turns = 0               # number of turns made in this ring (0 to 6)
 turn_steps = 0          # number of cells required to complete one turn of the ring
 turn_steps_so_far = 0   # current cell number in this side of the current ring
 
-total_workers_polygonized=0
-k=0
+k=1
 
 for i in range(1, total_workers):
     if turns == 6 or turn_steps == 0:
@@ -136,7 +135,6 @@ for i in range(1, total_workers):
         if point_in_polygon(loc, literal_eval(args.polygon)) :
             locations[k] = loc
             k=k+1
-            total_workers_polygonized = total_workers_polygonized+1
     else:
         locations[i] = loc
     d = d_s
@@ -150,7 +148,10 @@ for i in range(1, total_workers):
         turn_steps_so_far = 0
 
 if args.polygon :
-    total_workers=total_workers_polygonized
+    if point_in_polygon(locations[0],  literal_eval(args.polygon)) == False :
+        locations.pop(0)
+        k=k-1
+    total_workers=k
 
 #if threading is desired (-t flag) cycle through all accounts and merge them into an array (do this anyway because otherwise we need an if statement below)
 
