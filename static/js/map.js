@@ -1179,13 +1179,38 @@ function setupPokemonMarker (item, skipNotification, isBounceDisabled) {
 }
 
 function setupGymMarker (item) {
+  var gymLevel;
+  if (item.gym_points >= 50000) {
+    gymLevel = 10;
+    } else if (item.gym_points >= 40000) {
+    gymLevel = 9;
+    } else if (item.gym_points >= 30000) {
+    gymLevel = 8;
+    } else if (item.gym_points >= 20000) {
+    gymLevel = 7;
+    } else if (item.gym_points >= 16000) {
+    gymLevel = 6;
+    } else if (item.gym_points >= 12000) {
+    gymLevel = 5;
+    } else if (item.gym_points >= 8000) {
+    gymLevel = 4;
+    } else if (item.gym_points >= 4000) {
+    gymLevel = 3;
+    } else if (item.gym_points >= 2000) {
+    gymLevel = 2;
+    } else {
+    gymLevel = 1;
+    }
+    var markerPath = 'static/forts/' + gymTypes[item['team_id']] + '_' + gymLevel + '.png';
+ 
   var marker = new google.maps.Marker({
     position: {
       lat: item['latitude'],
       lng: item['longitude']
     },
     map: map,
-    icon: 'static/forts/' + gymTypes[item['team_id']] + '.png'
+    /*icon: 'static/forts/' + gymTypes[item['team_id']] + '.png'*/
+    icon: '' + markerPath
   })
 
   marker.infoWindow = new google.maps.InfoWindow({
@@ -1198,7 +1223,31 @@ function setupGymMarker (item) {
 }
 
 function updateGymMarker (item, marker) {
-  marker.setIcon('static/forts/' + gymTypes[item['team_id']] + '.png')
+  var gymLevel;
+  if (item.gym_points >= 50000) {
+    gymLevel = 10;
+    } else if (item.gym_points >= 40000) {
+    gymLevel = 9;
+    } else if (item.gym_points >= 30000) {
+    gymLevel = 8;
+    } else if (item.gym_points >= 20000) {
+    gymLevel = 7;
+    } else if (item.gym_points >= 16000) {
+    gymLevel = 6;
+    } else if (item.gym_points >= 12000) {
+    gymLevel = 5;
+    } else if (item.gym_points >= 8000) {
+    gymLevel = 4;
+    } else if (item.gym_points >= 4000) {
+    gymLevel = 3;
+    } else if (item.gym_points >= 2000) {
+    gymLevel = 2;
+    } else {
+    gymLevel = 1;
+    }
+    var markerPath = 'static/forts/' + gymTypes[item['team_id']] + '_' + gymLevel + '.png';
+
+  marker.setIcon(markerPath)
   marker.infoWindow.setContent(gymLabel(gymTypes[item['team_id']], item['team_id'], item['gym_points'], item['latitude'], item['longitude']))
   return marker
 }
