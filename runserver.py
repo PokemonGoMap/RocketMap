@@ -10,7 +10,7 @@ import re
 import requests
 
 # Currently supported pgoapi
-pgoapi_version = "1.1.6"
+pgoapi_version = "1.1.7"
 
 # Moved here so logger is configured at load time
 logging.basicConfig(format='%(asctime)s [%(threadName)16s][%(module)14s][%(levelname)8s] %(message)s')
@@ -32,7 +32,7 @@ except ImportError:
     log.critical("It seems `pgoapi` is not installed. You must run pip install -r requirements.txt again")
     sys.exit(1)
 
-# Assert pgoapi >= 1.1.6 is installed
+# Assert pgoapi >= pgoapi_version
 from distutils.version import StrictVersion
 if not hasattr(pgoapi, "__version__") or StrictVersion(pgoapi.__version__) < StrictVersion(pgoapi_version):
     log.critical("It seems `pgoapi` is not up-to-date. You must run pip install -r requirements.txt again")
@@ -41,6 +41,7 @@ if not hasattr(pgoapi, "__version__") or StrictVersion(pgoapi.__version__) < Str
 from threading import Thread, Event
 from queue import Queue
 from flask_cors import CORS
+from flask_cache_bust import init_cache_busting
 
 from pogom import config
 from pogom.app import Pogom
@@ -105,7 +106,7 @@ if __name__ == '__main__':
         altitude = requests.get(url).json()[u'results'][0][u'elevation']
         log.debug('Local altitude is: %sm', altitude)
         position = (position[0], position[1], altitude)
-    except requests.exceptions.RequestException:
+    except (requests.exceptions.RequestException, IndexError, KeyError):
         log.error('Unable to retrieve altitude from Google APIs; setting to 0')
 
     if not any(position):
@@ -161,6 +162,9 @@ if __name__ == '__main__':
 
     if args.cors:
         CORS(app);
+
+    # No more stale JS
+    init_cache_busting(app)
 
     app.set_search_control(pause_bit)
     app.set_location_queue(new_location_queue)
