@@ -319,11 +319,11 @@ def parse_map(map_dict, step_location):
                     'disappear_time': d_t
                 }
             # Do Console Print and Webhook stuff
-            for p in pokemons:
-              printPokemon(p['pokemon_id'], p['latitude'], 
+            for p in pokemons.values():
+                printPokemon(p['pokemon_id'], p['latitude'], 
                              p['longitude'], p['disappear_time'])
-              p['is_lured'] = False
-              send_to_webhook('pokemon', p)
+                p['is_lured'] = False
+                send_to_webhook('pokemon', p)
                 
         for f in cell.get('forts', []):
             if config['parse_pokestops'] and f.get('type') == 1:  # Pokestops
