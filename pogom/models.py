@@ -282,7 +282,9 @@ class ScannedLocation(BaseModel):
                         (ScannedLocation.latitude <= neLat) &
                         (ScannedLocation.longitude <= neLng))
                  .dicts())
-
+        #UI wont load if this query is too big so cropping the query might Fix it
+        if len(query.values()) > 10000:
+            query = query.objects.order_by('last_modified')[:10000]
         scans = []
         for s in query:
             scans.append(s)
