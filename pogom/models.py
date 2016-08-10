@@ -281,9 +281,8 @@ class ScannedLocation(BaseModel):
                         (ScannedLocation.longitude >= swLng) &
                         (ScannedLocation.latitude <= neLat) &
                         (ScannedLocation.longitude <= neLng))
+                 .order_by(-ScannedLocation.last_modified)[:10000]
                  .dicts())
-        if len(query.values()) > 10000:
-            query = query.objects.order_by('last_modified')[:10000]
         scans = []
         for s in query:
             scans.append(s)
