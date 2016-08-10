@@ -44,6 +44,10 @@ def get_args():
                         help='Location, can be an address or coordinates')
     parser.add_argument('-st', '--step-limit', help='Steps', type=int,
                         default=12)
+    parser.add_argument('-ss', '--step-size',
+                        help='Distance between scan points. Default and optimal Pokemon scanning value is 70. '+
+                        'Useful for gym/pokestop only scans with a value of 1000. REQUIRES -np.',
+                        type=float, default=70)
     parser.add_argument('-sd', '--scan-delay',
                         help='Time delay between requests in scan threads',
                         type=float, default=10)
