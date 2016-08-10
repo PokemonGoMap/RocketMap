@@ -1593,7 +1593,11 @@ function sendNotification (title, text, icon, lat, lng) {
       }
     } catch (e) {
       if (e.name === 'TypeError') {
-        navigator.vibrate(1000)
+        try {
+          navigator.vibrate(1000)
+        } catch (e) {
+          return false // If the browser doesn't support vibrate either, exit gracefully
+        }
       }
     }
   }
