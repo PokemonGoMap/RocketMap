@@ -21,7 +21,7 @@ apt-get -y update
 apt-get -y install python python-pip git
 git clone https://github.com/AHAAAAAAA/PokemonGo-Map.git /root/PoGoMap
 cd /root/PoGoMap
-pip install -r requirements.txt
+pip install -r requirements.txt --user
 python runserver.py -u [USERNAME] -p [PASSWORD] -st 10 -k [Google Maps API key] -l "[LOCATION]" -H 0.0.0.0 -P 80
 ```
 

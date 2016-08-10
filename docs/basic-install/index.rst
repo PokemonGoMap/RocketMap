@@ -70,13 +70,13 @@ Windows:
 
 .. code-block:: bash
 
-  pip install -r requirements.txt
+  pip install -r requirements.txt --user
 
 Linux/OSX:
 
 .. code-block:: bash
 
-  sudo -H pip install -r requirements.txt
+  pip install -r requirements.txt --user
 
 ``git`` Version Extra Steps
 ===========================
@@ -150,7 +150,7 @@ If you are running a ``git`` version, you can update with a few quick commands:
 .. code-block:: bash
 
   git pull
-  pip install -r requirements.txt --upgrade
+  pip install -r requirements.txt --upgrade --user
   npm install
   npm run build
 

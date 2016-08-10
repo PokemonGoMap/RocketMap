@@ -24,7 +24,7 @@ RUN apk add --no-cache bash git openssh
 COPY requirements.txt /usr/src/app/
 
 RUN apk add --no-cache build-base \
- && pip install --no-cache-dir -r requirements.txt \
+ && pip install --no-cache-dir -r requirements.txt --user \
  && apk del build-base
 
 COPY package.json Gruntfile.js /usr/src/app/

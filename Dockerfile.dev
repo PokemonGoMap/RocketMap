@@ -17,7 +17,7 @@
 # install steps, start grunt, and even start an instance,
 # like:
 #   docker exec -ti pgd npm install
-#   docker exec -ti pgd pip install -r requirements.txt --upgrade
+#   docker exec -ti pgd pip install -r requirements.txt --upgrade --user
 #   docker exec -ti pgd grunt
 # or even
 #   docker exec -ti pgd sh

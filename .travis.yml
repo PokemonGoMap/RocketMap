@@ -4,7 +4,7 @@ python:
   - 2.7
 install:
   - nvm install 4.4.7
-  - pip install -r requirements.txt
+  - pip install -r requirements.txt --user
   - npm install grunt-cli -g
   - npm install
 script:

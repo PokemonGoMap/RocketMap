@@ -18,7 +18,7 @@ fi
 echo "Installing pip..."
 sudo python get-pip.py
 echo "Installing required python packages..."
-pip install -r $scriptDir/../../requirements.txt
+pip install -r $scriptDir/../../requirements.txt --user
 
 echo "Configuring Google Maps API..."
 cp $scriptDir/../../config/config.ini.example $scriptDir/../../config/config.ini

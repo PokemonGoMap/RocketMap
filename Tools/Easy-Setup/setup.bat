@@ -36,8 +36,8 @@ popd
 
 "%PATH2%\python" get-pip.py
 cd ..\..
-"%PATH2%\Scripts\pip" install -r requirements.txt
-"%PATH2%\Scripts\pip" install -r requirements.txt --upgrade
+"%PATH2%\Scripts\pip" install -r requirements.txt --user
+"%PATH2%\Scripts\pip" install -r requirements.txt --upgrade --user
 
 cd config
 set /p API= Enter your Google API key here:
