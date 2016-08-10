@@ -2,11 +2,10 @@
 # -*- coding: utf-8 -*-
 
 import logging
-import os
 import calendar
-from peewee import Model, SqliteDatabase, InsertQuery,\
-                   IntegerField, CharField, DoubleField, BooleanField,\
-                   DateTimeField, OperationalError, create_model_tables, fn
+from peewee import SqliteDatabase, InsertQuery, \
+    IntegerField, CharField, DoubleField, BooleanField, \
+    DateTimeField, fn
 from playhouse.flask_utils import FlaskDB
 from playhouse.pool import PooledMySQLDatabase
 from playhouse.shortcuts import RetryOperationalError
@@ -31,13 +30,16 @@ class MyRetryDB(RetryOperationalError, PooledMySQLDatabase):
 def init_database(app):
     if args.db_type == 'mysql':
         log.info('Connecting to MySQL database on %s:%i', args.db_host, args.db_port)
+        connections = args.db_max_connections
+        if hasattr(args, 'accounts'):
+            connections *= len(args.accounts)
         db = MyRetryDB(
             args.db_name,
             user=args.db_user,
             password=args.db_pass,
             host=args.db_host,
             port=args.db_port,
-            max_connections=args.db_max_connections,
+            max_connections=connections,
             stale_timeout=300)
     else:
         log.info('Connecting to local SQLite database')
@@ -172,7 +174,7 @@ class Pokemon(BaseModel):
         query = (Pokemon
                  .select()
                  .where((Pokemon.pokemon_id == pokemon_id) &
-                        (Pokemon.disappear_time > datetime.utcfromtimestamp(last_appearance/1000.0))
+                        (Pokemon.disappear_time > datetime.utcfromtimestamp(last_appearance / 1000.0))
                         )
                  .order_by(Pokemon.disappear_time.asc())
                  .dicts()
@@ -181,6 +183,7 @@ class Pokemon(BaseModel):
         for a in query:
             appearances.append(a)
         return appearances
+
 
 class Pokestop(BaseModel):
     pokestop_id = CharField(primary_key=True, max_length=50)
@@ -386,12 +389,12 @@ def parse_map(map_dict, step_location):
         bulk_upsert(Gym, gyms)
 
     log.info('Upserted %d pokemon, %d pokestops, and %d gyms',
-        pokemons_upserted,
-        pokestops_upserted,
-        gyms_upserted)
+             pokemons_upserted,
+             pokestops_upserted,
+             gyms_upserted)
 
     scanned[0] = {
-        'scanned_id': str(step_location[0])+','+str(step_location[1]),
+        'scanned_id': str(step_location[0]) + ',' + str(step_location[1]),
         'latitude': step_location[0],
         'longitude': step_location[1],
         'last_modified': datetime.utcnow(),
@@ -407,10 +410,18 @@ def parse_map(map_dict, step_location):
 def clean_database():
     flaskDb.connect_db()
     query = (ScannedLocation
-            .delete()
-            .where((ScannedLocation.last_modified <
-                (datetime.utcnow() - timedelta(minutes=30)))))
+             .delete()
+             .where((ScannedLocation.last_modified <
+                    (datetime.utcnow() - timedelta(minutes=30)))))
     query.execute()
+
+    if args.purge_data > 0:
+        query = (Pokemon
+                .delete()
+                .where((Pokemon.disappear_time <
+                    (datetime.utcnow() - timedelta(hours=args.purge_data)))))
+        query.execute()
+
     flaskDb.close_db(None)
 
 
@@ -422,14 +433,14 @@ def bulk_upsert(cls, data):
     flaskDb.connect_db()
 
     while i < num_rows:
-        log.debug('Inserting items %d to %d', i, min(i+step, num_rows))
+        log.debug('Inserting items %d to %d', i, min(i + step, num_rows))
         try:
-            InsertQuery(cls, rows=data.values()[i:min(i+step, num_rows)]).upsert().execute()
+            InsertQuery(cls, rows=data.values()[i:min(i + step, num_rows)]).upsert().execute()
         except Exception as e:
             log.warning('%s... Retrying', e)
             continue
 
-        i+=step
+        i += step
 
     flaskDb.close_db(None)
 
@@ -438,6 +449,7 @@ def create_tables(db):
     db.connect()
     db.create_tables([Pokemon, Pokestop, Gym, ScannedLocation], safe=True)
     db.close()
+
 
 def drop_tables(db):
     db.connect()

@@ -16,7 +16,7 @@ Features:
 * Multithreaded mode
 * Filters
 * Independent worker threads (many can be used simulatenously to quickly generate a livemap of a huge geographical area)
-* Localization (en, fr, pt_br, de, ru, zh_tw, zh_cn, zh_hk)
+* Localization (en, fr, pt_br, de, ru, ja, zh_tw, zh_cn, zh_hk)
 * DB storage (sqlite or mysql) of all found pokemon
 * Incredibly fast, efficient searching algorithm (compared to everything else available)
 
@@ -27,7 +27,7 @@ Features:
 
 ## How to setup
 
-For instructions on how to setup and run the tool, please refer to the project [wiki](https://github.com/PokemonGoMap/PokemonGo-Map/wiki), or the [video guide](https://www.youtube.com/watch?v=RJKAulPCkRI).
+For instructions on how to setup and run the tool, please refer to the project [wiki](https://github.com/PokemonGoMap/PokemonGo-Map/wiki), or the [video guide](https://www.youtube.com/watch?v=2ACJHCNZ3ow).
 
 
 ## Android Version
