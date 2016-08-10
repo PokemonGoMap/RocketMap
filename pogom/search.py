@@ -208,7 +208,7 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
 
                 # The loop to try very hard to scan this step
                 failed_total = 0
- 
+
                 while True:
 
                     # After so many attempts, let's get out of here
