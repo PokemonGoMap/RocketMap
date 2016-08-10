@@ -617,7 +617,7 @@ var mapData = {
   pokestops: {},
   lurePokemons: {},
   scanned: {},
-  spawnpoints: {},
+  spawnpoints: {}
 }
 var gymTypes = ['Uncontested', 'Mystic', 'Valor', 'Instinct']
 var audio = new Audio('static/sounds/ding.mp3')
