@@ -131,24 +131,31 @@ def get_args():
     else:
         errors = []
 
+        num_auths = 0
+        num_usernames = 0
+        num_passwords = 0
+
         if (args.username is None):
             errors.append('Missing `username` either as -u/--username or in config')
+        else:
+            num_usernames = len(args.username)
 
         if (args.location is None):
             errors.append('Missing `location` either as -l/--location or in config')
 
         if (args.password is None):
             errors.append('Missing `password` either as -p/--password or in config')
+        else:
+            num_passwords = len(args.password)
 
         if (args.step_limit is None):
             errors.append('Missing `step_limit` either as -st/--step-limit or in config')
 
         if args.auth_service is None:
             args.auth_service = ['ptc']
+        else:
+            num_auths = len(args.auth_service)
 
-        num_auths = len(args.auth_service)
-        num_usernames = len(args.username)
-        num_passwords = len(args.password)
         if num_usernames > 1:
             if num_passwords > 1 and num_usernames != num_passwords:
                 errors.append('The number of provided passwords ({}) must match the username count ({})'.format(num_passwords, num_usernames))
@@ -293,36 +300,43 @@ def send_to_webhook(message_type, message):
 
 
 def get_encryption_lib_path():
-    lib_path = ""
     # win32 doesn't mean necessarily 32 bits
     if sys.platform == "win32" or sys.platform == "cygwin":
         if platform.architecture()[0] == '64bit':
-            lib_path = os.path.join(os.path.dirname(__file__), "encrypt64bit.dll")
+            lib_name = "encrypt64bit.dll"
         else:
-            lib_path = os.path.join(os.path.dirname(__file__), "encrypt32bit.dll")
+            lib_name = "encrypt32bit.dll"
 
     elif sys.platform == "darwin":
-        lib_path = os.path.join(os.path.dirname(__file__), "libencrypt-osx-64.so")
+        lib_name = "libencrypt-osx-64.so"
 
     elif os.uname()[4].startswith("arm") and platform.architecture()[0] == '32bit':
-        lib_path = os.path.join(os.path.dirname(__file__), "libencrypt-linux-arm-32.so")
+        lib_name = "libencrypt-linux-arm-32.so"
 
     elif os.uname()[4].startswith("aarch64") and platform.architecture()[0] == '64bit':
-        lib_path = os.path.join(os.path.dirname(__file__), "libencrypt-linux-arm-64.so")
+        lib_name = "libencrypt-linux-arm-64.so"
 
     elif sys.platform.startswith('linux'):
-        if platform.architecture()[0] == '64bit':
-            lib_path = os.path.join(os.path.dirname(__file__), "libencrypt-linux-x86-64.so")
+        if "centos" in platform.platform():
+            if platform.architecture()[0] == '64bit':
+                lib_name = "libencrypt-centos-x86-64.so"
+            else:
+                lib_name = "libencrypt-linux-x86-32.so"
         else:
-            lib_path = os.path.join(os.path.dirname(__file__), "libencrypt-linux-x86-32.so")
+            if platform.architecture()[0] == '64bit':
+                lib_name = "libencrypt-linux-x86-64.so"
+            else:
+                lib_name = "libencrypt-linux-x86-32.so"
 
-    elif sys.platform.startswith('freebsd-10'):
-        lib_path = os.path.join(os.path.dirname(__file__), "libencrypt-freebsd10-64.so")
+    elif sys.platform.startswith('freebsd'):
+        lib_name = "libencrypt-freebsd-64.so"
 
     else:
         err = "Unexpected/unsupported platform '{}'".format(sys.platform)
         log.error(err)
         raise Exception(err)
+
+    lib_path = os.path.join(os.path.dirname(__file__), "libencrypt", lib_name)
 
     if not os.path.isfile(lib_path):
         err = "Could not find {} encryption library {}".format(sys.platform, lib_path)
