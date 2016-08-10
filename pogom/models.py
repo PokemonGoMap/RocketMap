@@ -194,7 +194,7 @@ class Pokemon(BaseModel):
                             (Pokemon.longitude >= swLng) &
                             (Pokemon.latitude <= neLat) &
                             (Pokemon.longitude <= neLng)
-                        )
+                            )
                      )
 
         query = query.group_by(Pokemon.spawnpoint_id).dicts()
