@@ -736,6 +736,10 @@ var StoreOptions = {
     default: false,
     type: StoreTypes.Boolean
   },
+  'lockMarker': {
+    default: isTouchDevice(), // default to true if touch device
+    type: StoreTypes.Boolean
+  },
   'startAtUserLocation': {
     default: false,
     type: StoreTypes.Boolean
@@ -891,7 +895,7 @@ function createSearchMarker () {
     },
     map: map,
     animation: google.maps.Animation.DROP,
-    draggable: true,
+    draggable: !Store.get('lockMarker'),
     zIndex: google.maps.Marker.MAX_ZINDEX + 1
   })
 
@@ -933,6 +937,7 @@ function initSidebar () {
   $('#lured-pokestops-only-switch').val(Store.get('showLuredPokestopsOnly'))
   $('#lured-pokestops-only-wrapper').toggle(Store.get('showPokestops'))
   $('#geoloc-switch').prop('checked', Store.get('geoLocate'))
+  $('#lock-marker-switch').prop('checked', Store.get('lockMarker'))
   $('#start-at-user-location-switch').prop('checked', Store.get('startAtUserLocation'))
   $('#scanned-switch').prop('checked', Store.get('showScanned'))
   $('#sound-switch').prop('checked', Store.get('playSound'))
@@ -1734,6 +1739,11 @@ function i8ln (word) {
   }
 }
 
+function isTouchDevice () {
+  return 'ontouchstart' in window ||  // works on most browsers
+  navigator.maxTouchPoints;  // works on IE10/11 and Surface
+}
+
 //
 // Page Ready Exection
 //
@@ -1973,6 +1983,11 @@ $(function () {
     } else {
       Store.set('geoLocate', this.checked)
     }
+  })
+
+  $('#lock-marker-switch').change(function () {
+    Store.set('lockMarker', this.checked)
+    marker.setDraggable(!this.checked)
   })
 
   $('#search-switch').change(function () {
