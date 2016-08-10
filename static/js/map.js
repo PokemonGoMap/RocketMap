@@ -1578,21 +1578,21 @@ function sendNotification (title, text, icon, lat, lng) {
   if (Notification.permission !== 'granted') {
     Notification.requestPermission()
   } else {
-	  try {
-		  var notification = new Notification(title, {
-		    icon: icon,
-		    body: text,
-		    sound: 'sounds/ding.mp3'
-		  })
+    try {
+      var notification = new Notification(title, {
+        icon: icon,
+        body: text,
+        sound: 'sounds/ding.mp3'
+      })
 
-		  notification.onclick = function () {
-		    window.focus()
-		    notification.close()
+      notification.onclick = function () {
+        window.focus()
+        notification.close()
 
-		    centerMap(lat, lng, 20)
-		  }
-	  } catch (e) {
-		  if (e.name === 'TypeError') {
+        centerMap(lat, lng, 20)
+      }
+    } catch (e) {
+      if (e.name === 'TypeError') {
         navigator.vibrate(1000)
       }
     }
