@@ -18,7 +18,6 @@ from .transform import transform_from_wgs_to_gcj
 from .customLog import printPokemon
 
 import time
-import pprint
 log = logging.getLogger(__name__)
 
 args = get_args()
@@ -304,6 +303,35 @@ class ScannedLocation(BaseModel):
 
         return scans
 
+def construct_pokemon_dict(pokemons, p, encounter_result, d_t):
+    ecounter_info = encounter_result['responses']['ENCOUNTER']
+    capture_probability = ecounter_info['capture_probability']['capture_probability']
+    pokemon_info = ecounter_info['wild_pokemon']['pokemon_data']
+    attack = pokemon_info.get('individual_attack',0)
+    defense = pokemon_info.get('individual_defense',0)
+    stamina = pokemon_info.get('individual_stamina',0)
+    iv = float(attack + defense + stamina) / 45
+    pokemons[p['encounter_id']] = {
+        'encounter_id': b64encode(str(p['encounter_id'])),
+        'spawnpoint_id': p['spawn_point_id'],
+        'pokemon_id': p['pokemon_data']['pokemon_id'],
+        'latitude': p['latitude'],
+        'longitude': p['longitude'],
+        'disappear_time': d_t,
+        'iv': iv,
+        'height': pokemon_info['height_m'],
+        'individual_attack': attack,
+        'individual_defense': defense,
+        'individual_stamina': stamina,
+        'move_1': pokemon_info['move_1'],
+        'move_2': pokemon_info['move_2'],
+        'stamina': pokemon_info['stamina'],
+        'stamina_max': pokemon_info['stamina_max'],
+        'weight': pokemon_info['weight_kg'],
+        'capture_probability_1': capture_probability[0],
+        'capture_probability_2': capture_probability[1],
+        'capture_probability_3': capture_probability[2],
+    }
 
 def parse_map(api, map_dict, step_location):
     pokemons = {}
@@ -324,30 +352,7 @@ def parse_map(api, map_dict, step_location):
                                         spawn_point_id=p['spawn_point_id'],
                                         player_latitude=step_location[0],
                                         player_longitude=step_location[1])
-                ecounter_info = result['responses']['ENCOUNTER']
-                capture_probability = ecounter_info['capture_probability']['capture_probability']
-                pokemon_info = ecounter_info['wild_pokemon']['pokemon_data']
-                pokemons[p['encounter_id']] = {
-                    'encounter_id': b64encode(str(p['encounter_id'])),
-                    'spawnpoint_id': p['spawn_point_id'],
-                    'pokemon_id': p['pokemon_data']['pokemon_id'],
-                    'latitude': p['latitude'],
-                    'longitude': p['longitude'],
-                    'disappear_time': d_t,
-                    'iv': pokemon_info.get('cp_multiplier',0),
-                    'height': pokemon_info['height_m'],
-                    'individual_attack': pokemon_info.get('individual_attack',0),
-                    'individual_defense': pokemon_info.get('individual_defense',0),
-                    'individual_stamina': pokemon_info.get('individual_stamina',0),
-                    'move_1': pokemon_info['move_1'],
-                    'move_2': pokemon_info['move_2'],
-                    'stamina': pokemon_info['stamina'],
-                    'stamina_max': pokemon_info['stamina_max'],
-                    'weight': pokemon_info['weight_kg'],
-                    'capture_probability_1': capture_probability[0],
-                    'capture_probability_2': capture_probability[1],
-                    'capture_probability_3': capture_probability[2],
-                }
+                construct_pokemon_dict(pokemons, p, result, d_t)
                 webhook_data = {
                     'encounter_id': b64encode(str(p['encounter_id'])),
                     'spawnpoint_id': p['spawn_point_id'],
