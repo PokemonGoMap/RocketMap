@@ -777,9 +777,9 @@ var Store = {
 // Functions
 //
 
-function getCurrentDate() {
+function getCurrentDate () {
   var now = new Date();
-  return new Date(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(),  now.getUTCHours(), now.getUTCMinutes(), now.getUTCSeconds());
+  return new Date(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), now.getUTCHours(), now.getUTCMinutes(), now.getUTCSeconds());
 }
 
 function excludePokemon (id) { // eslint-disable-line no-unused-vars
