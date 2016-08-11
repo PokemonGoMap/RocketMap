@@ -189,12 +189,12 @@ class Pokemon(BaseModel):
         query = (Pokemon.select(Pokemon.spawnpoint_id, Pokemon.pokemon_id,
                                 Pokemon.latitude, Pokemon.longitude,
                                 fn.COUNT(Pokemon.pokemon_id).alias('count'))
-                     .where((Pokemon.latitude >= swLat) &
-                            (Pokemon.longitude >= swLng) &
-                            (Pokemon.latitude <= neLat) &
-                            (Pokemon.longitude <= neLng))
-                     .group_by(Pokemon.spawnpoint_id, Pokemon.pokemon_id, Pokemon.latitude, Pokemon.longitude)
-                     .dicts())
+                 .where((Pokemon.latitude >= swLat) &
+                        (Pokemon.longitude >= swLng) &
+                        (Pokemon.latitude <= neLat) &
+                        (Pokemon.longitude <= neLng))
+                 .group_by(Pokemon.spawnpoint_id, Pokemon.pokemon_id, Pokemon.latitude, Pokemon.longitude)
+                 .dicts())
 
         pokemons = []
         for p in query:
@@ -210,13 +210,13 @@ class Pokemon(BaseModel):
         query = (Pokemon.select(Pokemon.spawnpoint_id, Pokemon.pokemon_id,
                                 Pokemon.latitude, Pokemon.longitude,
                                 fn.COUNT(Pokemon.pokemon_id).alias('count'))
-                     .where((Pokemon.pokemon_id << notified_ids) &
-                            (Pokemon.latitude >= swLat) &
-                            (Pokemon.longitude >= swLng) &
-                            (Pokemon.latitude <= neLat) &
-                            (Pokemon.longitude <= neLng))
-                     .group_by(Pokemon.spawnpoint_id, Pokemon.pokemon_id, Pokemon.latitude, Pokemon.longitude)
-                     .dicts())
+                 .where((Pokemon.pokemon_id << notified_ids) &
+                        (Pokemon.latitude >= swLat) &
+                        (Pokemon.longitude >= swLng) &
+                        (Pokemon.latitude <= neLat) &
+                        (Pokemon.longitude <= neLng))
+                 .group_by(Pokemon.spawnpoint_id, Pokemon.pokemon_id, Pokemon.latitude, Pokemon.longitude)
+                 .dicts())
 
         pokemons = []
         for p in query:
