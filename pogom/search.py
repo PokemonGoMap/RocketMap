@@ -194,9 +194,6 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
             if args.proxy:
                 api.set_proxy({'http': args.proxy, 'https': args.proxy})
 
-            # Get current time
-            loop_start_time = int(round(time.time() * 1000))
-
             # The forever loop for the searches
             while True:
 
@@ -211,6 +208,9 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
                 # The loop to try very hard to scan this step
                 failed_total = 0
                 while True:
+ 
+                    # Get current time
+                    loop_start_time = time.time()
 
                     # After so many attempts, let's get out of here
                     if failed_total >= args.scan_retries:
@@ -220,11 +220,6 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
                         # than have the scanner, essentially, halt.
                         log.error('Search step %d went over max scan_retires; abandoning', step)
                         break
-
-                    # Increase sleep delay between each failed scan
-                    # By default scan_dela=5, scan_retries=5 so
-                    # We'd see timeouts of 5, 10, 15, 20, 25
-                    sleep_time = args.scan_delay * (1 + failed_total)
 
                     # Ok, let's get started -- check our login status
                     check_login(args, account, api, step_location)
@@ -236,9 +231,9 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
 
                     # G'damnit, nothing back. Mark it up, sleep, carry on
                     if not response_dict:
-                        log.error('Search step %d area download failed, retrying request in %g seconds', step, sleep_time)
+                        log.error('Search step %d area download failed, retrying request in %g seconds', step, args.scan_delay)
                         failed_total += 1
-                        time.sleep(sleep_time)
+                        time.sleep(args.scan_delay)
                         continue
 
                     # Got the response, lock for parsing and do so (or fail, whatever)
@@ -249,17 +244,15 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
                             search_items_queue.task_done()
                             break  # All done, get out of the request-retry loop
                         except KeyError:
-                            log.exception('Search step %s map parsing failed, retrying request in %g seconds', step, sleep_time)
+                            log.exception('Search step %s map parsing failed, retrying request in %g seconds', step, args.scan_delay)
                             failed_total += 1
-                            time.sleep(sleep_time)
+                            time.sleep(args.scan_delay)
 
                 # If there's any time left between the start time and the time when we should be kicking off the next
                 # loop, hang out until its up.
-                sleep_delay_remaining = loop_start_time + (args.scan_delay * 1000) - int(round(time.time() * 1000))
+                sleep_delay_remaining = loop_start_time + args.scan_delay - time.time()
                 if sleep_delay_remaining > 0:
-                    time.sleep(sleep_delay_remaining / 1000)
-
-                loop_start_time += args.scan_delay * 1000
+                    time.sleep(sleep_delay_remaining)
 
         # catch any process exceptions, log them, and continue the thread
         except Exception as e:
