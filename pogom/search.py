@@ -267,7 +267,7 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
                     time.sleep(sleep_delay_remaining / 1000)
                 else:
                     time.sleep(args.scan_delay)
- 
+
                 loop_start_time += args.scan_delay * 1000
 
         # catch any process exceptions, log them, and continue the thread
