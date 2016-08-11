@@ -49,7 +49,8 @@ def generate_location_steps(initial_loc, step_count):
     brng = 0.0
     mod = math.degrees(math.atan(1.732 / (6 * (steps - 1) + 3)))
 
-    total_workers = (((rings * (rings - 1)) *3) + 1) # this mathamtically calculates the total number of workers
+    locations = [LatLon.LatLon(LatLon.Latitude(0), LatLon.Longitude(0))] #this initialises the list
+    locations[0] = LatLon.LatLon(LatLon.Latitude(initial_loc[0]), LatLon.Longitude(initial_loc[1])) #set the latlon for worker 0 from cli args
 
     yield (initial_loc[0], initial_loc[1], 0)  # insert initial location
 
@@ -57,43 +58,43 @@ def generate_location_steps(initial_loc, step_count):
     turn_steps = 0          # number of cells required to complete one turn of the ring
     turn_steps_so_far = 0   # current cell number in this side of the current ring
 
+    while rings < steps:
+        for i in range(rings):
+            if turns == 6 or turn_steps == 0:
+                # we have completed a ring (or are starting the very first ring)
+                turns = 0
+                turn_steps += 1
+                turn_steps_so_far = 0
+                rings += 1
 
-    for i in range(1, total_workers):
-        if turns == 6 or turn_steps == 0:
-            # we have completed a ring (or are starting the very first ring)
-            turns = 0
-            turn_steps += 1
-            turn_steps_so_far = 0
+            if turn_steps_so_far == 0:
+                brng = brng_s
+                loc = locations[0]
+                d = turn_steps * d
+            else:
+                loc = locations[0]
+                C = math.radians(60.0)#inside angle of a regular hexagon
+                a = d_s / R * 2.0 * math.pi #in radians get the arclength of the unit circle covered by d_s
+                b = turn_steps_so_far * d_s / turn_steps / R * 2.0 * math.pi #percentage of a
+                 #the first spherical law of cosines gives us the length of side c from known angle C
+                c = math.acos(math.cos(a) * math.cos(b) + math.sin(a) * math.sin(b) * math.cos(C))
+                 #turnsteps here represents ring number because yay coincidence always the same. multiply by derived arclength and convert to meters
+                d = turn_steps * c * R / 2.0 / math.pi
+                #from the first spherical law of cosines we get the angle A from the side lengths a b c
+                A = math.acos((math.cos(b) - math.cos(a) * math.cos(c)) / (math.sin(c) * math.sin(a)))
+                brng = 60 * turns + math.degrees(A)
 
-        if turn_steps_so_far == 0:
-            brng = brng_s
-            loc = initial_loc
-            d = turn_steps * d
-        else:
-            loc = initial_loc
-            C = math.radians(60.0)#inside angle of a regular hexagon
-            a = d_s / R * 2.0 * math.pi #in radians get the arclength of the unit circle covered by d_s
-            b = turn_steps_so_far * d_s / turn_steps / R * 2.0 * math.pi #percentage of a
-             #the first spherical law of cosines gives us the length of side c from known angle C
-            c = math.acos(math.cos(a) * math.cos(b) + math.sin(a) * math.sin(b) * math.cos(C))
-             #turnsteps here represents ring number because yay coincidence always the same. multiply by derived arclength and convert to meters
-            d = turn_steps * c * R / 2.0 / math.pi
-            #from the first spherical law of cosines we get the angle A from the side lengths a b c
-            A = math.acos((math.cos(b) - math.cos(a) * math.cos(c)) / (math.sin(c) * math.sin(a))) 
-            brng = 60 * turns + math.degrees(A)
-
-        loc = loc.offset(brng + mod, d)
-        yield (loc[0], loc[1], 0)
-        rings ++ 1
-        d = d_s
-
-        turn_steps_so_far += 1
-        if turn_steps_so_far >= turn_steps:
-            # make a turn
-            brng_s += 60.0
-            brng = brng_s
-            turns += 1
-            turn_steps_so_far = 0
+            loc = loc.offset(brng + mod, d)
+            locations.append(loc)
+            d = d_s
+            turn_steps_so_far += 1
+            if turn_steps_so_far >= turn_steps:
+                # make a turn
+                brng_s += 60.0
+                brng = brng_s
+                turns += 1
+                turn_steps_so_far = 0
+            yield (float(loc.to_string()[0]), float(loc.to_string()[1]), 0)
 
 
 #
