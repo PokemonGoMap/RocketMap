@@ -35,66 +35,65 @@ log = logging.getLogger(__name__)
 
 TIMESTAMP = '\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000'
 
-
-def get_new_coords(init_loc, distance, bearing):
-    """ Given an initial lat/lng, a distance(in kms), and a bearing (degrees),
-    this will calculate the resulting lat/lng coordinates.
-    """
-    R = 6378.1  # km radius of the earth
-    bearing = math.radians(bearing)
-
-    init_coords = [math.radians(init_loc[0]), math.radians(init_loc[1])]  # convert lat/lng to radians
-
-    new_lat = math.asin(math.sin(init_coords[0]) * math.cos(distance / R) +
-                        math.cos(init_coords[0]) * math.sin(distance / R) * math.cos(bearing)
-                        )
-
-    new_lon = init_coords[1] + math.atan2(math.sin(bearing) * math.sin(distance / R) * math.cos(init_coords[0]),
-                                          math.cos(distance / R) - math.sin(init_coords[0]) * math.sin(new_lat)
-                                          )
-
-    return [math.degrees(new_lat), math.degrees(new_lon)]
-
-
 def generate_location_steps(initial_loc, step_count):
-    # Bearing (degrees)
-    NORTH = 0
-    EAST = 90
-    SOUTH = 180
-    WEST = 270
+    R = 6378137.0
+    r_hex = 52.5  # probably not correct
+    steps = step_count
+    rings = 1
 
-    pulse_radius = 0.07                 # km - radius of players heartbeat is 70m
-    xdist = math.sqrt(3) * pulse_radius   # dist between column centers
-    ydist = 3 * (pulse_radius / 2)          # dist between row centers
+    w_worker = (2 * steps - 1) * r_hex #convert the step limit of the worker into the r radius of the hexagon in meters?
+    d = 2.0 * w_worker / 1000.0 #convert that into a diameter and convert to gps scale
+    d_s = d
+
+    brng_s = 0.0
+    brng = 0.0
+    mod = math.degrees(math.atan(1.732 / (6 * (steps - 1) + 3)))
+
+    total_workers = (((rings * (rings - 1)) *3) + 1) # this mathamtically calculates the total number of workers
 
     yield (initial_loc[0], initial_loc[1], 0)  # insert initial location
 
-    ring = 1
-    loc = initial_loc
-    while ring < step_count:
-        # Set loc to start at top left
-        loc = get_new_coords(loc, ydist, NORTH)
-        loc = get_new_coords(loc, xdist / 2, WEST)
-        for direction in range(6):
-            for i in range(ring):
-                if direction == 0:  # RIGHT
-                    loc = get_new_coords(loc, xdist, EAST)
-                if direction == 1:  # DOWN + RIGHT
-                    loc = get_new_coords(loc, ydist, SOUTH)
-                    loc = get_new_coords(loc, xdist / 2, EAST)
-                if direction == 2:  # DOWN + LEFT
-                    loc = get_new_coords(loc, ydist, SOUTH)
-                    loc = get_new_coords(loc, xdist / 2, WEST)
-                if direction == 3:  # LEFT
-                    loc = get_new_coords(loc, xdist, WEST)
-                if direction == 4:  # UP + LEFT
-                    loc = get_new_coords(loc, ydist, NORTH)
-                    loc = get_new_coords(loc, xdist / 2, WEST)
-                if direction == 5:  # UP + RIGHT
-                    loc = get_new_coords(loc, ydist, NORTH)
-                    loc = get_new_coords(loc, xdist / 2, EAST)
-                yield (loc[0], loc[1], 0)
-        ring += 1
+    turns = 0               # number of turns made in this ring (0 to 6)
+    turn_steps = 0          # number of cells required to complete one turn of the ring
+    turn_steps_so_far = 0   # current cell number in this side of the current ring
+
+
+    for i in range(1, total_workers):
+        if turns == 6 or turn_steps == 0:
+            # we have completed a ring (or are starting the very first ring)
+            turns = 0
+            turn_steps += 1
+            turn_steps_so_far = 0
+
+        if turn_steps_so_far == 0:
+            brng = brng_s
+            loc = initial_loc
+            d = turn_steps * d
+        else:
+            loc = initial_loc
+            C = math.radians(60.0)#inside angle of a regular hexagon
+            a = d_s / R * 2.0 * math.pi #in radians get the arclength of the unit circle covered by d_s
+            b = turn_steps_so_far * d_s / turn_steps / R * 2.0 * math.pi #percentage of a
+             #the first spherical law of cosines gives us the length of side c from known angle C
+            c = math.acos(math.cos(a) * math.cos(b) + math.sin(a) * math.sin(b) * math.cos(C))
+             #turnsteps here represents ring number because yay coincidence always the same. multiply by derived arclength and convert to meters
+            d = turn_steps * c * R / 2.0 / math.pi
+            #from the first spherical law of cosines we get the angle A from the side lengths a b c
+            A = math.acos((math.cos(b) - math.cos(a) * math.cos(c)) / (math.sin(c) * math.sin(a))) 
+            brng = 60 * turns + math.degrees(A)
+
+        loc = loc.offset(brng + mod, d)
+        yield (loc[0], loc[1], 0)
+        rings ++ 1
+        d = d_s
+
+        turn_steps_so_far += 1
+        if turn_steps_so_far >= turn_steps:
+            # make a turn
+            brng_s += 60.0
+            brng = brng_s
+            turns += 1
+            turn_steps_so_far = 0
 
 
 #
