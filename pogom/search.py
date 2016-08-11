@@ -293,7 +293,7 @@ def check_login(args, account, api, position):
     log.debug('Login for account %s successful', account['username'])
 
     # To avoid first search step resulting 0/0/0
-    time.sleep(5)
+    time.sleep(10)
 
 
 def map_request(api, position):
