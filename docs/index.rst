@@ -44,3 +44,11 @@ Pokemon-Go Map gives you a live visualization map of nearby Pokémon, Pokéstops
     :glob:
 
     extras/*
+    
+    .. toctree::
+    :titlesonly:
+    :maxdepth: 1
+    :caption: Community Tools
+    :glob:
+
+    tools/*
