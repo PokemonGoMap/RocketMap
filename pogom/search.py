@@ -204,7 +204,7 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
                 step, step_location = search_items_queue.get()
 
                 # If resuming the search, stagger them like we did in the beginning
-                sleep_delay_remaining = loop_start_time + (args.scan_delay * 1000) - int(round(time.time() * 1000))
+                sleep_delay_remaining = loop_start_time - int(round(time.time() * 1000))
                 if sleep_delay_remaining <= 0:
                     delay = (args.scan_delay / len(args.accounts)) * args.accounts.index(account)
                     log.debug('Delaying thread resume for %.2f seconds', delay)
