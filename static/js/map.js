@@ -1604,7 +1604,7 @@ function updateMap () {
       updateHeatmap();
     } else {
       deleteHeatmap();
-    }
+    }
   })
 }
 
