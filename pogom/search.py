@@ -180,7 +180,7 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
 
     # If we have more than one account, stagger the logins such that they occur evenly over scan_delay
     if len(args.accounts) > 1:
-        if len(args.accounts) > args.scan_delay:  # force 1 second (with jitter) if you have many accounts
+        if len(args.accounts) > args.scan_delay:  # force ~1 second delay between threads if you have many accounts
             delay = args.accounts.index(account) \
                     + ((random.random() - .5) / 2) if args.accounts.index(account) > 0 else 0
         else:
