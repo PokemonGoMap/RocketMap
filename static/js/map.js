@@ -1190,24 +1190,24 @@ function getMarkerPath (item) {
   } else if (item.gym_points >= 40000) {
     gymLevel = 9;
   } else if (item.gym_points >= 30000) {
-	gymLevel = 8;
+    gymLevel = 8;
   } else if (item.gym_points >= 20000) {
-	gymLevel = 7;
+    gymLevel = 7;
   } else if (item.gym_points >= 16000) {
-	gymLevel = 6;
+    gymLevel = 6;
   } else if (item.gym_points >= 12000) {
-	gymLevel = 5;
+    gymLevel = 5;
   } else if (item.gym_points >= 8000) {
-	gymLevel = 4;
+    gymLevel = 4;
   } else if (item.gym_points >= 4000) {
-	gymLevel = 3;
+    gymLevel = 3;
   } else if (item.gym_points >= 2000) {
-	gymLevel = 2;
+    gymLevel = 2;
   } else {
-	gymLevel = 1;
+    gymLevel = 1;
   }
 
-	return 'static/forts/' + gymTypes[item['team_id']] + '_' + gymLevel + '.png';
+  return 'static/forts/' + gymTypes[item['team_id']] + '_' + gymLevel + '.png';
 }
 
 function setupGymMarker (item) {
