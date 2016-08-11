@@ -186,11 +186,14 @@ class Pokemon(BaseModel):
 
     @classmethod
     def get_all(cls, swLat, swLng, neLat, neLng):
-        query = (Pokemon.select()
+        query = (Pokemon.select(Pokemon.spawnpoint_id, Pokemon.pokemon_id,
+                                Pokemon.latitude, Pokemon.longitude,
+                                fn.COUNT(Pokemon.pokemon_id).alias('count'))
                      .where((Pokemon.latitude >= swLat) &
                             (Pokemon.longitude >= swLng) &
                             (Pokemon.latitude <= neLat) &
                             (Pokemon.longitude <= neLng))
+                     .group_by(Pokemon.spawnpoint_id, Pokemon.pokemon_id, Pokemon.latitude, Pokemon.longitude)
                      .dicts())
 
         pokemons = []
@@ -204,12 +207,15 @@ class Pokemon(BaseModel):
 
     @classmethod
     def get_all_by_id(cls, notified_ids, swLat, swLng, neLat, neLng):
-        query = (Pokemon.select()
+        query = (Pokemon.select(Pokemon.spawnpoint_id, Pokemon.pokemon_id,
+                                Pokemon.latitude, Pokemon.longitude,
+                                fn.COUNT(Pokemon.pokemon_id).alias('count'))
                      .where((Pokemon.pokemon_id << notified_ids) &
                             (Pokemon.latitude >= swLat) &
                             (Pokemon.longitude >= swLng) &
                             (Pokemon.latitude <= neLat) &
                             (Pokemon.longitude <= neLng))
+                     .group_by(Pokemon.spawnpoint_id, Pokemon.pokemon_id, Pokemon.latitude, Pokemon.longitude)
                      .dicts())
 
         pokemons = []

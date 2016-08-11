@@ -1566,7 +1566,7 @@ function updateHeatmap () {
     }
     heatmapData = []
     $.each(result.pokemons, function (index, item) {
-      heatmapData.push(new google.maps.LatLng(item.latitude, item.longitude))
+      heatmapData.push({location: new google.maps.LatLng(item.latitude, item.longitude), weight: item.count})
     })
     heatmap.set('data', heatmapData)
     heatmap.getMap() || heatmap.setMap(map)
