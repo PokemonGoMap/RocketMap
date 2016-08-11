@@ -1899,7 +1899,7 @@ $(function () {
     })
     $selectPokemonNotify.on('change', function (e) {
       notifiedPokemon = $selectPokemonNotify.val().map(Number)
-	  sounds = loadPokemonSounds()
+      sounds = loadPokemonSounds()
       Store.set('remember_select_notify', notifiedPokemon)
     })
     $selectRarityNotify.on('change', function (e) {
