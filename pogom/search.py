@@ -37,7 +37,7 @@ TIMESTAMP = '\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\00
 
 def generate_location_steps(initial_loc, step_count):
     R = 6378137.0
-    r_hex = 52.5  # probably not correct
+    r_hex = 7  # probably not correct
     steps = step_count
     rings = 1
 
