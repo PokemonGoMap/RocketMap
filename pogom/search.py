@@ -298,6 +298,7 @@ def check_login(args, account, api, position):
     # To avoid first search step resulting 0/0/0
     time.sleep(10)
 
+
 def map_request(api, position):
     try:
         cell_ids = util.get_cell_ids(position[0], position[1])
