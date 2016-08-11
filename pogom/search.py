@@ -60,7 +60,7 @@ def generate_location_steps(initial_loc, step_count):
     mod = math.degrees(math.atan(1.732 / (6 * (step_count - 1) + 3)))
 
     # Shouldn't need to calculate the number of workers because its no longer being used in the for loop.
-    # total_workers = (((rings * (rings - 1)) *3) + 1) 
+    # total_workers = (((rings * (rings - 1)) *3) + 1)
 
     # This initialises the list.
     locations = [LatLon.LatLon(LatLon.Latitude(0), LatLon.Longitude(0))]
