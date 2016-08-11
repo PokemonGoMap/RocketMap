@@ -978,7 +978,7 @@ function pokemonLabel (name, rarity, types, disappearTime, id, latitude, longitu
     typesDisplay += getTypeSpan(type)
   })
   var details = ''
-  if ('iv' in pokemon) {
+  if ('iv' in pokemon && pokemon['iv'] != null) {
     details = `
       <div>
         IV: ${pokemon['iv'].toFixed(2)}  Details: ${pokemon['individual_attack']}/${pokemon['individual_defense']}/${pokemon['individual_stamina']}
