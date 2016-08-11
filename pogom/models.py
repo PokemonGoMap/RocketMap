@@ -352,6 +352,7 @@ def parse_map(map_dict, step_location):
                         'active_fort_modifier': f['active_fort_modifier'],
                         'is_lured': True
                     }
+                    active_fort_modifier = f['active_fort_modifier']
                     send_to_webhook('pokemon', webhook_data)
                 else:
                     lure_expiration, active_fort_modifier = None, None
