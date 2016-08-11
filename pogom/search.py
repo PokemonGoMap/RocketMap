@@ -203,6 +203,13 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
                 # Grab the next thing to search (when available)
                 step, step_location = search_items_queue.get()
 
+                # If resuming the search, stagger them like we did in the beginning 
+                sleep_delay_remaining = loop_start_time + (args.scan_delay * 1000) - int(round(time.time() * 1000))
+                if sleep_delay_remaining < 0:
+                    delay = (args.scan_delay / len(args.accounts)) * args.accounts.index(account)
+                    log.debug('Delaying thread resume for %.2f seconds', delay)
+                    time.sleep(delay)
+
                 log.info('Search step %d beginning (queue size is %d)', step, search_items_queue.qsize())
 
                 # Let the api know where we intend to be for this loop
@@ -258,7 +265,9 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
                 sleep_delay_remaining = loop_start_time + (args.scan_delay * 1000) - int(round(time.time() * 1000))
                 if sleep_delay_remaining > 0:
                     time.sleep(sleep_delay_remaining / 1000)
-
+                else:
+                    time.sleep(args.scan_delay)
+ 
                 loop_start_time += args.scan_delay * 1000
 
         # catch any process exceptions, log them, and continue the thread
