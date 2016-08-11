@@ -61,21 +61,21 @@ def get_new_coords(init_loc, distance, bearing):
 def generate_location_steps(initial_loc, step_count):
 
     args = get_args()
-    
+
     # Bearing (degrees)
     NORTH = 0
     EAST = 90
     SOUTH = 180
     WEST = 270
 
-    if args.no_pokemon: # scan_size requires -np, 70 is default
+    if args.no_pokemon: 			# scan_size requires -np, 70 is default
         pulse_radius = args.step_size / 1000.0  # dist between scan points (-ss), meters to km, default is 70.
     else:
         pulse_radius = 0.07
-    xdist = math.sqrt(3) * pulse_radius   # dist between column centers
-    ydist = 3 * (pulse_radius / 2)          # dist between row centers
+    xdist = math.sqrt(3) * pulse_radius 	# dist between column centers
+    ydist = 3 * (pulse_radius / 2) 		# dist between row centers
 
-    yield (initial_loc[0], initial_loc[1], 0)  # insert initial location
+    yield (initial_loc[0], initial_loc[1], 0) 	# insert initial location
 
     ring = 1
     loc = initial_loc
