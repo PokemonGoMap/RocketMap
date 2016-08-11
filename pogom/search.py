@@ -37,17 +37,14 @@ TIMESTAMP = '\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\00
 
 def generate_location_steps(initial_loc, step_count):
     R = 6378137.0
-    r_hex = 7  # probably not correct
-    steps = step_count
     rings = 1
 
-    w_worker = (2 * steps - 1) * r_hex #convert the step limit of the worker into the r radius of the hexagon in meters?
-    d = 2.0 * w_worker / 1000.0 #convert that into a diameter and convert to gps scale
+    d = 70 / 1000.0 # 70 Meter diameter and convert to gps scale
     d_s = d
 
     brng_s = 0.0
     brng = 0.0
-    mod = math.degrees(math.atan(1.732 / (6 * (steps - 1) + 3)))
+    mod = math.degrees(math.atan(1.732 / (6 * (step_count - 1) + 3)))
 
     locations = [LatLon.LatLon(LatLon.Latitude(0), LatLon.Longitude(0))] #this initialises the list
     locations[0] = LatLon.LatLon(LatLon.Latitude(initial_loc[0]), LatLon.Longitude(initial_loc[1])) #set the latlon for worker 0 from cli args
@@ -58,7 +55,7 @@ def generate_location_steps(initial_loc, step_count):
     turn_steps = 0          # number of cells required to complete one turn of the ring
     turn_steps_so_far = 0   # current cell number in this side of the current ring
 
-    while rings < steps:
+    while rings < step_count:
         for i in range(rings):
             if turns == 6 or turn_steps == 0:
                 # we have completed a ring (or are starting the very first ring)
