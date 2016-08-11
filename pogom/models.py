@@ -185,8 +185,13 @@ class Pokemon(BaseModel):
         return appearances
 
     @classmethod
-    def get_all(cls):
-        query = (Pokemon.select().dicts())
+    def get_all(cls, swLat, swLng, neLat, neLng):
+        query = (Pokemon.select()
+                     .where((Pokemon.latitude >= swLat) &
+                            (Pokemon.longitude >= swLng) &
+                            (Pokemon.latitude <= neLat) &
+                            (Pokemon.longitude <= neLng))
+                     .dicts())
 
         pokemons = []
         for p in query:
@@ -198,8 +203,14 @@ class Pokemon(BaseModel):
         return pokemons
 
     @classmethod
-    def get_all_by_id(cls, notified_ids):
-        query = (Pokemon.select().where((Pokemon.pokemon_id << notified_ids)).dicts())
+    def get_all_by_id(cls, notified_ids, swLat, swLng, neLat, neLng):
+        query = (Pokemon.select()
+                     .where((Pokemon.pokemon_id << notified_ids) &
+                            (Pokemon.latitude >= swLat) &
+                            (Pokemon.longitude >= swLng) &
+                            (Pokemon.latitude <= neLat) &
+                            (Pokemon.longitude <= neLng))
+                     .dicts())
 
         pokemons = []
         for p in query:

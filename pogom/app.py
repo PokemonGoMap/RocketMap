@@ -113,12 +113,16 @@ class Pogom(Flask):
 
     def raw_pokemons_history(self):
         d = {}
+        swLat = request.args.get('swLat')
+        swLng = request.args.get('swLng')
+        neLat = request.args.get('neLat')
+        neLng = request.args.get('neLng')
         myPokemon = Pokemon()
         heatmap = request.args.get('heatmap_ids')
         if heatmap:
-            d['pokemons'] = myPokemon.get_all_by_id(heatmap.split(','))
+            d['pokemons'] = myPokemon.get_all_by_id(heatmap.split(','), swLat, swLng, neLat, neLng)
         else:
-            d['pokemons'] = myPokemon.get_all()
+            d['pokemons'] = myPokemon.get_all(swLat, swLng, neLat, neLng)
         return jsonify(d)
 
     def loc(self):

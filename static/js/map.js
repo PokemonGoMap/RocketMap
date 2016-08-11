@@ -1536,6 +1536,13 @@ function processScanned (i, item) {
 function updateHeatmap () {
   let heatmapData = []
   let pokemon = []
+  let bounds = map.getBounds()
+  let swPoint = bounds.getSouthWest()
+  let nePoint = bounds.getNorthEast()
+  let swLat = swPoint.lat()
+  let swLng = swPoint.lng()
+  let neLat = nePoint.lat()
+  let neLng = nePoint.lng()
 
   if (heatmapPokemon.length > 0) {
     pokemon = heatmapPokemon
@@ -1543,13 +1550,15 @@ function updateHeatmap () {
     pokemon = Array.from({length: 151}, (value, key) => key + 1)
   }
 
-  let requestData = {
-    heatmap_ids: pokemon.join(',')
-  }
-
   $.ajax({
     url: 'raw_pokemons_history',
-    data: requestData,
+    data: {
+      heatmap_ids: pokemon.join(','),
+      swLat: swLat,
+      swLng: swLng,
+      neLat: neLat,
+      neLng: neLng
+    },
     datatype: 'json'
   }).done(function (result) {
     if (localStorage.showHeatmap !== 'true') {
@@ -1570,7 +1579,9 @@ function updateHeatmap () {
 }
 
 function deleteHeatmap () {
-  heatmap.setMap(null)
+  if (heatmap) {
+    heatmap.setMap(null)
+  }
 }
 
 function updateMap () {
@@ -1589,6 +1600,11 @@ function updateMap () {
     if ($('#stats').hasClass('visible')) {
       countMarkers()
     }
+    if (Store.get('showHeatmap')) {
+      updateHeatmap();
+    } else {
+      deleteHeatmap();
+    }
   })
 }
 
@@ -1968,11 +1984,6 @@ $(function () {
     $selectHeatmap.on('change', function (e) {
       heatmapPokemon = $selectHeatmap.val().map(Number)
       Store.set('remember_select_heatmap', heatmapPokemon)
-      if (localStorage.showHeatmap === 'true') {
-        updateHeatmap()
-      } else {
-        deleteHeatmap()
-      }
     })
     $selectRarityNotify.on('change', function (e) {
       notifiedRarity = $selectRarityNotify.val().map(String)
@@ -2051,11 +2062,7 @@ $(function () {
     .val(Store.get('showHeatmap'))
     .change(function () {
       Store.set('showHeatmap', this.checked)
-      if (this.checked) {
-        updateHeatmap()
-      } else {
-        deleteHeatmap()
-      }
+      updateMap()
     })
 
   $('#heatmap-intensity')
