@@ -1,0 +1,16 @@
+*.pyc
+*.idea
+*.db
+*.db-*
+*.sass-cache
+*.orig
+config/config.ini
+static/dist/
+node_modules/
+venv/
+core
+src/
+_build
+_build_html
+beehive.*
+spawns.json
