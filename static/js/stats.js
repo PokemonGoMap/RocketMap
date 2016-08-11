@@ -3,6 +3,7 @@ function countMarkers () { // eslint-disable-line no-unused-vars
   document.getElementById('stats-gym-label').innerHTML = 'Gyms'
   document.getElementById('stats-pkstop-label').innerHTML = 'PokéStops'
 
+  var i = 0
   var arenaCount = []
   var arenaTotal = 0
   var pkmnCount = []
@@ -24,7 +25,7 @@ function countMarkers () { // eslint-disable-line no-unused-vars
     })
     pkmnCount.sort(sortBy('Name', false))
     var pkmnListString = '<table><thead><tr><th>Icon</th><th>Name</th><th>Count</th><th>%</th></tr></thead><tbody><tr><td></td><td>Total</td><td>' + pkmnTotal + '</td><td></td></tr>'
-    for (var i = 0; i < pkmnCount.length; i++) {
+    for (i = 0; i < pkmnCount.length; i++) {
       if (pkmnCount[i] && pkmnCount[i].Count > 0) {
         pkmnListString += '<tr><td><img src="static/icons/' + pkmnCount[i].ID + '.png" /></td><td><a href=\'http://www.pokemon.com/us/pokedex/' + pkmnCount[i].ID + '\' target=\'_blank\' title=\'View in Pokedex\' style="color: black;">' + pkmnCount[i].Name + '</a></td><td>' + pkmnCount[i].Count + '</td><td>' + Math.round(pkmnCount[i].Count * 100 / pkmnTotal * 10) / 10 + '%</td></tr>'
       }
@@ -44,7 +45,7 @@ function countMarkers () { // eslint-disable-line no-unused-vars
       arenaTotal++
     })
     var arenaListString = '<table><th>Icon</th><th>Team Color</th><th>Count</th><th>%</th><tr><td></td><td>Total</td><td>' + arenaTotal + '</td></tr>'
-    for (var i = 0; i < arenaCount.length; i++) {
+    for (i = 0; i < arenaCount.length; i++) {
       if (arenaCount[i] > 0) {
         if (i === 1) {
           arenaListString += '<tr><td><img src="static/forts/Mystic.png" /></td><td>' + 'Blue' + '</td><td>' + arenaCount[i] + '</td><td>' + Math.round(arenaCount[i] * 100 / arenaTotal * 10) / 10 + '%</td></tr>'
@@ -80,7 +81,7 @@ function countMarkers () { // eslint-disable-line no-unused-vars
       pokestopTotal++
     })
     var pokestopListString = '<table><th>Icon</th><th>Status</th><th>Count</th><th>%</th><tr><td></td><td>Total</td><td>' + pokestopTotal + '</td></tr>'
-    for (var i = 0; i < pokestopCount.length; i++) {
+    for (i = 0; i < pokestopCount.length; i++) {
       if (pokestopCount[i] > 0) {
         if (i === 0) {
           pokestopListString += '<tr><td><img src="static/forts/Pstop.png" /></td><td>' + 'Not Lured' + '</td><td>' + pokestopCount[i] + '</td><td>' + Math.round(pokestopCount[i] * 100 / pokestopTotal * 10) / 10 + '%</td></tr>'
