@@ -349,10 +349,9 @@ def parse_map(map_dict, step_location):
                         'latitude': f['latitude'],
                         'longitude': f['longitude'],
                         'last_modified_time': f['last_modified_timestamp_ms'],
-                        'active_fort_modifier': f['active_fort_modifier'],
-                        'is_lured': True
+                        'active_fort_modifier': f['active_fort_modifier']
                     }
-                    send_to_webhook('pokemon', webhook_data)
+                    send_to_webhook('pokestop', webhook_data)
                 else:
                     lure_expiration, active_fort_modifier = None, None
 
