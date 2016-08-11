@@ -39,7 +39,8 @@ def generate_location_steps(initial_loc, step_count):
     R = 6378137.0
     rings = 1
 
-    d = 70 / 1000.0 # 70 Meter diameter and convert to gps scale
+    hearbeat = 70.0
+    d = 2.0 * heartbeat / 1000.0 # 70 Meter diameter converted to gps scale
     d_s = d
 
     brng_s = 0.0
