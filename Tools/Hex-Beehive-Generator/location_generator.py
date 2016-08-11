@@ -8,6 +8,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-lat", "--lat", help="latitude", type=float, required=True)
 parser.add_argument("-lon", "--lon", help="longitude", type=float, required=True)
 parser.add_argument("-st", "--steps", help="steps", default=5, type=int)
+parser.add_argument("-sd", "--scan-delay", help="scan delay, default 10, increase if the server requests to throttle", default=10, type=int)
 parser.add_argument("-lp", "--leaps", help="like 'steps' but for workers instead of scans", default=3, type=int)
 parser.add_argument("-o", "--output", default="../../beehive.sh", help="output file for the script")
 parser.add_argument("-t", "--thread", default=1, help="Number of accounts and threads per worker")
@@ -20,7 +21,7 @@ parser.add_argument("--installdir", help="Installation directory (only used for 
 
 preamble = "#!/usr/bin/env bash"
 server_template = "nohup python runserver.py -os -l '{lat}, {lon}' &\n" #this is the output template for linux
-worker_template = "sleep 0.5; nohup python runserver.py -ns -l '{lat}, {lon}' -st {steps} {auth}&\n" # so is this
+worker_template = "sleep 0.5; nohup python runserver.py -ns -l '{lat}, {lon}' -st {steps} -sd {delay} {auth}&\n" # so is this
 auth_template = "-a {} -u {} -p '{}' "  # unix people want single-quoted passwords - for threading reasons whitespace after ' before ""
 
 R = 6378137.0
@@ -37,7 +38,7 @@ if args.windows:
     branchpath = args.installdir
     executable = args.installdir + "\\runserver.py"
     auth_template = '-a {} -u {} -p "{}" '  # windows people want double-quoted passwords -fook windows again!
-    actual_worker_params = '{auth}-ns -l "{lat}, {lon}" -st {steps}'
+    actual_worker_params = '{auth}-ns -l "{lat}, {lon}" -st {steps} -sd {delay}'
     worker_template = 'Start "{{threadname}}" /d {branchpath} /MIN {pythonpath} {executable} {actual_params}\nping 127.0.0.1 -n 6 > nul\n\n'.format( #these are the templates for windows stuff
         branchpath=branchpath, pythonpath=pythonpath, executable=executable, actual_params = actual_worker_params
     )
@@ -137,7 +138,7 @@ location_and_auth = [(i, j) for i, j in itertools.izip(locations, accountStack)]
 
 for i, (location, auth) in enumerate(location_and_auth):
     threadname = "Movable{}".format(i)
-    output_fh.write(worker_template.format(lat=location.lat, lon=location.lon, steps=args.steps, auth=auth, threadname=threadname))
+    output_fh.write(worker_template.format(lat=location.lat, lon=location.lon, steps=args.steps, auth=auth, delay=args.scan_delay, threadname=threadname))
     coords_fh.write(str(location.lat) + ", " + str(location.lon) + "\n")
     if args.verbose:
         print("{}, {}".format(location.lat, location.lon))
