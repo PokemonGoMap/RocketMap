@@ -20,6 +20,7 @@ Search Architecture:
 import logging
 import time
 import math
+import LatLon
 
 from threading import Thread, Lock
 from queue import Queue, Empty
@@ -35,20 +36,21 @@ log = logging.getLogger(__name__)
 
 TIMESTAMP = '\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000'
 
+
 def generate_location_steps(initial_loc, step_count):
     R = 6378137.0
     rings = 1
 
-    hearbeat = 70.0
-    d = 2.0 * heartbeat / 1000.0 # 70 Meter diameter converted to gps scale
+    heartbeat = 70.0
+    d = 2.0 * heartbeat / 1000.0  # 70 Meter diameter converted to gps scale
     d_s = d
 
     brng_s = 0.0
     brng = 0.0
     mod = math.degrees(math.atan(1.732 / (6 * (step_count - 1) + 3)))
 
-    locations = [LatLon.LatLon(LatLon.Latitude(0), LatLon.Longitude(0))] #this initialises the list
-    locations[0] = LatLon.LatLon(LatLon.Latitude(initial_loc[0]), LatLon.Longitude(initial_loc[1])) #set the latlon for worker 0 from cli args
+    locations = [LatLon.LatLon(LatLon.Latitude(0), LatLon.Longitude(0))]  # this initialises the list
+    locations[0] = LatLon.LatLon(LatLon.Latitude(initial_loc[0]), LatLon.Longitude(initial_loc[1]))  # set the latlon for worker 0 from cli args
 
     yield (initial_loc[0], initial_loc[1], 0)  # insert initial location
 
@@ -71,14 +73,14 @@ def generate_location_steps(initial_loc, step_count):
                 d = turn_steps * d
             else:
                 loc = locations[0]
-                C = math.radians(60.0)#inside angle of a regular hexagon
-                a = d_s / R * 2.0 * math.pi #in radians get the arclength of the unit circle covered by d_s
-                b = turn_steps_so_far * d_s / turn_steps / R * 2.0 * math.pi #percentage of a
-                 #the first spherical law of cosines gives us the length of side c from known angle C
+                C = math.radians(60.0)  # inside angle of a regular hexagon
+                a = d_s / R * 2.0 * math.pi  # in radians get the arclength of the unit circle covered by d_s
+                b = turn_steps_so_far * d_s / turn_steps / R * 2.0 * math.pi
+                # the first spherical law of cosines gives us the length of side c from known angle C
                 c = math.acos(math.cos(a) * math.cos(b) + math.sin(a) * math.sin(b) * math.cos(C))
-                 #turnsteps here represents ring number because yay coincidence always the same. multiply by derived arclength and convert to meters
+                # turnsteps here represents ring number because yay coincidence always the same. multiply by derived arclength and convert to meters
                 d = turn_steps * c * R / 2.0 / math.pi
-                #from the first spherical law of cosines we get the angle A from the side lengths a b c
+                # from the first spherical law of cosines we get the angle A from the side lengths a b c
                 A = math.acos((math.cos(b) - math.cos(a) * math.cos(c)) / (math.sin(c) * math.sin(a)))
                 brng = 60 * turns + math.degrees(A)
 
