@@ -187,7 +187,7 @@ class Pokemon(BaseModel):
     @classmethod
     def get_all(cls):
         query = (Pokemon.select().dicts())
-        
+
         pokemons = []
         for p in query:
             p['pokemon_name'] = get_pokemon_name(p['pokemon_id'])
@@ -199,10 +199,7 @@ class Pokemon(BaseModel):
 
     @classmethod
     def get_all_by_id(cls, notified_ids):
-        query = (Pokemon
-                     .select()
-                     .where((Pokemon.pokemon_id << notified_ids))
-                     .dicts())
+        query = (Pokemon.select().where((Pokemon.pokemon_id << notified_ids)).dicts())
 
         pokemons = []
         for p in query:
@@ -212,6 +209,7 @@ class Pokemon(BaseModel):
                     transform_from_wgs_to_gcj(p['latitude'], p['longitude'])
             pokemons.append(p)
         return pokemons
+
 
 class Pokestop(BaseModel):
     pokestop_id = CharField(primary_key=True, max_length=50)
