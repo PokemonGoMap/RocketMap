@@ -11,6 +11,7 @@ import logging
 import shutil
 import requests
 import platform
+import notifier
 
 from . import config
 
@@ -108,6 +109,7 @@ def get_args():
     parser.add_argument('-pd', '--purge-data',
                         help='Clear pokemon from database this many hours after they disappear \
                         (0 to disable)', type=int, default=0)
+    parser.add_argument('-px', '--proxy', help='Proxy url (e.g. socks5://127.0.0.1:9050)')
     parser.add_argument('--db-type', help='Type of database to be used (default: sqlite)',
                         default='sqlite')
     parser.add_argument('--db-name', help='Name of the database to be used')
@@ -202,6 +204,7 @@ def insert_mock_data(position):
     detect_time = datetime.now()
 
     for i in range(1, num_pokemon):
+        notifier.pokemon_found(get_pokemon_name((i + 1) % 150), locations[i][0], locations[i][1], disapper_time)
         Pokemon.create(encounter_id=uuid.uuid4(),
                        spawnpoint_id='sp{}'.format(i),
                        pokemon_id=(i + 1) % 150,
@@ -218,7 +221,6 @@ def insert_mock_data(position):
                         last_modified=datetime.now(),
                         # Every other pokestop be lured
                         lure_expiration=disappear_time if (i % 2 == 0) else None,
-                        active_pokemon_id=i
                         )
 
     for i in range(1, num_gym):
