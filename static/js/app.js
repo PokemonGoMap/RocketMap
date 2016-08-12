@@ -63,7 +63,6 @@
       })
     }
   })()
-  
   // Vars.
   var $body = document.querySelector('body')
 
