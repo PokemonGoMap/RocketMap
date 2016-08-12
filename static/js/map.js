@@ -687,12 +687,12 @@ var StoreTypes = {
 
 var StoreOptions = {
   'last_pos_lng': {
-    default: 0,
-    type: StoreTypes.Number
+    default: '',
+    type: StoreTypes.String
   },
   'last_pos_lat': {
-    default: 0,
-    type: StoreTypes.Number
+    default: '',
+    type: StoreTypes.String
   },
   'map_style': {
     default: 'roadmap',
@@ -1842,6 +1842,13 @@ $(function () {
   }
 
   if (Store.get('startAtUserLocation')) {
+	var lat = parseFloat(Store.get('last_pos_lat'))
+	var lng = parseFloat(Store.get('last_pos_lng'))
+	
+	if(!(isNaN(lat) || isNaN(lng))) {
+		changeLocation(lat, lng)
+	}
+	
     centerMapOnLocation()
   }
 
