@@ -1181,7 +1181,7 @@ function setupGymMarker (item) {
   })
 
   // Store info window.
-  map_data.info_windows[item.['gym_id']] = marker.infoWindow;
+  map_data.info_windows[item['gym_id']] = marker.infoWindow;
 
   addListeners(marker)
   return marker
