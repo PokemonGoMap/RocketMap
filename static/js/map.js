@@ -1740,8 +1740,8 @@ function i8ln (word) {
 }
 
 function isTouchDevice () {
-  return 'ontouchstart' in window ||  // works on most browsers
-  navigator.maxTouchPoints;  // works on IE10/11 and Surface
+  // Should cover most browsers
+  return 'ontouchstart' in window || navigator.maxTouchPoints;
 }
 
 //
