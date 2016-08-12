@@ -11,6 +11,7 @@ import logging
 import shutil
 import requests
 import platform
+import notifier
 
 from . import config
 
