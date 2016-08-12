@@ -1582,6 +1582,7 @@ function sendNotification (title, text, icon, lat, lng) {
       onClick: function () {
         window.focus()
         this.close()
+
         centerMap(lat, lng, 20)
       }
     })
