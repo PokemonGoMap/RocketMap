@@ -201,7 +201,7 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
                 if len(args.accounts) > 1:
                     if step <= len(args.accounts):
                         delay = (args.scan_delay / len(args.accounts)) * args.accounts.index(account)
-                        log.info('Search step %d beginning (queue size is %d) with delayed start for %.2f seconds', step, search_items_queue.qsize(), delay)
+                        log.info('Search step %d beginning in %.2f seconds (queue size is %d)', step, delay, search_items_queue.qsize())
                         time.sleep(delay)
                     else:
                         log.info('Search step %d beginning (queue size is %d)', step, search_items_queue.qsize())
@@ -257,10 +257,10 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
                 # If there's any time left between the start time and the time when we should be kicking off the next
                 # loop, hang out until its up.
                 sleep_delay_remaining = loop_start_time + (args.scan_delay * 1000) - int(round(time.time() * 1000))
-                if sleep_delay_remaining >= 0:
-                    time.sleep(sleep_delay_remaining / 1000)
-                else:
+                if sleep_delay_remaining < 0:
                     time.sleep(args.scan_delay)
+                else:
+                    time.sleep(sleep_delay_remaining / 1000)
 
                 loop_start_time += args.scan_delay * 1000
 
