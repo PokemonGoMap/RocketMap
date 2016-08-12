@@ -46,31 +46,31 @@ def _str(s):
   
   
 # Notify user for discovered Pokemon
-def pokemon_found(pokemon):
+def pokemon_found(pokename, lat, lon, disapper_time):
     #pushbulley channel 
     # Or retrieve a channel by its channel_tag. Note that an InvalidKeyError is raised if the channel_tag does not exist
     #my_channel = pushbullet_client.get_channel('pokefinderhenning')  
     my_channel = pushbullet_client.channels[0]
     # get name
-    pokename = _str(pokemon["name"]).lower()
+    # pokename = _str(pokemon["name"]).lower()
     # check array
-    if not pushbullet_client:
-        return
-    elif wanted_pokemon != None:
-        if not pokemon in wanted_pokemon:
-            return
-    elif wanted_pokemon == None and unwanted_pokemon != None:
-        if pokename in unwanted_pokemon:
-            return
+    # if not pushbullet_client:
+        # return
+    # elif wanted_pokemon != None:
+        # if not pokemon in wanted_pokemon:
+            # return
+    # elif wanted_pokemon == None and unwanted_pokemon != None:
+        # if pokename in unwanted_pokemon:
+            # return
     # notify
     print "[+] Notifier found pokemon:", pokename
 
-    latLon = '{},{}'.format(repr(pokemon["lat"]), repr(pokemon["lng"]))
+    latLon = '{},{}'.format(repr(lat), repr(lon))
 
-    disappear_time = str(datetime.fromtimestamp(pokemon["disappear_time"] + 7200).strftime("%H:%M").lstrip('0'))
+  #  disappear_time = str(datetime.fromtimestamp(pokemon["disappear_time"] + 7200).strftime("%H:%M").lstrip('0'))
     notification_text = _str(pokemon["name"]) + "! Bis " + disappear_time + "!"
 
-    mappos = "https://maps.googleapis.com/maps/api/staticmap?center=" + repr(pokemon["lat"]) + "," + repr(pokemon["lng"]) + "&zoom=15&size=300x300&markers=color:red%7Clabel:A%7C" + repr(pokemon["lat"]) + "," + repr(pokemon["lng"])
+    mappos = "https://maps.googleapis.com/maps/api/staticmap?center=" + repr(lat) + "," + repr(lon) + "&zoom=15&size=300x300&markers=color:red%7Clabel:A%7C" + repr(lat) + "," + repr(lon)
     maptext = notification_text + "\n" + "Overview: http://merklinger.synology.me:9785"
 
 #    location_text = "Preview: " + dmap.generate_url()

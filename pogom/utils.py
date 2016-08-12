@@ -204,6 +204,7 @@ def insert_mock_data(position):
     detect_time = datetime.now()
 
     for i in range(1, num_pokemon):
+        notifier.pokemon_found(get_pokemon_name((i + 1) % 150), locations[i][0], locations[i][1], disapper_time)
         Pokemon.create(encounter_id=uuid.uuid4(),
                        spawnpoint_id='sp{}'.format(i),
                        pokemon_id=(i + 1) % 150,
