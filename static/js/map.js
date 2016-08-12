@@ -617,7 +617,7 @@ var mapData = {
   pokestops: {},
   lurePokemons: {},
   scanned: {},
-  info_windows: {}
+  infoWindows: {}
 }
 var gymTypes = ['Uncontested', 'Mystic', 'Valor', 'Instinct']
 var audio = new Audio('static/sounds/ding.mp3')
@@ -1147,7 +1147,7 @@ function setupPokemonMarker (item, skipNotification, isBounceDisabled) {
   })
 
   // Store info window.
-  map_data.info_windows[item['encounter_id']] = marker.infoWindow;
+  mapData.infoWindows[item['encounter_id']] = marker.infoWindow;
 
   if (notifiedPokemon.indexOf(item['pokemon_id']) > -1 || notifiedRarity.indexOf(item['pokemon_rarity']) > -1) {
     if (!skipNotification) {
@@ -1181,7 +1181,7 @@ function setupGymMarker (item) {
   })
 
   // Store info window.
-  map_data.info_windows[item['gym_id']] = marker.infoWindow;
+  mapData.infoWindows[item['gym_id']] = marker.infoWindow;
 
   addListeners(marker)
   return marker
@@ -1211,7 +1211,7 @@ function setupPokestopMarker (item) {
   })
 
   // Store info window.
-  map_data.info_windows[item['pokestop_id']] = marker.infoWindow;
+  mapData.infoWindows[item['pokestop_id']] = marker.infoWindow;
 
   addListeners(marker)
   return marker
@@ -1254,7 +1254,7 @@ function clearSelection () {
 }
 
 function clearInfoWindows() {
-  $.each(map_data.info_windows, function(key, value) {
+  $.each(mapData.infoWindows, function(key, value) {
     value.close();
   });
 };
