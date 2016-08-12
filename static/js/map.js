@@ -1057,7 +1057,7 @@ function pokestopLabel (lured, lastModified, latitude, longitude) {
     var lastModifiedDate = new Date(lastModified)
     var currentDate = new Date()
 
-    var timeUntilExpire = currentDate.getTime() - lastModifiedDate.getTime()
+    var timeUntilExpire = 1800000 - (currentDate.getTime() - lastModifiedDate.getTime())
 
     var expireDate = new Date(currentDate.getTime() + timeUntilExpire)
     var expireTime = expireDate.getTime()
