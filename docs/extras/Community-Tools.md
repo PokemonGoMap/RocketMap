@@ -7,8 +7,7 @@ Community-built Tools
 Used to generate any desired number of PTC accounts - TOS verifies them and includes a google script that can be used to verify all the emails. Outputs generated account information in .csv format.
 
 ##[Cor3Zer0's Map Calculator](https://github.com/Cor3Zer0/Map-Calculator)
-### Calculator that aids in the creation of PokemonGo Map
-
+### Calculator that helps in the creation of PokemonGo Map
 Used to calculate optimized flags for particular use cases given a set situation.
 `Example: I have an ST of 7, a delay of 10, and need my scan to be around 100 seconds. How many accounts should I use?`
 
