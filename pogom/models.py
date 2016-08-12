@@ -3,12 +3,14 @@
 
 import logging
 import calendar
+import sys
 from peewee import SqliteDatabase, InsertQuery, \
     IntegerField, CharField, DoubleField, BooleanField, \
-    DateTimeField, fn
+    DateTimeField, PrimaryKeyField, fn
 from playhouse.flask_utils import FlaskDB
 from playhouse.pool import PooledMySQLDatabase
 from playhouse.shortcuts import RetryOperationalError
+from playhouse.migrate import migrate, MySQLMigrator, SqliteMigrator
 from datetime import datetime, timedelta
 from base64 import b64encode
 
@@ -21,6 +23,8 @@ log = logging.getLogger(__name__)
 
 args = get_args()
 flaskDb = FlaskDB()
+
+db_schema_version = 2
 
 
 class MyRetryDB(RetryOperationalError, PooledMySQLDatabase):
@@ -193,6 +197,7 @@ class Pokestop(BaseModel):
     last_modified = DateTimeField(index=True)
     lure_expiration = DateTimeField(null=True, index=True)
     active_pokemon_id = IntegerField(null=True)
+    encounter_id = CharField(max_length=50, null=True)
 
     class Meta:
         indexes = ((('latitude', 'longitude'), False),)
@@ -263,7 +268,7 @@ class Gym(BaseModel):
 
 
 class ScannedLocation(BaseModel):
-    scanned_id = CharField(primary_key=True, max_length=50)
+    scanned_id = PrimaryKeyField()
     latitude = DoubleField()
     longitude = DoubleField()
     last_modified = DateTimeField(index=True)
@@ -288,6 +293,14 @@ class ScannedLocation(BaseModel):
             scans.append(s)
 
         return scans
+
+
+class Versions(flaskDb.Model):
+    key = CharField()
+    val = IntegerField()
+
+    class Meta:
+        primary_key = False
 
 
 def parse_map(map_dict, step_location):
@@ -346,7 +359,7 @@ def parse_map(map_dict, step_location):
                     }
                     send_to_webhook('pokemon', webhook_data)
                 else:
-                    lure_expiration, active_pokemon_id = None, None
+                    lure_expiration, active_pokemon_id, encounter_id = None, None, None
 
                 pokestops[f['id']] = {
                     'pokestop_id': f['id'],
@@ -356,7 +369,8 @@ def parse_map(map_dict, step_location):
                     'last_modified': datetime.utcfromtimestamp(
                         f['last_modified_timestamp_ms'] / 1000.0),
                     'lure_expiration': lure_expiration,
-                    'active_pokemon_id': active_pokemon_id
+                    'active_pokemon_id': active_pokemon_id,
+                    'encounter_id': encounter_id
                 }
 
             elif config['parse_gyms'] and f.get('type') is None:  # Currently, there are only stops and gyms
@@ -376,6 +390,19 @@ def parse_map(map_dict, step_location):
     pokestops_upserted = 0
     gyms_upserted = 0
 
+    scanned[0] = {
+        'latitude': step_location[0],
+        'longitude': step_location[1],
+        'last_modified': datetime.utcnow(),
+    }
+
+    while True:
+        try:
+            flaskDb.connect_db()
+            break
+        except Exception as e:
+            log.warning('%s... Retrying', e)
+
     if pokemons and config['parse_pokemon']:
         pokemons_upserted = len(pokemons)
         bulk_upsert(Pokemon, pokemons)
@@ -388,27 +415,21 @@ def parse_map(map_dict, step_location):
         gyms_upserted = len(gyms)
         bulk_upsert(Gym, gyms)
 
+    bulk_upsert(ScannedLocation, scanned)
+
+    clean_database()
+
+    flaskDb.close_db(None)
+
     log.info('Upserted %d pokemon, %d pokestops, and %d gyms',
              pokemons_upserted,
              pokestops_upserted,
              gyms_upserted)
 
-    scanned[0] = {
-        'scanned_id': str(step_location[0]) + ',' + str(step_location[1]),
-        'latitude': step_location[0],
-        'longitude': step_location[1],
-        'last_modified': datetime.utcnow(),
-    }
-
-    bulk_upsert(ScannedLocation, scanned)
-
-    clean_database()
-
     return True
 
 
 def clean_database():
-    flaskDb.connect_db()
     query = (ScannedLocation
              .delete()
              .where((ScannedLocation.last_modified <
@@ -417,20 +438,16 @@ def clean_database():
 
     if args.purge_data > 0:
         query = (Pokemon
-                .delete()
-                .where((Pokemon.disappear_time <
-                    (datetime.utcnow() - timedelta(hours=args.purge_data)))))
+                 .delete()
+                 .where((Pokemon.disappear_time <
+                        (datetime.utcnow() - timedelta(hours=args.purge_data)))))
         query.execute()
-
-    flaskDb.close_db(None)
 
 
 def bulk_upsert(cls, data):
     num_rows = len(data.values())
     i = 0
     step = 120
-
-    flaskDb.connect_db()
 
     while i < num_rows:
         log.debug('Inserting items %d to %d', i, min(i + step, num_rows))
@@ -442,16 +459,61 @@ def bulk_upsert(cls, data):
 
         i += step
 
-    flaskDb.close_db(None)
-
 
 def create_tables(db):
     db.connect()
+    verify_database_schema(db)
     db.create_tables([Pokemon, Pokestop, Gym, ScannedLocation], safe=True)
     db.close()
 
 
 def drop_tables(db):
     db.connect()
-    db.drop_tables([Pokemon, Pokestop, Gym, ScannedLocation], safe=True)
+    db.drop_tables([Pokemon, Pokestop, Gym, ScannedLocation, Versions], safe=True)
     db.close()
+
+
+def verify_database_schema(db):
+    if not Versions.table_exists():
+        db.create_tables([Versions])
+
+        if ScannedLocation.table_exists():
+            # Versions table didn't exist, but there were tables. This must mean the user
+            # is coming from a database that existed before we started tracking the schema
+            # version. Perform a full upgrade.
+            InsertQuery(Versions, {Versions.key: 'schema_version', Versions.val: 0}).execute()
+            database_migrate(db, 0)
+        else:
+            InsertQuery(Versions, {Versions.key: 'schema_version', Versions.val: db_schema_version}).execute()
+
+    else:
+        db_ver = Versions.get(Versions.key == 'schema_version').val
+
+        if db_ver < db_schema_version:
+            database_migrate(db, db_ver)
+
+        elif db_ver > db_schema_version:
+            log.error("Your database version (%i) appears to be newer than the code supports (%i).",
+                      db_ver, db_schema_version)
+            log.error("Please upgrade your code base or drop all tables in your database.")
+            sys.exit(1)
+
+
+def database_migrate(db, old_ver):
+    log.info("Detected database version %i, updating to %i", old_ver, db_schema_version)
+
+    # Perform migrations here
+    migrator = None
+    if args.db_type == 'mysql':
+        migrator = MySQLMigrator(db)
+    else:
+        migrator = SqliteMigrator(db)
+
+    if old_ver < 1:
+        db.drop_tables([ScannedLocation])
+
+    if old_ver < 2:
+        migrate(migrator.add_column('pokestop', 'encounter_id', CharField(max_length=50, null=True)))
+
+    # Update database schema version
+    Versions.update(val=db_schema_version).where(Versions.key == 'schema_version').execute()
