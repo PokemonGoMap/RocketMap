@@ -64,6 +64,33 @@
     }
   })()
 
+  function getHistory () { // eslint-disable-line no-unused-vars
+    var bounds = map.getBounds();
+    var swPoint = bounds.getSouthWest();
+    var nePoint = bounds.getNorthEast();
+    var swLat = swPoint.lat();
+    var swLng = swPoint.lng();
+    var neLat = nePoint.lat();
+    var neLng = nePoint.lng();
+
+    $.ajax({
+      url: '/history',
+      dataType: 'json',
+      data: {
+        'swLat': swLat,
+        'swLng': swLng,
+        'neLat': neLat,
+        'neLng': neLng
+      },
+      async: true,
+      success: function (data) {
+        compileHistory(data)
+      },
+      error: function (jqXHR, status, error) {
+        console.log('Error loading stats: ' + error);
+      }
+    });
+  }
   // Vars.
   var $body = document.querySelector('body')
 
@@ -172,7 +199,7 @@
         if ($('#stats').hasClass('visible')) {
           $stats.classList.toggle('visible')
         }
-        get_history()
+        getHistory()
       }
     })
   }
