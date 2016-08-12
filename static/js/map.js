@@ -1053,7 +1053,7 @@ function gymLabel (teamName, teamId, gymPoints, latitude, longitude) {
 
 function pokestopLabel (expireTime, latitude, longitude) {
   var str
-  if (!!expireTime) {
+  if (expireTime) {
     var expireDate = new Date(expireTime)
 
     str = `
