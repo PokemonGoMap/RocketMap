@@ -31,8 +31,10 @@ COPY package.json Gruntfile.js /usr/src/app/
 COPY static /usr/src/app/static
 
 RUN apk add --no-cache build-base nodejs \
+ && npm install -g grunt-cli \
  && npm install \
- && npm run build \
+ && npm run-script build \
+ && npm uninstall -g grunt-cli \
  && rm -rf node_modules \
  && apk del build-base nodejs
 
