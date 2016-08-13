@@ -91,10 +91,20 @@
                 </label>
               </div>
             </div>
+            <div class="form-control switch-container">
+              <h3>Spawn Points</h3>
+              <div class="onoffswitch">
+                <input id="spawnpoints-switch" type="checkbox" name="spawnpoints-switch" class="onoffswitch-checkbox">
+                <label class="onoffswitch-label" for="spawnpoints-switch">
+                <span class="switch-label" data-on="On" data-off="Off"></span>
+                <span class="switch-handle"></span>
+                </label>
+              </div>
+            </div>
             <div class="form-control">
               <label for="exclude-pokemon">
               <h3>Hide Pokémon</h3>
-              <div style="max-height:165px;overflow-y:auto";>
+              <div style="max-height:165px;overflow-y:auto">
                 <select id="exclude-pokemon" multiple="multiple"></select>
               </div>
               </label>
@@ -123,6 +133,26 @@
 			</div>
 			-->
 			
+            <div class="form-control switch-container" style="display:{{is_fixed}}" >
+              <h3>Lock marker</h3>
+              <div class="onoffswitch">
+                <input id="lock-marker-switch" type="checkbox" name="lock-marker-switch" class="onoffswitch-checkbox" checked/>
+                <label class="onoffswitch-label" for="lock-marker-switch">
+                <span class="switch-label" data-on="On" data-off="Off"></span>
+                <span class="switch-handle"></span>
+                </label>
+              </div>
+            </div>
+            <div class="form-control switch-container" style="display:{{is_fixed}}" >
+              <h3>Scan follows location</h3>
+              <div class="onoffswitch">
+                <input id="geoloc-switch" type="checkbox" name="geoloc-switch" class="onoffswitch-checkbox" checked/>
+                <label class="onoffswitch-label" for="geoloc-switch">
+                <span class="switch-label" data-on="On" data-off="Off"></span>
+                <span class="switch-handle"></span>
+                </label>
+              </div>
+            </div>
             <div class="form-control switch-container" >
               <h3>Get user's location</h3>
               <div class="onoffswitch">
@@ -152,7 +182,7 @@
             <div class="form-control">
               <label for="notify-pokemon">
                 <h3>Notify of Pokémon</h3>
-                <div style="max-height:165px;overflow-y:auto";>
+                <div style="max-height:165px;overflow-y:auto">
                   <select id="notify-pokemon" multiple="multiple"></select>
                 </div>
               </label>
@@ -160,7 +190,7 @@
             <div class="form-control">
               <label for="notify-rarity">
                 <h3>Notify of Rarity</h3>
-                <div style="max-height:165px;overflow-y:auto";>
+                <div style="max-height:165px;overflow-y:auto">
                   <select id="notify-rarity" multiple="multiple"></select>
                 </div>
               </label>
