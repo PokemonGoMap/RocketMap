@@ -18,8 +18,10 @@ Search Architecture:
 '''
 
 import logging
-import time
 import math
+import random
+import time
+
 
 from threading import Thread, Lock
 from queue import Queue, Empty
@@ -56,7 +58,7 @@ def get_new_coords(init_loc, distance, bearing):
     return [math.degrees(new_lat), math.degrees(new_lon)]
 
 
-def generate_location_steps(initial_loc, step_count):
+def generate_location_steps(initial_loc, step_count, scan_id):
     # Bearing (degrees)
     NORTH = 0
     EAST = 90
@@ -71,6 +73,7 @@ def generate_location_steps(initial_loc, step_count):
 
     ring = 1
     loc = initial_loc
+    offset = 0
     while ring < step_count:
         # Set loc to start at top left
         loc = get_new_coords(loc, ydist, NORTH)
@@ -79,6 +82,7 @@ def generate_location_steps(initial_loc, step_count):
             for i in range(ring):
                 if direction == 0:  # RIGHT
                     loc = get_new_coords(loc, xdist, EAST)
+                    offset += 1
                 if direction == 1:  # DOWN + RIGHT
                     loc = get_new_coords(loc, ydist, SOUTH)
                     loc = get_new_coords(loc, xdist / 2, EAST)
@@ -93,7 +97,8 @@ def generate_location_steps(initial_loc, step_count):
                 if direction == 5:  # UP + RIGHT
                     loc = get_new_coords(loc, ydist, NORTH)
                     loc = get_new_coords(loc, xdist / 2, EAST)
-                yield (loc[0], loc[1], 0)
+                if (ring + i + offset + scan_id) % 3 == 0:
+                    yield (loc[0], loc[1], 0)
         ring += 1
 
 
@@ -128,6 +133,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
     # A place to track the current location
     current_location = False
 
+    scan = 0
     # The real work starts here but will halt on pause_bit.set()
     while True:
 
@@ -163,10 +169,12 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
         # cleared above) -- either way, time to fill it back up
         if search_items_queue.empty():
             log.debug('Search queue empty, restarting loop')
-            for step, step_location in enumerate(generate_location_steps(current_location, args.step_limit), 1):
+            for step, step_location in enumerate(generate_location_steps(current_location, args.step_limit, scan), 1):
                 log.debug('Queueing step %d @ %f/%f/%f', step, step_location[0], step_location[1], step_location[2])
                 search_args = (step, step_location)
+                
                 search_items_queue.put(search_args)
+            scan = scan + 1
         # else:
         #     log.info('Search queue processing, %d items left', search_items_queue.qsize())
 
@@ -178,7 +186,12 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
 
     # If we have more than one account, stagger the logins such that they occur evenly over scan_delay
     if len(args.accounts) > 1:
-        delay = (args.scan_delay / len(args.accounts)) * args.accounts.index(account)
+        if len(args.accounts) > args.scan_delay:  # force ~1 second delay between threads if you have many accounts
+            delay = args.accounts.index(account) \
+                + ((random.random() - .5) / 2) if args.accounts.index(account) > 0 else 0
+        else:
+            delay = (args.scan_delay / len(args.accounts)) * args.accounts.index(account)
+
         log.debug('Delaying thread startup for %.2f seconds', delay)
         time.sleep(delay)
 
@@ -249,7 +262,7 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
                             search_items_queue.task_done()
                             break  # All done, get out of the request-retry loop
                         except KeyError:
-                            log.exception('Search step %s map parsing failed, retrying request in %g seconds', step, sleep_time)
+                            log.exception('Search step %s map parsing failed, retrying request in %g seconds. Username: %s', step, sleep_time, account['username'])
                             failed_total += 1
                             time.sleep(sleep_time)
 
