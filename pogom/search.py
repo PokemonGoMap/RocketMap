@@ -164,13 +164,13 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
         # If there are no search_items_queue either the loop has finished (or been
         # cleared above) -- either way, time to fill it back up
         if search_items_queue.empty():
-            log.info('Search queue empty, restarting scanners')
+            log.debug('Search queue empty, restarting loop')
             for step, step_location in enumerate(generate_location_steps(current_location, args.step_limit), 1):
                 log.debug('Queueing step %d @ %f/%f/%f', step, step_location[0], step_location[1], step_location[2])
                 search_args = (step, step_location)
                 search_items_queue.put(search_args)
             if args.wave_delay > 0
-                loginfo('Waiting for %d second wave delay', args.wave_delay)
+                log.debug('Waiting for %d second wave delay', args.wave_delay)
                 time.sleep(args.wave_delay)
         # else:
         #     log.info('Search queue processing, %d items left', search_items_queue.qsize())
