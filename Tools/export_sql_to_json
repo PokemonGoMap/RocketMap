@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+
+# Cheers Terranikas
+# https://www.reddit.com/r/pokemongodev/comments/4wxteh/i_implemented_tbterras_spawntracker_into/d6b94go
+
+if [ "$#" -eq  "0" ]
+   then
+     echo "Usage: export_sql_to_json databasename databaseuser"
+     exit
+fi
+
+database=$1
+dbuser=$2
+
+
+comm="use $database; select latitude as lat, longitude as lng, ((extract(minute from cast(disappear_time as time)) * 60 + extract(second from cast(disappear_time as time))) + 2700) % 3600 as time from pokemon group by spawnpoint_id;"
+echo "mysql -user "$dbuser" -p -se $comm"
+mysql -u "$dbuser" -p -se "$comm"> tmp.txt
+
+awk '{
+    print "[{\"lat\": "$1", \"lng\": "$2", \"time\": "$3"}";
+    while ( getline == 1 ) {
+        print ",{\"lat\": "$1", \"lng\": "$2", \"time\": "$3"}";
+    }
+    print "]";
+}' < tmp.txt > spawns-$(date "+%s").json
