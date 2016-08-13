@@ -120,6 +120,9 @@ class Pogom(Flask):
         if request.args.get('appearances', 'false') == 'true':
             d['appearances'] = Pokemon.get_appearances(request.args.get('pokemonid'), request.args.get('last', type=float))
 
+        if request.args.get('spawnpoints', 'false') == 'true':
+            d['spawnpoints'] = Pokemon.get_spawnpoints(swLat, swLng, neLat, neLng)
+
         return jsonify(d)
 
     def loc(self):
