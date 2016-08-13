@@ -20,6 +20,7 @@ Search Architecture:
 import logging
 import time
 import math
+import LatLon
 
 from threading import Thread, Lock
 from queue import Queue, Empty
@@ -36,65 +37,83 @@ log = logging.getLogger(__name__)
 TIMESTAMP = '\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000'
 
 
-def get_new_coords(init_loc, distance, bearing):
-    """ Given an initial lat/lng, a distance(in kms), and a bearing (degrees),
-    this will calculate the resulting lat/lng coordinates.
-    """
-    R = 6378.1  # km radius of the earth
-    bearing = math.radians(bearing)
-
-    init_coords = [math.radians(init_loc[0]), math.radians(init_loc[1])]  # convert lat/lng to radians
-
-    new_lat = math.asin(math.sin(init_coords[0]) * math.cos(distance / R) +
-                        math.cos(init_coords[0]) * math.sin(distance / R) * math.cos(bearing)
-                        )
-
-    new_lon = init_coords[1] + math.atan2(math.sin(bearing) * math.sin(distance / R) * math.cos(init_coords[0]),
-                                          math.cos(distance / R) - math.sin(init_coords[0]) * math.sin(new_lat)
-                                          )
-
-    return [math.degrees(new_lat), math.degrees(new_lon)]
-
-
 def generate_location_steps(initial_loc, step_count):
-    # Bearing (degrees)
-    NORTH = 0
-    EAST = 90
-    SOUTH = 180
-    WEST = 270
+    R = 6378137.0
+    heartbeat = 70.0
+    rings = 0
 
-    pulse_radius = 0.07                 # km - radius of players heartbeat is 70m
-    xdist = math.sqrt(3) * pulse_radius   # dist between column centers
-    ydist = 3 * (pulse_radius / 2)          # dist between row centers
+    # probably not correct and also not needed?
+    # r_hex = 52.5
 
-    yield (initial_loc[0], initial_loc[1], 0)  # insert initial location
+    # Convert the step limit of the worker into the r radius of the hexagon in meters?
+    # Don't need to convert the step limit of the worker into the r radius of a hexagon.
+    # Only the heartbeat is needed.
+    # w_worker = (2 * steps - 1) * r_hex
 
-    ring = 1
-    loc = initial_loc
-    while ring < step_count:
-        # Set loc to start at top left
-        loc = get_new_coords(loc, ydist, NORTH)
-        loc = get_new_coords(loc, xdist / 2, WEST)
-        for direction in range(6):
-            for i in range(ring):
-                if direction == 0:  # RIGHT
-                    loc = get_new_coords(loc, xdist, EAST)
-                if direction == 1:  # DOWN + RIGHT
-                    loc = get_new_coords(loc, ydist, SOUTH)
-                    loc = get_new_coords(loc, xdist / 2, EAST)
-                if direction == 2:  # DOWN + LEFT
-                    loc = get_new_coords(loc, ydist, SOUTH)
-                    loc = get_new_coords(loc, xdist / 2, WEST)
-                if direction == 3:  # LEFT
-                    loc = get_new_coords(loc, xdist, WEST)
-                if direction == 4:  # UP + LEFT
-                    loc = get_new_coords(loc, ydist, NORTH)
-                    loc = get_new_coords(loc, xdist / 2, WEST)
-                if direction == 5:  # UP + RIGHT
-                    loc = get_new_coords(loc, ydist, NORTH)
-                    loc = get_new_coords(loc, xdist / 2, EAST)
-                yield (loc[0], loc[1], 0)
-        ring += 1
+    # 70 Meter diameter converted to gps scale
+    d = 2.0 * heartbeat / 1000.0
+    d_s = d
+    brng_s = 0.0
+    brng = 0.0
+
+    # This calculates the degree the worker is facing when they move to their next location.
+    mod = math.degrees(math.atan(1.732 / (6 * (step_count - 1) + 3)))
+
+    # Shouldn't need to calculate the number of workers because its no longer being used in the for loop.
+    # total_workers = (((rings * (rings - 1)) *3) + 1)
+
+    # This initialises the list.
+    locations = [LatLon.LatLon(LatLon.Latitude(0), LatLon.Longitude(0))]
+
+    # This sets the initial location for worker 0.
+    locations[0] = LatLon.LatLon(LatLon.Latitude(initial_loc[0]), LatLon.Longitude(initial_loc[1]))
+
+    # Insert initial location in search locations.
+    yield (initial_loc[0], initial_loc[1], 0)
+
+    turns = 0               # number of turns made in this ring (0 to 6)
+    turn_steps = 0          # number of cells required to complete one turn of the ring
+    turn_steps_so_far = 0   # current cell number in this side of the current ring
+
+    while rings < step_count:
+        for i in range(rings):
+            if turns == 6 or turn_steps == 0:
+                # we have completed a ring (or are starting the very first ring)
+                turns = 0
+                turn_steps += 1
+                turn_steps_so_far = 0
+                rings += 1
+
+            if turn_steps_so_far == 0:
+                brng = brng_s
+                loc = locations[0]
+                d = turn_steps * d
+            else:
+                loc = locations[0]
+                C = math.radians(60.0)  # inside angle of a regular hexagon.
+                a = d_s / R * 2.0 * math.pi  # in radians get the arclength of the unit circle covered by d_s.
+                b = turn_steps_so_far * d_s / turn_steps / R * 2.0 * math.pi
+                # The first spherical law of cosines gives us the length of side c from known angle C.
+                c = math.acos(math.cos(a) * math.cos(b) + math.sin(a) * math.sin(b) * math.cos(C))
+                # Turnsteps here represents ring number because yay coincidence always the same.
+                # Multiply by derived arclength and convert to meters.
+                d = turn_steps * c * R / 2.0 / math.pi
+                # From the first spherical law of cosines we get the angle A from the side lengths a b c.
+                A = math.acos((math.cos(b) - math.cos(a) * math.cos(c)) / (math.sin(c) * math.sin(a)))
+                brng = 60 * turns + math.degrees(A)
+
+            # This offsets the LatLon location using the bearing + mod as the direction, travelling the length of d.
+            loc = loc.offset(brng + mod, d)
+            locations.append(loc)  # This appends the location to the locations list.
+            d = d_s
+            turn_steps_so_far += 1
+            if turn_steps_so_far >= turn_steps:
+                # make a turn
+                brng_s += 60.0
+                brng = brng_s
+                turns += 1
+                turn_steps_so_far = 0
+            yield (float(loc.to_string()[0]), float(loc.to_string()[1]), 0)  # Insert steps in search locations.
 
 
 #
