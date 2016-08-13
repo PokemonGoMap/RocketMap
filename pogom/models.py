@@ -311,7 +311,7 @@ def parse_map(map_dict, step_location):
         if config['parse_pokemon']:
             for p in cell.get('wild_pokemons', []):
                 # time_till_hidden_ms was overflowing causing a negative integer. It was also returning a value above 3.6M ms.
-                if (p['time_till_hidden_ms'] > 0 or p['time_till_hidden_ms'] < 3600000):
+                if (0 < p['time_till_hidden_ms'] < 3600000):
                     d_t = datetime.utcfromtimestamp(
                         (p['last_modified_timestamp_ms'] +
                          p['time_till_hidden_ms']) / 1000.0)
