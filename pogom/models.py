@@ -1,6 +1,5 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-
 import logging
 import calendar
 import sys
@@ -24,7 +23,7 @@ log = logging.getLogger(__name__)
 args = get_args()
 flaskDb = FlaskDB()
 
-db_schema_version = 4
+db_schema_version = 5
 
 
 class MyRetryDB(RetryOperationalError, PooledMySQLDatabase):
@@ -188,6 +187,23 @@ class Pokemon(BaseModel):
             appearances.append(a)
         return appearances
 
+    @classmethod
+    def get_spawnpoints(cls, swLat, swLng, neLat, neLng):
+        query = Pokemon.select(Pokemon.latitude, Pokemon.longitude, Pokemon.spawnpoint_id)
+
+        if None not in (swLat, swLng, neLat, neLng):
+            query = (query
+                     .where((Pokemon.latitude >= swLat) &
+                            (Pokemon.longitude >= swLng) &
+                            (Pokemon.latitude <= neLat) &
+                            (Pokemon.longitude <= neLng)
+                            )
+                     )
+
+        query = query.group_by(Pokemon.spawnpoint_id).dicts()
+
+        return list(query)
+
 
 class Pokestop(BaseModel):
     pokestop_id = CharField(primary_key=True, max_length=50)
@@ -311,9 +327,14 @@ def parse_map(map_dict, step_location):
     for cell in cells:
         if config['parse_pokemon']:
             for p in cell.get('wild_pokemons', []):
-                d_t = datetime.utcfromtimestamp(
-                    (p['last_modified_timestamp_ms'] +
-                     p['time_till_hidden_ms']) / 1000.0)
+                # time_till_hidden_ms was overflowing causing a negative integer. It was also returning a value above 3.6M ms.
+                if (0 < p['time_till_hidden_ms'] < 3600000):
+                    d_t = datetime.utcfromtimestamp(
+                        (p['last_modified_timestamp_ms'] +
+                         p['time_till_hidden_ms']) / 1000.0)
+                else:
+                    # Set a value of 15 minutes because currently its unknown but larger than 15.
+                    d_t = datetime.utcfromtimestamp((p['last_modified_timestamp_ms'] + 900000) / 1000.0)
                 printPokemon(p['pokemon_data']['pokemon_id'], p['latitude'],
                              p['longitude'], d_t)
                 pokemons[p['encounter_id']] = {
@@ -492,6 +513,9 @@ def verify_database_schema(db):
 
 
 def database_migrate(db, old_ver):
+    # Update database schema version
+    Versions.update(val=db_schema_version).where(Versions.key == 'schema_version').execute()
+
     log.info("Detected database version %i, updating to %i", old_ver, db_schema_version)
 
     # Perform migrations here
@@ -518,5 +542,11 @@ def database_migrate(db, old_ver):
     if old_ver < 4:
         db.drop_tables([ScannedLocation])
 
-    # Update database schema version
-    Versions.update(val=db_schema_version).where(Versions.key == 'schema_version').execute()
+    if old_ver < 5:
+        # Some pokemon were added before the 595 bug was "fixed"
+        # Clean those up for a better UX
+        query = (Pokemon
+                 .delete()
+                 .where(Pokemon.disappear_time >
+                        (datetime.utcnow() - timedelta(hours=24))))
+        query.execute()
