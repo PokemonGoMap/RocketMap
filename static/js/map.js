@@ -1170,7 +1170,7 @@ function setupPokemonMarker (item, skipNotification, isBounceDisabled) {
   if (notifiedPokemon.indexOf(item['pokemon_id']) > -1 || notifiedRarity.indexOf(item['pokemon_rarity']) > -1) {
     if (!skipNotification) {
       if (Store.get('playSound')) {
-        createjs.Sound.play('ding');
+        createjs.Sound.play('ding')
       }
       sendNotification('A wild ' + item['pokemon_name'] + ' appeared!', 'Click to load map', 'static/icons/' + item['pokemon_id'] + '.png', item['latitude'], item['longitude'])
     }
@@ -1394,7 +1394,7 @@ function loadRawData () {
 
 function processPokemons (i, item) {
   if (!Store.get('showPokemon')) {
-    return false; // in case the checkbox was unchecked in the meantime.
+    return false // in case the checkbox was unchecked in the meantime.
   }
 
   if (!(item['encounter_id'] in mapData.pokemons) &&
@@ -1478,7 +1478,7 @@ function processLuredPokemon (i, item) {
 
 function processGyms (i, item) {
   if (!Store.get('showGyms')) {
-    return false; // in case the checkbox was unchecked in the meantime.
+    return false // in case the checkbox was unchecked in the meantime.
   }
 
   if (item['gym_id'] in mapData.gyms) {
