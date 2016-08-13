@@ -400,13 +400,13 @@ def parse_map(map_dict, step_location, api):
                         f['last_modified_timestamp_ms'] / 1000.0),
                 }
                 try:
-                    data =  api.get_gym_details(gym_id = f['id'])['responses']['GET_GYM_DETAILS']
-                    print 'Gym: '+data['name']
+                    data = api.get_gym_details(gym_id=f['id'])['responses']['GET_GYM_DETAILS']
+                    print 'Gym: ' + data['name']
                     for d in data['gym_state']['memberships']:
                         d = d['pokemon_data']
-                        print 'Player: '+d['owner_name']
-                        print 'PokeID: '+str(d['pokemon_id'])
-                        print 'PokeCP: '+str(d['cp'])
+                        print 'Player: ' + d['owner_name']
+                        print 'PokeID: ' + str(d['pokemon_id'])
+                        print 'PokeCP: ' + str(d['cp'])
                     print
                 except:
                     pass
