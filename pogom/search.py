@@ -20,7 +20,10 @@ Search Architecture:
 import logging
 import time
 import math
+import json
+import geojson
 
+from operator import itemgetter
 from threading import Thread, Lock
 from queue import Queue, Empty
 
@@ -106,6 +109,35 @@ def fake_search_loop():
         time.sleep(10)
 
 
+def curSec():
+    return (60 * time.gmtime().tm_min) + time.gmtime().tm_sec
+
+
+# timeDif of -1800 to +1800 secs
+def timeDif(a, b):
+    dif = a-b
+    if (dif < -1800):
+        dif += 3600
+    if (dif > 1800):
+        dif -= 3600
+    return dif
+
+
+def SbSearch(Slist, T):
+    # binary search to find the lowest index with the required value or the index with the next value update
+    first = 0
+    last = len(Slist)-1
+    while first < last:
+        mp = (first+last)//2
+        if Slist[mp]['time'] < T:
+            first = mp + 1
+        else:
+            last = mp
+    return first
+
+Shash = {}
+
+
 # The main search loop that keeps an eye on the over all process
 def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_path):
 
@@ -172,6 +204,58 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
 
         # Now we just give a little pause here
         time.sleep(1)
+
+
+def search_overseer_thread_ss(args, new_location_queue, pause_bit, encryption_lib_path):
+    global spawns, Shash, going
+    log.info('Search overseer starting')
+    search_items_queue = Queue()
+    parse_lock = Lock()
+
+    # Create a search_worker_thread per account
+    log.info('Starting search worker threads')
+    for i, account in enumerate(args.accounts):
+        log.debug('Starting search worker thread %d for user %s', i, account['username'])
+        t = Thread(target=search_worker_thread_ss,
+                   name='search_worker_{}'.format(i),
+                   args=(args, account, search_items_queue, parse_lock, encryption_lib_path))
+        t.daemon = True
+        t.start()
+
+    # A place to track the current location
+    current_location = False
+
+    # FIXME add arg for switching
+    # load spawn points
+    with open('spawns.json') as file:
+        spawns = json.load(file)
+        file.close()
+    for spawn in spawns:
+        hash = '{},{}'.format(spawn['time'], spawn['lng'])
+        Shash[spawn['lng']] = spawn['time']
+    # sort spawn points
+    spawns.sort(key=itemgetter('time'))
+    log.info('total of %d spawns to track', len(spawns))
+    # find start position
+    pos = SbSearch(spawns, (curSec()+3540) % 3600)
+    while True:
+        while timeDif(curSec(), spawns[pos]['time']) < 60:
+            time.sleep(1)
+        location = []
+        location.append(spawns[pos]['lat'])
+        location.append(spawns[pos]['lng'])
+        location.append(0)
+        for step, step_location in enumerate(generate_location_steps(location, args.step_limit), 1):
+                log.debug('Queueing step %d @ %f/%f/%f', pos, step_location[0], step_location[1], step_location[2])
+                search_args = (step, step_location, spawns[pos]['time'])
+                search_items_queue.put(search_args)
+        pos = (pos+1) % len(spawns)
+        if pos == 0:
+            while not(search_items_queue.empty()):
+                log.info('search_items_queue not empty. waiting 10 secrestarting at top of hour')
+                time.sleep(10)
+            log.info('restarting from top of list and finding current time')
+            pos = SbSearch(spawns, (curSec()+3540) % 3600)
 
 
 def search_worker_thread(args, account, search_items_queue, parse_lock, encryption_lib_path):
@@ -266,6 +350,83 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
             log.exception('Exception in search_worker: %s. Username: %s', e, account['username'])
 
 
+def search_worker_thread_ss(args, account, search_items_queue, parse_lock, encryption_lib_path):
+
+    log.debug('Search worker thread starting')
+
+    # The forever loop for the thread
+    while True:
+        try:
+            log.debug('Entering search loop')
+
+            # Create the API instance this will use
+            api = PGoApi()
+
+            # The forever loop for the searches
+            while True:
+
+                # Grab the next thing to search (when available)
+                step, step_location, spawntime = search_items_queue.get()
+
+                log.info('Searching step %d, remaining %d', step, search_items_queue.qsize())
+                if timeDif(curSec(), spawntime) < 840:  # if we arnt 14mins too late
+                    # Let the api know where we intend to be for this loop
+                    api.set_position(*step_location)
+
+                    # The loop to try very hard to scan this step
+                    failed_total = 0
+                    while True:
+
+                        # After so many attempts, let's get out of here
+                        if failed_total >= args.scan_retries:
+                            # I am choosing to NOT place this item back in the queue
+                            # otherwise we could get a "bad scan" area and be stuck
+                            # on this overall loop forever. Better to lose one cell
+                            # than have the scanner, essentially, halt.
+                            log.error('Search step %d went over max scan_retires; abandoning', step)
+                            break
+
+                        # Increase sleep delay between each failed scan
+                        # By default scan_dela=5, scan_retries=5 so
+                        # We'd see timeouts of 5, 10, 15, 20, 25
+                        sleep_time = args.scan_delay * (1+failed_total)
+
+                        # Ok, let's get started -- check our login status
+                        check_login(args, account, api, step_location)
+
+                        api.activate_signature(encryption_lib_path)
+
+                        # Make the actual request (finally!)
+                        response_dict = map_request(api, step_location)
+
+                        # G'damnit, nothing back. Mark it up, sleep, carry on
+                        if not response_dict:
+                            log.error('Search step %d area download failed, retyring request in %g seconds', step, sleep_time)
+                            failed_total += 1
+                            time.sleep(sleep_time)
+                            continue
+
+                        # Got the response, lock for parsing and do so (or fail, whatever)
+                        with parse_lock:
+                            try:
+                                parsed = parse_map(response_dict, step_location)
+                                log.debug('Search step %s completed', step)
+                                search_items_queue.task_done()
+                                break  # All done, get out of the request-retry loop
+                            except KeyError:
+                                log.error('Search step %s map parsing failed, retyring request in %g seconds', step, sleep_time)
+                                failed_total += 1
+                                time.sleep(sleep_time)
+
+                    time.sleep(args.scan_delay)
+                else:
+                    log.info('cant keep up. skipping')
+
+        # catch any process exceptions, log them, and continue the thread
+        except Exception as e:
+            log.exception('Exception in search_worker: %s', e)
+
+
 def check_login(args, account, api, position):
 
     # Logged in? Enough time left? Cool!
@@ -308,3 +469,4 @@ def map_request(api, position):
 
 class TooManyLoginAttempts(Exception):
     pass
+
