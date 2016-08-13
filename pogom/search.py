@@ -169,7 +169,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
                 log.debug('Queueing step %d @ %f/%f/%f', step, step_location[0], step_location[1], step_location[2])
                 search_args = (step, step_location)
                 search_items_queue.put(search_args)
-            if args.wave_delay > 0
+            if args.wave_delay > 0:
                 log.debug('Waiting for %d second wave delay', args.wave_delay)
                 time.sleep(args.wave_delay)
         # else:
