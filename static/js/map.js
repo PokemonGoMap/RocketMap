@@ -1369,7 +1369,7 @@ function i8ln (word) {
 //
 
 $(function () {
-  if (!Push.isSupported) 
+  if (!Push.isSupported) {
     console.log('could not load notifications')
     return
   }
