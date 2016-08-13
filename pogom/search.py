@@ -179,8 +179,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
                 spawnpoints = set((d['latitude'], d['longitude']) for d in Pokemon.get_spawnpoints(south[0], west[1], north[0], east[1]))
                 if len(spawnpoints) == 0:
                     log.warning('No spawnpoints found in the specified area! (Did you forget to run a normal scan in this area first?)')
-                any_spawnpoints_in_range = lambda coords: any(geopy_distance.distance(coords, x).meters <= 70 for x in spawnpoints)  # NOQA
-                locations = [x for x in locations if any_spawnpoints_in_range(x)]
+                locations = [coords for coords in locations if any(geopy_distance.distance(coords, x).meters <= 70 for x in spawnpoints)]
 
             if len(locations) == 0:
                 log.warning('Nothing to scan!')
