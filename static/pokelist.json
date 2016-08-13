@@ -1,0 +1,5 @@
+{
+ "exclude" : [16,20,19,96],
+ "notify"  : [3,6,9,150],
+ "rarity"  : ["Ultra Rare","Rare"]
+}
