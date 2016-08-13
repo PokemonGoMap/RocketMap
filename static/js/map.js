@@ -1851,11 +1851,9 @@ $(function () {
   $.getJSON('static/pokelist.json').done(function (data) {
     Store.set('remember_select_exclude', data.exclude)
     $selectExclude.val(Store.get('remember_select_exclude')).trigger('change')
-	
     Store.set('remember_select_notify', data.notify)
     $selectPokemonNotify.val(Store.get('remember_select_notify')).trigger('change')
-	
-	Store.set('remember_select_rarity_notify', data.rarity)
+    Store.set('remember_select_rarity_notify', data.rarity)
     $selectRarityNotify.val(Store.get('remember_select_rarity_notify')).trigger('change')
   })
 
