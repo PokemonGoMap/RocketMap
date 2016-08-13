@@ -1636,7 +1636,7 @@ $(function () {
   var numberOfPokemon = 151
 
   // Load pokemon names and populate lists
-  $.getJSON('static/dist/data/pokemon.min.json').done(function (data) {
+  $.getJSON('pokemon_data').done(function (data) {
     var pokeList = []
 
     $.each(data, function (key, value) {
@@ -1673,7 +1673,7 @@ $(function () {
     })
     $selectRarityNotify.select2({
       placeholder: i8ln('Select Rarity'),
-      data: [i8ln('Common'), i8ln('Uncommon'), i8ln('Rare'), i8ln('Very Rare'), i8ln('Ultra Rare')],
+      data: [i8ln('Very Common'), i8ln('Common'), i8ln('Uncommon'), i8ln('Rare'), i8ln('Very Rare'), i8ln('Ultra Rare')],
       templateResult: formatState
     })
 

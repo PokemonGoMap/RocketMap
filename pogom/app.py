@@ -9,12 +9,12 @@ from flask.json import JSONEncoder
 from flask_compress import Compress
 from datetime import datetime
 from s2sphere import LatLng
-from pogom.utils import get_args
+from pogom.utils import get_args, get_pokemon_data, get_pokemon_rarity
 from datetime import timedelta
 from collections import OrderedDict
 
 from . import config
-from .models import Pokemon, Gym, Pokestop, ScannedLocation, MainWorker, WorkerStatus
+from .models import Pokemon, Gym, Pokestop, ScannedLocation, PokemonRarity, MainWorker, WorkerStatus
 from .utils import now
 log = logging.getLogger(__name__)
 compress = Compress()
@@ -30,11 +30,13 @@ class Pogom(Flask):
         self.route("/loc", methods=['GET'])(self.loc)
         self.route("/next_loc", methods=['POST'])(self.next_loc)
         self.route("/mobile", methods=['GET'])(self.list_pokemon)
+        self.route("/pokemon_data", methods=['GET'])(self.get_all_pokemon)
         self.route("/search_control", methods=['GET'])(self.get_search_control)
         self.route("/search_control", methods=['POST'])(self.post_search_control)
         self.route("/stats", methods=['GET'])(self.get_stats)
         self.route("/status", methods=['GET'])(self.get_status)
         self.route("/status", methods=['POST'])(self.post_status)
+        self.route("/update_rarities", methods=['POST'])(self.update_rarities)
 
     def set_search_control(self, control):
         self.search_control = control
@@ -309,8 +311,8 @@ class Pogom(Flask):
                                origin_lat=lat,
                                origin_lng=lon)
 
-    def get_valid_stat_input(self):
-        duration = request.args.get("duration", type=str)
+    def get_valid_stat_input(self, duration=None):
+        duration = duration or request.args.get("duration", type=str)
         sort = request.args.get("sort", type=str)
         order = request.args.get("order", type=str)
         valid_durations = OrderedDict()
@@ -352,6 +354,23 @@ class Pogom(Flask):
                                gmaps_key=config['GMAPS_KEY'],
                                valid_input=self.get_valid_stat_input()
                                )
+
+    @staticmethod
+    def get_all_pokemon():
+        pokemon = {}
+        for x in xrange(1, 151):
+            pokemon[x] = get_pokemon_data(x)
+            pokemon[x]['rarity'] = PokemonRarity.get_rarity(x) or get_pokemon_rarity(x)
+
+        return jsonify(pokemon)
+
+    def update_rarities(self):
+        duration_arg = request.form.get('duration')
+        for duration in self.get_valid_stat_input(duration_arg)["duration"]["items"].values():
+            if duration["selected"] == "SELECTED":
+                PokemonRarity.update_rarities(duration["value"])
+                break
+        return "Done"
 
     def get_status(self):
         args = get_args()

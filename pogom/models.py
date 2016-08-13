@@ -7,6 +7,7 @@ import sys
 import gc
 import time
 import geopy
+from collections import namedtuple
 from peewee import SqliteDatabase, InsertQuery, \
     IntegerField, CharField, DoubleField, BooleanField, \
     DateTimeField, fn, DeleteQuery, CompositeKey, FloatField, SQL, TextField
@@ -20,7 +21,7 @@ from cachetools import TTLCache
 from cachetools import cached
 
 from . import config
-from .utils import get_pokemon_name, get_pokemon_rarity, get_pokemon_types, get_args
+from .utils import get_pokemon_name, get_pokemon_rarity, get_pokemon_types, get_args, i8ln
 from .transform import transform_from_wgs_to_gcj, get_new_coords
 from .customLog import printPokemon
 
@@ -30,7 +31,7 @@ args = get_args()
 flaskDb = FlaskDB()
 cache = TTLCache(maxsize=100, ttl=60 * 5)
 
-db_schema_version = 9
+db_schema_version = 10
 
 
 class MyRetryDB(RetryOperationalError, PooledMySQLDatabase):
@@ -139,7 +140,7 @@ class Pokemon(BaseModel):
         pokemons = []
         for p in query:
             p['pokemon_name'] = get_pokemon_name(p['pokemon_id'])
-            p['pokemon_rarity'] = get_pokemon_rarity(p['pokemon_id'])
+            p['pokemon_rarity'] = PokemonRarity.get_rarity(p['pokemon_id']) or get_pokemon_rarity(p['pokemon_id'])
             p['pokemon_types'] = get_pokemon_types(p['pokemon_id'])
             if args.china:
                 p['latitude'], p['longitude'] = \
@@ -176,7 +177,7 @@ class Pokemon(BaseModel):
         pokemons = []
         for p in query:
             p['pokemon_name'] = get_pokemon_name(p['pokemon_id'])
-            p['pokemon_rarity'] = get_pokemon_rarity(p['pokemon_id'])
+            p['pokemon_rarity'] = PokemonRarity.get_rarity(p['pokemon_id']) or get_pokemon_rarity(p['pokemon_id'])
             p['pokemon_types'] = get_pokemon_types(p['pokemon_id'])
             if args.china:
                 p['latitude'], p['longitude'] = \
@@ -651,6 +652,57 @@ class WorkerStatus(BaseModel):
             status.append(s)
 
         return status
+
+
+class PokemonRarity(BaseModel):
+    pokemon_id = IntegerField(primary_key=True)
+    rarity = IntegerField(index=True)
+
+    @staticmethod
+    def rarity_types():
+        rarity_type = namedtuple('rarity_type', 'rarity percent')
+        return [rarity_type(rarity="Very Common", percent=0.10),
+                rarity_type(rarity="Common", percent=0.18),
+                rarity_type(rarity="Uncommon", percent=0.22),
+                rarity_type(rarity="Rare", percent=0.22),
+                rarity_type(rarity="Very Rare", percent=0.18),
+                rarity_type(rarity="Ultra Rare", percent=0.10)]
+
+    @staticmethod
+    def get_rarity(pokemon_id):
+        pokemon = (PokemonRarity
+                   .select()
+                   .where(PokemonRarity.pokemon_id == pokemon_id)
+                   .first()
+                   )
+        if pokemon:
+            return i8ln(PokemonRarity.rarity_types()[pokemon.rarity].rarity)
+        return None
+
+    @staticmethod
+    def update_rarities(duration):
+        rarities = []
+        rarity_groups = []
+        rarities_query = {}
+        start = 0
+        seen = Pokemon.get_seen(duration)
+        total_count = seen['total']
+        for pokemon in seen['pokemon']:
+                spawn_rate = (pokemon['count'] / float(total_count))
+                rarities.append({'pokemon_id': pokemon['pokemon_id'], 'spawn_rate': spawn_rate})
+        # Sort Pokemon by rarity (Most common to least)
+        rarities.sort(key=lambda x: x['spawn_rate'], reverse=True)
+        # Split pokemon into groups by rarity using each rarity type percentage as the amount to split
+        for rarity_type in PokemonRarity.rarity_types():
+            qty = int(rarity_type.percent * len(rarities) + 1)
+            end = start + qty - 1
+            rarity_groups.append(rarities[start:end])
+            start += qty
+        # Assign a rarity index to each rarity group and setup rarities for DB insertion
+        for i, r in enumerate(rarity_groups):
+            for pokemon in r:
+                rarities_query[pokemon['pokemon_id']] = {'pokemon_id': pokemon['pokemon_id'], 'rarity': i}
+        bulk_upsert(PokemonRarity, rarities_query)
 
 
 class Versions(flaskDb.Model):
@@ -1178,13 +1230,13 @@ def bulk_upsert(cls, data):
 def create_tables(db):
     db.connect()
     verify_database_schema(db)
-    db.create_tables([Pokemon, Pokestop, Gym, ScannedLocation, GymDetails, GymMember, GymPokemon, Trainer, MainWorker, WorkerStatus], safe=True)
+    db.create_tables([Pokemon, PokemonRarity, Pokestop, Gym, ScannedLocation, GymDetails, GymMember, GymPokemon, Trainer, MainWorker, WorkerStatus], safe=True)
     db.close()
 
 
 def drop_tables(db):
     db.connect()
-    db.drop_tables([Pokemon, Pokestop, Gym, ScannedLocation, Versions, GymDetails, GymMember, GymPokemon, Trainer, MainWorker, WorkerStatus, Versions], safe=True)
+    db.drop_tables([Pokemon, PokemonRarity, Pokestop, Gym, ScannedLocation, Versions, GymDetails, GymMember, GymPokemon, Trainer, MainWorker, WorkerStatus, Versions], safe=True)
     db.close()
 
 

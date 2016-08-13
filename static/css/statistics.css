@@ -154,3 +154,9 @@ table td{
     margin-right: -50%;
     position: absolute;
 }
+
+#loading_small{
+    width: 50px;
+    height: 50px;
+    float: right;
+}

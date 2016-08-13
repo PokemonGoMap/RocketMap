@@ -3,6 +3,7 @@ var monthArray = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep',
 
 /* Main stats page */
 var rawDataIsLoading = false
+var raritiesUpdating = false
 var totalPokemon = 151
 var msPerMinute = 60000
 var spawnTimeMinutes = 15
@@ -487,9 +488,51 @@ function updateDetails () {
   })
 }
 
+function initRarities () {
+  var raritiesDiv = $('#update_rarities')
+  var loadingDiv = $('#loading_small')
+  function updateRaritiesHandler (event) {
+    event.preventDefault()
+    raritiesDiv.prop('disabled', true)
+    raritiesDiv.off('click')
+    $.ajax({
+      url: 'update_rarities',
+      type: 'POST',
+      data: {
+        'duration': document.getElementById('duration').options[document.getElementById('duration').selectedIndex].value
+      },
+      beforeSend: function () {
+        if (raritiesUpdating) {
+          return false
+        } else {
+          raritiesUpdating = true
+          raritiesDiv.hide()
+          loadingDiv.show()
+        }
+      },
+      complete: function () {
+        raritiesUpdating = false
+        // Change to finished updating text
+        raritiesDiv.addClass('no-before').find('span').html('Rarities Updated!')
+        loadingDiv.hide()
+        raritiesDiv.show()
+        setTimeout(function () {
+          raritiesDiv.animate({'opacity': 0}, 1000, function () {
+            raritiesDiv.removeClass('no-before').find('span').html('Update Rarities')
+          }).animate({'opacity': 1}, 1000)
+          raritiesDiv.bind('click', updateRaritiesHandler)
+        }, 3000)
+      }
+    })
+  }
+  raritiesDiv.on('click', updateRaritiesHandler)
+}
+
 if (location.href.match(/overlay_[0-9]+/g)) {
   showOverlay(location.href.replace(/^.*overlay_([0-9]+).*$/, '$1'))
 }
+
+initRarities()
 
 $('#nav select')
   .select2({
