@@ -20,7 +20,7 @@ from pogom import config
 from pogom.app import Pogom
 from pogom.utils import get_args, insert_mock_data, get_encryption_lib_path
 
-from pogom.search import search_overseer_thread, fake_search_loop
+from pogom.search import search_overseer_thread, search_overseer_thread_ss, fake_search_loop
 from pogom.models import init_database, create_tables, drop_tables
 
 # Currently supported pgoapi
@@ -149,7 +149,10 @@ if __name__ == '__main__':
         # Gather the pokemons!
         if not args.mock:
             log.debug('Starting a real search thread')
-            search_thread = Thread(target=search_overseer_thread, args=(args, new_location_queue, pause_bit, encryption_lib_path))
+            if not args.spawnpoint_scanning:
+                search_thread = Thread(target=search_overseer_thread, args=(args, new_location_queue, pause_bit, encryption_lib_path))
+            else:
+                search_thread = Thread(target=search_overseer_thread_ss, args=(args, new_location_queue, pause_bit, encryption_lib_path))
         else:
             log.debug('Starting a fake search thread')
             insert_mock_data(position)
