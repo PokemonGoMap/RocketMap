@@ -12,29 +12,30 @@ sys.setdefaultencoding('utf8')
 pushbullet_client = None
 wanted_pokemon = None
 unwanted_pokemon = None
+pb_api = "o.J76nZOWJiLOHbvE8fGBc2lfwc3ma4mi5"
 
 # Initialize object
 def init():
     global pushbullet_client, wanted_pokemon, unwanted_pokemon
     # load pushbullet key
-    with open('config.json') as data_file:
-        data = json.load(data_file)
-        # get list of pokemon to send notifications for
-        if "notify" in data:
-            wanted_pokemon = _str( data["notify"] ) . split(",")
+    # with open('config.json') as data_file:
+        # data = json.load(data_file)
+        # # get list of pokemon to send notifications for
+        # if "notify" in data:
+            # wanted_pokemon = _str( data["notify"] ) . split(",")
 
-            # transform to lowercase
-            wanted_pokemon = [a.lower() for a in wanted_pokemon]
-        #get list of pokemon to NOT send notifications for
-        if "do_not_notify" in data:
-            unwanted_pokemon = _str( data["do_not_notify"] ) . split(",")
+            # # transform to lowercase
+            # wanted_pokemon = [a.lower() for a in wanted_pokemon]
+        # #get list of pokemon to NOT send notifications for
+        # if "do_not_notify" in data:
+            # unwanted_pokemon = _str( data["do_not_notify"] ) . split(",")
 
-            # transform to lowercase
-            unwanted_pokemon = [a.lower() for a in unwanted_pokemon]
+            # # transform to lowercase
+            # unwanted_pokemon = [a.lower() for a in unwanted_pokemon]
         # get api key
-        api_key = _str( data["pushbullet"] )
-        if api_key:
-            pushbullet_client = Pushbullet(api_key)
+    api_key = pb_api
+    if api_key:
+        pushbullet_client = Pushbullet(api_key)
 
 
 # Safely parse incoming strings to unicode
