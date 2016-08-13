@@ -127,7 +127,7 @@ def SbSearch(Slist, T):
     first = 0
     last = len(Slist) - 1
     while first < last:
-        mp = (first + last)//2
+        mp = (first + last) // 2
         if Slist[mp]['time'] < T:
             first = mp + 1
         else:
