@@ -151,7 +151,7 @@ if __name__ == '__main__':
             log.debug('Starting a real search thread')
             if not args.spawnpoint_scanning:
                 search_thread = Thread(target=search_overseer_thread, args=(args, new_location_queue, pause_bit, encryption_lib_path))
-	    else:
+            else:
                 search_thread = Thread(target=search_overseer_thread_ss, args=(args, new_location_queue, pause_bit, encryption_lib_path))
         else:
             log.debug('Starting a fake search thread')
