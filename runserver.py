@@ -149,10 +149,10 @@ if __name__ == '__main__':
         # Gather the pokemons!
         if not args.mock:
             log.debug('Starting a real search thread')
-	    if not args.spawnpoint_scanning:
-            	search_thread = Thread(target=search_overseer_thread, args=(args, new_location_queue, pause_bit, encryption_lib_path))
+            if not args.spawnpoint_scanning:
+                search_thread = Thread(target=search_overseer_thread, args=(args, new_location_queue, pause_bit, encryption_lib_path))
 	    else:
-		search_thread = Thread(target=search_overseer_thread_ss, args=(args, new_location_queue, pause_bit, encryption_lib_path))
+                search_thread = Thread(target=search_overseer_thread_ss, args=(args, new_location_queue, pause_bit, encryption_lib_path))
         else:
             log.debug('Starting a fake search thread')
             insert_mock_data(position)
