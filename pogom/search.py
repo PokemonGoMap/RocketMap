@@ -173,7 +173,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
         #     log.info('Search queue processing, %d items left', search_items_queue.qsize())
 
         # Now we just give a little pause here
-        time.sleep(wave_delay)
+        time.sleep(args.wave_delay)
 
 
 def search_worker_thread(args, account, search_items_queue, parse_lock, encryption_lib_path):
