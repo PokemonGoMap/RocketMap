@@ -45,7 +45,7 @@ def get_args():
     parser.add_argument('-st', '--step-limit', help='Steps', type=int,
                         default=12)
     parser.add_argument('-wd', '--wave-delay',
-                        help='Time delay once step-limit is reached',
+                        help='Time delay once STEP_LIMIT is reached',
                         type=float, default=1)
     parser.add_argument('-sd', '--scan-delay',
                         help='Time delay between requests in scan threads',
