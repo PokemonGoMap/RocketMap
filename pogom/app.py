@@ -225,7 +225,7 @@ class Pogom(Flask):
                                )
 
     def static_from_root(self):
-        return send_from_directory(self.static_folder+'/js', request.path[1:])
+        return send_from_directory(self.static_folder + '/js', request.path[1:])
 
 
 class CustomJSONEncoder(JSONEncoder):
