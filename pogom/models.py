@@ -23,8 +23,6 @@ log = logging.getLogger(__name__)
 args = get_args()
 flaskDb = FlaskDB()
 
-db_schema_version = 4
-
 
 class MyRetryDB(RetryOperationalError, PooledMySQLDatabase):
     pass
@@ -70,7 +68,7 @@ class BaseModel(flaskDb.Model):
 class Pokemon(BaseModel):
     # We are base64 encoding the ids delivered by the api
     # because they are too big for sqlite to handle
-    encounter_id = CharField(primary_key=True, max_length=50)
+    encounter_id = CharField(max_length=50)
     spawnpoint_id = CharField(index=True)
     pokemon_id = IntegerField(index=True)
     latitude = DoubleField()
@@ -79,6 +77,7 @@ class Pokemon(BaseModel):
 
     class Meta:
         indexes = ((('latitude', 'longitude'), False),)
+        primary_key = CompositeKey('encounter_id', 'spawnpoint_id', 'disappear_time')
 
     @staticmethod
     def get_active(swLat, swLng, neLat, neLng):
@@ -487,33 +486,42 @@ def drop_tables(db):
 
 
 def verify_database_schema(db):
+    # Table of migrations. First item is resulting version, second is migrator
+    migrations = (
+        (2, _migrate_2),
+        (3, _migrate_3),
+        (4, _migrate_4),
+        (5, _migrate_5)
+    )
+    db_ver = 0
+    db_schema_version = migrations[-1][0]
+
     if not Versions.table_exists():
         db.create_tables([Versions])
 
-        if ScannedLocation.table_exists():
+        if not ScannedLocation.table_exists():
+            # Hmm. No tables. Must be a new DB, no sense in migrating!
+            InsertQuery(Versions, {Versions.key: 'schema_version', Versions.val: db_schema_version}).execute()
+            return
+        else:
             # Versions table didn't exist, but there were tables. This must mean the user
             # is coming from a database that existed before we started tracking the schema
             # version. Perform a full upgrade.
-            InsertQuery(Versions, {Versions.key: 'schema_version', Versions.val: 0}).execute()
-            database_migrate(db, 0)
-        else:
-            InsertQuery(Versions, {Versions.key: 'schema_version', Versions.val: db_schema_version}).execute()
+            InsertQuery(Versions, {Versions.key: 'schema_version', Versions.val: db_ver}).execute()
 
     else:
         db_ver = Versions.get(Versions.key == 'schema_version').val
 
-        if db_ver < db_schema_version:
-            database_migrate(db, db_ver)
+    if db_ver == db_schema_version:
+        return
 
-        elif db_ver > db_schema_version:
-            log.error("Your database version (%i) appears to be newer than the code supports (%i).",
-                      db_ver, db_schema_version)
-            log.error("Please upgrade your code base or drop all tables in your database.")
-            sys.exit(1)
+    if db_ver > db_schema_version:
+        log.error("Your database version (%i) appears to be newer than the code supports (%i).",
+                  db_ver, db_schema_version)
+        log.error("Please upgrade your code base or drop all tables in your database.")
+        sys.exit(1)
 
-
-def database_migrate(db, old_ver):
-    log.info("Detected database version %i, updating to %i", old_ver, db_schema_version)
+    log.info("Detected database version %i, updating to %i", db_ver, db_schema_version)
 
     # Perform migrations here
     migrator = None
@@ -522,22 +530,77 @@ def database_migrate(db, old_ver):
     else:
         migrator = SqliteMigrator(db)
 
-#   No longer necessary, we're doing this at schema 4 as well
-#    if old_ver < 1:
-#        db.drop_tables([ScannedLocation])
+    for v, func in migrations:
+        if v <= db_ver:
+            continue
+        log.info('Running migration to %i...', v)
+        with db.atomic():  # So we don't corrupt the DB if we fail
+            func(migrator, db)
+            Versions.update(val=v).where(Versions.key == 'schema_version').execute()
+        log.info('Migration to %i complete.', v)
 
-    if old_ver < 2:
-        migrate(migrator.add_column('pokestop', 'encounter_id', CharField(max_length=50, null=True)))
+    log.info('All migrations complete.')
 
-    if old_ver < 3:
-        migrate(
-            migrator.add_column('pokestop', 'active_fort_modifier', CharField(max_length=50, null=True)),
-            migrator.drop_column('pokestop', 'encounter_id'),
-            migrator.drop_column('pokestop', 'active_pokemon_id')
-        )
 
-    if old_ver < 4:
-        db.drop_tables([ScannedLocation])
+def _migrate_2(migrator, db):
+    migrate(migrator.add_column('pokestop', 'encounter_id', CharField(max_length=50, null=True)))
 
-    # Update database schema version
-    Versions.update(val=db_schema_version).where(Versions.key == 'schema_version').execute()
+
+def _migrate_3(migrator, db):
+    migrate(
+        migrator.add_column('pokestop', 'active_fort_modifier', CharField(max_length=50, null=True)),
+        migrator.drop_column('pokestop', 'encounter_id'),
+        migrator.drop_column('pokestop', 'active_pokemon_id')
+    )
+
+
+def _migrate_4(migrator, db):
+    db.drop_tables([ScannedLocation])
+
+
+def _migrate_5(migrator, db):
+    # We need to change the PK of the Pokemon table. Only way to do this
+    # in Sqlite is to make a new table and copy all the data into it
+    class OldPokemon(BaseModel):
+        # We are base64 encoding the ids delivered by the api
+        # because they are too big for sqlite to handle
+        encounter_id = CharField(primary_key=True, max_length=50)
+        spawnpoint_id = CharField(index=True)
+        pokemon_id = IntegerField(index=True)
+        latitude = DoubleField()
+        longitude = DoubleField()
+        disappear_time = DateTimeField(index=True)
+
+        class Meta:
+            indexes = ((('latitude', 'longitude'), False),)
+            db_table = 'pokemon'
+
+    class NewPokemon(BaseModel):
+        encounter_id = CharField(max_length=50)
+        spawnpoint_id = CharField(index=True)
+        pokemon_id = IntegerField(index=True)
+        latitude = DoubleField()
+        longitude = DoubleField()
+        disappear_time = DateTimeField(index=True)
+
+        class Meta:
+            indexes = ((('latitude', 'longitude'), False),)
+            primary_key = CompositeKey('encounter_id', 'spawnpoint_id', 'disappear_time')
+            db_table = 'new_pokemon'
+
+    # Create the new table
+    db.create_tables([NewPokemon])
+
+    # Populate it
+    NewPokemon.insert_from(
+        fields=[NewPokemon.encounter_id, NewPokemon.spawnpoint_id, NewPokemon.pokemon_id, NewPokemon.latitude, NewPokemon.longitude, NewPokemon.disappear_time],
+        query=OldPokemon.select(OldPokemon.encounter_id, OldPokemon.spawnpoint_id, OldPokemon.pokemon_id, OldPokemon.latitude, OldPokemon.longitude, OldPokemon.disappear_time)
+    ).execute()
+
+    # Drop old table
+    db.drop_tables([OldPokemon])
+
+    # Rename the new table
+    migrate(
+        migrator.rename_table('new_pokemon', 'pokemon')
+    )
