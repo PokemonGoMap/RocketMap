@@ -688,14 +688,14 @@ var StoreTypes = {
 }
 
 var StoreOptions = {
-  'last_pos_lng': {
+  /*'last_pos_lng': {
     default: '',
     type: StoreTypes.String
   },
   'last_pos_lat': {
     default: '',
     type: StoreTypes.String
-  },
+  },*/
   'map_style': {
     default: 'roadmap',
     type: StoreTypes.String
@@ -1641,8 +1641,8 @@ function addMyLocationButton () {
 }
 
 function changeLocation (lat, lng) {
-  Store.set('last_pos_lng', lng)
-  Store.set('last_pos_lat', lat)
+  /*Store.set('last_pos_lng', lng)
+  Store.set('last_pos_lat', lat)*/
   
   var loc = new google.maps.LatLng(lat, lng)
   changeSearchLocation(lat, lng).done(function () {
@@ -1787,12 +1787,12 @@ $(function () {
   }
 
   if (Store.get('startAtUserLocation')) {
-	var lat = parseFloat(Store.get('last_pos_lat'))
+	/*var lat = parseFloat(Store.get('last_pos_lat'))
 	var lng = parseFloat(Store.get('last_pos_lng'))
 	
 	if(!(isNaN(lat) || isNaN(lng))) {
 		changeLocation(lat, lng)
-	}
+	}*/
 	
     centerMapOnLocation()
   }
