@@ -798,8 +798,8 @@ function notifyAboutPokemon (id) { // eslint-disable-line no-unused-vars
 }
 
 function loadPokemonSounds () {
-  var sounds = {}
-  notifiedPokemon.forEach(function (id) { sounds[id] = new Audio('static/sounds/' + id + '.wav') })
+  var sounds = { 'default': new Audio('static/sounds/ding.mp3') }
+  notifiedPokemon.forEach(function (id) { sounds[id] = new Audio('static/sounds/' + id + '.mp3') })
   return sounds
 }
 
@@ -1178,7 +1178,11 @@ function setupPokemonMarker (item, skipNotification, isBounceDisabled) {
   if (notifiedPokemon.indexOf(item['pokemon_id']) > -1 || notifiedRarity.indexOf(item['pokemon_rarity']) > -1) {
     if (!skipNotification) {
       if (Store.get('playSound')) {
-        sounds[item['pokemon_id']].play()
+        if (sounds[item['pokemon_id']] !== undefined) {
+          sounds[item['pokemon_id']].play()
+        } else {
+          sounds['default'].play()
+        }
       }
       sendNotification('A wild ' + item['pokemon_name'] + ' appeared!', 'Click to load map', 'static/icons/' + item['pokemon_id'] + '.png', item['latitude'], item['longitude'])
     }
