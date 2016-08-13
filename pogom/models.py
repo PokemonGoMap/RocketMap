@@ -3,6 +3,7 @@
 import logging
 import calendar
 import sys
+import time
 from peewee import SqliteDatabase, InsertQuery, \
     IntegerField, CharField, DoubleField, BooleanField, \
     DateTimeField, CompositeKey, fn
@@ -317,7 +318,7 @@ class Versions(flaskDb.Model):
         primary_key = False
 
 
-def parse_map(map_dict, step_location):
+def parse_map(map_dict, step_location, api):
     pokemons = {}
     pokestops = {}
     gyms = {}
@@ -398,6 +399,18 @@ def parse_map(map_dict, step_location):
                     'last_modified': datetime.utcfromtimestamp(
                         f['last_modified_timestamp_ms'] / 1000.0),
                 }
+                try:
+                    data =  api.get_gym_details(gym_id = f['id'])['responses']['GET_GYM_DETAILS']
+                    print 'Gym: '+data['name']
+                    for d in data['gym_state']['memberships']:
+                        d = d['pokemon_data']
+                        print 'Player: '+d['owner_name']
+                        print 'PokeID: '+str(d['pokemon_id'])
+                        print 'PokeCP: '+str(d['cp'])
+                    print
+                except:
+                    pass
+                time.sleep(1)
 
     pokemons_upserted = 0
     pokestops_upserted = 0
