@@ -27,6 +27,7 @@ class Pogom(Flask):
         self.json_encoder = CustomJSONEncoder
         self.route("/", methods=['GET'])(self.fullmap)
         self.route("/raw_data", methods=['GET'])(self.raw_data)
+        self.route("/raw_pokemons_history", methods=['GET'])(self.raw_pokemons_history)
         self.route("/loc", methods=['GET'])(self.loc)
         self.route("/next_loc", methods=['POST'])(self.next_loc)
         self.route("/mobile", methods=['GET'])(self.list_pokemon)
@@ -108,6 +109,20 @@ class Pogom(Flask):
         if request.args.get('appearances', 'false') == 'true':
             d['appearances'] = Pokemon.get_appearances(request.args.get('pokemonid'), request.args.get('last', type=float))
 
+        return jsonify(d)
+
+    def raw_pokemons_history(self):
+        d = {}
+        swLat = request.args.get('swLat')
+        swLng = request.args.get('swLng')
+        neLat = request.args.get('neLat')
+        neLng = request.args.get('neLng')
+        myPokemon = Pokemon()
+        heatmap = request.args.get('heatmap_ids')
+        if heatmap:
+            d['pokemons'] = myPokemon.get_all_by_id(heatmap.split(','), swLat, swLng, neLat, neLng)
+        else:
+            d['pokemons'] = myPokemon.get_all(swLat, swLng, neLat, neLng)
         return jsonify(d)
 
     def loc(self):

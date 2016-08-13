@@ -3,6 +3,7 @@
 //
 
 var $selectExclude
+var $selectHeatmap
 var $selectPokemonNotify
 var $selectRarityNotify
 var $selectStyle
@@ -18,9 +19,11 @@ var languageLookupThreshold = 3
 
 var excludedPokemon = []
 var notifiedPokemon = []
+var heatmapPokemon = []
 var notifiedRarity = []
 
 var map
+var heatmap
 var rawDataIsLoading = false
 var locationMarker
 var marker
@@ -700,6 +703,10 @@ var StoreOptions = {
     default: [],
     type: StoreTypes.JSON
   },
+  'remember_select_heatmap': {
+    default: [],
+    type: StoreTypes.JSON
+  },
   'remember_select_rarity_notify': {
     default: [],
     type: StoreTypes.JSON
@@ -721,6 +728,22 @@ var StoreOptions = {
     type: StoreTypes.Number
   },
   'showScanned': {
+    default: false,
+    type: StoreTypes.Boolean
+  },
+  'showHeatmap': {
+    default: false,
+    type: StoreTypes.Boolean
+  },
+  'heatmapRadius': {
+    default: 50,
+    type: StoreTypes.Number
+  },
+  'heatmapIntensity': {
+    default: 5,
+    type: StoreTypes.Number
+  },
+  'heatmapForExcludedAndNotifiedOnly': {
     default: false,
     type: StoreTypes.Boolean
   },
@@ -937,6 +960,7 @@ function initSidebar () {
   $('#start-at-user-location-switch').prop('checked', Store.get('startAtUserLocation'))
   $('#scanned-switch').prop('checked', Store.get('showScanned'))
   $('#sound-switch').prop('checked', Store.get('playSound'))
+  $('#heatmap-switch').prop('checked', Store.get('showHeatmap'))
   var searchBox = new google.maps.places.SearchBox(document.getElementById('next-location'))
   $('#next-location').css('background-color', $('#geoloc-switch').prop('checked') ? '#e0e0e0' : '#ffffff')
 
@@ -1456,6 +1480,57 @@ function processScanned (i, item) {
   }
 }
 
+function updateHeatmap () {
+  let heatmapData = []
+  let pokemon = []
+  let bounds = map.getBounds()
+  let swPoint = bounds.getSouthWest()
+  let nePoint = bounds.getNorthEast()
+  let swLat = swPoint.lat()
+  let swLng = swPoint.lng()
+  let neLat = nePoint.lat()
+  let neLng = nePoint.lng()
+
+  if (heatmapPokemon.length > 0) {
+    pokemon = heatmapPokemon
+  } else {
+    pokemon = Array.from({length: 151}, (value, key) => key + 1)
+  }
+
+  $.ajax({
+    url: 'raw_pokemons_history',
+    data: {
+      heatmap_ids: pokemon.join(','),
+      swLat: swLat,
+      swLng: swLng,
+      neLat: neLat,
+      neLng: neLng
+    },
+    datatype: 'json'
+  }).done(function (result) {
+    if (localStorage.showHeatmap !== 'true') {
+      return false
+    }
+    heatmapData = []
+    $.each(result.pokemons, function (index, item) {
+      heatmapData.push({location: new google.maps.LatLng(item.latitude, item.longitude), weight: item.count})
+    })
+    heatmap.set('data', heatmapData)
+    heatmap.getMap() || heatmap.setMap(map)
+  })
+  heatmap = heatmap || new google.maps.visualization.HeatmapLayer({
+    radius: Store.get('heatmapRadius'),
+    maxIntensity: Store.get('heatmapIntensity'),
+    map: map
+  })
+}
+
+function deleteHeatmap () {
+  if (heatmap) {
+    heatmap.setMap(null)
+  }
+}
+
 function updateMap () {
   loadRawData().done(function (result) {
     $.each(result.pokemons, processPokemons)
@@ -1470,6 +1545,11 @@ function updateMap () {
     clearStaleMarkers()
     if ($('#stats').hasClass('visible')) {
       countMarkers()
+    }
+    if (Store.get('showHeatmap')) {
+      updateHeatmap();
+    } else {
+      deleteHeatmap();
     }
   })
 }
@@ -1790,6 +1870,7 @@ $(function () {
   }
 
   $selectExclude = $('#exclude-pokemon')
+  $selectHeatmap = $('#heatmap-pokemon')
   $selectPokemonNotify = $('#notify-pokemon')
   $selectRarityNotify = $('#notify-rarity')
   var numberOfPokemon = 151
@@ -1830,6 +1911,11 @@ $(function () {
       data: pokeList,
       templateResult: formatState
     })
+    $selectHeatmap.select2({
+      placeholder: i8ln('Select Pokémon'),
+      data: pokeList,
+      templateResult: formatState
+    })
     $selectRarityNotify.select2({
       placeholder: i8ln('Select Rarity'),
       data: [i8ln('Common'), i8ln('Uncommon'), i8ln('Rare'), i8ln('Very Rare'), i8ln('Ultra Rare')],
@@ -1846,6 +1932,10 @@ $(function () {
       notifiedPokemon = $selectPokemonNotify.val().map(Number)
       Store.set('remember_select_notify', notifiedPokemon)
     })
+    $selectHeatmap.on('change', function (e) {
+      heatmapPokemon = $selectHeatmap.val().map(Number)
+      Store.set('remember_select_heatmap', heatmapPokemon)
+    })
     $selectRarityNotify.on('change', function (e) {
       notifiedRarity = $selectRarityNotify.val().map(String)
       Store.set('remember_select_rarity_notify', notifiedRarity)
@@ -1853,6 +1943,7 @@ $(function () {
 
     // recall saved lists
     $selectExclude.val(Store.get('remember_select_exclude')).trigger('change')
+    $selectHeatmap.val(Store.get('remember_select_heatmap')).trigger('change')
     $selectPokemonNotify.val(Store.get('remember_select_notify')).trigger('change')
     $selectRarityNotify.val(Store.get('remember_select_rarity_notify')).trigger('change')
   })
@@ -1917,6 +2008,27 @@ $(function () {
   $('#sound-switch').change(function () {
     Store.set('playSound', this.checked)
   })
+
+  $('#heatmap-switch')
+    .val(Store.get('showHeatmap'))
+    .change(function () {
+      Store.set('showHeatmap', this.checked)
+      updateMap()
+    })
+
+  $('#heatmap-intensity')
+    .val(Store.get('heatmapIntensity'))
+    .change(function () {
+      Store.set('heatmapIntensity', this.value)
+      heatmap.set('maxIntensity', this.value)
+    })
+
+  $('#heatmap-radius')
+    .val(Store.get('heatmapRadius'))
+    .change(function () {
+      Store.set('heatmapRadius', this.value)
+      heatmap.set('radius', this.value)
+    })
 
   $('#geoloc-switch').change(function () {
     $('#next-location').prop('disabled', this.checked)

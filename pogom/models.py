@@ -188,6 +188,49 @@ class Pokemon(BaseModel):
             appearances.append(a)
         return appearances
 
+    @classmethod
+    def get_all(cls, swLat, swLng, neLat, neLng):
+        query = (Pokemon.select(Pokemon.spawnpoint_id, Pokemon.pokemon_id,
+                                Pokemon.latitude, Pokemon.longitude,
+                                fn.COUNT(Pokemon.pokemon_id).alias('count'))
+                 .where((Pokemon.latitude >= swLat) &
+                        (Pokemon.longitude >= swLng) &
+                        (Pokemon.latitude <= neLat) &
+                        (Pokemon.longitude <= neLng))
+                 .group_by(Pokemon.spawnpoint_id, Pokemon.pokemon_id, Pokemon.latitude, Pokemon.longitude)
+                 .dicts())
+
+        pokemons = []
+        for p in query:
+            p['pokemon_name'] = get_pokemon_name(p['pokemon_id'])
+            if args.china:
+                p['latitude'], p['longitude'] = \
+                    transform_from_wgs_to_gcj(p['latitude'], p['longitude'])
+            pokemons.append(p)
+        return pokemons
+
+    @classmethod
+    def get_all_by_id(cls, notified_ids, swLat, swLng, neLat, neLng):
+        query = (Pokemon.select(Pokemon.spawnpoint_id, Pokemon.pokemon_id,
+                                Pokemon.latitude, Pokemon.longitude,
+                                fn.COUNT(Pokemon.pokemon_id).alias('count'))
+                 .where((Pokemon.pokemon_id << notified_ids) &
+                        (Pokemon.latitude >= swLat) &
+                        (Pokemon.longitude >= swLng) &
+                        (Pokemon.latitude <= neLat) &
+                        (Pokemon.longitude <= neLng))
+                 .group_by(Pokemon.spawnpoint_id, Pokemon.pokemon_id, Pokemon.latitude, Pokemon.longitude)
+                 .dicts())
+
+        pokemons = []
+        for p in query:
+            p['pokemon_name'] = get_pokemon_name(p['pokemon_id'])
+            if args.china:
+                p['latitude'], p['longitude'] = \
+                    transform_from_wgs_to_gcj(p['latitude'], p['longitude'])
+            pokemons.append(p)
+        return pokemons
+
 
 class Pokestop(BaseModel):
     pokestop_id = CharField(primary_key=True, max_length=50)
