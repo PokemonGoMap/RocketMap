@@ -21,7 +21,6 @@ import logging
 import time
 import math
 import json
-import geojson
 
 from operator import itemgetter
 from threading import Thread, Lock
@@ -115,7 +114,7 @@ def curSec():
 
 # timeDif of -1800 to +1800 secs
 def timeDif(a, b):
-    dif = a-b
+    dif = a - b
     if (dif < -1800):
         dif += 3600
     if (dif > 1800):
@@ -126,9 +125,9 @@ def timeDif(a, b):
 def SbSearch(Slist, T):
     # binary search to find the lowest index with the required value or the index with the next value update
     first = 0
-    last = len(Slist)-1
+    last = len(Slist) - 1
     while first < last:
-        mp = (first+last)//2
+        mp = (first + last)//2
         if Slist[mp]['time'] < T:
             first = mp + 1
         else:
@@ -222,22 +221,18 @@ def search_overseer_thread_ss(args, new_location_queue, pause_bit, encryption_li
         t.daemon = True
         t.start()
 
-    # A place to track the current location
-    current_location = False
-
     # FIXME add arg for switching
     # load spawn points
     with open('spawns.json') as file:
         spawns = json.load(file)
         file.close()
     for spawn in spawns:
-        hash = '{},{}'.format(spawn['time'], spawn['lng'])
         Shash[spawn['lng']] = spawn['time']
     # sort spawn points
     spawns.sort(key=itemgetter('time'))
     log.info('total of %d spawns to track', len(spawns))
     # find start position
-    pos = SbSearch(spawns, (curSec()+3540) % 3600)
+    pos = SbSearch(spawns, (curSec() + 3540) % 3600)
     while True:
         while timeDif(curSec(), spawns[pos]['time']) < 60:
             time.sleep(1)
@@ -249,13 +244,13 @@ def search_overseer_thread_ss(args, new_location_queue, pause_bit, encryption_li
                 log.debug('Queueing step %d @ %f/%f/%f', pos, step_location[0], step_location[1], step_location[2])
                 search_args = (step, step_location, spawns[pos]['time'])
                 search_items_queue.put(search_args)
-        pos = (pos+1) % len(spawns)
+        pos = (pos + 1) % len(spawns)
         if pos == 0:
             while not(search_items_queue.empty()):
                 log.info('search_items_queue not empty. waiting 10 secrestarting at top of hour')
                 time.sleep(10)
             log.info('restarting from top of list and finding current time')
-            pos = SbSearch(spawns, (curSec()+3540) % 3600)
+            pos = SbSearch(spawns, (curSec() + 3540) % 3600)
 
 
 def search_worker_thread(args, account, search_items_queue, parse_lock, encryption_lib_path):
@@ -389,7 +384,7 @@ def search_worker_thread_ss(args, account, search_items_queue, parse_lock, encry
                         # Increase sleep delay between each failed scan
                         # By default scan_dela=5, scan_retries=5 so
                         # We'd see timeouts of 5, 10, 15, 20, 25
-                        sleep_time = args.scan_delay * (1+failed_total)
+                        sleep_time = args.scan_delay * (1 + failed_total)
 
                         # Ok, let's get started -- check our login status
                         check_login(args, account, api, step_location)
@@ -409,7 +404,6 @@ def search_worker_thread_ss(args, account, search_items_queue, parse_lock, encry
                         # Got the response, lock for parsing and do so (or fail, whatever)
                         with parse_lock:
                             try:
-                                parsed = parse_map(response_dict, step_location)
                                 log.debug('Search step %s completed', step)
                                 search_items_queue.task_done()
                                 break  # All done, get out of the request-retry loop
@@ -469,4 +463,3 @@ def map_request(api, position):
 
 class TooManyLoginAttempts(Exception):
     pass
-
