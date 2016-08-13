@@ -176,12 +176,6 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
 
 def search_worker_thread(args, account, search_items_queue, parse_lock, encryption_lib_path):
 
-    # If we have more than one account, stagger the logins such that they occur evenly over scan_delay
-    if len(args.accounts) > 1:
-        delay = (args.scan_delay / len(args.accounts)) * args.accounts.index(account)
-        log.debug('Delaying thread startup for %.2f seconds', delay)
-        time.sleep(delay)
-
     log.debug('Search worker thread starting')
 
     # The forever loop for the thread
@@ -203,7 +197,14 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
                 # Grab the next thing to search (when available)
                 step, step_location = search_items_queue.get()
 
-                log.info('Search step %d beginning (queue size is %d)', step, search_items_queue.qsize())
+                # Stagger the searches such that they occur evenly over scan_delay for the initial & resume search start
+                if len(args.accounts) > 1:
+                    if step <= len(args.accounts):
+                        delay = (args.scan_delay / len(args.accounts)) * args.accounts.index(account)
+                        log.info('Search step %d beginning in %.2f seconds (queue size is %d)', step, delay, search_items_queue.qsize())
+                        time.sleep(delay)
+                    else:
+                        log.info('Search step %d beginning (queue size is %d)', step, search_items_queue.qsize())
 
                 # Let the api know where we intend to be for this loop
                 api.set_position(*step_location)
@@ -256,10 +257,12 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
                 # If there's any time left between the start time and the time when we should be kicking off the next
                 # loop, hang out until its up.
                 sleep_delay_remaining = loop_start_time + (args.scan_delay * 1000) - int(round(time.time() * 1000))
-                if sleep_delay_remaining > 0:
+                if sleep_delay_remaining < 0:
+                    time.sleep(args.scan_delay)
+                else:
                     time.sleep(sleep_delay_remaining / 1000)
 
-                loop_start_time += args.scan_delay * 1000
+                loop_start_time = int(round(time.time() * 1000))
 
         # catch any process exceptions, log them, and continue the thread
         except Exception as e:
@@ -291,6 +294,9 @@ def check_login(args, account, api, position):
                 time.sleep(args.login_delay)
 
     log.debug('Login for account %s successful', account['username'])
+
+    # To avoid first search step resulting 0/0/0
+    time.sleep(10)
 
 
 def map_request(api, position):
