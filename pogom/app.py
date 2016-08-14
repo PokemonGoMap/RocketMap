@@ -51,6 +51,14 @@ class Pogom(Flask):
         if not args.search_control:
             return 'Search control is disabled', 403
         action = request.args.get('action', 'none')
+        userToken = request.args.get('userToken', type=str)
+
+        if args.tokens:
+            if userToken in args.tokens:
+                log.info('userToken check PASSED: %s                     ---- %s ----', userToken, request.remote_addr)
+            else:
+                log.info('userToken check FAILED: %s                     ---- %s ----', userToken, request.remote_addr)
+                return 'bad token', 401
         if action == 'on':
             self.search_control.clear()
             log.info('Search thread resumed')

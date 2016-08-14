@@ -923,7 +923,7 @@ function createSearchMarker () {
 
 var searchControlURI = 'search_control'
 function searchControl (action) {
-  $.post(searchControlURI + '?action=' + encodeURIComponent(action))
+  $.post(searchControlURI + '?action=' + encodeURIComponent(action) + '&userToken=' + getToken())
 }
 function updateSearchStatus () {
   $.getJSON(searchControlURI).then(function (data) {
