@@ -2,6 +2,7 @@
   'use strict'
 
   // Methods/polyfills.
+  $('#userToken').val(document.cookie)
 
   // addEventsListener
   var addEventsListener = function (o, t, e) {

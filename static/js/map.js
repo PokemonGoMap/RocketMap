@@ -1689,7 +1689,19 @@ function changeLocation (lat, lng) {
 }
 
 function changeSearchLocation (lat, lng) {
-  return $.post('next_loc?lat=' + lat + '&lon=' + lng, {})
+  return $.post('next_loc?lat=' + lat + '&lon=' + lng + '&userToken=' + getToken(), {})
+}
+
+function getToken () {
+  var userToken = $('#userToken').val()
+  if (userToken == "") {
+    userToken = document.cookie;
+    $('#userToken').val(userToken)
+  } else {
+    document.cookie = userToken;
+  }
+
+  return userToken
 }
 
 function centerMap (lat, lng, zoom) {

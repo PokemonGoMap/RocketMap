@@ -56,6 +56,8 @@ def get_args():
                         help='Passwords, either single one for all accounts or one per account.')
     parser.add_argument('-l', '--location', type=parse_unicode,
                         help='Location, can be an address or coordinates')
+    parser.add_argument('-t', '--tokens', action='append',
+                        help='Enable token requirement on /next_loc API')
     parser.add_argument('-st', '--step-limit', help='Steps', type=int,
                         default=12)
     parser.add_argument('-sd', '--scan-delay',

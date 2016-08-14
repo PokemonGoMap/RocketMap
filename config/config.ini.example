@@ -13,6 +13,7 @@
 
 # Search settings
 #location:
+#tokens:                # token for scan location change authority
 #no-gyms:               # disables gym scanning (default false)
 #no-pokemon:            # disables pokemon scanning (default false)
 #no-pokestops:          # disables pokestop scanning (default false)

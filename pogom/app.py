@@ -128,15 +128,23 @@ class Pogom(Flask):
         if request.args:
             lat = request.args.get('lat', type=float)
             lon = request.args.get('lon', type=float)
+            userToken = request.args.get('userToken', type=str)
         # from post requests
         if request.form:
             lat = request.form.get('lat', type=float)
             lon = request.form.get('lon', type=float)
+            userToken = request.args.get('userToken', type=str)
 
         if not (lat and lon):
             log.warning('Invalid next location: %s,%s', lat, lon)
             return 'bad parameters', 400
         else:
+            if args.tokens:
+                if userToken in args.tokens:
+                    log.info('userToken check PASSED: %s                     ---- %s ----', userToken, request.remote_addr)
+                else:
+                    log.info('userToken check FAILED: %s                     ---- %s ----', userToken, request.remote_addr)
+                    return 'bad token', 401
             self.location_queue.put((lat, lon, 0))
             self.set_current_location((lat, lon, 0))
             log.info('Changing next location: %s,%s', lat, lon)
