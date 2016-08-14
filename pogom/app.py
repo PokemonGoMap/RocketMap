@@ -79,7 +79,7 @@ class Pogom(Flask):
     def spawn_history(self):
         d = {}
         spawnpoint_id = request.args.get('spawnpoint_id')
-        d['spawn_history'] = Pokemon.get_spawn_data(spawnpoint_id)
+        d['spawn_history'] = Pokemon.get_spawn_history(spawnpoint_id)
 
         return jsonify(d)
 
