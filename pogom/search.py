@@ -276,7 +276,6 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
                         continue
 
                     # Got the response, lock for parsing and do so (or fail, whatever)
-                    fail_wait = False
                     with parse_lock:
                         try:
                             parse_map(response_dict, step_location)
@@ -286,9 +285,7 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
                         except KeyError:
                             log.exception('Search step %s map parsing failed, retrying request in %g seconds. Username: %s', step, sleep_time, account['username'])
                             failed_total += 1
-                            fail_wait = True
-                    if fail_wait:
-                        time.sleep(sleep_time)
+                    time.sleep(sleep_time)
 
                 # If there's any time left between the start time and the time when we should be kicking off the next
                 # loop, hang out until its up.
