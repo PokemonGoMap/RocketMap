@@ -212,7 +212,7 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
 
             # Create the API instance this will use
             api = PGoApi()
-            
+
             if proxy:
                 log.debug('Using proxy %s', proxy)
                 api.set_proxy({'http': proxy, 'https': proxy})
