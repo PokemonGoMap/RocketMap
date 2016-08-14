@@ -2,7 +2,6 @@
   'use strict'
 
   // Methods/polyfills.
-  $('#userToken').val(document.cookie)
 
   // addEventsListener
   var addEventsListener = function (o, t, e) {
@@ -157,6 +156,9 @@
     $statsClose.tabIndex = 0
     $stats.appendChild($statsClose)
   }
+
+  // Fill user token field from cookie
+  $('#userToken').val(document.cookie)
 
   // Event: Hide on ESC.
   window.addEventListener('keydown', function (event) {
