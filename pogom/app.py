@@ -35,7 +35,7 @@ class Pogom(Flask):
         self.route("/stats", methods=['GET'])(self.get_stats)
         self.route("/status", methods=['GET'])(self.get_status)
         self.route("/status", methods=['POST'])(self.post_status)
-        self.route("/sw.js", methods=['GET'])(self.static_from_root) # Required for mobile notifications
+        self.route("/sw.js", methods=['GET'])(self.static_from_root)  # Required for mobile notifications
 
     def set_search_control(self, control):
         self.search_control = control
