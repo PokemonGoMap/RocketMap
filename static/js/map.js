@@ -1694,11 +1694,11 @@ function changeSearchLocation (lat, lng) {
 
 function getToken () {
   var userToken = $('#userToken').val()
-  if (userToken == "") {
-    userToken = document.cookie;
+  if (userToken === '') {
+    userToken = document.cookie
     $('#userToken').val(userToken)
   } else {
-    document.cookie = userToken;
+    document.cookie = userToken
   }
 
   return userToken
