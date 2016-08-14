@@ -124,18 +124,20 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
     log.info('Starting search worker threads')
     for i, account in enumerate(args.accounts):
 
-        if args.proxy:         
+        # Loop args.proxy and send proxy to worker thread
+        if args.proxy:
+
             if last_proxy_index >= len(args.proxy):
                 last_proxy_index = 0
 
             proxy = args.proxy[last_proxy_index]
-            last_proxy_index = last_proxy_index + 1   
+            last_proxy_index = last_proxy_index + 1
 
         log.debug('Starting search worker thread %d for user %s', i, account['username'])
         t = Thread(target=search_worker_thread,
                    name='search_worker_{}'.format(i),
                    args=(args, account, search_items_queue, parse_lock,
-                         encryption_lib_path),proxy)
+                         encryption_lib_path, proxy))
         t.daemon = True
         t.start()
 
@@ -215,7 +217,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
         time.sleep(1)
 
 
-def search_worker_thread(args, account, search_items_queue, parse_lock, encryption_lib_path,proxy):
+def search_worker_thread(args, account, search_items_queue, parse_lock, encryption_lib_path, proxy):
 
     # If we have more than one account, stagger the logins such that they occur evenly over scan_delay
     if len(args.accounts) > 1:
@@ -237,8 +239,9 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
 
             # Create the API instance this will use
             api = PGoApi()
-            
+
             if proxy:
+                log.debug('Using proxy %s', proxy)
                 api.set_proxy({'http': proxy, 'https': proxy})
 
             # Get current time
