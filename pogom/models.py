@@ -318,7 +318,7 @@ class Versions(flaskDb.Model):
         primary_key = False
 
 
-def parse_map(map_dict, step_location, api):
+def parse_map(map_dict, step_location, api, gyms_timeout):
     pokemons = {}
     pokestops = {}
     gyms = {}
@@ -388,8 +388,9 @@ def parse_map(map_dict, step_location, api):
                 }
 
             elif config['parse_gyms'] and f.get('type') is None:  # Currently, there are only stops and gyms
-                gyms[f['id']] = {
-                    'gym_id': f['id'],
+                gid = f['id'];
+                gyms[gid] = {
+                    'gym_id': gid,
                     'team_id': f.get('owned_by_team', 0),
                     'guard_pokemon_id': f.get('guard_pokemon_id', 0),
                     'gym_points': f.get('gym_points', 0),
@@ -399,18 +400,21 @@ def parse_map(map_dict, step_location, api):
                     'last_modified': datetime.utcfromtimestamp(
                         f['last_modified_timestamp_ms'] / 1000.0),
                 }
-                try:
-                    data = api.get_gym_details(gym_id=f['id'])['responses']['GET_GYM_DETAILS']
-                    print 'Gym: ' + data['name']
-                    for d in data['gym_state']['memberships']:
-                        d = d['pokemon_data']
-                        print 'Player: ' + d['owner_name']
-                        print 'PokeID: ' + str(d['pokemon_id'])
-                        print 'PokeCP: ' + str(d['cp'])
-                    print
-                except:
-                    pass
-                time.sleep(1)
+                now = int(time.time())
+                if gid not in gyms_timeout or gyms_timeout[gid] < now:
+                    try:
+                        data = api.get_gym_details(gym_id=f['id'])['responses']['GET_GYM_DETAILS']
+                        print 'Gym: ' + data['name']
+                        for d in data['gym_state']['memberships']:
+                            d = d['pokemon_data']
+                            # print 'Player: ' + d['owner_name']
+                            # print 'PokeID: ' + str(d['pokemon_id'])
+                            # print 'PokeCP: ' + str(d['cp'])
+                        # print
+                        gyms_timeout[gid] = now + 30 # 1min timeout
+                    except:
+                        pass
+                    time.sleep(0.5)
 
     pokemons_upserted = 0
     pokestops_upserted = 0
@@ -554,6 +558,7 @@ def database_migrate(db, old_ver):
 
     if old_ver < 4:
         db.drop_tables([ScannedLocation])
+        
 
     if old_ver < 5:
         # Some pokemon were added before the 595 bug was "fixed"
