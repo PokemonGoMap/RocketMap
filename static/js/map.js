@@ -805,6 +805,22 @@ function removePokemonMarker (encounterId) { // eslint-disable-line no-unused-va
   mapData.pokemons[encounterId].hidden = true
 }
 
+function getStats(spawnpoint_id) {
+  $.ajax({
+      url: "/spawn_history?spawnpoint_id=" + spawnpoint_id,
+      dataType: 'json',
+      async: true,
+      success: function(data) {
+        $.each(data.spawn_history, function(count, id){
+          $('ul[name=' + spawnpoint_id + ']').append("<li style='float: left; width: 33% list-style: none; height: 36px; margin-right: 5px; '><span><img src='static/icons/" + id['pokemon_id'] + ".png'></span><span style='font-weight: bold; vertical-align: middle;'> " + id['count'] +"</span></span>")
+        })
+      },
+      error: function(jqXHR, status, error) {
+        console.log('Error loading stats: ' + error)
+      }
+    })
+}
+
 function initMap () { // eslint-disable-line no-unused-vars
   map = new google.maps.Map(document.getElementById('map'), {
     center: {
@@ -1103,6 +1119,25 @@ function pokestopLabel (lured, lastModified, latitude, longitude) {
   return str
 }
 
+function pokespawnLabel(spawnpoint_id, latitude, longitude) {
+  var str
+
+    str = `
+      <div>
+        <b>Spawn Point</b>
+      </div>
+      <div>
+        Location: ${latitude.toFixed(6)}, ${longitude.toFixed(7)}
+      </div>
+      <div>
+        <a href="javascript:getStats('${spawnpoint_id}')">Stats</a>&nbsp;&nbsp;
+                <ul class="statsHolder " name="${spawnpoint_id}" style="max-width: 240px; list-style: none"></ul>
+
+      </div>`
+
+  return str
+}
+
 function getGoogleSprite (index, sprite, displayHeight) {
   displayHeight = Math.max(displayHeight, 3)
   var scale = displayHeight / sprite.iconHeight
@@ -1247,18 +1282,24 @@ function setupScannedMarker (item) {
 }
 
 function setupSpawnpointMarker (item) {
-  var circleCenter = new google.maps.LatLng(item['latitude'], item['longitude'])
-
-  var marker = new google.maps.Circle({
+  var marker = new google.maps.Marker({
+    position: {
+      lat: item['latitude'],
+      lng: item['longitude']
+    },
     map: map,
-    clickable: false,
-    center: circleCenter,
-    radius: 5, // metres
-    fillColor: 'blue',
-    strokeWeight: 1
+    zIndex: 2,
+    optimized: false,
+    icon: 'static/icons/leaf.png',
   })
 
-  return marker
+  marker.infoWindow = new google.maps.InfoWindow({
+    content: pokespawnLabel(item.spawnpoint_id, item.latitude + .003, item.longitude + .003),
+    disableAutoPan: true
+  })
+
+  addListeners(marker);
+  return marker;
 }
 
 function clearSelection () {

@@ -204,6 +204,21 @@ class Pokemon(BaseModel):
 
         return list(query)
 
+    @classmethod
+    def get_spawn_data(cls, spawnpoint_id):
+        query = (Pokemon
+                 .select(fn.Count(Pokemon.pokemon_id).alias('count'), Pokemon.pokemon_id)
+                 .where((Pokemon.spawnpoint_id == spawnpoint_id))
+                 .group_by(Pokemon.pokemon_id)
+                 .order_by(Pokemon.pokemon_id)
+                 .dicts())
+
+        spwawn_data = []
+        for p in query:
+            spwawn_data.append(p)
+
+        return spwawn_data
+
 
 class Pokestop(BaseModel):
     pokestop_id = CharField(primary_key=True, max_length=50)

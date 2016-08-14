@@ -27,6 +27,7 @@ class Pogom(Flask):
         self.json_encoder = CustomJSONEncoder
         self.route("/", methods=['GET'])(self.fullmap)
         self.route("/raw_data", methods=['GET'])(self.raw_data)
+        self.route("/spawn_history", methods=['GET'])(self.spawn_history)
         self.route("/loc", methods=['GET'])(self.loc)
         self.route("/next_loc", methods=['POST'])(self.next_loc)
         self.route("/mobile", methods=['GET'])(self.list_pokemon)
@@ -74,6 +75,13 @@ class Pogom(Flask):
                                is_fixed=fixed_display,
                                search_control=search_display
                                )
+
+    def spawn_history(self):
+        d = {}
+        spawnpoint_id = request.args.get('spawnpoint_id')
+        d['spawn_history'] = Pokemon.get_spawn_data(spawnpoint_id)
+
+        return jsonify(d)
 
     def raw_data(self):
         d = {}
