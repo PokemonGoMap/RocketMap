@@ -178,7 +178,8 @@ if __name__ == '__main__':
             time.sleep(60)
     else:
         ssl_context = None
-        if args.ssl_certificate and args.ssl_privatekey:
+        if args.ssl_certificate and args.ssl_privatekey \
+                and os.path.exists(args.ssl_certificate) and os.path.exists(args.ssl_privatekey):
             ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
             ssl_context.load_cert_chain(args.ssl_certificate, args.ssl_privatekey)
             log.info('Web server in SSL mode.')
