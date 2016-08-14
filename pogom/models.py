@@ -395,7 +395,9 @@ def parse_map(map_dict, step_location, api, gyms_timeout):
                 if gid not in gyms_timeout or gyms_timeout[gid] < now:
                     try:
                         data = api.get_gym_details(gym_id=f['id'])['responses']['GET_GYM_DETAILS']
+                        info += data['name'] + '<br>'
                         for d in data['gym_state']['memberships']:
+                            info += str(d['trainer_public_profile']['level']) + ' '
                             d = d['pokemon_data']
                             info += d['owner_name'] + ' '
                             info += get_pokemon_name(d['pokemon_id']) + ' '
