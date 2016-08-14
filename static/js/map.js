@@ -811,8 +811,8 @@ function getStats (spawnpointId) { // eslint-disable-line no-unused-vars
     dataType: 'json',
     async: true,
     success: function (data) {
-      $.each(data.spawn_history, function (count, id){
-        $('ul[name=' + spawnpointId + ']').append("<li style='float: left; width: 33% list-style: none; height: 36px; margin-right: 5px; '><span><img src='static/icons/" + id['pokemon_id'] + ".png'></span><span style='font-weight: bold; vertical-align: middle;'> " + id['count'] +"</span></span>")
+      $.each(data.spawn_history, function (count, id) {
+        $('ul[name=' + spawnpointId + ']').append('<li style="float: left; width: 33% list-style: none; height: 36px; margin-right: 5px; "><span><img src="static/icons/' + id['pokemon_id'] + '.png"></span><span style="font-weight: bold; vertical-align: middle;">' + id['count'] + '</span></span>')
       })
     },
     error: function (jqXHR, status, error) {
@@ -1290,7 +1290,7 @@ function setupSpawnpointMarker (item) {
     map: map,
     zIndex: 2,
     optimized: false,
-    icon: 'static/icons/leaf.png',
+    icon: 'static/icons/leaf.png'
   })
 
   marker.infoWindow = new google.maps.InfoWindow({
