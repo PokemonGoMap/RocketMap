@@ -124,6 +124,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
     log.info('Starting search worker threads')
     for i, account in enumerate(args.accounts):
 
+        # Loop args.proxy and send proxy to worker thread
         if args.proxy:         
             if last_proxy_index >= len(args.proxy):
                 last_proxy_index = 0
