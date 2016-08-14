@@ -142,15 +142,11 @@ if __name__ == '__main__':
     pause_bit = Event()
     pause_bit.clear()
 
-    # Setup the location tracking queue and push the first location on
-    new_location_queue = Queue()
-    new_location_queue.put(position)
-
     if not args.only_server:
         # Gather the pokemons!
         if not args.mock:
             log.debug('Starting a real search thread')
-            search_thread = Thread(target=search_overseer_thread, args=(args, new_location_queue, pause_bit, encryption_lib_path))
+            search_thread = Thread(target=search_overseer_thread, args=(args, pause_bit, encryption_lib_path))
         else:
             log.debug('Starting a fake search thread')
             insert_mock_data(position)
@@ -167,7 +163,7 @@ if __name__ == '__main__':
     init_cache_busting(app)
 
     app.set_search_control(pause_bit)
-    app.set_location_queue(new_location_queue)
+    app.set_current_location(position)
 
     config['ROOT_PATH'] = app.root_path
     config['GMAPS_KEY'] = args.gmaps_key

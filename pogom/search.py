@@ -109,7 +109,7 @@ def fake_search_loop():
 
 
 # The main search loop that keeps an eye on the over all process
-def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_path):
+def search_overseer_thread(args, pause_bit, encryption_lib_path):
 
     log.info('Search overseer starting')
 
@@ -143,23 +143,6 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
                     pass
             time.sleep(1)
             continue
-
-        # If a new location has been passed to us, get the most recent one
-        if not new_location_queue.empty():
-            log.info('New location caught, moving search grid')
-            try:
-                while True:
-                    current_location = new_location_queue.get_nowait()
-            except Empty:
-                pass
-
-            # We (may) need to clear the search_items_queue
-            if not search_items_queue.empty():
-                try:
-                    while True:
-                        search_items_queue.get_nowait()
-                except Empty:
-                    pass
 
         # If there are no search_items_queue either the loop has finished (or been
         # cleared above) -- either way, time to fill it back up

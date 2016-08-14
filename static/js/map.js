@@ -1,3 +1,12 @@
+/* global google */
+/* global $ */
+/* global Notification */
+/* global navigator */
+/* global location */
+/* global localStorage */
+/* global centerLat */
+/* global centerLng */
+
 //
 // Global map.js variables
 //
@@ -23,7 +32,6 @@ var notifiedRarity = []
 var map
 var rawDataIsLoading = false
 var locationMarker
-var marker
 
 var noLabelsStyle = [{
   featureType: 'poi',
@@ -733,14 +741,6 @@ var StoreOptions = {
     default: false,
     type: StoreTypes.Boolean
   },
-  'geoLocate': {
-    default: false,
-    type: StoreTypes.Boolean
-  },
-  'lockMarker': {
-    default: isTouchDevice(), // default to true if touch device
-    type: StoreTypes.Boolean
-  },
   'startAtUserLocation': {
     default: false,
     type: StoreTypes.Boolean
@@ -874,10 +874,16 @@ function initMap () { // eslint-disable-line no-unused-vars
   map.setMapTypeId(Store.get('map_style'))
   google.maps.event.addListener(map, 'idle', updateMap)
 
-  marker = createSearchMarker()
-
   addMyLocationButton()
   initSidebar()
+
+  if (Store.get('startAtUserLocation')) {
+    // despite the fact that the "locationButton" should already exist,
+    // it is not yet available. By delaying the centering action just a
+    // slight bit, it doesn't throw a console error.
+    setTimeout(centerMapOnLocation, 500)
+  }
+
   google.maps.event.addListenerOnce(map, 'idle', function () {
     updateMap()
   })
@@ -886,39 +892,6 @@ function initMap () { // eslint-disable-line no-unused-vars
     redrawPokemon(mapData.pokemons)
     redrawPokemon(mapData.lurePokemons)
   })
-}
-
-function createSearchMarker () {
-  var marker = new google.maps.Marker({ // need to keep reference.
-    position: {
-      lat: centerLat,
-      lng: centerLng
-    },
-    map: map,
-    animation: google.maps.Animation.DROP,
-    draggable: !Store.get('lockMarker'),
-    zIndex: google.maps.Marker.MAX_ZINDEX + 1
-  })
-
-  var oldLocation = null
-  google.maps.event.addListener(marker, 'dragstart', function () {
-    oldLocation = marker.getPosition()
-  })
-
-  google.maps.event.addListener(marker, 'dragend', function () {
-    var newLocation = marker.getPosition()
-    changeSearchLocation(newLocation.lat(), newLocation.lng())
-      .done(function () {
-        oldLocation = null
-      })
-      .fail(function () {
-        if (oldLocation) {
-          marker.setPosition(oldLocation)
-        }
-      })
-  })
-
-  return marker
 }
 
 var searchControlURI = 'search_control'
@@ -937,28 +910,13 @@ function initSidebar () {
   $('#pokestops-switch').prop('checked', Store.get('showPokestops'))
   $('#lured-pokestops-only-switch').val(Store.get('showLuredPokestopsOnly'))
   $('#lured-pokestops-only-wrapper').toggle(Store.get('showPokestops'))
-  $('#geoloc-switch').prop('checked', Store.get('geoLocate'))
-  $('#lock-marker-switch').prop('checked', Store.get('lockMarker'))
   $('#start-at-user-location-switch').prop('checked', Store.get('startAtUserLocation'))
   $('#scanned-switch').prop('checked', Store.get('showScanned'))
   $('#spawnpoints-switch').prop('checked', Store.get('showSpawnpoints'))
   $('#sound-switch').prop('checked', Store.get('playSound'))
-  var searchBox = new google.maps.places.SearchBox(document.getElementById('next-location'))
-  $('#next-location').css('background-color', $('#geoloc-switch').prop('checked') ? '#e0e0e0' : '#ffffff')
 
   updateSearchStatus()
   setInterval(updateSearchStatus, 5000)
-
-  searchBox.addListener('places_changed', function () {
-    var places = searchBox.getPlaces()
-
-    if (places.length === 0) {
-      return
-    }
-
-    var loc = places[0].geometry.location
-    changeLocation(loc.lat(), loc.lng())
-  })
 
   var icons = $('#pokemon-icons')
   $.each(pokemonSprites, function (key, value) {
@@ -1557,10 +1515,6 @@ var updateLabelDiffTime = function () {
   })
 }
 
-function getPointDistance (pointA, pointB) {
-  return google.maps.geometry.spherical.computeDistanceBetween(pointA, pointB)
-}
-
 function sendNotification (title, text, icon, lat, lng) {
   if (!('Notification' in window)) {
     return false // Notifications are not present in browser
@@ -1680,18 +1634,6 @@ function addMyLocationButton () {
   })
 }
 
-function changeLocation (lat, lng) {
-  var loc = new google.maps.LatLng(lat, lng)
-  changeSearchLocation(lat, lng).done(function () {
-    map.setCenter(loc)
-    marker.setPosition(loc)
-  })
-}
-
-function changeSearchLocation (lat, lng) {
-  return $.post('next_loc?lat=' + lat + '&lon=' + lng, {})
-}
-
 function centerMap (lat, lng, zoom) {
   var loc = new google.maps.LatLng(lat, lng)
 
@@ -1723,11 +1665,6 @@ function i8ln (word) {
     // Word doesn't exist in dictionary return it as is
     return word
   }
-}
-
-function isTouchDevice () {
-  // Should cover most browsers
-  return 'ontouchstart' in window || navigator.maxTouchPoints
 }
 
 //
@@ -1828,10 +1765,6 @@ $(function () {
     return $state
   }
 
-  if (Store.get('startAtUserLocation')) {
-    centerMapOnLocation()
-  }
-
   $selectExclude = $('#exclude-pokemon')
   $selectPokemonNotify = $('#notify-pokemon')
   $selectRarityNotify = $('#notify-rarity')
@@ -1903,24 +1836,6 @@ $(function () {
   // run interval timers to regularly update map and timediffs
   window.setInterval(updateLabelDiffTime, 1000)
   window.setInterval(updateMap, 5000)
-  window.setInterval(function () {
-    if (navigator.geolocation && Store.get('geoLocate')) {
-      navigator.geolocation.getCurrentPosition(function (position) {
-        var baseURL = location.protocol + '//' + location.hostname + (location.port ? ':' + location.port : '')
-        var lat = position.coords.latitude
-        var lon = position.coords.longitude
-
-        // the search function makes any small movements cause a loop. Need to increase resolution
-        if (getPointDistance(marker.getPosition(), (new google.maps.LatLng(lat, lon))) > 40) {
-          $.post(baseURL + '/next_loc?lat=' + lat + '&lon=' + lon).done(function () {
-            var center = new google.maps.LatLng(lat, lon)
-            map.panTo(center)
-            marker.setPosition(center)
-          })
-        }
-      })
-    }
-  }, 1000)
 
   // Wipe off/restore map icons when switches are toggled
   function buildSwitchChangeListener (data, dataType, storageKey) {
@@ -1960,21 +1875,6 @@ $(function () {
 
   $('#sound-switch').change(function () {
     Store.set('playSound', this.checked)
-  })
-
-  $('#geoloc-switch').change(function () {
-    $('#next-location').prop('disabled', this.checked)
-    $('#next-location').css('background-color', this.checked ? '#e0e0e0' : '#ffffff')
-    if (!navigator.geolocation) {
-      this.checked = false
-    } else {
-      Store.set('geoLocate', this.checked)
-    }
-  })
-
-  $('#lock-marker-switch').change(function () {
-    Store.set('lockMarker', this.checked)
-    marker.setDraggable(!this.checked)
   })
 
   $('#search-switch').change(function () {

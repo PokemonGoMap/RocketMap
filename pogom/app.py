@@ -27,8 +27,6 @@ class Pogom(Flask):
         self.json_encoder = CustomJSONEncoder
         self.route("/", methods=['GET'])(self.fullmap)
         self.route("/raw_data", methods=['GET'])(self.raw_data)
-        self.route("/loc", methods=['GET'])(self.loc)
-        self.route("/next_loc", methods=['POST'])(self.next_loc)
         self.route("/mobile", methods=['GET'])(self.list_pokemon)
         self.route("/search_control", methods=['GET'])(self.get_search_control)
         self.route("/search_control", methods=['POST'])(self.post_search_control)
@@ -36,9 +34,6 @@ class Pogom(Flask):
 
     def set_search_control(self, control):
         self.search_control = control
-
-    def set_location_queue(self, queue):
-        self.location_queue = queue
 
     def set_current_location(self, location):
         self.current_location = location
@@ -63,7 +58,6 @@ class Pogom(Flask):
 
     def fullmap(self):
         args = get_args()
-        fixed_display = "none" if args.fixed_location else "inline"
         search_display = "inline" if args.search_control else "none"
 
         return render_template('map.html',
@@ -71,7 +65,6 @@ class Pogom(Flask):
                                lng=self.current_location[1],
                                gmaps_key=config['GMAPS_KEY'],
                                lang=config['LOCALE'],
-                               is_fixed=fixed_display,
                                search_control=search_display
                                )
 
@@ -112,35 +105,6 @@ class Pogom(Flask):
             d['spawnpoints'] = Pokemon.get_spawnpoints(swLat, swLng, neLat, neLng)
 
         return jsonify(d)
-
-    def loc(self):
-        d = {}
-        d['lat'] = self.current_location[0]
-        d['lng'] = self.current_location[1]
-
-        return jsonify(d)
-
-    def next_loc(self):
-        args = get_args()
-        if args.fixed_location:
-            return 'Location changes are turned off', 403
-        # part of query string
-        if request.args:
-            lat = request.args.get('lat', type=float)
-            lon = request.args.get('lon', type=float)
-        # from post requests
-        if request.form:
-            lat = request.form.get('lat', type=float)
-            lon = request.form.get('lon', type=float)
-
-        if not (lat and lon):
-            log.warning('Invalid next location: %s,%s', lat, lon)
-            return 'bad parameters', 400
-        else:
-            self.location_queue.put((lat, lon, 0))
-            self.set_current_location((lat, lon, 0))
-            log.info('Changing next location: %s,%s', lat, lon)
-            return 'ok'
 
     def list_pokemon(self):
         # todo: check if client is android/iOS/Desktop for geolink, currently
