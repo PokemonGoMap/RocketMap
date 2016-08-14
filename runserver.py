@@ -123,6 +123,7 @@ if __name__ == '__main__':
     if args.no_gyms:
         log.info('Parsing of Gyms disabled')
 
+    config['STEP_LIMIT'] = args.step_limit
     config['LOCALE'] = args.locale
     config['CHINA'] = args.china
 
