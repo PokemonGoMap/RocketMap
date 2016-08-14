@@ -400,8 +400,8 @@ def parse_map(map_dict, step_location, api, gyms_timeout):
                             info += d['owner_name'] + ' '
                             info += get_pokemon_name(d['pokemon_id']) + ' '
                             info += str(d['cp']) + '<br>'
-                        #1min timeout
-                        gyms_timeout[gid] = now + 60 
+                        # 1min timeout
+                        gyms_timeout[gid] = now + 60
                     except:
                         pass
                     time.sleep(0.5)

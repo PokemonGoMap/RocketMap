@@ -115,7 +115,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
 
     search_items_queue = Queue()
     parse_lock = Lock()
-    #assume parse lock will prevent race
+    # assume parse lock will prevent race
     gyms_timeout = {}
 
     # Create a search_worker_thread per account
