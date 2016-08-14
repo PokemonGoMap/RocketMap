@@ -1011,7 +1011,7 @@ function pokemonLabel (name, rarity, types, disappearTime, id, latitude, longitu
   return contentstring
 }
 
-function gymLabel (teamName, teamId, gymPoints, latitude, longitude) {
+function gymLabel (teamName, teamId, gymPoints, latitude, longitude, info) {
   var gymColor = ['0, 0, 0, .4', '74, 138, 202, .6', '240, 68, 58, .6', '254, 217, 40, .6']
   var str
   if (teamId === 0) {
@@ -1048,6 +1048,9 @@ function gymLabel (teamName, teamId, gymPoints, latitude, longitude) {
           </div>
           <div>
             Level: ${gymLevel} | Prestige: ${gymPoints}
+          </div>
+          <div>
+            ${info}
           </div>
           <div>
             Location: ${latitude.toFixed(6)}, ${longitude.toFixed(7)}
@@ -1183,7 +1186,7 @@ function setupGymMarker (item) {
   })
 
   marker.infoWindow = new google.maps.InfoWindow({
-    content: gymLabel(gymTypes[item['team_id']], item['team_id'], item['gym_points'], item['latitude'], item['longitude']),
+    content: gymLabel(gymTypes[item['team_id']], item['team_id'], item['gym_points'], item['latitude'], item['longitude'], item['info']),
     disableAutoPan: true
   })
 
@@ -1193,7 +1196,7 @@ function setupGymMarker (item) {
 
 function updateGymMarker (item, marker) {
   marker.setIcon('static/forts/' + gymTypes[item['team_id']] + '.png')
-  marker.infoWindow.setContent(gymLabel(gymTypes[item['team_id']], item['team_id'], item['gym_points'], item['latitude'], item['longitude']))
+  marker.infoWindow.setContent(gymLabel(gymTypes[item['team_id']], item['team_id'], item['gym_points'], item['latitude'], item['longitude'], item['info']))
   return marker
 }
 

@@ -6,7 +6,7 @@ import sys
 import time
 from peewee import SqliteDatabase, InsertQuery, \
     IntegerField, CharField, DoubleField, BooleanField, \
-    DateTimeField, CompositeKey, fn
+    DateTimeField, CompositeKey, TextField, fn
 from playhouse.flask_utils import FlaskDB
 from playhouse.pool import PooledMySQLDatabase
 from playhouse.shortcuts import RetryOperationalError
@@ -257,6 +257,7 @@ class Gym(BaseModel):
     latitude = DoubleField()
     longitude = DoubleField()
     last_modified = DateTimeField(index=True)
+    info = TextField()
 
     class Meta:
         indexes = ((('latitude', 'longitude'), False),)
@@ -389,32 +390,33 @@ def parse_map(map_dict, step_location, api, gyms_timeout):
 
             elif config['parse_gyms'] and f.get('type') is None:  # Currently, there are only stops and gyms
                 gid = f['id'];
-                gyms[gid] = {
-                    'gym_id': gid,
-                    'team_id': f.get('owned_by_team', 0),
-                    'guard_pokemon_id': f.get('guard_pokemon_id', 0),
-                    'gym_points': f.get('gym_points', 0),
-                    'enabled': f['enabled'],
-                    'latitude': f['latitude'],
-                    'longitude': f['longitude'],
-                    'last_modified': datetime.utcfromtimestamp(
-                        f['last_modified_timestamp_ms'] / 1000.0),
-                }
+                info = ''
                 now = int(time.time())
                 if gid not in gyms_timeout or gyms_timeout[gid] < now:
                     try:
                         data = api.get_gym_details(gym_id=f['id'])['responses']['GET_GYM_DETAILS']
-                        print 'Gym: ' + data['name']
                         for d in data['gym_state']['memberships']:
                             d = d['pokemon_data']
-                            # print 'Player: ' + d['owner_name']
-                            # print 'PokeID: ' + str(d['pokemon_id'])
-                            # print 'PokeCP: ' + str(d['cp'])
-                        # print
-                        gyms_timeout[gid] = now + 30 # 1min timeout
+                            info += d['owner_name'] + ' '
+                            info += get_pokemon_name(d['pokemon_id']) + ' '
+                            info += str(d['cp']) + '<br>'
+                        gyms_timeout[gid] = now + 60 # 1min timeout
                     except:
                         pass
                     time.sleep(0.5)
+                    gyms[gid] = {
+                        'gym_id': gid,
+                        'team_id': f.get('owned_by_team', 0),
+                        'guard_pokemon_id': f.get('guard_pokemon_id', 0),
+                        'gym_points': f.get('gym_points', 0),
+                        'enabled': f['enabled'],
+                        'latitude': f['latitude'],
+                        'longitude': f['longitude'],
+                        'last_modified': datetime.utcfromtimestamp(
+                            f['last_modified_timestamp_ms'] / 1000.0),
+                        'info': info,
+                    }
+                
 
     pokemons_upserted = 0
     pokestops_upserted = 0
