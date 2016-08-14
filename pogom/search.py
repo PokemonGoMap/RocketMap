@@ -125,7 +125,8 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
     for i, account in enumerate(args.accounts):
 
         # Loop args.proxy and send proxy to worker thread
-        if args.proxy:         
+        if args.proxy:
+          
             if last_proxy_index >= len(args.proxy):
                 last_proxy_index = 0
 
@@ -136,7 +137,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
         t = Thread(target=search_worker_thread,
                    name='search_worker_{}'.format(i),
                    args=(args, account, search_items_queue, parse_lock,
-                         encryption_lib_path),proxy)
+                         encryption_lib_path,proxy))
         t.daemon = True
         t.start()
 
@@ -213,6 +214,7 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
             api = PGoApi()
             
             if proxy:
+                log.debug('Using proxy %s',proxy)
                 api.set_proxy({'http': proxy, 'https': proxy})
 
             # Get current time
