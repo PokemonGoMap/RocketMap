@@ -6,6 +6,7 @@ import configargparse
 import uuid
 import os
 import json
+import pytz
 from datetime import datetime, timedelta
 import logging
 import shutil
@@ -243,7 +244,7 @@ def insert_mock_data(position):
                    guard_pokemon_id=(i + 1) % 150,
                    latitude=locations[i + num_pokemon + num_pokestop][0],
                    longitude=locations[i + num_pokemon + num_pokestop][1],
-                   last_modified=datetime.now(),
+                   last_modified=datetime.now(pytz.timezone('Europe/Warsaw')),
                    enabled=True,
                    gym_points=1000
                    )
