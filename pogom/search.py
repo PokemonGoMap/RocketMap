@@ -111,13 +111,12 @@ def fake_search_loop():
 # The main search loop that keeps an eye on the over all process
 def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_path):
 
-    
-
     log.info('Search overseer starting')
 
     search_items_queue = Queue()
     parse_lock = Lock()
-    gyms_timeout = {} #assume parse lock will prevent race 
+    #assume parse lock will prevent race
+    gyms_timeout = {}
 
     # Create a search_worker_thread per account
     log.info('Starting search worker threads')

@@ -389,7 +389,7 @@ def parse_map(map_dict, step_location, api, gyms_timeout):
                 }
 
             elif config['parse_gyms'] and f.get('type') is None:  # Currently, there are only stops and gyms
-                gid = f['id'];
+                gid = f['id']
                 info = ''
                 now = int(time.time())
                 if gid not in gyms_timeout or gyms_timeout[gid] < now:
@@ -400,7 +400,8 @@ def parse_map(map_dict, step_location, api, gyms_timeout):
                             info += d['owner_name'] + ' '
                             info += get_pokemon_name(d['pokemon_id']) + ' '
                             info += str(d['cp']) + '<br>'
-                        gyms_timeout[gid] = now + 60 # 1min timeout
+                        #1min timeout
+                        gyms_timeout[gid] = now + 60 
                     except:
                         pass
                     time.sleep(0.5)
@@ -416,7 +417,6 @@ def parse_map(map_dict, step_location, api, gyms_timeout):
                             f['last_modified_timestamp_ms'] / 1000.0),
                         'info': info,
                     }
-                
 
     pokemons_upserted = 0
     pokestops_upserted = 0
@@ -560,7 +560,6 @@ def database_migrate(db, old_ver):
 
     if old_ver < 4:
         db.drop_tables([ScannedLocation])
-        
 
     if old_ver < 5:
         # Some pokemon were added before the 595 bug was "fixed"
