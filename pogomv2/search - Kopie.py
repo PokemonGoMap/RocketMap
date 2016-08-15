@@ -22,10 +22,13 @@ import math
 import random
 import time
 
+import json
+import geojson
 
 from threading import Thread, Lock
 from queue import Queue, Empty
 
+from operator import itemgetter
 from pgoapi import PGoApi
 from pgoapi.utilities import f2i
 from pgoapi import utilities as util
@@ -37,6 +40,29 @@ log = logging.getLogger(__name__)
 
 TIMESTAMP = '\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000'
 
+def curSec():
+    return (60 * time.gmtime().tm_min) + time.gmtime().tm_sec
+    
+def timeDif(a,b):#timeDif of -1800 to +1800 secs
+    dif = a-b
+    if (dif < -1800):
+        dif += 3600
+    if (dif > 1800):
+        dif -= 3600
+    return dif
+
+def SbSearch(Slist, T):
+    #binary search to find the lowest index with the required value or the index with the next value update
+    first = 0
+    last = len(Slist)-1
+    while first < last:
+        mp = (first+last)//2
+        if Slist[mp]['time'] < T:
+            first = mp + 1
+        else:
+            last = mp
+    return first        
+Shash = {}
 
 def get_new_coords(init_loc, distance, bearing):
     """ Given an initial lat/lng, a distance(in kms), and a bearing (degrees),
@@ -111,6 +137,7 @@ def fake_search_loop():
 # The main search loop that keeps an eye on the over all process
 def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_path):
 
+    global spawns, Shash, going
     log.info('Search overseer starting')
 
     search_items_queue = Queue()
@@ -129,89 +156,49 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
 
     # A place to track the current location
     current_location = False
+    
+    #load spawn points
+    with open('spawns.json') as file:
+        spawns = json.load(file)
+        file.close()
+    for spawn in spawns:
+        hash = '{},{}'.format(spawn['time'],spawn['lng'])
+        Shash[spawn['lng']] = spawn['time']
+    #sort spawn points
+    spawns.sort(key=itemgetter('time'))
+    log.info('total of %d spawns to track',len(spawns))
+    pos = SbSearch(spawns, (curSec()+3540)%3600)
+    #find start position
 
     # The real work starts here but will halt on pause_bit.set()
     while True:
-
-        # paused; clear queue if needed, otherwise sleep and loop
-        if pause_bit.is_set():
-            if not search_items_queue.empty():
-                try:
-                    while True:
-                        search_items_queue.get_nowait()
-                except Empty:
-                    pass
-            time.sleep(1)
-            continue
-
-        # If a new location has been passed to us, get the most recent one
-        if not new_location_queue.empty():
-            log.info('New location caught, moving search grid')
-            try:
-                while True:
-                    current_location = new_location_queue.get_nowait()
-            except Empty:
-                pass
-
-            # We (may) need to clear the search_items_queue
-            if not search_items_queue.empty():
-                try:
-                    while True:
-                        search_items_queue.get_nowait()
-                except Empty:
-                    pass
-
-        # If there are no search_items_queue either the loop has finished (or been
-        # cleared above) -- either way, time to fill it back up
-        if search_items_queue.empty():
-            log.debug('Search queue empty, restarting loop')
-            for step, step_location in enumerate(generate_location_steps(current_location, args.step_limit), 1):
-                log.debug('Queueing step %d @ %f/%f/%f', step, step_location[0], step_location[1], step_location[2])
-                search_args = (step, step_location)
+        while timeDif(curSec(),spawns[pos]['time']) < 60:
+             time.sleep(1)
+        location = []
+        location.append(spawns[pos]['lat'])
+        location.append(spawns[pos]['lng'])
+        location.append(0)
+        for step, step_location in enumerate(generate_location_steps(location, args.step_limit), 1):
+                log.debug('Queueing step %d @ %f/%f/%f', pos, step_location[0], step_location[1], step_location[2])
+                search_args = (step, step_location, spawns[pos]['time'])
                 search_items_queue.put(search_args)
-        # else:
-        #     log.info('Search queue processing, %d items left', search_items_queue.qsize())
-
-        # Now we just give a little pause here
-        time.sleep(1)
+        pos = (pos+1) % len(spawns)
+        if pos == 0:
+            while not(search_items_queue.empty()):
+                log.info('search_items_queue not empty. waiting 10 secrestarting at top of hour')
+                time.sleep(10)
+            log.info('restarting from top of list and finding current time')
+            pos = SbSearch(spawns, (curSec()+3540)%3600)
 
 
 def search_worker_thread(args, account, search_items_queue, parse_lock, encryption_lib_path):
-
-    # If we have more than one account, stagger the logins such that they occur evenly over scan_delay
-    if len(args.accounts) > 1:
-        if len(args.accounts) > args.scan_delay:  # force ~1 second delay between threads if you have many accounts
-            delay = args.accounts.index(account) \
-                + ((random.random() - .5) / 2) if args.accounts.index(account) > 0 else 0
-        else:
-            delay = (args.scan_delay / len(args.accounts)) * args.accounts.index(account)
-
-        log.debug('Delaying thread startup for %.2f seconds', delay)
-        time.sleep(delay)
-
-    log.debug('Search worker thread starting')
-
-    # The forever loop for the thread
+    api = PGoApi()
     while True:
         try:
-            log.debug('Entering search loop')
-
-            # Create the API instance this will use
-            api = PGoApi()
-            if args.proxy:
-                api.set_proxy({'http': args.proxy, 'https': args.proxy})
-
-            # Get current time
-            loop_start_time = int(round(time.time() * 1000))
-
-            # The forever loop for the searches
-            while True:
-
-                # Grab the next thing to search (when available)
-                step, step_location = search_items_queue.get()
-
-                log.info('Search step %d beginning (queue size is %d)', step, search_items_queue.qsize())
-
+            # Grab the next thing to search (when available)
+            step, step_location, spawntime = search_items_queue.get()
+            log.info('Searching step %d, remaining %d', step, search_items_queue.qsize())
+            if timeDif(curSec(),spawntime) < 840:#if we arnt 14mins too late
                 # Let the api know where we intend to be for this loop
                 api.set_position(*step_location)
 
@@ -231,7 +218,7 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
                     # Increase sleep delay between each failed scan
                     # By default scan_dela=5, scan_retries=5 so
                     # We'd see timeouts of 5, 10, 15, 20, 25
-                    sleep_time = args.scan_delay * (1 + failed_total)
+                    sleep_time = args.scan_delay * (1+failed_total)
 
                     # Ok, let's get started -- check our login status
                     check_login(args, account, api, step_location)
@@ -243,7 +230,7 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
 
                     # G'damnit, nothing back. Mark it up, sleep, carry on
                     if not response_dict:
-                        log.error('Search step %d area download failed, retrying request in %g seconds', step, sleep_time)
+                        log.error('Search step %d area download failed, retyring request in %g seconds', step, sleep_time)
                         failed_total += 1
                         time.sleep(sleep_time)
                         continue
@@ -251,23 +238,19 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
                     # Got the response, lock for parsing and do so (or fail, whatever)
                     with parse_lock:
                         try:
-                            parse_map(response_dict, step_location)
+                            parsed = parse_map(response_dict, step_location)
                             log.debug('Search step %s completed', step)
                             search_items_queue.task_done()
-                            break  # All done, get out of the request-retry loop
+                            break # All done, get out of the request-retry loop
                         except KeyError:
-                            log.exception('Search step %s map parsing failed, retrying request in %g seconds. Username: %s', step, sleep_time, account['username'])
+                            log.error('Search step %s map parsing failed, retyring request in %g seconds', step, sleep_time)
                             failed_total += 1
                             time.sleep(sleep_time)
 
-                # If there's any time left between the start time and the time when we should be kicking off the next
-                # loop, hang out until its up.
-                sleep_delay_remaining = loop_start_time + (args.scan_delay * 1000) - int(round(time.time() * 1000))
-                if sleep_delay_remaining > 0:
-                    time.sleep(sleep_delay_remaining / 1000)
-
-                loop_start_time += args.scan_delay * 1000
-
+                time.sleep(args.scan_delay)
+            else: 
+                log.info('cant keep up. skipping')
+            
         # catch any process exceptions, log them, and continue the thread
         except Exception as e:
             log.exception('Exception in search_worker: %s. Username: %s', e, account['username'])

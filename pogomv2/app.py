@@ -9,7 +9,7 @@ from flask.json import JSONEncoder
 from flask_compress import Compress
 from datetime import datetime
 from s2sphere import LatLng
-from pogom.utils import get_args
+from .utils import get_args
 from datetime import timedelta
 from collections import OrderedDict
 
