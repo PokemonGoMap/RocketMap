@@ -208,7 +208,6 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
         # Now we just give a little pause here
         time.sleep(1)
 
-
 def search_worker_thread(args, account, search_items_queue, parse_lock, encryption_lib_path):
 
     # If we have more than one account, stagger the logins such that they occur evenly over scan_delay
