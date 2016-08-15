@@ -201,12 +201,12 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
                 search_args = (step, step_location)
                 search_items_queue.put(search_args)
             isFirstScan = False
-
         # else:
         #     log.info('Search queue processing, %d items left', search_items_queue.qsize())
 
         # Now we just give a little pause here
         time.sleep(1)
+
 
 def search_worker_thread(args, account, search_items_queue, parse_lock, encryption_lib_path):
 
