@@ -1848,8 +1848,8 @@ $(function () {
   }
 
   $.getJSON('static/dist/data/moves.min.json').done(function (data) {
-    moves = data;
-  });
+    moves = data
+  })
 
   $selectExclude = $('#exclude-pokemon')
   $selectPokemonNotify = $('#notify-pokemon')
