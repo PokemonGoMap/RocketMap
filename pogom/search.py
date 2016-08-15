@@ -256,11 +256,12 @@ def search_worker_thread_ss(args, account, search_items_queue, parse_lock, encry
                 # Grab the next thing to search (when available)
                 step, step_location, spawntime = search_items_queue.get()
 
-                # Get current time
-                loop_start_time = int(round(time.time() * 1000))
-
                 log.info('Searching step %d, remaining %d', step, search_items_queue.qsize())
                 if timeDif(curSec(), spawntime) < 840:  # if we arnt 14mins too late
+
+                    # Get current time
+                    search_time = int(round(time.time() * 1000))
+
                     # Let the api know where we intend to be for this loop
                     api.set_position(*step_location)
 
@@ -310,21 +311,22 @@ def search_worker_thread_ss(args, account, search_items_queue, parse_lock, encry
                                           step, sleep_time)
                                 failed_total += 1
                                 time.sleep(sleep_time)
+
+                    # If there's any time left between the start time and the time when we should be kicking off the next
+                    # loop, hang out until its up.
+                    sleep_delay_remaining = search_time + (args.scan_delay * 1000) - int(
+                        round(time.time() * 1000))
+
+                    log.debug('start: %d, added %d, current: %d' % (
+                    search_time, search_time + (args.scan_delay * 1000), int(
+                        round(time.time() * 1000))))
+                    log.debug('delay: %d, remaining %d' % (args.scan_delay, sleep_delay_remaining))
+
+                    if sleep_delay_remaining > 0:
+                        time.sleep(sleep_delay_remaining / 1000)
                 else:
                     search_items_queue.task_done()
                     log.info('Cant keep up. Skipping')
-
-                # If there's any time left between the start time and the time when we should be kicking off the next
-                # loop, hang out until its up.
-                sleep_delay_remaining = loop_start_time + (args.scan_delay * 1000) - int(
-                    round(time.time() * 1000))
-
-                log.debug('start: %d, added %d, current: %d' % (loop_start_time, loop_start_time + (args.scan_delay * 1000), int(
-                    round(time.time() * 1000))))
-                log.debug('delay: %d, remaining %d' % (args.scan_delay, sleep_delay_remaining))
-
-                if sleep_delay_remaining > 0:
-                    time.sleep(sleep_delay_remaining / 1000)
 
         # catch any process exceptions, log them, and continue the thread
         except Exception as e:
