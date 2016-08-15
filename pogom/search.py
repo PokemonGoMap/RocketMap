@@ -151,7 +151,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
         if not new_location_queue.empty():
             log.info('New location caught, moving search grid')
 
-            #Prevents the wave delay when moving to a search grid
+            # Prevents the wave delay when moving to a search grid
             isFirstScan = True
 
             try:
