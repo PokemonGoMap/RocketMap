@@ -446,11 +446,12 @@ def search_worker_thread_ss(args, account, search_items_queue, parse_lock, encry
                                 parse_map(response_dict, step_location)
                                 log.debug('Search step %s completed', step)
                                 search_items_queue.task_done()
-                                break  # All done, get out of the request-retry loop
+                                break
                             except KeyError:
                                 log.error('Search step %s map parsing failed, retyring request in %g seconds', step, sleep_time)
                                 failed_total += 1
                         time.sleep(sleep_time)
+                    time.sleep(sleep_time)
                 else:
                     search_items_queue.task_done()
                     log.info('Cant keep up. Skipping')
