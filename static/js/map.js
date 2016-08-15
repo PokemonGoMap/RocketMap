@@ -639,6 +639,15 @@ var pokemonSprites = {
     spriteHeight: 1430,
     filename: 'static/icons-large-sprite.png',
     name: 'High-Res'
+  },
+  shuffle: {
+    columns: 7,
+    iconWidth: 65,
+    iconHeight: 65,
+    spriteWidth: 455,
+    spriteHeight: 1430,
+    filename: 'static/icons-shuffle-sprite.png',
+    name: 'Shuffle'
   }
 }
 
@@ -897,6 +906,7 @@ function createSearchMarker () {
     map: map,
     animation: google.maps.Animation.DROP,
     draggable: !Store.get('lockMarker'),
+    icon: 'static/marker_icon.png',
     zIndex: google.maps.Marker.MAX_ZINDEX + 1
   })
 
@@ -1400,7 +1410,7 @@ function loadRawData () {
 
 function processPokemons (i, item) {
   if (!Store.get('showPokemon')) {
-    return false; // in case the checkbox was unchecked in the meantime.
+    return false // in case the checkbox was unchecked in the meantime.
   }
 
   if (!(item['encounter_id'] in mapData.pokemons) &&
@@ -1448,7 +1458,7 @@ function processPokestops (i, item) {
 
 function processGyms (i, item) {
   if (!Store.get('showGyms')) {
-    return false; // in case the checkbox was unchecked in the meantime.
+    return false // in case the checkbox was unchecked in the meantime.
   }
 
   if (item['gym_id'] in mapData.gyms) {
@@ -1727,7 +1737,7 @@ function i8ln (word) {
 
 function isTouchDevice () {
   // Should cover most browsers
-  return 'ontouchstart' in window || navigator.maxTouchPoints;
+  return 'ontouchstart' in window || navigator.maxTouchPoints
 }
 
 //
