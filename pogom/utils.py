@@ -265,6 +265,21 @@ def get_pokemon_data(pokemon_id):
             get_pokemon_data.pokemon = json.loads(f.read())
     return get_pokemon_data.pokemon[str(pokemon_id)]
 
+def get_move_data(move_id):
+    if not hasattr(get_move_data, 'move'):
+        file_path = os.path.join(
+            config['ROOT_PATH'],
+            config['DATA_DIR'],
+            'moves.min.json')
+
+        with open(file_path, 'r') as f:
+            get_move_data.move = json.loads(f.read())
+    return get_move_data.move[str(move_id)]
+
+
+def get_move_name(move_id):
+    return i8ln(get_move_data(move_id)['name'])
+
 
 def get_pokemon_name(pokemon_id):
     return i8ln(get_pokemon_data(pokemon_id)['name'])

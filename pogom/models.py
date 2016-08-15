@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 import logging
 import calendar
+import math
 import sys
 import time
 from peewee import SqliteDatabase, InsertQuery, \
@@ -15,7 +16,7 @@ from datetime import datetime, timedelta
 from base64 import b64encode
 
 from . import config
-from .utils import get_pokemon_name, get_pokemon_rarity, get_pokemon_types, get_args, send_to_webhook
+from .utils import get_pokemon_name, get_pokemon_rarity, get_pokemon_types, get_args, send_to_webhook, get_move_name
 from .transform import transform_from_wgs_to_gcj
 from .customLog import printPokemon
 
@@ -390,9 +391,11 @@ def parse_map(map_dict, step_location, api, gyms_timeout):
 
             elif config['parse_gyms'] and f.get('type') is None:  # Currently, there are only stops and gyms
                 gid = f['id']
+                last_modified = f['last_modified_timestamp_ms']
                 info = ''
                 now = int(time.time())
-                if gid not in gyms_timeout or gyms_timeout[gid] < now:
+                distance = calc_distance(step_location, [f['latitude'], f['longitude']])
+                if distance < 0.9 and (gid not in gyms_timeout or gyms_timeout[gid] != last_modified):
                     try:
                         data = api.get_gym_details(gym_id=f['id'])['responses']['GET_GYM_DETAILS']
                         info += data['name'] + '<br>'
@@ -401,9 +404,10 @@ def parse_map(map_dict, step_location, api, gyms_timeout):
                             d = d['pokemon_data']
                             info += d['owner_name'] + ' '
                             info += get_pokemon_name(d['pokemon_id']) + ' '
-                            info += str(d['cp']) + '<br>'
-                        # 1min timeout
-                        gyms_timeout[gid] = now + 60
+                            info += str(d['cp']) + ' '
+                            info += shortMove(get_move_name(d['move_1'])) + '/'
+                            info += shortMove(get_move_name(d['move_2'])) + '<br>'
+                        gyms_timeout[gid] = last_modified
                     except:
                         pass
                     time.sleep(0.5)
@@ -416,7 +420,7 @@ def parse_map(map_dict, step_location, api, gyms_timeout):
                         'latitude': f['latitude'],
                         'longitude': f['longitude'],
                         'last_modified': datetime.utcfromtimestamp(
-                            f['last_modified_timestamp_ms'] / 1000.0),
+                            last_modified / 1000.0),
                         'info': info,
                     }
 
@@ -461,6 +465,12 @@ def parse_map(map_dict, step_location, api, gyms_timeout):
              gyms_upserted)
 
     return True
+
+def distance(lat1, lon1, lat2, lon2):
+    p = 0.017453292519943295
+    a = 0.5 - cos((lat2 - lat1) * p) / 2 + cos(lat1 * p) * \
+        cos(lat2 * p) * (1 - cos((lon2 - lon1) * p)) / 2
+    return 12742 * asin(sqrt(a)) * 1000
 
 
 def clean_database():
@@ -571,3 +581,25 @@ def database_migrate(db, old_ver):
                  .where(Pokemon.disappear_time >
                         (datetime.utcnow() - timedelta(hours=24))))
         query.execute()
+
+def calc_distance(pos1, pos2):
+    R = 6378.1  # km radius of the earth
+
+    dLat = math.radians(pos1[0] - pos2[0])
+    dLon = math.radians(pos1[1] - pos2[1])
+
+    a = math.sin(dLat/2) * math.sin(dLat/2) + \
+        math.cos(math.radians(pos1[0])) * math.cos(math.radians(pos2[0])) * \
+        math.sin(dLon/2) * math.sin(dLon/2)
+
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+    d = R * c
+
+    return d
+
+def shortMove(name):
+    short = name.split()
+    if len(short) == 1:
+        return name[:2]
+    else:
+        return short[0][0]+short[1][0]
