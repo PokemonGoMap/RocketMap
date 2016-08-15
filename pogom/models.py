@@ -192,7 +192,7 @@ class Pokemon(BaseModel):
         query = Pokemon.select(Pokemon.latitude,
                         Pokemon.longitude,
                         Pokemon.spawnpoint_id,
-                        ((Pokemon.disappear_time.minute * 60) + (Pokemon.disappear_time.second + 2700) % 3600).alias('time'),
+                        ((Pokemon.disappear_time.minute * 60) + (Pokemon.disappear_time.second + 2705) % 3600).alias('time'),
                         )
 
         if None not in (swLat, swLng, neLat, neLng):
@@ -208,7 +208,7 @@ class Pokemon(BaseModel):
         if args.db_type == 'mysql':
             query = query.distinct(Pokemon.spawnpoint_id)
         else:
-            query = query.group_by(Pokemon.spawnpoint_id)
+            query = query.group_by(Pokemon.latitude, Pokemon.longitude, 'time')
 
         return list(query.dicts())
 
@@ -340,9 +340,11 @@ def parse_map(map_dict, step_location):
                     d_t = datetime.utcfromtimestamp(
                         (p['last_modified_timestamp_ms'] +
                          p['time_till_hidden_ms']) / 1000.0)
+                    log.info('disappear time: %s' % str(d_t - datetime.utcnow()))
                 else:
                     # Set a value of 15 minutes because currently its unknown but larger than 15.
                     d_t = datetime.utcfromtimestamp((p['last_modified_timestamp_ms'] + 900000) / 1000.0)
+                    log.info('default disappear time: %s' % str(d_t - datetime.utcnow()))
                 printPokemon(p['pokemon_data']['pokemon_id'], p['latitude'],
                              p['longitude'], d_t)
                 pokemons[p['encounter_id']] = {

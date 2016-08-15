@@ -175,7 +175,8 @@ def get_spawnpoints_for_search(args, current_location):
         for location in locations:
             for spawnpoint in spawnpoints:
                 if spawnpoint_in_range(location, spawnpoint):
-                    spawnpoints_in_range[spawnpoint['spawnpoint_id']] = spawnpoint
+                    unique_id = "%f-%f-%d"%(spawnpoint['latitude'], spawnpoint['longitude'], spawnpoint['time'])
+                    spawnpoints_in_range[unique_id] = spawnpoint
 
         if len(spawnpoints) == 0:
             log.warning(
@@ -222,6 +223,7 @@ def search_overseer_thread_ss(args, new_location_queue, pause_bit, encryption_li
     # find start position
     pos = SbSearch(spawns, (curSec() + 3540) % 3600)
     while True:
+
         while timeDif(curSec(), spawns[pos]['time']) < 60:
             time.sleep(1)
         location = []
@@ -229,7 +231,7 @@ def search_overseer_thread_ss(args, new_location_queue, pause_bit, encryption_li
         location.append(spawns[pos]['longitude'])
         location.append(0)
         for step, step_location in enumerate(generate_location_steps(location, 1), 1):
-            log.info('Queueing step %d @ %f/%f/%f', pos, step_location[0], step_location[1], step_location[2])
+            log.info('Queueing spawnpoint %d of %d, time %d (current %d) @ %f/%f/%f', pos, len(spawns), spawns[pos]['time'], curSec(), step_location[0], step_location[1], step_location[2])
             search_args = (step, step_location, spawns[pos]['time'])
             search_items_queue.put(search_args)
         pos = (pos + 1) % len(spawns)
@@ -256,7 +258,7 @@ def search_worker_thread_ss(args, account, search_items_queue, parse_lock, encry
                 # Grab the next thing to search (when available)
                 step, step_location, spawntime = search_items_queue.get()
 
-                log.info('Searching step %d, remaining %d', step, search_items_queue.qsize())
+                log.info('Searching spawnpoint %d, remaining %d', step, search_items_queue.qsize())
                 if timeDif(curSec(), spawntime) < 840:  # if we arnt 14mins too late
 
                     # Let the api know where we intend to be for this loop
