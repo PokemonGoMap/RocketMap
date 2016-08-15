@@ -228,8 +228,7 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
             if args.proxy:
                 api.set_proxy({'http': args.proxy, 'https': args.proxy})
 
-            # Get current time
-            loop_start_time = int(round(time.time() * 1000))
+            last_scan_time, last_scan_location = 0, None
 
             # The forever loop for the searches
             while True:
@@ -238,6 +237,22 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
                 step, step_location = search_items_queue.get()
 
                 log.info('Search step %d beginning (queue size is %d)', step, search_items_queue.qsize())
+
+                if args.max_speed and last_scan_location:
+                    elapsed = time.time() - last_scan_time
+                    travel_dist = geopy_distance.distance(last_scan_location, step_location).meters
+                    log.debug('Worker speed: %0.2f m/s', travel_dist / elapsed)
+                    # calculate how long it would take to travel this distance at max speed
+                    min_elapsed = travel_dist / args.max_speed
+
+                    if elapsed < min_elapsed:
+                        # Gotta slow it down
+                        log.warning('Worker moving faster (%0.2f m/s) than maximum allowed (%0.2f m/s). Slowing things down. You need more accounts or a longer scan delay (hint: use -sd option)',
+                                    travel_dist / elapsed, args.max_speed)
+                        time.sleep(min_elapsed - elapsed)
+
+                # Get current time
+                loop_start_time = int(round(time.time() * 1000))
 
                 # Let the api know where we intend to be for this loop
                 api.set_position(*step_location)
@@ -287,13 +302,12 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
                             failed_total += 1
                             time.sleep(sleep_time)
 
+                last_scan_time, last_scan_location = time.time(), step_location
                 # If there's any time left between the start time and the time when we should be kicking off the next
                 # loop, hang out until its up.
                 sleep_delay_remaining = loop_start_time + (args.scan_delay * 1000) - int(round(time.time() * 1000))
                 if sleep_delay_remaining > 0:
                     time.sleep(sleep_delay_remaining / 1000)
-
-                loop_start_time += args.scan_delay * 1000
 
         # catch any process exceptions, log them, and continue the thread
         except Exception as e:
