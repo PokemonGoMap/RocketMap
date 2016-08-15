@@ -197,7 +197,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
         # cleared above) -- either way, time to fill it back up
         if search_items_queue.empty():
             log.debug('Search queue empty, restarting loop')
-            #Adds a delay if set
+            # Adds a delay if set
             if args.wave_delay > 0 and isFirstScan is False:
                 log.info('Setting wave delay for %d seconds.', args.wave_delay)
                 time.sleep(args.wave_delay)
