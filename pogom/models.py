@@ -3,6 +3,8 @@
 import logging
 import calendar
 import sys
+import pymongo
+
 from peewee import SqliteDatabase, InsertQuery, \
     IntegerField, CharField, DoubleField, BooleanField, \
     DateTimeField, CompositeKey, fn
@@ -12,6 +14,7 @@ from playhouse.shortcuts import RetryOperationalError
 from playhouse.migrate import migrate, MySQLMigrator, SqliteMigrator
 from datetime import datetime, timedelta
 from base64 import b64encode
+from pymongo import MongoClient
 
 from . import config
 from .utils import get_pokemon_name, get_pokemon_rarity, get_pokemon_types, get_args, send_to_webhook
@@ -44,6 +47,13 @@ def init_database(app):
             port=args.db_port,
             max_connections=connections,
             stale_timeout=300)
+    elif args.db_type == 'mongodb':
+        log.info('Connecting to MongoDB database on %s:%i', args.db_host, args.db_port)
+        connections = args.db_max_connections
+        if hasattr(args, 'accounts'):
+            connections *= len(args.accounts)
+        client = MongoClient('mongodb://localhost:27017/')
+        db = client[args.db_name]
     else:
         log.info('Connecting to local SQLite database')
         db = SqliteDatabase(args.db)

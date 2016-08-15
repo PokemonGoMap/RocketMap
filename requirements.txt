@@ -27,3 +27,4 @@ git+https://github.com/ChrisTM/Flask-CacheBust.git@aa09ad861f104f987928fe9f5107c
 protobuf_to_dict==0.1.0
 simplejson
 geojson
+pymongo==3.3.0
