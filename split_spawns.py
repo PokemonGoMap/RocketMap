@@ -2,9 +2,11 @@ import os
 import sys
 import configargparse
 
-from operator import itemgetter
 import logging
 import json
+from math import ceil
+
+from operator import itemgetter
 
 logging.basicConfig(format='%(asctime)s [%(threadName)16s][%(module)14s][%(levelname)8s] %(message)s')
 log = logging.getLogger(__name__)
@@ -16,16 +18,19 @@ def split_spawns(spawns, filename, accounts, sort, path, index):
     for i in range(0, accounts):
         split_spawns.append([])
     
+    spawn_count = len(spawns)
+    spawn_count_each = int(spawn_count / accounts)
+    
+    log.info("splitting %d spawns to %d accounts: %d each, meaning max %ds per scan" % (spawn_count, accounts, spawn_count_each, ceil(3600/spawn_count_each)))
+    
     i = 0
+    account_count = 0
     for item in spawns:
-        newitem = {"lat":0,"lng":0,"time":0}
-        newitem["lat"] = float(item["lat"])
-        newitem["lng"] = float(item["lng"])
-        newitem["time"] = int(float(item["time"]))
-        split_spawns[i].append(newitem)
-        i = (i + 1)
-        if i >= accounts:
-            i = i % accounts
+        split_spawns[account_count].append(item)
+        i = i + 1
+        if i > spawn_count_each:
+            account_count = account_count + 1
+            i = 0
     
     filename = filename.replace(".json", "")
     
@@ -80,10 +85,10 @@ if __name__ == '__main__':
                 
                 try:
                     split_spawns(spawns, args.filename, args.accounts, args.sort, args.path, args.index)
-                except Error as e:
-                    log.error("Error while executing split_spawns(): " + e)
-            except ValueError:
-                log.error(args.filename + " is not valid")
+                except Exception as e:
+                    log.error("Error while executing split_spawns(): " + str(e))
+            except ValueError as e:
+                log.error(args.filename + " is not valid: " + str(e))
                 sys.exit(1)
             
             file.close()
