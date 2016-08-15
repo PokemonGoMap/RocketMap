@@ -190,19 +190,22 @@ def search_overseer_thread_ss(args, new_location_queue, pause_bit, encryption_li
     log.info('Search ss overseer starting')
     search_items_queue = Queue()
     parse_lock = Lock()
-    current_location = False
+
+    current_location = new_location_queue.get_nowait()
+
+    loc_string = args.spawnpoint_scanning if isinstance(args.spawnpoint_scanning, basestring) else "%f_%f" % (current_location[0], current_location[1])
 
     # Create a search_worker_thread per account
     log.info('Starting search worker threads')
     for i, account in enumerate(args.accounts):
         log.debug('Starting search worker thread %d for user %s', i, account['username'])
         t = Thread(target=search_worker_thread_ss,
-                   name='ss_search_worker_{}'.format(i),
+                   name='ss_search_worker_%s_%d' % (loc_string, i),
                    args=(args, account, search_items_queue, parse_lock, encryption_lib_path))
         t.daemon = True
         t.start()
 
-    current_location = new_location_queue.get_nowait()
+
     spawns = get_spawnpoints_for_search(args, current_location)
     for spawn in spawns:
         Shash[spawn['longitude']] = spawn['time']
@@ -241,7 +244,7 @@ def search_worker_thread_ss(args, account, search_items_queue, parse_lock, encry
 
     stagger_thread(args, account)
 
-    log.debug('Search worker ss thread starting')
+    log.info('Search worker ss thread starting')
 
     # The forever loop for the thread
     while True:
@@ -249,9 +252,9 @@ def search_worker_thread_ss(args, account, search_items_queue, parse_lock, encry
             log.debug('Entering search loop')
 
             # Create the API instance this will use
-            api = PGoApi()
-            if args.proxy:
-                api.set_proxy({'http': args.proxy, 'https': args.proxy})
+            # api = PGoApi()
+            # if args.proxy:
+            #     api.set_proxy({'http': args.proxy, 'https': args.proxy})
 
             # The forever loop for the searches
             while True:
@@ -265,7 +268,7 @@ def search_worker_thread_ss(args, account, search_items_queue, parse_lock, encry
                 log.info('Searching step %d, remaining %d', step, search_items_queue.qsize())
                 if timeDif(curSec(), spawntime) < 840:  # if we arnt 14mins too late
                     # Let the api know where we intend to be for this loop
-                    api.set_position(*step_location)
+                    # api.set_position(*step_location)
 
                     # The loop to try very hard to scan this step
                     failed_total = 0
@@ -286,25 +289,25 @@ def search_worker_thread_ss(args, account, search_items_queue, parse_lock, encry
                         sleep_time = args.scan_delay * (1 + failed_total)
 
                         # Ok, let's get started -- check our login status
-                        check_login(args, account, api, step_location)
-
-                        api.activate_signature(encryption_lib_path)
-
-                        # Make the actual request (finally!)
-                        response_dict = map_request(api, step_location)
-
-                        # G'damnit, nothing back. Mark it up, sleep, carry on
-                        if not response_dict:
-                            log.error('Search step %d area download failed, retyring request in %g seconds',
-                                      step, sleep_time)
-                            failed_total += 1
-                            time.sleep(sleep_time)
-                            continue
+                        # check_login(args, account, api, step_location)
+                        #
+                        # api.activate_signature(encryption_lib_path)
+                        #
+                        # # Make the actual request (finally!)
+                        # response_dict = map_request(api, step_location)
+                        #
+                        # # G'damnit, nothing back. Mark it up, sleep, carry on
+                        # if not response_dict:
+                        #     log.error('Search step %d area download failed, retyring request in %g seconds',
+                        #               step, sleep_time)
+                        #     failed_total += 1
+                        #     time.sleep(sleep_time)
+                        #     continue
 
                         # Got the response, lock for parsing and do so (or fail, whatever)
                         with parse_lock:
                             try:
-                                parse_map(response_dict, step_location)
+                                # parse_map(response_dict, step_location)
                                 log.info('Search step %s completed', step)
                                 search_items_queue.task_done()
                                 break  # All done, get out of the request-retry loop
