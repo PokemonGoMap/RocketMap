@@ -884,7 +884,7 @@ function initMap () { // eslint-disable-line no-unused-vars
   map.addListener('maptypeid_changed', function (s) {
     Store.set('map_style', this.mapTypeId)
   })
-  
+
   map.addListener('zoom_changed', function (s) {
     if (storeZoom !== false) {
       Store.set('zoomLevel', this.getZoom())
