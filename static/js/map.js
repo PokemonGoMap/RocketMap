@@ -620,7 +620,7 @@ var mapData = {
 }
 var gymTypes = ['Uncontested', 'Mystic', 'Valor', 'Instinct']
 
-var sounds = loadPokemonSounds()
+var sounds = { 'default': new Audio('static/sounds/ding.mp3') }
 
 var pokemonSprites = {
   normal: {
@@ -797,10 +797,16 @@ function notifyAboutPokemon (id) { // eslint-disable-line no-unused-vars
   ).trigger('change')
 }
 
-function loadPokemonSounds () {
-  var sounds = { 'default': new Audio('static/sounds/ding.mp3') }
-  notifiedPokemon.forEach(function (id) { sounds[id] = new Audio('static/sounds/' + id + '.mp3') })
-  return sounds
+function playPokemonSound (id) {
+  if (!(id in sounds)) {
+    sounds[id] = new Audio('static/sounds/' + id + '.mp3')
+  }
+  // play sound if loaded
+  try {
+    sounds[id].play()
+  } catch (e) {
+    sounds['default'].play()
+  }
 }
 
 function removePokemonMarker (encounterId) { // eslint-disable-line no-unused-vars
@@ -1178,11 +1184,7 @@ function setupPokemonMarker (item, skipNotification, isBounceDisabled) {
   if (notifiedPokemon.indexOf(item['pokemon_id']) > -1 || notifiedRarity.indexOf(item['pokemon_rarity']) > -1) {
     if (!skipNotification) {
       if (Store.get('playSound')) {
-        if (sounds[item['pokemon_id']] !== undefined) {
-          sounds[item['pokemon_id']].play()
-        } else {
-          sounds['default'].play()
-        }
+        playPokemonSound(item['pokemon_id'])
       }
       sendNotification('A wild ' + item['pokemon_name'] + ' appeared!', 'Click to load map', 'static/icons/' + item['pokemon_id'] + '.png', item['latitude'], item['longitude'])
     }
@@ -1903,7 +1905,6 @@ $(function () {
     })
     $selectPokemonNotify.on('change', function (e) {
       notifiedPokemon = $selectPokemonNotify.val().map(Number)
-      sounds = loadPokemonSounds()
       Store.set('remember_select_notify', notifiedPokemon)
     })
     $selectRarityNotify.on('change', function (e) {
