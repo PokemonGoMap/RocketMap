@@ -19,10 +19,12 @@ Search Architecture:
 
 import logging
 import math
+import json
 import random
 import time
 import geopy.distance as geopy_distance
 
+from operator import itemgetter
 from threading import Thread, Lock
 from queue import Queue, Empty
 
@@ -106,6 +108,230 @@ def fake_search_loop():
     while True:
         log.info('Fake search loop running')
         time.sleep(10)
+
+
+def curSec():
+    return (60 * time.gmtime().tm_min) + time.gmtime().tm_sec
+
+
+def timeDif(a, b):  # timeDif of -1800 to +1800 secs
+    dif = a - b
+    if (dif < -1800):
+        dif += 3600
+    if (dif > 1800):
+        dif -= 3600
+    return dif
+
+
+def SbSearch(Slist, T):
+    # binary search to find the lowest index with the required value or the index with the next value update
+    first = 0
+    last = len(Slist) - 1
+    while first < last:
+        mp = (first + last) // 2
+        if Slist[mp]['time'] < T:
+            first = mp + 1
+        else:
+            last = mp
+    return first
+
+
+Shash = {}
+
+def get_spawnpoints_for_search(args, current_location):
+
+    spawns = []
+    filename = args.spawnpoint_scanning
+    if isinstance(filename, basestring):
+        try:
+            with open(args.spawnpoint_scanning) as file:
+                try:
+                    spawns = json.load(file)
+                except ValueError:
+                    log.error(args.spawnpoint_scanning + " is not valid")
+                    return spawns
+                file.close()
+        except IOError:
+            log.error("Error opening " + args.spawnpoint_scanning)
+    else:
+        locations = list(generate_location_steps(current_location, args.step_limit))
+
+        # We need to get all spawnpoints in range. This is a square 70m * step_limit * 2
+        sp_dist = 0.07 * 2 * args.step_limit
+        log.info('Spawnpoint search radius: %f', sp_dist)
+        # generate coords of the midpoints of each edge of the square
+        south, west = get_new_coords(current_location, sp_dist, 180), get_new_coords(current_location, sp_dist, 270)
+        north, east = get_new_coords(current_location, sp_dist, 0), get_new_coords(current_location, sp_dist, 90)
+        # Use the midpoints to arrive at the corners
+        log.info('Searching for spawnpoints between %f, %f and %f, %f', south[0], west[1], north[0], east[1])
+
+        spawnpoints = Pokemon.get_spawnpoints(south[0], west[1], north[0], east[1])
+
+        def spawnpoint_in_range(location_to_check, spawnpoint):
+            return geopy_distance.distance(location_to_check,
+                                           (spawnpoint['latitude'], spawnpoint['longitude'])).meters <= 70
+
+        spawnpoints_in_range = {}
+        for location in locations:
+            for spawnpoint in spawnpoints:
+                if spawnpoint_in_range(location, spawnpoint):
+                    spawnpoints_in_range[spawnpoint['spawnpoint_id']] = spawnpoint
+
+        if len(spawnpoints) == 0:
+            log.warning(
+                'No spawnpoints found in the specified area! (Did you forget to run a normal scan in this area first?)')
+
+        spawns = list(spawnpoints_in_range.values())
+
+    return spawns
+
+def search_overseer_thread_ss(args, new_location_queue, pause_bit, encryption_lib_path):
+    global spawns, Shash, going
+    log.info('Search ss overseer starting')
+    search_items_queue = Queue()
+    parse_lock = Lock()
+    current_location = False
+
+    # Create a search_worker_thread per account
+    log.info('Starting search worker threads')
+    for i, account in enumerate(args.accounts):
+        log.debug('Starting search worker thread %d for user %s', i, account['username'])
+        t = Thread(target=search_worker_thread_ss,
+                   name='ss_search_worker_{}'.format(i),
+                   args=(args, account, search_items_queue, parse_lock, encryption_lib_path))
+        t.daemon = True
+        t.start()
+
+    current_location = new_location_queue.get_nowait()
+    spawns = get_spawnpoints_for_search(args, current_location)
+    for spawn in spawns:
+        Shash[spawn['longitude']] = spawn['time']
+    # sort spawn points
+    spawns.sort(key=itemgetter('time'))
+
+    if not spawns:
+        log.warning('No spawns to track. Exiting!')
+        return
+    else:
+        log.info('Total of %d spawns to track', len(spawns))
+
+
+    # find start position
+    pos = SbSearch(spawns, (curSec() + 3540) % 3600)
+    while True:
+        while timeDif(curSec(), spawns[pos]['time']) < 60:
+            time.sleep(1)
+        location = []
+        location.append(spawns[pos]['latitude'])
+        location.append(spawns[pos]['longitude'])
+        location.append(0)
+        for step, step_location in enumerate(generate_location_steps(location, 1), 1):
+            log.info('Queueing step %d @ %f/%f/%f', pos, step_location[0], step_location[1], step_location[2])
+            search_args = (step, step_location, spawns[pos]['time'])
+            search_items_queue.put(search_args)
+        pos = (pos + 1) % len(spawns)
+        if pos == 0:
+            while not (search_items_queue.empty()):
+                log.info('Search_items_queue not empty. Waiting 10 secconds. Restarting at top of hour')
+                time.sleep(10)
+            log.info('Restarting from top of list and finding current time')
+            pos = SbSearch(spawns, (curSec() + 3540) % 3600)
+
+def search_worker_thread_ss(args, account, search_items_queue, parse_lock, encryption_lib_path):
+
+    stagger_thread(args, account)
+
+    log.debug('Search worker ss thread starting')
+
+    # The forever loop for the thread
+    while True:
+        try:
+            log.debug('Entering search loop')
+
+            # Create the API instance this will use
+            api = PGoApi()
+            if args.proxy:
+                api.set_proxy({'http': args.proxy, 'https': args.proxy})
+
+            # The forever loop for the searches
+            while True:
+
+                # Grab the next thing to search (when available)
+                step, step_location, spawntime = search_items_queue.get()
+
+                # Get current time
+                loop_start_time = int(round(time.time() * 1000))
+
+                log.info('Searching step %d, remaining %d', step, search_items_queue.qsize())
+                if timeDif(curSec(), spawntime) < 840:  # if we arnt 14mins too late
+                    # Let the api know where we intend to be for this loop
+                    api.set_position(*step_location)
+
+                    # The loop to try very hard to scan this step
+                    failed_total = 0
+                    while True:
+
+                        # After so many attempts, let's get out of here
+                        if failed_total >= args.scan_retries:
+                            # I am choosing to NOT place this item back in the queue
+                            # otherwise we could get a "bad scan" area and be stuck
+                            # on this overall loop forever. Better to lose one cell
+                            # than have the scanner, essentially, halt.
+                            log.error('Search step %d went over max scan_retires; abandoning', step)
+                            break
+
+                        # Increase sleep delay between each failed scan
+                        # By default scan_dela=5, scan_retries=5 so
+                        # We'd see timeouts of 5, 10, 15, 20, 25
+                        sleep_time = args.scan_delay * (1 + failed_total)
+
+                        # Ok, let's get started -- check our login status
+                        check_login(args, account, api, step_location)
+
+                        api.activate_signature(encryption_lib_path)
+
+                        # Make the actual request (finally!)
+                        response_dict = map_request(api, step_location)
+
+                        # G'damnit, nothing back. Mark it up, sleep, carry on
+                        if not response_dict:
+                            log.error('Search step %d area download failed, retyring request in %g seconds',
+                                      step, sleep_time)
+                            failed_total += 1
+                            time.sleep(sleep_time)
+                            continue
+
+                        # Got the response, lock for parsing and do so (or fail, whatever)
+                        with parse_lock:
+                            try:
+                                parse_map(response_dict, step_location)
+                                log.info('Search step %s completed', step)
+                                search_items_queue.task_done()
+                                break  # All done, get out of the request-retry loop
+                            except KeyError:
+                                log.error('Search step %s map parsing failed, retyring request in %g seconds',
+                                          step, sleep_time)
+                                failed_total += 1
+                                time.sleep(sleep_time)
+                else:
+                    search_items_queue.task_done()
+                    log.info('Cant keep up. Skipping')
+
+                # If there's any time left between the start time and the time when we should be kicking off the next
+                # loop, hang out until its up.
+                sleep_delay_remaining = loop_start_time + (args.scan_delay * 1000) - int(
+                    round(time.time() * 1000))
+
+                log.debug('start: %d, added %d, current: %d' % (loop_start_time, loop_start_time + (args.scan_delay * 1000), int(
+                    round(time.time() * 1000))))
+                log.debug('delay: %d, remaining %d' % (args.scan_delay, sleep_delay_remaining))
+
+                if sleep_delay_remaining > 0:
+                    time.sleep(sleep_delay_remaining / 1000)
+
+        # catch any process exceptions, log them, and continue the thread
+        except Exception as e:
+            log.exception('Exception in search_worker: %s', e)
 
 
 # The main search loop that keeps an eye on the over all process
@@ -338,6 +564,19 @@ def map_request(api, position):
     except Exception as e:
         log.warning('Exception while downloading map: %s', e)
         return False
+
+
+def stagger_thread(args, account):
+    # If we have more than one account, stagger the logins such that they occur evenly over scan_delay
+    if len(args.accounts) > 1:
+        if len(args.accounts) > args.scan_delay:  # force ~1 second delay between threads if you have many accounts
+            delay = args.accounts.index(account) \
+                + ((random.random() - .5) / 2) if args.accounts.index(account) > 0 else 0
+        else:
+            delay = (args.scan_delay / len(args.accounts)) * args.accounts.index(account)
+
+        log.debug('Delaying thread startup for %.2f seconds', delay)
+        time.sleep(delay)
 
 
 class TooManyLoginAttempts(Exception):

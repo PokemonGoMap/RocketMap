@@ -189,7 +189,11 @@ class Pokemon(BaseModel):
 
     @classmethod
     def get_spawnpoints(cls, swLat, swLng, neLat, neLng):
-        query = Pokemon.select(Pokemon.latitude, Pokemon.longitude, Pokemon.spawnpoint_id)
+        query = Pokemon.select(Pokemon.latitude,
+                        Pokemon.longitude,
+                        Pokemon.spawnpoint_id,
+                        ((Pokemon.disappear_time.minute * 60) + (Pokemon.disappear_time.second + 2700) % 3600).alias('time'),
+                        )
 
         if None not in (swLat, swLng, neLat, neLng):
             query = (query
