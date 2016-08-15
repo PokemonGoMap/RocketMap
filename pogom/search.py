@@ -115,7 +115,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
 
     search_items_queue = Queue()
     parse_lock = Lock()
-    isFirstScan = TRUE
+    isFirstScan = True
 
     # Create a search_worker_thread per account
     log.info('Starting search worker threads')
@@ -193,14 +193,14 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
         # cleared above) -- either way, time to fill it back up
         if search_items_queue.empty():
             log.debug('Search queue empty, restarting loop')
-            if args.wave_delay > 0 and isFirstScan.false:
+            if args.wave_delay > 0 and isFirstScan == False:
                 log.debug('Waiting for %d second wave delay', args.wave_delay)
                 time.sleep(args.wave_delay)
             for step, step_location in enumerate(locations, 1):
                 log.debug('Queueing step %d @ %f/%f/%f', step, step_location[0], step_location[1], step_location[2])
                 search_args = (step, step_location)
                 search_items_queue.put(search_args)
-            isFirstScan = FALSE
+            isFirstScan = False
 
         # else:
         #     log.info('Search queue processing, %d items left', search_items_queue.qsize())
