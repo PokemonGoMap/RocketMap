@@ -31,6 +31,7 @@ from pgoapi.utilities import f2i
 from pgoapi import utilities as util
 from pgoapi.exceptions import AuthException
 
+from . import config
 from .models import parse_map, Pokemon
 
 log = logging.getLogger(__name__)
@@ -164,12 +165,12 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
                     pass
 
             # update our list of coords
-            locations = list(generate_location_steps(current_location, args.step_limit))
+            locations = list(generate_location_steps(current_location, config['STEP_LIMIT']))
 
             # repopulate our spawn points
             if args.spawnpoints_only:
                 # We need to get all spawnpoints in range. This is a square 70m * step_limit * 2
-                sp_dist = 0.07 * 2 * args.step_limit
+                sp_dist = 0.07 * 2 * config['STEP_LIMIT']
                 log.debug('Spawnpoint search radius: %f', sp_dist)
                 # generate coords of the midpoints of each edge of the square
                 south, west = get_new_coords(current_location, sp_dist, 180), get_new_coords(current_location, sp_dist, 270)
