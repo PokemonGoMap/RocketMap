@@ -154,8 +154,7 @@ if __name__ == '__main__':
                 search_thread = Thread(target=search_overseer_thread_ss,
                                        args=(args, new_location_queue, pause_bit, encryption_lib_path))
             else:
-                log.info('no!')
-                # search_thread = Thread(target=search_overseer_thread, args=(args, new_location_queue, pause_bit, encryption_lib_path))
+                search_thread = Thread(target=search_overseer_thread, args=(args, new_location_queue, pause_bit, encryption_lib_path))
         else:
             log.debug('Starting a fake search thread')
             insert_mock_data(position)
