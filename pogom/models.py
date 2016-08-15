@@ -17,7 +17,6 @@ from . import config
 from .utils import get_pokemon_name, get_pokemon_rarity, get_pokemon_types, get_args, send_to_webhook
 from .transform import transform_from_wgs_to_gcj
 from .customLog import printPokemon
-from pdb import set_trace as bp
 import time
 log = logging.getLogger(__name__)
 
@@ -79,14 +78,14 @@ class Pokemon(BaseModel):
     disappear_time = DateTimeField(index=True)
     iv = DoubleField(null=True)
     height = DoubleField(null=True)
-    individual_attack =  IntegerField(null=True)
-    individual_defense =  IntegerField(null=True)
-    individual_stamina =  IntegerField(null=True)
-    move_1 =  IntegerField(null=True)
-    move_2 =  IntegerField(null=True)
-    stamina =  IntegerField(null=True)
-    stamina_max =  IntegerField(null=True)
-    weight =  DoubleField(null=True)
+    individual_attack = IntegerField(null=True)
+    individual_defense = IntegerField(null=True)
+    individual_stamina = IntegerField(null=True)
+    move_1 = IntegerField(null=True)
+    move_2 = IntegerField(null=True)
+    stamina = IntegerField(null=True)
+    stamina_max = IntegerField(null=True)
+    weight = DoubleField(null=True)
     capture_probability_1 = DoubleField(null=True)
     capture_probability_2 = DoubleField(null=True)
     capture_probability_3 = DoubleField(null=True)
@@ -334,12 +333,14 @@ class ScannedLocation(BaseModel):
 
         return scans
 
+
 class Versions(flaskDb.Model):
     key = CharField()
     val = IntegerField()
 
     class Meta:
         primary_key = False
+
 
 def construct_pokemon_dict(pokemons, p, encounter_result, d_t):
     pokemons[p['encounter_id']] = {
@@ -354,9 +355,9 @@ def construct_pokemon_dict(pokemons, p, encounter_result, d_t):
         ecounter_info = encounter_result['responses']['ENCOUNTER']
         capture_probability = ecounter_info['capture_probability']['capture_probability']
         pokemon_info = ecounter_info['wild_pokemon']['pokemon_data']
-        attack = pokemon_info.get('individual_attack',0)
-        defense = pokemon_info.get('individual_defense',0)
-        stamina = pokemon_info.get('individual_stamina',0)
+        attack = pokemon_info.get('individual_attack', 0)
+        defense = pokemon_info.get('individual_defense', 0)
+        stamina = pokemon_info.get('individual_stamina', 0)
         iv = float(attack + defense + stamina) / 45
         pokemons[p['encounter_id']].update({
             'iv': iv,
@@ -373,6 +374,7 @@ def construct_pokemon_dict(pokemons, p, encounter_result, d_t):
             'capture_probability_2': capture_probability[1],
             'capture_probability_3': capture_probability[2]
         })
+
 
 def parse_map(api, map_dict, step_location):
     pokemons = {}
@@ -396,9 +398,9 @@ def parse_map(api, map_dict, step_location):
                 result = None
                 if args.scan_iv and not Pokemon.get_encountered_pokemon(p['encounter_id']):
                     result = api.encounter(encounter_id=p['encounter_id'],
-                                        spawn_point_id=p['spawn_point_id'],
-                                        player_latitude=step_location[0],
-                                        player_longitude=step_location[1])
+                                           spawn_point_id=p['spawn_point_id'],
+                                           player_latitude=step_location[0],
+                                           player_longitude=step_location[1])
                     time.sleep(args.encounter_delay)
                 construct_pokemon_dict(pokemons, p, result, d_t)
                 webhook_data = {
