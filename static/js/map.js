@@ -617,7 +617,8 @@ var mapData = {
   gyms: {},
   pokestops: {},
   lurePokemons: {},
-  scanned: {}
+  scanned: {},
+  spawnpoints: {}
 }
 var gymTypes = ['Uncontested', 'Mystic', 'Valor', 'Instinct']
 var audio = new Audio('static/sounds/ding.mp3')
@@ -713,10 +714,6 @@ var StoreOptions = {
     default: true,
     type: StoreTypes.Boolean
   },
-  'showLuredPokemon': {
-    default: true,
-    type: StoreTypes.Boolean
-  },
   'showPokestops': {
     default: true,
     type: StoreTypes.Boolean
@@ -729,12 +726,20 @@ var StoreOptions = {
     default: false,
     type: StoreTypes.Boolean
   },
+  'showSpawnpoints': {
+    default: false,
+    type: StoreTypes.Boolean
+  },
   'playSound': {
     default: false,
     type: StoreTypes.Boolean
   },
   'geoLocate': {
     default: false,
+    type: StoreTypes.Boolean
+  },
+  'lockMarker': {
+    default: isTouchDevice(), // default to true if touch device
     type: StoreTypes.Boolean
   },
   'startAtUserLocation': {
@@ -870,7 +875,7 @@ function initMap () { // eslint-disable-line no-unused-vars
   map.setMapTypeId(Store.get('map_style'))
   google.maps.event.addListener(map, 'idle', updateMap)
 
-  createSearchMarker()
+  marker = createSearchMarker()
 
   addMyLocationButton()
   initSidebar()
@@ -892,7 +897,7 @@ function createSearchMarker () {
     },
     map: map,
     animation: google.maps.Animation.DROP,
-    draggable: true,
+    draggable: !Store.get('lockMarker'),
     zIndex: google.maps.Marker.MAX_ZINDEX + 1
   })
 
@@ -934,8 +939,10 @@ function initSidebar () {
   $('#lured-pokestops-only-switch').val(Store.get('showLuredPokestopsOnly'))
   $('#lured-pokestops-only-wrapper').toggle(Store.get('showPokestops'))
   $('#geoloc-switch').prop('checked', Store.get('geoLocate'))
+  $('#lock-marker-switch').prop('checked', Store.get('lockMarker'))
   $('#start-at-user-location-switch').prop('checked', Store.get('startAtUserLocation'))
   $('#scanned-switch').prop('checked', Store.get('showScanned'))
+  $('#spawnpoints-switch').prop('checked', Store.get('showSpawnpoints'))
   $('#sound-switch').prop('checked', Store.get('playSound'))
   var searchBox = new google.maps.places.SearchBox(document.getElementById('next-location'))
   $('#next-location').css('background-color', $('#geoloc-switch').prop('checked') ? '#e0e0e0' : '#ffffff')
@@ -1014,7 +1021,7 @@ function pokemonLabel (name, rarity, types, disappearTime, id, latitude, longitu
       <a href='javascript:excludePokemon(${id})'>Exclude</a>&nbsp;&nbsp
       <a href='javascript:notifyAboutPokemon(${id})'>Notify</a>&nbsp;&nbsp
       <a href='javascript:removePokemonMarker("${encounterId}")'>Remove</a>&nbsp;&nbsp
-      <a href='https://www.google.com/maps/dir/Current+Location/${latitude},${longitude}' target='_blank' title='View in Maps'>Get directions</a>
+      <a href='https://www.google.com/maps/dir/Current+Location/${latitude},${longitude}?hl=en' target='_blank' title='View in Maps'>Get directions</a>
     </div>`
   return contentstring
 }
@@ -1034,7 +1041,7 @@ function gymLabel (teamName, teamId, gymPoints, latitude, longitude) {
             Location: ${latitude.toFixed(6)}, ${longitude.toFixed(7)}
           </div>
           <div>
-            <a href='https://www.google.com/maps/dir/Current+Location/${latitude},${longitude}' target='_blank' title='View in Maps'>Get directions</a>
+            <a href='https://www.google.com/maps/dir/Current+Location/${latitude},${longitude}?hl=en' target='_blank' title='View in Maps'>Get directions</a>
           </div>
         </center>
       </div>`
@@ -1061,7 +1068,7 @@ function gymLabel (teamName, teamId, gymPoints, latitude, longitude) {
             Location: ${latitude.toFixed(6)}, ${longitude.toFixed(7)}
           </div>
           <div>
-            <a href='https://www.google.com/maps/dir/Current+Location/${latitude},${longitude}' target='_blank' title='View in Maps'>Get directions</a>
+            <a href='https://www.google.com/maps/dir/Current+Location/${latitude},${longitude}?hl=en' target='_blank' title='View in Maps'>Get directions</a>
           </div>
         </center>
       </div>`
@@ -1070,17 +1077,9 @@ function gymLabel (teamName, teamId, gymPoints, latitude, longitude) {
   return str
 }
 
-function pokestopLabel (lured, lastModified, activePokemonId, latitude, longitude) {
+function pokestopLabel (lured, lastModified, latitude, longitude) {
   var str
   if (lured) {
-    var activePokemonName = activePokemonId in idToPokemon ? idToPokemon[activePokemonId]['name'] : ''
-    var activePokemonRarity = activePokemonId in idToPokemon ? idToPokemon[activePokemonId]['rarity'] : ''
-    var activePokemonTypes = activePokemonId in idToPokemon ? idToPokemon[activePokemonId]['types'] : ''
-    var rarityDisplay = activePokemonRarity ? '(' + activePokemonRarity + ')' : ''
-    var typesDisplay = ''
-    $.each(activePokemonTypes, function (index, type) {
-      typesDisplay += getTypeSpan(type)
-    })
     var lastModifiedDate = new Date(lastModified)
     var currentDate = new Date()
 
@@ -1094,16 +1093,6 @@ function pokestopLabel (lured, lastModified, activePokemonId, latitude, longitud
         <b>Lured Pokéstop</b>
       </div>
       <div>
-        Lured Pokémon: ${activePokemonName}
-        <span> - </span>
-        <small>
-          <a href='http://www.pokemon.com/us/pokedex/${activePokemonId}' target='_blank' title='View in Pokedex'>#${activePokemonId}</a>
-        </small>
-        <span> ${rarityDisplay}</span>
-        <span> - </span>
-        <span>${typesDisplay}</span>
-      </div>
-      <div>
         Lure expires at ${pad(expireDate.getHours())}:${pad(expireDate.getMinutes())}:${pad(expireDate.getSeconds())}
         <span class='label-countdown' disappears-at='${expireTime}'>(00m00s)</span>
       </div>
@@ -1111,7 +1100,7 @@ function pokestopLabel (lured, lastModified, activePokemonId, latitude, longitud
         Location: ${latitude.toFixed(6)}, ${longitude.toFixed(7)}
       </div>
       <div>
-        <a href='https://www.google.com/maps/dir/Current+Location/${latitude},${longitude}' target='_blank' title='View in Maps'>Get directions</a>
+        <a href='https://www.google.com/maps/dir/Current+Location/${latitude},${longitude}?hl=en' target='_blank' title='View in Maps'>Get directions</a>
       </div>`
   } else {
     str = `
@@ -1122,7 +1111,7 @@ function pokestopLabel (lured, lastModified, activePokemonId, latitude, longitud
         Location: ${latitude.toFixed(6)}, ${longitude.toFixed(7)}
       </div>
       <div>
-        <a href='https://www.google.com/maps/dir/Current+Location/${latitude},${longitude}' target='_blank' title='View in Maps'>Get directions</a>
+        <a href='https://www.google.com/maps/dir/Current+Location/${latitude},${longitude}?hl=en' target='_blank' title='View in Maps'>Get directions</a>
       </div>`
   }
 
@@ -1167,7 +1156,6 @@ function setupPokemonMarker (item, skipNotification, isBounceDisabled) {
       lng: item['longitude']
     },
     zIndex: 9999,
-    optimized: false,
     map: map,
     icon: icon,
     animationDisabled: animationDisabled
@@ -1233,12 +1221,11 @@ function setupPokestopMarker (item) {
     },
     map: map,
     zIndex: 2,
-    optimized: false,
     icon: 'static/forts/' + imagename + '.png'
   })
 
   marker.infoWindow = new google.maps.InfoWindow({
-    content: pokestopLabel(!!item['lure_expiration'], item['last_modified'], item['active_pokemon_id'], item['latitude'], item['longitude']),
+    content: pokestopLabel(!!item['lure_expiration'], item['last_modified'], item['latitude'], item['longitude']),
     disableAutoPan: true
   })
 
@@ -1268,6 +1255,21 @@ function setupScannedMarker (item) {
     center: circleCenter,
     radius: 70, // metres
     fillColor: getColorByDate(item['last_modified']),
+    strokeWeight: 1
+  })
+
+  return marker
+}
+
+function setupSpawnpointMarker (item) {
+  var circleCenter = new google.maps.LatLng(item['latitude'], item['longitude'])
+
+  var marker = new google.maps.Circle({
+    map: map,
+    clickable: false,
+    center: circleCenter,
+    radius: 5, // metres
+    fillColor: 'blue',
     strokeWeight: 1
   })
 
@@ -1372,6 +1374,7 @@ function loadRawData () {
   var loadGyms = Store.get('showGyms')
   var loadPokestops = Store.get('showPokestops') || Store.get('showPokemon')
   var loadScanned = Store.get('showScanned')
+  var loadSpawnpoints = Store.get('showSpawnpoints')
 
   var bounds = map.getBounds()
   var swPoint = bounds.getSouthWest()
@@ -1389,6 +1392,7 @@ function loadRawData () {
       'pokestops': loadPokestops,
       'gyms': loadGyms,
       'scanned': loadScanned,
+      'spawnpoints': loadSpawnpoints,
       'swLat': swLat,
       'swLng': swLng,
       'neLat': neLat,
@@ -1411,7 +1415,7 @@ function loadRawData () {
 
 function processPokemons (i, item) {
   if (!Store.get('showPokemon')) {
-    return false; // in case the checkbox was unchecked in the meantime.
+    return false // in case the checkbox was unchecked in the meantime.
   }
 
   if (!(item['encounter_id'] in mapData.pokemons) &&
@@ -1449,7 +1453,7 @@ function processPokestops (i, item) {
     mapData.pokestops[item['pokestop_id']] = item
   } else {
     var item2 = mapData.pokestops[item['pokestop_id']]
-    if (!!item['lure_expiration'] !== !!item2['lure_expiration'] || item['active_pokemon_id'] !== item2['active_pokemon_id']) {
+    if (!!item['lure_expiration'] !== !!item2['lure_expiration']) {
       item2.marker.setMap(null)
       item.marker = setupPokestopMarker(item)
       mapData.pokestops[item['pokestop_id']] = item
@@ -1457,45 +1461,9 @@ function processPokestops (i, item) {
   }
 }
 
-function processLuredPokemon (i, item) {
-  if (!Store.get('showPokemon')) {
-    return false
-  }
-  var item2 = {
-    'pokestop_id': item['pokestop_id'],
-    'lure_expiration': item['lure_expiration'],
-    'pokemon_id': item['active_pokemon_id'],
-    'latitude': item['latitude'] + 0.00005,
-    'longitude': item['longitude'] + 0.00005,
-    'pokemon_name': item['active_pokemon_id'] in idToPokemon ? idToPokemon[item['active_pokemon_id']]['name'] : null,
-    'pokemon_rarity': item['active_pokemon_id'] in idToPokemon ? idToPokemon[item['active_pokemon_id']]['rarity'] : null,
-    'disappear_time': item['lure_expiration']
-  }
-
-  if (!item2['pokemon_id']) {
-    return
-  }
-
-  if (!mapData.lurePokemons[item2['pokestop_id']] && item2['lure_expiration']) {
-    // if (item.marker) item.marker.setMap(null)
-    if (!item2.hidden) {
-      item2.marker = setupPokemonMarker(item2)
-      mapData.lurePokemons[item2['pokestop_id']] = item2
-    }
-  }
-  if (mapData.lurePokemons[item['pokestop_id']] && item2['lure_expiration'] && item2['active_pokemon_id'] !== mapData.lurePokemons[item2['pokestop_id']].activePokemonId) {
-    // if (item.marker) item.marker.setMap(null)
-    mapData.lurePokemons[item2['pokestop_id']].marker.setMap(null)
-    if (!item2.hidden) {
-      item2.marker = setupPokemonMarker(item2)
-      mapData.lurePokemons[item2['pokestop_id']] = item2
-    }
-  }
-}
-
 function processGyms (i, item) {
   if (!Store.get('showGyms')) {
-    return false; // in case the checkbox was unchecked in the meantime.
+    return false // in case the checkbox was unchecked in the meantime.
   }
 
   if (item['gym_id'] in mapData.gyms) {
@@ -1511,8 +1479,10 @@ function processScanned (i, item) {
     return false
   }
 
-  if (item['scanned_id'] in mapData.scanned) {
-    mapData.scanned[item['scanned_id']].marker.setOptions({
+  var scanId = item['latitude'] + '|' + item['longitude']
+
+  if (scanId in mapData.scanned) {
+    mapData.scanned[scanId].marker.setOptions({
       fillColor: getColorByDate(item['last_modified'])
     })
   } else { // add marker to map and item to dict
@@ -1520,7 +1490,25 @@ function processScanned (i, item) {
       item.marker.setMap(null)
     }
     item.marker = setupScannedMarker(item)
-    mapData.scanned[item['scanned_id']] = item
+    mapData.scanned[scanId] = item
+  }
+}
+
+function processSpawnpoints (i, item) {
+  if (!Store.get('showSpawnpoints')) {
+    return false
+  }
+
+  var id = item['spawnpoint_id']
+
+  if (id in mapData.spawnpoints) {
+    // In the future: maybe show how long till spawnpoint activates?
+  } else { // add marker to map and item to dict
+    if (item.marker) {
+      item.marker.setMap(null)
+    }
+    item.marker = setupSpawnpointMarker(item)
+    mapData.spawnpoints[id] = item
   }
 }
 
@@ -1528,14 +1516,15 @@ function updateMap () {
   loadRawData().done(function (result) {
     $.each(result.pokemons, processPokemons)
     $.each(result.pokestops, processPokestops)
-    $.each(result.pokestops, processLuredPokemon)
     $.each(result.gyms, processGyms)
     $.each(result.scanned, processScanned)
+    $.each(result.spawnpoints, processSpawnpoints)
     showInBoundsMarkers(mapData.pokemons)
     showInBoundsMarkers(mapData.lurePokemons)
     showInBoundsMarkers(mapData.gyms)
     showInBoundsMarkers(mapData.pokestops)
     showInBoundsMarkers(mapData.scanned)
+    showInBoundsMarkers(mapData.spawnpoints)
     clearStaleMarkers()
     if ($('#stats').hasClass('visible')) {
       countMarkers()
@@ -1749,6 +1738,11 @@ function i8ln (word) {
     // Word doesn't exist in dictionary return it as is
     return word
   }
+}
+
+function isTouchDevice () {
+  // Should cover most browsers
+  return 'ontouchstart' in window || navigator.maxTouchPoints
 }
 
 //
@@ -1966,8 +1960,9 @@ $(function () {
 
   // Setup UI element interactions
   $('#gyms-switch').change(buildSwitchChangeListener(mapData, ['gyms'], 'showGyms'))
-  $('#pokemon-switch').change(buildSwitchChangeListener(mapData, ['pokemons', 'lure_pokemons'], 'showPokemon'))
+  $('#pokemon-switch').change(buildSwitchChangeListener(mapData, ['pokemons'], 'showPokemon'))
   $('#scanned-switch').change(buildSwitchChangeListener(mapData, ['scanned'], 'showScanned'))
+  $('#spawnpoints-switch').change(buildSwitchChangeListener(mapData, ['spawnpoints'], 'showSpawnpoints'))
 
   $('#pokestops-switch').change(function () {
     var options = {
@@ -1994,6 +1989,11 @@ $(function () {
     } else {
       Store.set('geoLocate', this.checked)
     }
+  })
+
+  $('#lock-marker-switch').change(function () {
+    Store.set('lockMarker', this.checked)
+    marker.setDraggable(!this.checked)
   })
 
   $('#search-switch').change(function () {

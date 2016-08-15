@@ -9,6 +9,7 @@
 #db-name:               # required for mysql
 #db-user:               # required for mysql
 #db-pass:               # required for mysql
+#db-port:               # default 3306
 
 # Search settings
 #location:
@@ -20,12 +21,15 @@
 
 # Misc
 #gmaps-key:             # your Google Maps API key
+#proxy:                 # Proxy URL e.g. socks5://127.0.0.1:9050
 #webhook:               # webhook URL (including http://)
 
 # Webserver settings
 #host:                  # address to listen on (default 127.0.0.1)
 #port:                  # port to listen on (default 5000)
 #locale:                # pokemon translation
+#ssl-certificate:       # path to ssl certificate
+#ssl-privatekey:        # path to ssl private key
 
 #Uncomment a line when you want to change its default value (Remove # at the beginning)
 #username, password, location and gmaps-key are required

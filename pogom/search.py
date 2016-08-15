@@ -18,8 +18,10 @@ Search Architecture:
 '''
 
 import logging
-import time
 import math
+import random
+import time
+import geopy.distance as geopy_distance
 
 from threading import Thread, Lock
 from queue import Queue, Empty
@@ -29,7 +31,7 @@ from pgoapi.utilities import f2i
 from pgoapi import utilities as util
 from pgoapi.exceptions import AuthException
 
-from .models import parse_map
+from .models import parse_map, Pokemon
 
 log = logging.getLogger(__name__)
 
@@ -127,6 +129,8 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
 
     # A place to track the current location
     current_location = False
+    locations = []
+    spawnpoints = set()
 
     # The real work starts here but will halt on pause_bit.set()
     while True:
@@ -159,11 +163,36 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
                 except Empty:
                     pass
 
+            # update our list of coords
+            locations = list(generate_location_steps(current_location, args.step_limit))
+
+            # repopulate our spawn points
+            if args.spawnpoints_only:
+                # We need to get all spawnpoints in range. This is a square 70m * step_limit * 2
+                sp_dist = 0.07 * 2 * args.step_limit
+                log.debug('Spawnpoint search radius: %f', sp_dist)
+                # generate coords of the midpoints of each edge of the square
+                south, west = get_new_coords(current_location, sp_dist, 180), get_new_coords(current_location, sp_dist, 270)
+                north, east = get_new_coords(current_location, sp_dist, 0), get_new_coords(current_location, sp_dist, 90)
+                # Use the midpoints to arrive at the corners
+                log.debug('Searching for spawnpoints between %f, %f and %f, %f', south[0], west[1], north[0], east[1])
+                spawnpoints = set((d['latitude'], d['longitude']) for d in Pokemon.get_spawnpoints(south[0], west[1], north[0], east[1]))
+                if len(spawnpoints) == 0:
+                    log.warning('No spawnpoints found in the specified area! (Did you forget to run a normal scan in this area first?)')
+
+                def any_spawnpoints_in_range(coords):
+                    return any(geopy_distance.distance(coords, x).meters <= 70 for x in spawnpoints)
+
+                locations = [coords for coords in locations if any_spawnpoints_in_range(coords)]
+
+            if len(locations) == 0:
+                log.warning('Nothing to scan!')
+
         # If there are no search_items_queue either the loop has finished (or been
         # cleared above) -- either way, time to fill it back up
         if search_items_queue.empty():
             log.debug('Search queue empty, restarting loop')
-            for step, step_location in enumerate(generate_location_steps(current_location, args.step_limit), 1):
+            for step, step_location in enumerate(locations, 1):
                 log.debug('Queueing step %d @ %f/%f/%f', step, step_location[0], step_location[1], step_location[2])
                 search_args = (step, step_location)
                 search_items_queue.put(search_args)
@@ -178,7 +207,12 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
 
     # If we have more than one account, stagger the logins such that they occur evenly over scan_delay
     if len(args.accounts) > 1:
-        delay = (args.scan_delay / len(args.accounts)) * args.accounts.index(account)
+        if len(args.accounts) > args.scan_delay:  # force ~1 second delay between threads if you have many accounts
+            delay = args.accounts.index(account) \
+                + ((random.random() - .5) / 2) if args.accounts.index(account) > 0 else 0
+        else:
+            delay = (args.scan_delay / len(args.accounts)) * args.accounts.index(account)
+
         log.debug('Delaying thread startup for %.2f seconds', delay)
         time.sleep(delay)
 
@@ -191,6 +225,8 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
 
             # Create the API instance this will use
             api = PGoApi()
+            if args.proxy:
+                api.set_proxy({'http': args.proxy, 'https': args.proxy})
 
             # Get current time
             loop_start_time = int(round(time.time() * 1000))
@@ -248,7 +284,7 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
                             search_items_queue.task_done()
                             break  # All done, get out of the request-retry loop
                         except KeyError:
-                            log.exception('Search step %s map parsing failed, retrying request in %g seconds', step, sleep_time)
+                            log.exception('Search step %s map parsing failed, retrying request in %g seconds. Username: %s', step, sleep_time, account['username'])
                             failed_total += 1
                             time.sleep(sleep_time)
 
@@ -262,7 +298,7 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
 
         # catch any process exceptions, log them, and continue the thread
         except Exception as e:
-            log.exception('Exception in search_worker: %s', e)
+            log.exception('Exception in search_worker: %s. Username: %s', e, account['username'])
 
 
 def check_login(args, account, api, position):
