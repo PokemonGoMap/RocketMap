@@ -4,6 +4,9 @@
 *.db-*
 *.sass-cache
 *.orig
+*.json
+*.csv
+
 config/config.ini
 static/dist/
 node_modules/

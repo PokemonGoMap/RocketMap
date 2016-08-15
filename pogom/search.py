@@ -58,7 +58,7 @@ def get_new_coords(init_loc, distance, bearing):
     return [math.degrees(new_lat), math.degrees(new_lon)]
 
 
-def generate_location_steps(initial_loc, step_count, scan_id):
+def generate_location_steps(initial_loc, step_count):
     # Bearing (degrees)
     NORTH = 0
     EAST = 90
@@ -73,7 +73,6 @@ def generate_location_steps(initial_loc, step_count, scan_id):
 
     ring = 1
     loc = initial_loc
-    offset = 0
     while ring < step_count:
         # Set loc to start at top left
         loc = get_new_coords(loc, ydist, NORTH)
@@ -82,7 +81,6 @@ def generate_location_steps(initial_loc, step_count, scan_id):
             for i in range(ring):
                 if direction == 0:  # RIGHT
                     loc = get_new_coords(loc, xdist, EAST)
-                    offset += 1
                 if direction == 1:  # DOWN + RIGHT
                     loc = get_new_coords(loc, ydist, SOUTH)
                     loc = get_new_coords(loc, xdist / 2, EAST)
@@ -97,8 +95,7 @@ def generate_location_steps(initial_loc, step_count, scan_id):
                 if direction == 5:  # UP + RIGHT
                     loc = get_new_coords(loc, ydist, NORTH)
                     loc = get_new_coords(loc, xdist / 2, EAST)
-                if (ring + i + offset + scan_id) % 3 == 0:
-                    yield (loc[0], loc[1], 0)
+                yield (loc[0], loc[1], 0)
         ring += 1
 
 
@@ -135,7 +132,6 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
     locations = []
     spawnpoints = set()
 
-    scan = 0
     # The real work starts here but will halt on pause_bit.set()
     while True:
 
@@ -199,9 +195,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
             for step, step_location in enumerate(locations, 1):
                 log.debug('Queueing step %d @ %f/%f/%f', step, step_location[0], step_location[1], step_location[2])
                 search_args = (step, step_location)
-                
                 search_items_queue.put(search_args)
-            scan = scan + 1
         # else:
         #     log.info('Search queue processing, %d items left', search_items_queue.qsize())
 
@@ -284,7 +278,7 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
                     # Got the response, lock for parsing and do so (or fail, whatever)
                     with parse_lock:
                         try:
-                            parse_map(response_dict, step_location)
+                            parse_map(response_dict, step_location, account['username'])
                             log.debug('Search step %s completed', step)
                             search_items_queue.task_done()
                             break  # All done, get out of the request-retry loop

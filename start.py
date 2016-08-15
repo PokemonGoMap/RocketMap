@@ -25,7 +25,7 @@ with open(fname, "r") as ins:
         long = float(m.group(6))
         delay = int(m.group(7))
         desc = m.group(8)
-        str = "screen -AmdS pkmn-worker%s-thread python runserver.py --no-server -st %d -a %s -u %s -p %s -l \"%f,%f\" -sd %d" % (id, steps, auth, login, pw, lat, long, delay)
+        str = "screen -AmdS pkmn-worker%s-thread python runserver.py -ns -st %d -a %s -u %s -p %s -l \"%f,%f\" -sd %d" % (id, steps, auth, login, pw, lat, long, delay)
         
         os.system("echo executing '%s'" % str)
         os.system(str)

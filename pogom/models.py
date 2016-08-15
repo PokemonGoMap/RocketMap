@@ -3,6 +3,7 @@
 import logging
 import calendar
 import sys
+import time
 import pymongo
 
 from peewee import SqliteDatabase, InsertQuery, \
@@ -331,11 +332,15 @@ class Versions(flaskDb.Model):
         primary_key = False
 
 
-def parse_map(map_dict, step_location):
+def parse_map(map_dict, step_location, username):
     pokemons = {}
     pokestops = {}
     gyms = {}
     scanned = {}
+    if len(map_dict['responses']['GET_MAP_OBJECTS']) == 0:
+        log.error('GET_MAP_OBJECTS response has 0 items - Possible Account Ban! Username: %s', username)
+        log.info('stopping thread')
+        sys.exit(1)
 
     cells = map_dict['responses']['GET_MAP_OBJECTS']['map_cells']
     for cell in cells:
