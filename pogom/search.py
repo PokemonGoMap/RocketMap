@@ -150,6 +150,10 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
         # If a new location has been passed to us, get the most recent one
         if not new_location_queue.empty():
             log.info('New location caught, moving search grid')
+
+            #Prevents the wave delay when moving to a search grid
+            isFirstScan = True
+
             try:
                 while True:
                     current_location = new_location_queue.get_nowait()
@@ -193,8 +197,9 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
         # cleared above) -- either way, time to fill it back up
         if search_items_queue.empty():
             log.debug('Search queue empty, restarting loop')
+            #Adds a delay if set
             if args.wave_delay > 0 and isFirstScan is False:
-                log.info('Waiting for %d second wave delay', args.wave_delay)
+                log.info('Setting wave delay for %d seconds.', args.wave_delay)
                 time.sleep(args.wave_delay)
             for step, step_location in enumerate(locations, 1):
                 log.debug('Queueing step %d @ %f/%f/%f', step, step_location[0], step_location[1], step_location[2])
