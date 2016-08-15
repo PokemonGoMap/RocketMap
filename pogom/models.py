@@ -191,8 +191,8 @@ class Pokemon(BaseModel):
     def get_spawnpoints(cls, swLat, swLng, neLat, neLng):
         query = Pokemon.select(Pokemon.latitude,
                         Pokemon.longitude,
-                        Pokemon.spawnpoint_id,
-                        ((Pokemon.disappear_time.minute * 60) + (Pokemon.disappear_time.second + 2705) % 3600).alias('time'),
+                        Pokemon.disappear_time,
+                        Pokemon.spawnpoint_id
                         )
 
         if None not in (swLat, swLng, neLat, neLng):
@@ -204,13 +204,22 @@ class Pokemon(BaseModel):
                             )
                      )
 
-        # Sqlite doesn't support distinct on columns
-        if args.db_type == 'mysql':
-            query = query.distinct(Pokemon.spawnpoint_id)
-        else:
-            query = query.group_by(Pokemon.latitude, Pokemon.longitude, 'time')
+        results = query.dicts()
+        uniq_temp = set()
+        uniq_real = []
 
-        return list(query.dicts())
+        for row in results:
+
+            min = row['disappear_time'].minute
+            sec = row['disappear_time'].second
+            row['time'] = (((min*60) + (sec + 2701)) % 3600)
+            log.debug('spawn: %d:%d -> %d' % (min, sec, int(row['time']/60)))
+            spawn = (row['latitude'],row['longitude'],row['time'])
+            if spawn not in uniq_temp:
+                uniq_temp.add(spawn)
+                uniq_real.append(row)
+
+        return list(uniq_real)
 
 
 class Pokestop(BaseModel):
