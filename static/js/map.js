@@ -651,6 +651,8 @@ var pokemonSprites = {
   }
 }
 
+var scanRadius = 70 // metres
+
 //
 // LocalStorage helpers
 //
@@ -739,6 +741,10 @@ var StoreOptions = {
     type: StoreTypes.Boolean
   },
   'playSound': {
+    default: false,
+    type: StoreTypes.Boolean
+  },
+  'notifNear': {
     default: false,
     type: StoreTypes.Boolean
   },
@@ -953,6 +959,7 @@ function initSidebar () {
   $('#scanned-switch').prop('checked', Store.get('showScanned'))
   $('#spawnpoints-switch').prop('checked', Store.get('showSpawnpoints'))
   $('#sound-switch').prop('checked', Store.get('playSound'))
+  $('#near-switch').prop('checked', Store.get('notifNear'))
   var searchBox = new google.maps.places.SearchBox(document.getElementById('next-location'))
   $('#next-location').css('background-color', $('#geoloc-switch').prop('checked') ? '#e0e0e0' : '#ffffff')
 
@@ -1166,6 +1173,19 @@ function setupPokemonMarker (item, skipNotification, isBounceDisabled) {
     disableAutoPan: true
   })
 
+  if (!skipNotification && Store.get('notifNear')) {
+    let distance = google.maps.geometry.spherical.computeDistanceBetween(
+      new google.maps.LatLng(item['latitude'], item['longitude']),
+      locationMarker.getPosition()
+    )
+    if(distance < scanRadius) {
+      if (Store.get('playSound')) {
+        audio.play()
+      }
+      sendNotification('A wild ' + item['pokemon_name'] + ' is right here!', 'Check your phone!', 'static/icons/' + item['pokemon_id'] + '.png', item['latitude'], item['longitude'])
+    }
+  }
+
   if (notifiedPokemon.indexOf(item['pokemon_id']) > -1 || notifiedRarity.indexOf(item['pokemon_rarity']) > -1) {
     if (!skipNotification) {
       if (Store.get('playSound')) {
@@ -1248,7 +1268,7 @@ function setupScannedMarker (item) {
     map: map,
     clickable: false,
     center: circleCenter,
-    radius: 70, // metres
+    radius: scanRadius,
     fillColor: getColorByDate(item['last_modified']),
     strokeWeight: 1
   })
@@ -1971,6 +1991,11 @@ $(function () {
   $('#sound-switch').change(function () {
     Store.set('playSound', this.checked)
   })
+
+  $('#near-switch').change(function () {
+    Store.set('notifNear', this.checked)
+  })
+
 
   $('#geoloc-switch').change(function () {
     $('#next-location').prop('disabled', this.checked)
