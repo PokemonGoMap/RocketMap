@@ -6,7 +6,7 @@ print("Please refer to documentation, there is no more example.py, only runserve
 fuck = "Would yous till like to massage the devs that example.py no work?"
 if "needful" in fuck.lower():
     print("poon bang lure pls")
-elif fuck.lower() != "no":
+elif fuck.upper() != "NO":
     print("you have been banned lol")
 else:
     print("bless u")
