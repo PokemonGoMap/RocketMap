@@ -89,7 +89,9 @@ if __name__ == '__main__':
         logging.getLogger('requests').setLevel(logging.DEBUG)
         logging.getLogger('pgoapi').setLevel(logging.DEBUG)
         logging.getLogger('rpc_api').setLevel(logging.DEBUG)
-	if args.spawnpoint_scanning:
+	
+	position = (0.0, 0.0, 0.0)
+	if not args.spawnpoint_scanning:
 		# use lat/lng directly if matches such a pattern
 		prog = re.compile("^(\-?\d+\.\d+),?\s?(\-?\d+\.\d+)$")
 		res = prog.match(args.location)
@@ -116,8 +118,6 @@ if __name__ == '__main__':
 
 		log.info('Parsed location is: %.4f/%.4f/%.4f (lat/lng/alt)',
 				 position[0], position[1], position[2])
-	else:
-		position = (0,0,0)
 
     if args.no_pokemon:
         log.info('Parsing of Pokemon disabled')
