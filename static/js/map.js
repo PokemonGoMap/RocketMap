@@ -1173,29 +1173,34 @@ function setupPokemonMarker (item, skipNotification, isBounceDisabled) {
     disableAutoPan: true
   })
 
+  var notificationTitle
+  var notificationMessage
+
   if (!skipNotification && Store.get('notifNear')) {
-    let distance = google.maps.geometry.spherical.computeDistanceBetween(
+    var distance = google.maps.geometry.spherical.computeDistanceBetween(
       new google.maps.LatLng(item['latitude'], item['longitude']),
       locationMarker.getPosition()
     )
-    if(distance < scanRadius) {
-      if (Store.get('playSound')) {
-        audio.play()
-      }
-      sendNotification('A wild ' + item['pokemon_name'] + ' is right here!', 'Check your phone!', 'static/icons/' + item['pokemon_id'] + '.png', item['latitude'], item['longitude'])
+    if (distance <= scanRadius) {
+      notificationTitle = 'A wild ' + item['pokemon_name'] + ' is right here!'
+      notificationMessage = 'Only ' + Math.round(distance) + ' meters away'
     }
   }
 
   if (notifiedPokemon.indexOf(item['pokemon_id']) > -1 || notifiedRarity.indexOf(item['pokemon_rarity']) > -1) {
     if (!skipNotification) {
-      if (Store.get('playSound')) {
-        audio.play()
-      }
-      sendNotification('A wild ' + item['pokemon_name'] + ' appeared!', 'Click to load map', 'static/icons/' + item['pokemon_id'] + '.png', item['latitude'], item['longitude'])
+      notificationTitle = 'A wild ' + item['pokemon_name'] + ' appeared!'
+      notificationMessage = 'Click to load map'
     }
     if (marker.animationDisabled !== true) {
       marker.setAnimation(google.maps.Animation.BOUNCE)
     }
+  }
+  if (notificationTitle) {
+    if (Store.get('playSound')) {
+      audio.play()
+    }
+    sendNotification(notificationTitle, notificationMessage, 'static/icons/' + item['pokemon_id'] + '.png', item['latitude'], item['longitude'])
   }
 
   addListeners(marker)
@@ -1995,7 +2000,6 @@ $(function () {
   $('#near-switch').change(function () {
     Store.set('notifNear', this.checked)
   })
-
 
   $('#geoloc-switch').change(function () {
     $('#next-location').prop('disabled', this.checked)
