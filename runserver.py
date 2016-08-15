@@ -168,6 +168,9 @@ if __name__ == '__main__':
                         spawns = Pokemon.get_all_spawnpoints(args.northeast, args.southwest)
                         if spawns is not None:
                             log.info('Finished generating ' + args.spawnpoint_scanning)
+                            with open(args.spawnpoint_scanning, 'w+') as file:
+                                file.write(json.dumps(spawns))
+                                file.close()
                         else:
                             log.info('Generation failed, no spawns were found, exiting')
                             sys.exit()
