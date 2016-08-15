@@ -26,7 +26,11 @@ def split_spawns(spawns, filename, accounts, sort, path, index):
     i = 0
     account_count = 0
     for item in spawns:
-        split_spawns[account_count].append(item)
+        newitem = {}
+        newitem["lat"] = float(item["lat"])
+        newitem["lng"] = float(item["lng"])
+        newitem["time"] = int(float(item["time"]))
+        split_spawns[account_count].append(newitem)
         i = i + 1
         if i > spawn_count_each:
             account_count = account_count + 1
