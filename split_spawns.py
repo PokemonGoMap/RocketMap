@@ -11,7 +11,7 @@ from operator import itemgetter
 logging.basicConfig(format='%(asctime)s [%(threadName)16s][%(module)14s][%(levelname)8s] %(message)s')
 log = logging.getLogger(__name__)
 
-def split_spawns(spawns, filename, accounts, sort, path, index):
+def split_spawns(spawns, filename, accounts, sort, path, index, nw_lat, nw_lng, se_lat, se_lng):
     spawns.sort(key=itemgetter(sort))
     
     split_spawns = []
@@ -23,19 +23,22 @@ def split_spawns(spawns, filename, accounts, sort, path, index):
     
     log.info("splitting %d spawns to %d accounts: %d each, meaning max %ds per scan" % (spawn_count, accounts, spawn_count_each, ceil(3600/spawn_count_each)))
     
-    i = 0
+    spawn_count = 0
     account_count = 0
     for item in spawns:
         newitem = {}
         newitem["lat"] = float(item["lat"])
         newitem["lng"] = float(item["lng"])
         newitem["time"] = int(float(item["time"]))
-        split_spawns[account_count].append(newitem)
-        i = i + 1
-        if i > spawn_count_each:
-            account_count = account_count + 1
-            i = 0
+        if((nw_lat and se_lat) and (nw_lat < newitem["lat"] or se_lat > newitem["lat"])):
+            continue
+        if((nw_lng and se_lng) and (nw_lng > newitem["lng"] or se_lng < newitem["lng"])):
+            continue
+        split_spawns[spawn_count % accounts].append(newitem)
+        spawn_count = spawn_count + 1
     
+    spawn_count_each = int(spawn_count / accounts)
+    log.info("splitted %d spawns to %d accounts: %d each, meaning max %ds per scan" % (spawn_count, accounts, spawn_count_each, ceil(3600/spawn_count_each)))
     filename = filename.replace(".json", "")
     
     if not os.path.exists(path):
@@ -67,9 +70,23 @@ def get_args():
                         type=int,
                         help='start index of output files',
                         default=0)
+    parser.add_argument('-nwlt', '--north-west-lat',
+                        type=float)
+    parser.add_argument('-nwlg', '--north-west-lng',
+                        type=float)
+    parser.add_argument('-selt', '--south-east-lat',
+                        type=float)
+    parser.add_argument('-selg', '--south-east-lng',
+                        type=float)
     parser.set_defaults(DEBUG=False)
 
     args = parser.parse_args()
+    
+    if not ((args.north_west_lat and args.north_west_lng and args.south_east_lat and args.south_east_lng) or
+        (args.north_west_lat is None and args.north_west_lng is None and args.south_east_lat is None and args.south_east_lng is None)):
+        parser.print_usage()
+        print(sys.argv[0] + ": error: you need both north-west and south-east or none")
+        sys.exit(1)
     
     if(args.sort  != "lat" and args.sort  != "lng"):
         parser.print_usage()
@@ -88,7 +105,7 @@ if __name__ == '__main__':
                 spawns = json.load(file)
                 
                 try:
-                    split_spawns(spawns, args.filename, args.accounts, args.sort, args.path, args.index)
+                    split_spawns(spawns, args.filename, args.accounts, args.sort, args.path, args.index, args.north_west_lat, args.north_west_lng, args.south_east_lat, args.south_east_lng)
                 except Exception as e:
                     log.error("Error while executing split_spawns(): " + str(e))
             except ValueError as e:
