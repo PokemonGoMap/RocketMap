@@ -17,6 +17,8 @@
     "Store": true,
     "centerLat": true,
     "centerLng": true,
+    "posLat": true,
+    "posLng": true,
     "pageLoaded": true,
     "countMarkers": true,
     "skel": true,
