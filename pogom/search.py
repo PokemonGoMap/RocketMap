@@ -259,15 +259,15 @@ def search_worker_thread_ss(args, account, search_items_queue, parse_lock, encry
                 log.info('Searching step %d, remaining %d', step, search_items_queue.qsize())
                 if timeDif(curSec(), spawntime) < 840:  # if we arnt 14mins too late
 
-                    # Get current time
-                    search_time = int(round(time.time() * 1000))
-
                     # Let the api know where we intend to be for this loop
                     api.set_position(*step_location)
 
                     # The loop to try very hard to scan this step
                     failed_total = 0
                     while True:
+
+                        # Get current time
+                        search_time = int(round(time.time() * 1000))
 
                         # After so many attempts, let's get out of here
                         if failed_total >= args.scan_retries:
