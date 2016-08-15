@@ -95,6 +95,18 @@ class Pokemon(BaseModel):
         indexes = ((('latitude', 'longitude'), False),)
 
     @staticmethod
+    def get_encountered_pokemon(encounter_id):
+        query = (Pokemon
+                 .select()
+                 .where(Pokemon.encounter_id == encounter_id)
+                 .dicts()
+                 )
+        pokemon = []
+        for a in query:
+            pokemon.append(a)
+        return pokemon
+
+    @staticmethod
     def get_active(swLat, swLng, neLat, neLng):
         if swLat is None or swLng is None or neLat is None or neLng is None:
             query = (Pokemon
@@ -382,7 +394,7 @@ def parse_map(api, map_dict, step_location):
                 printPokemon(p['pokemon_data']['pokemon_id'], p['latitude'],
                              p['longitude'], d_t)
                 result = None
-                if args.scan_iv:
+                if args.scan_iv and not Pokemon.get_encountered_pokemon(p['encounter_id']):
                     result = api.encounter(encounter_id=p['encounter_id'],
                                         spawn_point_id=p['spawn_point_id'],
                                         player_latitude=step_location[0],
