@@ -194,7 +194,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
         if search_items_queue.empty():
             log.debug('Search queue empty, restarting loop')
             if args.wave_delay > 0 and isFirstScan == False:
-                log.debug('Waiting for %d second wave delay', args.wave_delay)
+                log.info('Waiting for %d second wave delay', args.wave_delay)
                 time.sleep(args.wave_delay)
             for step, step_location in enumerate(locations, 1):
                 log.debug('Queueing step %d @ %f/%f/%f', step, step_location[0], step_location[1], step_location[2])
