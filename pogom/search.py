@@ -233,12 +233,6 @@ def search_overseer_thread_ss(args, new_location_queue, pause_bit, encryption_li
             search_args = (step, step_location, spawns[pos]['time'])
             search_items_queue.put(search_args)
         pos = (pos + 1) % len(spawns)
-        if pos == 0:
-            while not (search_items_queue.empty()):
-                log.info('Search_items_queue not empty. Waiting 10 secconds. Restarting at top of hour')
-                time.sleep(10)
-            log.info('Restarting from top of list and finding current time')
-            pos = SbSearch(spawns, (curSec() + 3540) % 3600)
 
 def search_worker_thread_ss(args, account, search_items_queue, parse_lock, encryption_lib_path):
 
