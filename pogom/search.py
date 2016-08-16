@@ -31,7 +31,7 @@ from pgoapi.utilities import f2i
 from pgoapi import utilities as util
 from pgoapi.exceptions import AuthException
 
-from .models import parse_map, Pokemon, PoGoAccount
+from .models import parse_map, Pokemon, PoGoAccount, insert_accounts, deactivate_account, remove_accounts, use_account
 
 log = logging.getLogger(__name__)
 
@@ -115,6 +115,9 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
 
     search_items_queue = Queue()
     parse_lock = Lock()
+    #Feed/remove accounts
+    remove_accounts()
+    insert_accounts()
 
     # Create a search_worker_thread per account
     log.info('Starting search worker threads')
@@ -233,7 +236,7 @@ def search_worker_thread(args, count, account, search_items_queue, parse_lock, e
 
             # The forever loop for the searches
             while True:
-
+                use_account(account['Username'])
                 # Grab the next thing to search (when available)
                 step, step_location = search_items_queue.get()
 
@@ -259,12 +262,9 @@ def search_worker_thread(args, count, account, search_items_queue, parse_lock, e
                     # By default scan_dela=5, scan_retries=5 so
                     # We'd see timeouts of 5, 10, 15, 20, 25
                     sleep_time = args.scan_delay * (1 + failed_total)
-
                     # Ok, let's get started -- check our login status
                     check_login(args, account, api, step_location)
-
                     api.activate_signature(encryption_lib_path)
-
                     # Make the actual request (finally!)
                     response_dict = map_request(api, step_location)
 
@@ -283,7 +283,7 @@ def search_worker_thread(args, count, account, search_items_queue, parse_lock, e
                             search_items_queue.task_done()
                             break  # All done, get out of the request-retry loop
                         except KeyError:
-                            log.exception('Search step %s map parsing failed, retrying request in %g seconds. Username: %s', step, sleep_time, account['username'])
+                            log.exception('Search step %s map parsing failed, retrying request in %g seconds. Username: %s', step, sleep_time, account['Username'])
                             failed_total += 1
                     time.sleep(sleep_time)
 
@@ -298,9 +298,8 @@ def search_worker_thread(args, count, account, search_items_queue, parse_lock, e
         # catch any process exceptions, log them, and continue the thread
         except Exception as e:
             log.exception('Exception in search_worker: %s. Username: %s', e, account['Username'])
-            #remove_account(account['Username'])
+            deactivate_account(account['Username'])
             
-
 
 def check_login(args, account, api, position):
 

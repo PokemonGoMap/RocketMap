@@ -139,6 +139,7 @@ if __name__ == '__main__':
 
     app.set_current_location(position)
 
+
     # Control the search status (running or not) across threads
     pause_bit = Event()
     pause_bit.clear()
@@ -187,5 +188,4 @@ if __name__ == '__main__':
 
         app.run(threaded=True, use_reloader=False, debug=args.debug, host=args.host, port=args.port, ssl_context=ssl_context)
 
-#Feed new accounts into DB
-accounts = insert_accounts()
+

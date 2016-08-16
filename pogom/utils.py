@@ -52,6 +52,8 @@ def get_args():
                         ptc or google. Defaults all to ptc.')
     parser.add_argument('-u', '--username', action='append',
                         help='Usernames, one per account.')
+    parser.add_argument('-ru', '--remove-user', action='append',
+                        help='Username to be removed from db')
     parser.add_argument('-p', '--password', action='append',
                         help='Passwords, either single one for all accounts or one per account.')
     parser.add_argument('-na', '--num-accounts', help='Number of accounts to use', type=int,
