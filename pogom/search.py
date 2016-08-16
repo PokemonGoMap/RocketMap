@@ -187,10 +187,10 @@ def get_spawnpoints_for_search(args, current_location):
     return spawns
 
 def search_overseer_thread_ss(args, new_location_queue, pause_bit, encryption_lib_path):
-    global spawns, Shash, going
     log.info('Search ss overseer starting')
     search_items_queue = Queue()
     parse_lock = Lock()
+    spawns = []
 
     current_location = new_location_queue.get_nowait()
 
@@ -201,16 +201,14 @@ def search_overseer_thread_ss(args, new_location_queue, pause_bit, encryption_li
     for i, account in enumerate(args.accounts):
         log.debug('Starting search worker thread %d for user %s', i, account['username'])
         t = Thread(target=search_worker_thread_ss,
-                   name='ss_search_worker_%s_%d' % (loc_string, i),
+                   name='ss_search_worker_%s_%s' % (loc_string, account['username']),
                    args=(args, account, search_items_queue, parse_lock, encryption_lib_path))
         t.daemon = True
         t.start()
 
 
     spawns = get_spawnpoints_for_search(args, current_location)
-    for spawn in spawns:
-        Shash[spawn['longitude']] = spawn['time']
-    # sort spawn points
+
     spawns.sort(key=itemgetter('time'))
 
     if not spawns:
@@ -223,17 +221,11 @@ def search_overseer_thread_ss(args, new_location_queue, pause_bit, encryption_li
     # find start position
     pos = SbSearch(spawns, (curSec() + 3540) % 3600)
     while True:
-
-        while timeDif(curSec(), spawns[pos]['time']) < 60:
+        while timeDif(curSec(), spawns[pos]['time']) < 45:
             time.sleep(1)
-        location = []
-        location.append(spawns[pos]['latitude'])
-        location.append(spawns[pos]['longitude'])
-        location.append(0)
-        for step, step_location in enumerate(generate_location_steps(location, 1), 1):
-            log.info('Queueing spawnpoint %d of %d, time %d (current %d) @ %f/%f/%f', pos, len(spawns), spawns[pos]['time'], curSec(), step_location[0], step_location[1], step_location[2])
-            search_args = (step, step_location, spawns[pos]['time'])
-            search_items_queue.put(search_args)
+        location = [spawns[pos]['latitude'], spawns[pos]['longitude'], 40.32]
+        search_args = (pos, location, spawns[pos]['time'])
+        search_items_queue.put(search_args)
         pos = (pos + 1) % len(spawns)
 
 def search_worker_thread_ss(args, account, search_items_queue, parse_lock, encryption_lib_path):
@@ -251,7 +243,7 @@ def search_worker_thread_ss(args, account, search_items_queue, parse_lock, encry
             api = PGoApi()
             if args.proxy:
                 api.set_proxy({'http': args.proxy, 'https': args.proxy})
-
+            api.activate_signature(encryption_lib_path)
             # The forever loop for the searches
             while True:
 
@@ -287,8 +279,6 @@ def search_worker_thread_ss(args, account, search_items_queue, parse_lock, encry
 
                         # Ok, let's get started -- check our login status
                         check_login(args, account, api, step_location)
-
-                        api.activate_signature(encryption_lib_path)
 
                         # Make the actual request (finally!)
                         response_dict = map_request(api, step_location)

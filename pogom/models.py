@@ -349,7 +349,7 @@ def parse_map(map_dict, step_location):
                     d_t = datetime.utcfromtimestamp(
                         (p['last_modified_timestamp_ms'] +
                          p['time_till_hidden_ms']) / 1000.0)
-                    log.info('disappear time: %s' % str(d_t - datetime.utcnow()))
+                    log.debug('disappear time: %s' % str(d_t - datetime.utcnow()))
                 else:
                     # Set a value of 15 minutes because currently its unknown but larger than 15.
                     d_t = datetime.utcfromtimestamp((p['last_modified_timestamp_ms'] + 900000) / 1000.0)
