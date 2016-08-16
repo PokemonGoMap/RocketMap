@@ -204,7 +204,7 @@ def get_args():
 
     return args
 
-	
+
 def insert_mock_data(position):
     num_pokemon = 6
     num_pokestop = 6
