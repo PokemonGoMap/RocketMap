@@ -383,7 +383,7 @@ def search_worker_thread_ss(args, account, search_items_queue, parse_lock, encry
             while True:
                 # Grab the next thing to search (when available)
                 step, step_location, spawntime = search_items_queue.get()
-                if timeDif(curSec(), spawntime) < 90:  # If we aren't 1.5 minutes too late
+                if timeDif(curSec(), spawntime) < args.max_dt:  # If we aren't 'args.max_dt' seconds too late
                     log.info('Searching step %d, remaining %d', step, search_items_queue.qsize())
                     # set position
                     api.set_position(*step_location)
