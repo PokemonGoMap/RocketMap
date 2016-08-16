@@ -4,6 +4,7 @@ import logging
 import calendar
 import sys
 import re
+import math
 from peewee import SqliteDatabase, InsertQuery, \
     IntegerField, CharField, DoubleField, BooleanField, \
     DateTimeField, CompositeKey, fn
@@ -209,53 +210,64 @@ class Pokemon(BaseModel):
 
         return list(query.dicts())
 
-    # get all spawnpoints from database, [taken from pr#585]
     @classmethod
-    def get_all_spawnpoints(cls, neCoord, swCoord):
+    def get_spawnpoints_in_hex(cls, center, steps):
+        log.info('got {}steps'.format(steps))
+        # work out hex bounding box
+        hdist = ((steps * 120.0) - 50.0)/1000.0
+        vdist = ((steps * 105.0) - 35.0)/1000.0
+        log.info('hdist is {}, and vdist is {}'.format(hdist,vdist))
+        R = 6378.1  # km radius of the earth
+        vang = math.degrees(vdist / R)
+        hang = math.degrees(hdist / (R * math.cos(math.radians(center[0]))))
+        log.info('hang is {}, and vang is {}'.format(hang,vang))
+        north = center[0] + vang
+        south = center[0] - vang
+        east = center[1] + hang
+        west = center[1] - hang
+        log.info('serch area is ({},{}) to({},{})'.format(north,east,south,west))
+        # get all spawns in that box
         query = (Pokemon
                  .select(Pokemon.latitude.alias('lat'),
                          Pokemon.longitude.alias('lng'),
-                         Pokemon.disappear_time.alias('time'),
+                         ((Pokemon.disappear_time.minute * 60) + (Pokemon.disappear_time.second + 2700) % 3600).alias('time'),
                          Pokemon.spawnpoint_id
                          ))
-        # Pretty much all by Xcelled
-        # https://gist.github.com/Xcelled/c5b397dfe2c32e61e7aa06479b32bc34#file-spawnpoint_exporter-py-L57
-        if (swCoord is not None or neCoord is not None):
-            coord_re = re.compile("^(\-?\d+\.\d+),?\s?(\-?\d+\.\d+)$")
-            sw = coord_re.match(swCoord)
-            ne = coord_re.match(neCoord)
-            valid_coord = True
-            if not sw:
-                log.error('Invalid southwest coord, defaulting to dump all')
-                valid_coord = False
-            if not ne:
-                log.error('Invalid northeast coord, defaulting to dump all')
-                valid_coord = False
-            if valid_coord:
-                query = (query.where(
-                    (Pokemon.latitude >= float(sw.group(1))) &
-                    (Pokemon.longitude <= float(sw.group(2))) &
-                    (Pokemon.latitude <= float(ne.group(1))) &
-                    (Pokemon.longitude >= float(ne.group(2)))
-                )
-                )
+        query = (query.where(
+                    (Pokemon.latitude <= north) &
+                    (Pokemon.latitude >= south) &
+                    (Pokemon.longitude >= west) &
+                    (Pokemon.longitude <= east)
+                ))
+        # Sqlite doesn't support distinct on columns
+        if args.db_type == 'mysql':
+            query = query.distinct(Pokemon.spawnpoint_id)
+        else:
+            query = query.group_by(Pokemon.spawnpoint_id)
 
-        query = query.dicts()
-        uniq_temp = set()
-        uniq_real = []
-
-        for row in query:
-            min = row['time'].minute
-            sec = row['time'].second
-            row['time'] = (((min * 60) + (sec + 2710)) % 3600)
-            spawn = (row['spawnpoint_id'], row['time'])
-            if spawn not in uniq_temp:  # SQL group by, because peewee can't handle group by on aliased fields
-                uniq_temp.add(spawn)
-                del row['spawnpoint_id']
-                uniq_real.append(row)
-
-        return list(uniq_real)
-
+        s = list(query.dicts())
+        log.info('got {} spawn inital'.format(len(s)))
+        # for each spawn work out if it is in the hex (clipping the diagonals)
+        trueSpawns = []
+        for spawn in s:
+            # get the offset from the center of each spawn in km
+            offset = [
+                      math.radians(spawn['lat'] - center[0]) * R,
+                      math.radians(spawn['lng'] - center[1]) * (R * math.cos(math.radians(center[0]))),
+                      ]
+            # check agains the 4 lines that make up the diagonals
+            if (offset[1] + (offset[0] * 0.5)) > hdist:# too far ne
+                continue
+            if (offset[1] - (offset[0] * 0.5)) > hdist:# too far se
+                continue
+            if ((offset[0] * 0.5) - offset[1]) > hdist:# too far nw
+                continue
+            if ((0 - offset[1]) - (offset[0] * 0.5)) > hdist:# too far sw
+                continue
+            # if it gets to here its  a good spawn
+            trueSpawns.append(spawn)
+        log.info('got {} spawn final'.format(len(trueSpawns)))
+        return trueSpawns
 
 class Pokestop(BaseModel):
     pokestop_id = CharField(primary_key=True, max_length=50)

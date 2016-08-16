@@ -20,6 +20,7 @@ Search Architecture:
 import logging
 import math
 import json
+import os
 import random
 import time
 import geopy.distance as geopy_distance
@@ -249,18 +250,21 @@ def search_overseer_thread_ss(args, new_location_queue, pause_bit, encryption_li
         t.daemon = True
         t.start()
 
-    try:
-        with open(args.spawnpoint_scanning) as file:
-            try:
-                spawns = json.load(file)
-            except ValueError:
-                log.error(args.spawnpoint_scanning + " is not valid")
-                return
-            file.close()
-    except IOError:
-        log.error("Error opening " + args.spawnpoint_scanning)
-        return
-
+    if os.path.isfile(args.spawnpoint_scanning):# if the spawns file exists use it
+        try:
+            with open(args.spawnpoint_scanning) as file:
+                try:
+                    spawns = json.load(file)
+                except ValueError:
+                    log.error(args.spawnpoint_scanning + " is not valid")
+                    return
+                file.close()
+        except IOError:
+            log.error("Error opening " + args.spawnpoint_scanning)
+            return
+    else:# if spawns file dose not exist use the db
+        loc = new_location_queue.get()
+        spawns = Pokemon.get_spawnpoints_in_hex(loc, args.step_limit)
     spawns.sort(key=itemgetter('time'))
     log.info('Total of %d spawns to track', len(spawns))
     # find the inital location (spawn thats 60sec old)
