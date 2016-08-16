@@ -26,16 +26,10 @@ var locationMarker
 var marker
 
 var noLabelsStyle = [{
-  featureType: 'poi',
+  featureType: 'all',
   elementType: 'labels',
   stylers: [{
     visibility: 'off'
-  }]
-}, {
-  'featureType': 'all',
-  'elementType': 'labels.icon',
-  'stylers': [{
-    'visibility': 'off'
   }]
 }]
 var light2Style = [{
