@@ -73,7 +73,7 @@ class Pogom(Flask):
                                lang=config['LOCALE'],
                                is_fixed=fixed_display,
                                search_control=search_display,
-                               original_marker=args.original_marker
+                               originalMarker=args.original_marker
                                )
 
     def raw_data(self):
