@@ -250,7 +250,7 @@ def search_overseer_thread_ss(args, new_location_queue, pause_bit, encryption_li
         t.daemon = True
         t.start()
 
-    if os.path.isfile(args.spawnpoint_scanning):# if the spawns file exists use it
+    if os.path.isfile(args.spawnpoint_scanning):  # if the spawns file exists use it
         try:
             with open(args.spawnpoint_scanning) as file:
                 try:
@@ -262,7 +262,7 @@ def search_overseer_thread_ss(args, new_location_queue, pause_bit, encryption_li
         except IOError:
             log.error("Error opening " + args.spawnpoint_scanning)
             return
-    else:# if spawns file dose not exist use the db
+    else:  # if spawns file dose not exist use the db
         loc = new_location_queue.get()
         spawns = Pokemon.get_spawnpoints_in_hex(loc, args.step_limit)
     spawns.sort(key=itemgetter('time'))
