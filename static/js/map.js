@@ -797,6 +797,11 @@ var Store = {
 // Functions
 //
 
+function getCurrentDate () {
+  var now = new Date();
+  return new Date(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), now.getUTCHours(), now.getUTCMinutes(), now.getUTCSeconds());
+}
+
 function excludePokemon (id) { // eslint-disable-line no-unused-vars
   $selectExclude.val(
     $selectExclude.val().concat(id)
@@ -1076,7 +1081,7 @@ function pokestopLabel (lured, lastModified, latitude, longitude) {
   var str
   if (lured) {
     var lastModifiedDate = new Date(lastModified)
-    var currentDate = new Date()
+    var currentDate = getCurrentDate();
 
     var timeUntilExpire = currentDate.getTime() - lastModifiedDate.getTime()
 
@@ -1230,7 +1235,7 @@ function setupPokestopMarker (item) {
 
 function getColorByDate (value) {
   // Changes the color from red to green over 15 mins
-  var diff = (Date.now() - value) / 1000 / 60 / 15
+  var diff = (getCurrentDate().getTime() - value) / 1000 / 60 / 15
 
   if (diff > 1) {
     diff = 1
@@ -1308,7 +1313,7 @@ function addListeners (marker) {
 
 function clearStaleMarkers () {
   $.each(mapData.pokemons, function (key, value) {
-    if (mapData.pokemons[key]['disappear_time'] < new Date().getTime() ||
+    if (mapData.pokemons[key]['disappear_time'] < getCurrentDate().getTime() ||
       excludedPokemon.indexOf(mapData.pokemons[key]['pokemon_id']) >= 0) {
       mapData.pokemons[key].marker.setMap(null)
       delete mapData.pokemons[key]
@@ -1316,7 +1321,7 @@ function clearStaleMarkers () {
   })
 
   $.each(mapData.lurePokemons, function (key, value) {
-    if (mapData.lurePokemons[key]['lure_expiration'] < new Date().getTime() ||
+    if (mapData.lurePokemons[key]['lure_expiration'] < getCurrentDate().getTime() ||
       excludedPokemon.indexOf(mapData.lurePokemons[key]['pokemon_id']) >= 0) {
       mapData.lurePokemons[key].marker.setMap(null)
       delete mapData.lurePokemons[key]
@@ -1325,7 +1330,7 @@ function clearStaleMarkers () {
 
   $.each(mapData.scanned, function (key, value) {
     // If older than 15mins remove
-    if (mapData.scanned[key]['last_modified'] < (new Date().getTime() - 15 * 60 * 1000)) {
+    if (mapData.scanned[key]['last_modified'] < (getCurrentDate().getTime() - 15 * 60 * 1000)) {
       mapData.scanned[key].marker.setMap(null)
       delete mapData.scanned[key]
     }
@@ -1542,7 +1547,7 @@ function redrawPokemon (pokemonList) {
 var updateLabelDiffTime = function () {
   $('.label-countdown').each(function (index, element) {
     var disappearsAt = new Date(parseInt(element.getAttribute('disappears-at')))
-    var now = new Date()
+    var now = getCurrentDate()
 
     var difference = Math.abs(disappearsAt - now)
     var hours = Math.floor(difference / 36e5)
