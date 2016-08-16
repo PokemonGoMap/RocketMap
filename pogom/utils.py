@@ -139,7 +139,7 @@ def get_args():
     parser.add_argument('--ssl-certificate', help='Path to SSL certificate file')
     parser.add_argument('--ssl-privatekey', help='Path to SSL private key file')
     parser.add_argument('-om', '--original-marker', help='Set the original marker. \
-                        Options: ash or none. Default: ash.',
+                        Options: ash or none. Default: ash',
                         default='ash')
     parser.set_defaults(DEBUG=False)
 
@@ -183,9 +183,6 @@ def get_args():
                 errors.append('The number of provided passwords ({}) must match the username count ({})'.format(num_passwords, num_usernames))
             if num_auths > 1 and num_usernames != num_auths:
                 errors.append('The number of provided auth ({}) must match the username count ({})'.format(num_auths, num_usernames))
-
-        if args.original_marker != "ash" and args.original_marker is not None:
-            errors.append('Wrong `original-marker` either as -om/--original-marker or in config (choose: ash or none)')
 
         if len(errors) > 0:
             parser.print_usage()
