@@ -121,6 +121,8 @@ def get_args():
     parser.add_argument('-nk', '--no-pokestops',
                         help='Disables PokeStops from the map (including parsing them into local db)',
                         action='store_true', default=False)
+    parser.add_argument('-ss', '--spawnpoint-scanning',
+                        help = 'Use spawnpoint scanning instead of beehive)', nargs='?', const=True, default = None)
     parser.add_argument('-pd', '--purge-data',
                         help='Clear pokemon from database this many hours after they disappear \
                         (0 to disable)', type=int, default=0)
@@ -310,7 +312,7 @@ def send_to_webhook(message_type, message):
 
         for w in webhooks:
             try:
-                requests.post(w, json=data, timeout=(None, 1))
+                requests.post(w, json=data, timeout=(None, 5))
             except requests.exceptions.ReadTimeout:
                 log.debug('Response timeout on webhook endpoint %s', w)
             except requests.exceptions.RequestException as e:

@@ -189,7 +189,11 @@ class Pokemon(BaseModel):
 
     @classmethod
     def get_spawnpoints(cls, swLat, swLng, neLat, neLng):
-        query = Pokemon.select(Pokemon.latitude, Pokemon.longitude, Pokemon.spawnpoint_id)
+        query = Pokemon.select(Pokemon.latitude,
+                        Pokemon.longitude,
+                        Pokemon.disappear_time,
+                        Pokemon.spawnpoint_id
+                        )
 
         if None not in (swLat, swLng, neLat, neLng):
             query = (query
@@ -200,13 +204,22 @@ class Pokemon(BaseModel):
                             )
                      )
 
-        # Sqlite doesn't support distinct on columns
-        if args.db_type == 'mysql':
-            query = query.distinct(Pokemon.spawnpoint_id)
-        else:
-            query = query.group_by(Pokemon.spawnpoint_id)
+        results = query.dicts()
+        uniq_temp = set()
+        uniq_real = []
 
-        return list(query.dicts())
+        for row in results:
+
+            min = row['disappear_time'].minute
+            sec = row['disappear_time'].second
+            row['time'] = (((min*60) + (sec + 2701)) % 3600)
+            log.debug('spawn: %d:%d -> %d' % (min, sec, int(row['time']/60)))
+            spawn = (row['latitude'],row['longitude'],row['time'])
+            if spawn not in uniq_temp:
+                uniq_temp.add(spawn)
+                uniq_real.append(row)
+
+        return list(uniq_real)
 
 
 class Pokestop(BaseModel):
@@ -336,9 +349,11 @@ def parse_map(map_dict, step_location):
                     d_t = datetime.utcfromtimestamp(
                         (p['last_modified_timestamp_ms'] +
                          p['time_till_hidden_ms']) / 1000.0)
+                    log.debug('disappear time: %s' % str(d_t - datetime.utcnow()))
                 else:
                     # Set a value of 15 minutes because currently its unknown but larger than 15.
                     d_t = datetime.utcfromtimestamp((p['last_modified_timestamp_ms'] + 900000) / 1000.0)
+                    log.info('default disappear time: %s' % str(d_t - datetime.utcnow()))
                 printPokemon(p['pokemon_data']['pokemon_id'], p['latitude'],
                              p['longitude'], d_t)
                 pokemons[p['encounter_id']] = {
