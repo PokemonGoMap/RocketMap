@@ -179,10 +179,12 @@ def get_args():
         else:
             num_auths = len(args.auth_service)
 
-        if args.webhook_all_stops is None:
+        # Can't add CLI, but configargparse requires it by design choice... Figure out what you want guys...
+        # TODO: add to configargparse as CLI & replace "not in" w/ "is None"
+        if "webhook_all_stops" not in args:
             args.webhook_all_stops = False
 
-        if args.webhook_gyms is None:
+        if "webhook_gyms" not in args:
             args.webhook_gyms = False
 
         if num_usernames > 1:
