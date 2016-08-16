@@ -430,7 +430,7 @@ def parse_map(map_dict, step_location):
                         'active_fort_modifier': active_fort_modifier
                     }
 
-                    if not args.webhook_all_forts:
+                    if not args.webhook_all_stops:
                         send_to_webhook('pokestop', webhook_data)
                 else:
                     lure_expiration, active_fort_modifier = None, None

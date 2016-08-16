@@ -140,10 +140,6 @@ def get_args():
                         type=int, default=5)
     parser.add_argument('-wh', '--webhook', help='Define URL(s) to POST webhook information to',
                         nargs='*', default=False, dest='webhooks')
-    parser.add_argument('-ws', '--webhook-all-stops', help='Send all pokéstops to webhooks, not only lured pokéstops.',
-                        action='store_true', default=False)
-    parser.add_argument('-wg', '--webhook-gyms', help='Send gyms to webhooks.',
-                        action='store_true', default=False)
     parser.add_argument('--ssl-certificate', help='Path to SSL certificate file')
     parser.add_argument('--ssl-privatekey', help='Path to SSL private key file')
     parser.set_defaults(DEBUG=False)
@@ -182,6 +178,12 @@ def get_args():
             args.auth_service = ['ptc']
         else:
             num_auths = len(args.auth_service)
+
+        if args.webhook_all_stops is None:
+            args.webhook_all_stops = False
+
+        if args.webhook_gyms is None:
+            args.webhook_gyms = False
 
         if num_usernames > 1:
             if num_passwords > 1 and num_usernames != num_passwords:
