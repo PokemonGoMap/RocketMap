@@ -9,6 +9,7 @@ var $selectStyle
 var $selectIconResolution
 var $selectIconSize
 var $selectLuredPokestopsOnly
+var $selectIconMarker
 
 var language = document.documentElement.lang === '' ? 'en' : document.documentElement.lang
 var idToPokemon = {}
@@ -761,6 +762,10 @@ var StoreOptions = {
   'iconSizeModifier': {
     default: 0,
     type: StoreTypes.Number
+  },
+  'originalMarker': {
+    default: originalMarker, // eslint-disable-line no-undef
+    type: StoreTypes.String
   }
 }
 
@@ -897,15 +902,15 @@ function initMap () { // eslint-disable-line no-unused-vars
   })
 }
 
-function createSearchMarker () {
-  function getMarkerIconUrl () {
-    if (originalMarker === 'None') { // eslint-disable-line no-undef
-      return 'static/marker_icons/transparent.png'
-    } else {
-      return 'static/marker_icons/' + originalMarker + '.png' // eslint-disable-line no-undef
-    }
+function getMarkerIconUrl (originalMarker) {
+  if (originalMarker === 'none') {
+    return 'static/marker_icons/transparent.png'
+  } else {
+    return 'static/marker_icons/' + originalMarker + '.png'
   }
+}
 
+function createSearchMarker () {
   var marker = new google.maps.Marker({ // need to keep reference.
     position: {
       lat: centerLat,
@@ -914,7 +919,7 @@ function createSearchMarker () {
     map: map,
     animation: google.maps.Animation.DROP,
     draggable: !Store.get('lockMarker'),
-    icon: getMarkerIconUrl(),
+    icon: getMarkerIconUrl(Store.get('originalMarker')),
     zIndex: google.maps.Marker.MAX_ZINDEX + 1
   })
 
@@ -1833,6 +1838,21 @@ $(function () {
     Store.set('showLuredPokestopsOnly', this.value)
     updateMap()
   })
+
+  $selectIconMarker = $('#iconmarker-style')
+
+  $selectIconMarker.select2({
+    placeholder: 'Select Icon Marker',
+    minimumResultsForSearch: Infinity
+  })
+
+  $selectIconMarker.on('change', function (e) {
+    var selectIconMarker = $selectIconMarker.val()
+    Store.set('originalMarker', selectIconMarker)
+    marker.setIcon(getMarkerIconUrl(selectIconMarker))
+  })
+  
+  $selectIconMarker.val(Store.get('originalMarker')).trigger('change')
 })
 
 $(function () {
