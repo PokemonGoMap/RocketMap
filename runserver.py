@@ -9,6 +9,7 @@ import time
 import re
 import requests
 import ssl
+import json
 
 from distutils.version import StrictVersion
 
@@ -21,8 +22,8 @@ from pogom import config
 from pogom.app import Pogom
 from pogom.utils import get_args, insert_mock_data, get_encryption_lib_path
 
-from pogom.search import search_overseer_thread, fake_search_loop
-from pogom.models import init_database, create_tables, drop_tables
+from pogom.search import search_overseer_thread, search_overseer_thread_ss, fake_search_loop
+from pogom.models import init_database, create_tables, drop_tables, Pokemon
 
 # Currently supported pgoapi
 pgoapi_version = "1.1.7"
@@ -89,32 +90,33 @@ if __name__ == '__main__':
         logging.getLogger('pgoapi').setLevel(logging.DEBUG)
         logging.getLogger('rpc_api').setLevel(logging.DEBUG)
 
-    # use lat/lng directly if matches such a pattern
-    prog = re.compile("^(\-?\d+\.\d+),?\s?(\-?\d+\.\d+)$")
-    res = prog.match(args.location)
-    if res:
-        log.debug('Using coordinates from CLI directly')
-        position = (float(res.group(1)), float(res.group(2)), 0)
-    else:
-        log.debug('Looking up coordinates in API')
-        position = util.get_pos_by_name(args.location)
+    if not args.spawnpoint_scanning:
+        # use lat/lng directly if matches such a pattern
+        prog = re.compile("^(\-?\d+\.\d+),?\s?(\-?\d+\.\d+)$")
+        res = prog.match(args.location)
+        if res:
+            log.debug('Using coordinates from CLI directly')
+            position = (float(res.group(1)), float(res.group(2)), 0)
+        else:
+            log.debug('Looking up coordinates in API')
+            position = util.get_pos_by_name(args.location)
 
-    # Use the latitude and longitude to get the local altitude from Google
-    try:
-        url = 'https://maps.googleapis.com/maps/api/elevation/json?locations={},{}'.format(
-            str(position[0]), str(position[1]))
-        altitude = requests.get(url).json()[u'results'][0][u'elevation']
-        log.debug('Local altitude is: %sm', altitude)
-        position = (position[0], position[1], altitude)
-    except (requests.exceptions.RequestException, IndexError, KeyError):
-        log.error('Unable to retrieve altitude from Google APIs; setting to 0')
+        # Use the latitude and longitude to get the local altitude from Google
+        try:
+            url = 'https://maps.googleapis.com/maps/api/elevation/json?locations={},{}'.format(
+                str(position[0]), str(position[1]))
+            altitude = requests.get(url).json()[u'results'][0][u'elevation']
+            log.debug('Local altitude is: %sm', altitude)
+            position = (position[0], position[1], altitude)
+        except (requests.exceptions.RequestException, IndexError, KeyError):
+            log.error('Unable to retrieve altitude from Google APIs; setting to 0')
 
-    if not any(position):
-        log.error('Could not get a position by name, aborting')
-        sys.exit()
+        if not any(position):
+            log.error('Could not get a position by name, aborting')
+            sys.exit()
 
-    log.info('Parsed location is: %.4f/%.4f/%.4f (lat/lng/alt)',
-             position[0], position[1], position[2])
+        log.info('Parsed location is: %.4f/%.4f/%.4f (lat/lng/alt)',
+                 position[0], position[1], position[2])
 
     if args.no_pokemon:
         log.info('Parsing of Pokemon disabled')
@@ -135,7 +137,8 @@ if __name__ == '__main__':
         elif os.path.isfile(args.db):
             os.remove(args.db)
     create_tables(db)
-
+    if args.spawnpoint_scanning:
+        position = (0.0, 0.0, 0.0)
     app.set_current_location(position)
 
     # Control the search status (running or not) across threads
@@ -149,8 +152,38 @@ if __name__ == '__main__':
     if not args.only_server:
         # Gather the pokemons!
         if not args.mock:
-            log.debug('Starting a real search thread')
-            search_thread = Thread(target=search_overseer_thread, args=(args, new_location_queue, pause_bit, encryption_lib_path))
+            # If running in data gather or old mode
+            if not args.spawnpoint_scanning:
+                log.debug('Starting a real search thread')
+                search_thread = Thread(target=search_overseer_thread, args=(args, new_location_queue, pause_bit, encryption_lib_path))
+            # if using the new -ss mode
+            else:
+                if not os.path.isfile(args.spawnpoint_scanning):
+                    log.info('Could not find ' + args.spawnpoint_scanning + ', generating now. This may take up to 60 seconds')
+                    if(args.southwest is None or args.northeast is None):
+                        log.info('-sw and -ne not specified, dumping all locations')
+                    else:
+                        log.info('-sw and -ne specified, dumping using bounding rectangle')
+                    try:
+                        spawns = Pokemon.get_all_spawnpoints(args.northeast, args.southwest)
+                        if spawns is not None:
+                            log.info('Finished generating ' + args.spawnpoint_scanning)
+                            with open(args.spawnpoint_scanning, 'w+') as file:
+                                file.write(json.dumps(spawns))
+                                file.close()
+                        else:
+                            log.info('Generation failed, no spawns were found, exiting')
+                            sys.exit()
+                    except IOError:
+                        log.error("Error writing to " + args.spawnpoint_scanning + ", exiting")
+                        sys.exit()
+                # get the first position in the file
+                with open(args.spawnpoint_scanning) as file:
+                    sp = json.load(file)
+                    app.set_current_location((sp[0]['lat'], sp[0]['lng'], 0.0))
+                    file.close()
+                # start the scan sceduler
+                search_thread = Thread(target=search_overseer_thread_ss, args=(args, new_location_queue, pause_bit, encryption_lib_path))
         else:
             log.debug('Starting a fake search thread')
             insert_mock_data(position)

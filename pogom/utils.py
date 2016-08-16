@@ -121,6 +121,12 @@ def get_args():
     parser.add_argument('-nk', '--no-pokestops',
                         help='Disables PokeStops from the map (including parsing them into local db)',
                         action='store_true', default=False)
+    parser.add_argument('-ss', '--spawnpoint-scanning',
+                        help='Use spawnpoint scanning instead of beehive)', default=None)
+    parser.add_argument('-sw', '--southwest',
+                        help='Southwest coords of rectangle to export, only used during json generation', default=None)
+    parser.add_argument('-ne', '--northeast',
+                        help='Northeast coords of rectangle to export, only used during json generation', default=None)
     parser.add_argument('-pd', '--purge-data',
                         help='Clear pokemon from database this many hours after they disappear \
                         (0 to disable)', type=int, default=0)
@@ -159,7 +165,7 @@ def get_args():
         else:
             num_usernames = len(args.username)
 
-        if (args.location is None):
+        if (args.location is None and not args.spawnpoint_scanning):
             errors.append('Missing `location` either as -l/--location or in config')
 
         if (args.password is None):

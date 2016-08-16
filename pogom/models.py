@@ -3,6 +3,7 @@
 import logging
 import calendar
 import sys
+import re
 from peewee import SqliteDatabase, InsertQuery, \
     IntegerField, CharField, DoubleField, BooleanField, \
     DateTimeField, CompositeKey, fn
@@ -208,6 +209,52 @@ class Pokemon(BaseModel):
 
         return list(query.dicts())
 
+    @classmethod
+    def get_all_spawnpoints(cls, neCoord, swCoord):
+        query = (Pokemon.select(Pokemon.latitude.alias('lat'),
+                                Pokemon.longitude.alias('lng'),
+                                Pokemon.disappear_time.alias('time'),
+                                Pokemon.spawnpoint_id
+                                ))
+
+        # Pretty much all by Xcelled
+        # https://gist.github.com/Xcelled/c5b397dfe2c32e61e7aa06479b32bc34#file-spawnpoint_exporter-py-L57
+        if (swCoord is not None or neCoord is not None):
+            coord_re = re.compile("^(\-?\d+\.\d+),?\s?(\-?\d+\.\d+)$")
+            sw = coord_re.match(swCoord)
+            ne = coord_re.match(neCoord)
+            valid_coord = True
+            if not sw:
+                log.error('Invalid southwest coord, defaulting to dump all')
+                valid_coord = False
+            if not ne:
+                log.error('Invalid northeast coord, defaulting to dump all')
+                valid_coord = False
+            if valid_coord:
+                query = (query.where(
+                    (Pokemon.latitude >= float(sw.group(1))) &
+                    (Pokemon.longitude <= float(sw.group(2))) &
+                    (Pokemon.latitude <= float(ne.group(1))) &
+                    (Pokemon.longitude >= float(ne.group(2)))
+                )
+                )
+
+        query = query.dicts()
+        uniq_temp = set()
+        uniq_real = []
+
+        for row in query:
+            min = row['time'].minute
+            sec = row['time'].second
+            row['time'] = (((min * 60) + (sec + 2710)) % 3600)
+            spawn = (row['spawnpoint_id'], row['time'])
+            if spawn not in uniq_temp:  # SQL group by, because peewee can't handle group by on aliased fields
+                uniq_temp.add(spawn)
+                del row['spawnpoint_id']
+                uniq_real.append(row)
+
+        return list(uniq_real)
+
 
 class Pokestop(BaseModel):
     pokestop_id = CharField(primary_key=True, max_length=50)
@@ -299,7 +346,7 @@ class ScannedLocation(BaseModel):
         query = (ScannedLocation
                  .select()
                  .where((ScannedLocation.last_modified >=
-                        (datetime.utcnow() - timedelta(minutes=15))) &
+                         (datetime.utcnow() - timedelta(minutes=15))) &
                         (ScannedLocation.latitude >= swLat) &
                         (ScannedLocation.longitude >= swLng) &
                         (ScannedLocation.latitude <= neLat) &
@@ -450,14 +497,14 @@ def clean_database():
     query = (ScannedLocation
              .delete()
              .where((ScannedLocation.last_modified <
-                    (datetime.utcnow() - timedelta(minutes=30)))))
+                     (datetime.utcnow() - timedelta(minutes=30)))))
     query.execute()
 
     if args.purge_data > 0:
         query = (Pokemon
                  .delete()
                  .where((Pokemon.disappear_time <
-                        (datetime.utcnow() - timedelta(hours=args.purge_data)))))
+                         (datetime.utcnow() - timedelta(hours=args.purge_data)))))
         query.execute()
 
 
@@ -529,9 +576,9 @@ def database_migrate(db, old_ver):
     else:
         migrator = SqliteMigrator(db)
 
-#   No longer necessary, we're doing this at schema 4 as well
-#    if old_ver < 1:
-#        db.drop_tables([ScannedLocation])
+    #   No longer necessary, we're doing this at schema 4 as well
+    #    if old_ver < 1:
+    #        db.drop_tables([ScannedLocation])
 
     if old_ver < 2:
         migrate(migrator.add_column('pokestop', 'encounter_id', CharField(max_length=50, null=True)))
