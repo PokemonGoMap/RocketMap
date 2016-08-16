@@ -6,18 +6,6 @@ Spawnpoint Scanning consists of only scanning an area in which a spawn has recen
 
 Spawnpoint Scanning is particularly useful in areas where spawns are spread out
 
-## Spawnpoint Scanning can be run in one of three different modes:
-
-### Scans based on file
-
-```
-python runserver.py -ss YOURFILE.json -l YOURLOCATION
-```
-
-Where YOURFILE.json is the file containing all the spawns, and YOURLOCATION is the location the map should be centered at (YOURLOCATION is not used for anything else in this mode)
-
-Note: in this mode -st does nothing
-
 ### Scans based on database
 
 ```
@@ -33,9 +21,27 @@ Note: when using the mode when not in a beehive, it is recommended to use an -st
 ### Dump scans from database then use the created file
 
 ```
-python runserver.py -ss YOURFILE.json -l YOURLOCATION -st STEPS
+python runserver.py -ss YOURFILE.json -l YOURLOCATION -st STEPS --dump-spawns
 ```
 
-Where YOURFILE.json is the file containing all the spawns, YOURLOCATION is the location the map should be centered at and also the center of the hex to get spawn loctaions from and -st sets the size of the clipping hexagon (hexagon is the same size as the scan of the same -st value)
+Where YOURFILE.json is the file containing all the spawns, YOURLOCATION is the location the map should be centered at and also the center of the hex to get spawn locations from and -st sets the size of the clipping hexagon (hexagon is the same size as the scan of the same -st value)
 
 This mode is mainly used for switching from database mode to spawnFile mode, and can also be used simply for dumping all spawns to file (use a very large -st and close the program once it has created the file)
+
+## Spawnpoint Scanning can be run in one of three different modes:
+
+### Scans based on file
+
+```
+python runserver.py -ss YOURFILE.json -l YOURLOCATION
+```
+
+Where YOURFILE.json is the file containing all the spawns, and YOURLOCATION is the location the map should be centered at (YOURLOCATION is not used for anything else in this mode)
+
+Note: in this mode -st does nothing
+
+### Getting spawns
+
+for generating the spawns to use with Spawnpoint Scanning it is recommended to scan the area with a scan that completes in 10 minutes for at least 1 hour, this should guarantee that all spawns are found
+
+spawn files can also be generated with an external tool such as spawnScan
