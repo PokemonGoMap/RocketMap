@@ -139,8 +139,8 @@ def get_args():
     parser.add_argument('--ssl-certificate', help='Path to SSL certificate file')
     parser.add_argument('--ssl-privatekey', help='Path to SSL private key file')
     parser.add_argument('-om', '--original-marker', help='Set the original marker. \
-                        ash or none. Default: none.',
-                        default=None)
+                        Options: ash or none. Default: ash.',
+                        default='ash')
     parser.set_defaults(DEBUG=False)
 
     args = parser.parse_args()
