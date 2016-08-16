@@ -9,7 +9,7 @@ Spawnpoint Scanning is particularly useful in areas where spawns are spread out
 To run Spawnpoint Scanning, you will need a .json file containing the spawns to search. to use it simply use:
 
 ```
--ss if YOURFILE.json
+-ss YOURFILE.json
 ```
 
 where if YOURFILE is the file containing the spawns.
