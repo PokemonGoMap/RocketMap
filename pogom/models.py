@@ -429,7 +429,9 @@ def parse_map(map_dict, step_location):
                         'lure_expiration': lure_expiration,
                         'active_fort_modifier': active_fort_modifier
                     }
-                    send_to_webhook('pokestop', webhook_data)
+
+                    if not args.webhook_all_forts:
+                        send_to_webhook('pokestop', webhook_data)
                 else:
                     lure_expiration, active_fort_modifier = None, None
 
@@ -444,6 +446,13 @@ def parse_map(map_dict, step_location):
                     'active_fort_modifier': active_fort_modifier,
                 }
 
+                # Send all pokéstops to
+                if args.webhook_all_stops:
+                    # Explicitly set 'webhook_data', in case we want to change the information pushed to webhooks,
+                    # similar to above and previous commits.
+                    webhook_data = pokestops[f['id']]
+                    send_to_webhook('pokestop', webhook_data)
+
             elif config['parse_gyms'] and f.get('type') is None:  # Currently, there are only stops and gyms
                 gyms[f['id']] = {
                     'gym_id': f['id'],
@@ -456,6 +465,13 @@ def parse_map(map_dict, step_location):
                     'last_modified': datetime.utcfromtimestamp(
                         f['last_modified_timestamp_ms'] / 1000.0),
                 }
+
+                # Send gyms to webhooks
+                if args.webhook_gyms:
+                    # Explicitly set 'webhook_data', in case we want to change the information pushed to webhooks,
+                    # similar to above and previous commits.
+                    webhook_data = gyms[f['id']]
+                    send_to_webhook('gym', webhook_data)
 
     pokemons_upserted = 0
     pokestops_upserted = 0
