@@ -31,7 +31,7 @@ from pgoapi.utilities import f2i
 from pgoapi import utilities as util
 from pgoapi.exceptions import AuthException
 
-from .models import parse_map, Pokemon
+from .models import parse_map, Pokemon, PoGoAccount
 
 log = logging.getLogger(__name__)
 
@@ -118,11 +118,12 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
 
     # Create a search_worker_thread per account
     log.info('Starting search worker threads')
-    for i, account in enumerate(args.accounts):
-        log.debug('Starting search worker thread %d for user %s', i, account['username'])
+    
+    for i, account in enumerate(PoGoAccount.get_active_unused(args.num_accounts)):
+        log.debug('Starting search worker thread %d for user %s', i, account['Username'])
         t = Thread(target=search_worker_thread,
                    name='search_worker_{}'.format(i),
-                   args=(args, account, search_items_queue, parse_lock,
+                   args=(args, i, account, search_items_queue, parse_lock,
                          encryption_lib_path))
         t.daemon = True
         t.start()
@@ -203,15 +204,14 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
         time.sleep(1)
 
 
-def search_worker_thread(args, account, search_items_queue, parse_lock, encryption_lib_path):
-
-    # If we have more than one account, stagger the logins such that they occur evenly over scan_delay
-    if len(args.accounts) > 1:
-        if len(args.accounts) > args.scan_delay:  # force ~1 second delay between threads if you have many accounts
-            delay = args.accounts.index(account) \
-                + ((random.random() - .5) / 2) if args.accounts.index(account) > 0 else 0
+def search_worker_thread(args, count, account, search_items_queue, parse_lock, encryption_lib_path):
+    # If we have more than one account, stagger the logins such that they occur evenly over scan_delay    
+    if args.num_accounts > 1:
+        if args.num_accounts > args.scan_delay:  # force ~1 second delay between threads if you have many accounts
+            delay = count \
+                + ((random.random() - .5) / 2) if count > 0 else 0
         else:
-            delay = (args.scan_delay / len(args.accounts)) * args.accounts.index(account)
+            delay = (args.scan_delay / args.num_accounts) * count
 
         log.debug('Delaying thread startup for %.2f seconds', delay)
         time.sleep(delay)
@@ -297,8 +297,8 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
 
         # catch any process exceptions, log them, and continue the thread
         except Exception as e:
-            log.exception('Exception in search_worker: %s. Username: %s', e, account['username'])
-            remove_account(account['username'],args.accountsfolder)
+            log.exception('Exception in search_worker: %s. Username: %s', e, account['Username'])
+            #remove_account(account['Username'])
             
 
 
@@ -316,17 +316,17 @@ def check_login(args, account, api, position):
     api.set_position(position[0], position[1], position[2])
     while i < args.login_retries:
         try:
-            api.set_authentication(provider=account['auth_service'], username=account['username'], password=account['password'])
+            api.set_authentication(provider=account['Auth_service'], username=account['Username'], password=account['Password'])
             break
         except AuthException:
             if i >= args.login_retries:
                 raise TooManyLoginAttempts('Exceeded login attempts')
             else:
                 i += 1
-                log.error('Failed to login to Pokemon Go with account %s. Trying again in %g seconds', account['username'], args.login_delay)
+                log.error('Failed to login to Pokemon Go with account %s. Trying again in %g seconds', account['Username'], args.login_delay)
                 time.sleep(args.login_delay)
 
-    log.debug('Login for account %s successful', account['username'])
+    log.debug('Login for account %s successful', account['Username'])
 
 
 def map_request(api, position):

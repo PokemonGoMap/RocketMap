@@ -318,21 +318,21 @@ class PoGoAccount(BaseModel):
     Auth_service = CharField()
     Active = BooleanField()
     In_use = BooleanField()
-
-    class Meta:
-        indexes = ((('latitude', 'longitude'), False),)
+      
 
     @staticmethod
-    def get_active_unused():
+    def get_active_unused(count):
         query = (PoGoAccount
                  .select()
-                 .where((PoGoAccount.active = True) &
-                        (PoGo.In_use = False))
+                 .where((PoGoAccount.Active == True) &
+                        (PoGoAccount.In_use == False))
                  .dicts())
 
         accounts = []
-        for a in query:
+        for i, a in enumerate(query):
             accounts.append(a)
+            if i == count-1:
+                break
 
         return accounts
 
@@ -344,6 +344,16 @@ class Versions(flaskDb.Model):
     class Meta:
         primary_key = False
 
+
+def insert_accounts():
+    for i, account in enumerate(args.accounts):
+        print(account['username'])
+        PoGoAccount.create(Username = account['username'],
+                           Password = account['password'],
+                           Auth_service = account['auth_service'],
+                           Active = True,
+                           In_use = False
+                           )
 
 def parse_map(map_dict, step_location):
     pokemons = {}

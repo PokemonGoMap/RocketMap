@@ -22,7 +22,7 @@ from pogom.app import Pogom
 from pogom.utils import get_args, insert_mock_data, get_encryption_lib_path
 
 from pogom.search import search_overseer_thread, fake_search_loop
-from pogom.models import init_database, create_tables, drop_tables
+from pogom.models import init_database, create_tables, drop_tables, insert_accounts
 
 # Currently supported pgoapi
 pgoapi_version = "1.1.7"
@@ -53,6 +53,7 @@ if not hasattr(pgoapi, "__version__") or StrictVersion(pgoapi.__version__) < Str
     log.critical("It seems `pgoapi` is not up-to-date. You must run pip install -r requirements.txt again")
     sys.exit(1)
 
+
 if __name__ == '__main__':
     # Check if we have the proper encryption library file and get its path
     encryption_lib_path = get_encryption_lib_path()
@@ -65,7 +66,7 @@ if __name__ == '__main__':
         log.setLevel(logging.DEBUG)
     else:
         log.setLevel(logging.INFO)
-
+    
     # Let's not forget to run Grunt / Only needed when running with webserver
     if not args.no_server:
         if not os.path.exists(os.path.join(os.path.dirname(__file__), 'static/dist')):
@@ -185,3 +186,6 @@ if __name__ == '__main__':
             log.info('Web server in SSL mode.')
 
         app.run(threaded=True, use_reloader=False, debug=args.debug, host=args.host, port=args.port, ssl_context=ssl_context)
+
+#Feed new accounts into DB
+accounts = insert_accounts()
