@@ -639,6 +639,15 @@ var pokemonSprites = {
     spriteHeight: 1430,
     filename: 'static/icons-large-sprite.png',
     name: 'High-Res'
+  },
+  shuffle: {
+    columns: 7,
+    iconWidth: 65,
+    iconHeight: 65,
+    spriteWidth: 455,
+    spriteHeight: 1430,
+    filename: 'static/icons-shuffle-sprite.png',
+    name: 'Shuffle'
   }
 }
 
@@ -914,6 +923,7 @@ function createSearchMarker () {
     map: map,
     animation: google.maps.Animation.DROP,
     draggable: !Store.get('lockMarker'),
+    icon: 'static/marker_icon.png',
     zIndex: google.maps.Marker.MAX_ZINDEX + 1
   })
 
@@ -1079,16 +1089,10 @@ function gymLabel (teamName, teamId, gymPoints, latitude, longitude) {
   return str
 }
 
-function pokestopLabel (lured, lastModified, latitude, longitude) {
+function pokestopLabel (expireTime, latitude, longitude) {
   var str
-  if (lured) {
-    var lastModifiedDate = new Date(lastModified)
-    var currentDate = new Date()
-
-    var timeUntilExpire = currentDate.getTime() - lastModifiedDate.getTime()
-
-    var expireDate = new Date(currentDate.getTime() + timeUntilExpire)
-    var expireTime = expireDate.getTime()
+  if (expireTime) {
+    var expireDate = new Date(expireTime)
 
     str = `
       <div>
@@ -1246,7 +1250,7 @@ function setupPokestopMarker (item) {
   })
 
   marker.infoWindow = new google.maps.InfoWindow({
-    content: pokestopLabel(!!item['lure_expiration'], item['last_modified'], item['latitude'], item['longitude']),
+    content: pokestopLabel(item['lure_expiration'], item['latitude'], item['longitude']),
     disableAutoPan: true
   })
 
