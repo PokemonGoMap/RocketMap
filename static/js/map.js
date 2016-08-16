@@ -903,7 +903,9 @@ function initMap () { // eslint-disable-line no-unused-vars
 }
 
 function getMarkerIconUrl (originalMarker) {
-  if (originalMarker === 'none') {
+  if (originalMarker === 'default') {
+    return null // use the default icon marker
+  } else if (originalMarker === 'none') {
     return 'static/marker_icons/transparent.png'
   } else {
     return 'static/marker_icons/' + originalMarker + '.png'
@@ -1839,6 +1841,7 @@ $(function () {
     updateMap()
   })
 
+  // Icon marker style
   $selectIconMarker = $('#iconmarker-style')
 
   $selectIconMarker.select2({
