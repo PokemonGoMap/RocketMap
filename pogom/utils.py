@@ -362,3 +362,28 @@ def get_encryption_lib_path():
         raise Exception(err)
 
     return lib_path
+
+def removeaccount(defective_user,accounts_location):
+    with open(accounts_location+'\\accounts.csv') as old_accounts,open(accounts_location+'\\clean_accounts.csv', 'w+') as clean_accounts,open(accounts_location+'\\faulty_accounts.csv', 'w+') as faulty_accounts:
+        for line in old_accounts:
+            if defective_user not in line:
+                clean_accounts.write(line.strip()+'\n')
+            else:
+                faulty_accounts.write(line)
+                print('added '+defective_user+' to '+accounts_location+'\\accounts.csv')
+                
+    old_accounts.close()
+    clean_accounts.close()
+    faulty_accounts.close()
+    
+    try:
+        os.remove(accounts_location+'\\accounts.csv')
+    except OSError:
+        pass
+    
+    os.rename('C:\Users\dano7\Downloads\clean_accounts.csv', 'C:\Users\dano7\Downloads\\accounts.csv')
+    
+    
+
+    
+    
