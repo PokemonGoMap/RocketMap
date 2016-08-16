@@ -233,9 +233,9 @@ class Pokemon(BaseModel):
             if valid_coord:
                 query = (query.where(
                     (Pokemon.latitude >= float(sw.group(1))) &
-                    (Pokemon.longitude >= float(sw.group(2))) &
+                    (Pokemon.longitude <= float(sw.group(2))) &
                     (Pokemon.latitude <= float(ne.group(1))) &
-                    (Pokemon.longitude <= float(ne.group(2)))
+                    (Pokemon.longitude >= float(ne.group(2)))
                 )
                 )
 
