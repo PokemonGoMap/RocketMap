@@ -421,9 +421,12 @@ def parse_map(map_dict, step_location):
                         f['last_modified_timestamp_ms'] / 1000.0) + timedelta(minutes=30)
                     active_fort_modifier = f['active_fort_modifier']
                     webhook_data = {
+                        'pokestop_id': f['id'],
+                        'enabled': f['enabled'],
                         'latitude': f['latitude'],
                         'longitude': f['longitude'],
                         'last_modified_time': f['last_modified_timestamp_ms'],
+                        'lure_expiration': lure_expiration,
                         'active_fort_modifier': active_fort_modifier
                     }
                     send_to_webhook('pokestop', webhook_data)
