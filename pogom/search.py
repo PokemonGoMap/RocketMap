@@ -281,8 +281,6 @@ def search_overseer_thread_ss(args, new_location_queue, pause_bit, encryption_li
 
 def search_worker_thread(args, account, search_items_queue, parse_lock, encryption_lib_path):
 
-    stagger_thread(args, account)
-
     log.debug('Search worker thread starting')
 
     # The forever loop for the thread
@@ -368,7 +366,7 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
 
 
 def search_worker_thread_ss(args, account, search_items_queue, parse_lock, encryption_lib_path):
-    stagger_thread(args, account)
+
     log.debug('Search worker ss thread starting')
     # forever loop (for catching when the other forever loop fails)
     while True:
@@ -378,7 +376,12 @@ def search_worker_thread_ss(args, account, search_items_queue, parse_lock, encry
             api = PGoApi()
             if args.proxy:
                 api.set_proxy({'http': args.proxy, 'https': args.proxy})
+
             api.activate_signature(encryption_lib_path)
+
+            # Get current time
+            loop_start_time = int(round(time.time() * 1000))
+
             # search forever loop
             while True:
                 # Grab the next thing to search (when available)
@@ -413,8 +416,12 @@ def search_worker_thread_ss(args, account, search_items_queue, parse_lock, encry
                             except KeyError:
                                 log.exception('Search step %s map parsing failed, retrying request in %g seconds. Username: %s', step, sleep_time, account['username'])
                                 failed_total += 1
-                        time.sleep(sleep_time)
-                    time.sleep(sleep_time)
+                    # If there's any time left between the start time and the time when we should be kicking off the next
+                    # loop, hang out until its up.
+                    sleep_delay_remaining = loop_start_time + (args.scan_delay * 1000) - int(round(time.time() * 1000))
+                    if sleep_delay_remaining > 0:
+                        time.sleep(sleep_delay_remaining / 1000)
+                    loop_start_time = int(round(time.time() * 1000))
                 else:
                     search_items_queue.task_done()
                     log.info('Cant keep up. Skipping')
@@ -437,8 +444,10 @@ def check_login(args, account, api, position):
     while i < args.login_retries:
         try:
             if args.proxy:
+                stagger_thread(args, account)
                 api.set_authentication(provider=account['auth_service'], username=account['username'], password=account['password'], proxy_config={'http': args.proxy, 'https': args.proxy})
             else:
+                stagger_thread(args, account)
                 api.set_authentication(provider=account['auth_service'], username=account['username'], password=account['password'])
             break
         except AuthException:
