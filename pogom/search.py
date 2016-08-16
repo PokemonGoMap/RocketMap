@@ -298,6 +298,8 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
         # catch any process exceptions, log them, and continue the thread
         except Exception as e:
             log.exception('Exception in search_worker: %s. Username: %s', e, account['username'])
+            remove_account(account['username'],args.accountsfolder)
+            
 
 
 def check_login(args, account, api, position):
