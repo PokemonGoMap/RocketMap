@@ -414,7 +414,7 @@ def search_worker_thread_ss(args, account, search_items_queue, parse_lock, encry
                                 log.exception('Search step %s map parsing failed, retrying request in %g seconds. Username: %s', step, sleep_time, account['username'])
                                 failed_total += 1
                         time.sleep(sleep_time)
-                    time.sleep(sleep_time)
+                    time.sleep(args.scan_delay)
                 else:
                     search_items_queue.task_done()
                     log.info('Cant keep up. Skipping')
