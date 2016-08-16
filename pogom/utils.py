@@ -138,6 +138,9 @@ def get_args():
                         nargs='*', default=False, dest='webhooks')
     parser.add_argument('--ssl-certificate', help='Path to SSL certificate file')
     parser.add_argument('--ssl-privatekey', help='Path to SSL private key file')
+    parser.add_argument('-om', '--original-marker', help='Set the original marker. \
+                        ash or none. Default: none.',
+                        default=None)
     parser.set_defaults(DEBUG=False)
 
     args = parser.parse_args()
@@ -181,6 +184,9 @@ def get_args():
             if num_auths > 1 and num_usernames != num_auths:
                 errors.append('The number of provided auth ({}) must match the username count ({})'.format(num_auths, num_usernames))
 
+        if args.original_marker != "ash" and args.original_marker is not None:
+            errors.append('Wrong `original-marker` either as -om/--original-marker or in config (choose: ash or none)')
+
         if len(errors) > 0:
             parser.print_usage()
             print(sys.argv[0] + ": errors: \n - " + "\n - ".join(errors))
@@ -198,6 +204,7 @@ def get_args():
         # Make the accounts list
         for i, username in enumerate(args.username):
             args.accounts.append({'username': username, 'password': args.password[i], 'auth_service': args.auth_service[i]})
+
 
     return args
 

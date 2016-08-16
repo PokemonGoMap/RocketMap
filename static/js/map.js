@@ -898,6 +898,14 @@ function initMap () { // eslint-disable-line no-unused-vars
 }
 
 function createSearchMarker () {
+  function getMarkerIconUrl () {
+    if (originalMarker === 'None') { // eslint-disable-line no-undef
+      return 'static/marker_icons/transparent.png'
+    } else {
+      return 'static/marker_icons/' + originalMarker + '.png' // eslint-disable-line no-undef
+    }
+  }
+
   var marker = new google.maps.Marker({ // need to keep reference.
     position: {
       lat: centerLat,
@@ -906,7 +914,7 @@ function createSearchMarker () {
     map: map,
     animation: google.maps.Animation.DROP,
     draggable: !Store.get('lockMarker'),
-    icon: 'static/marker_icon.png',
+    icon: getMarkerIconUrl(),
     zIndex: google.maps.Marker.MAX_ZINDEX + 1
   })
 

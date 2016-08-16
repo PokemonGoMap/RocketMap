@@ -243,6 +243,7 @@
     <script>
       var centerLat = {{lat}};
       var centerLng = {{lng}};
+	  var originalMarker = '{{original_marker}}';
     </script>
     <script src="{{ url_for('static', filename='dist/js/map.min.js').lstrip('/') }}"></script>
     <script src="{{ url_for('static', filename='dist/js/stats.min.js').lstrip('/') }}"></script>
