@@ -110,11 +110,13 @@ def fake_search_loop():
         time.sleep(10)
 
 
+# gets the current time past the hour
 def curSec():
     return (60 * time.gmtime().tm_min) + time.gmtime().tm_sec
 
 
-def timeDif(a, b):  # timeDif of -1800 to +1800 secs
+# gets the diference between two times past the hour (in a range from -1800 to 1800)
+def timeDif(a, b):
     dif = a - b
     if (dif < -1800):
         dif += 3600
@@ -123,8 +125,8 @@ def timeDif(a, b):  # timeDif of -1800 to +1800 secs
     return dif
 
 
+# binary search to get the lowest index of the item in Slist that has atleast time T
 def SbSearch(Slist, T):
-    # binary search to find the lowest index with the required value or the index with the next value update
     first = 0
     last = len(Slist) - 1
     while first < last:
@@ -231,14 +233,11 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
         time.sleep(1)
 
 
-Shash = {}
-
-
 def search_overseer_thread_ss(args, new_location_queue, pause_bit, encryption_lib_path):
-    global spawns, Shash, going
     log.info('Search ss overseer starting')
     search_items_queue = Queue()
     parse_lock = Lock()
+    spawns = []
 
     # Create a search_worker_thread per account
     log.info('Starting search worker threads')
@@ -262,31 +261,18 @@ def search_overseer_thread_ss(args, new_location_queue, pause_bit, encryption_li
         log.error("Error opening " + args.spawnpoint_scanning)
         return
 
-    for spawn in spawns:
-        Shash[spawn['lng']] = spawn['time']
-    # sort spawn points
     spawns.sort(key=itemgetter('time'))
     log.info('Total of %d spawns to track', len(spawns))
-    # find start position
+    # find the inital location (spawn thats 60sec old)
     pos = SbSearch(spawns, (curSec() + 3540) % 3600)
     while True:
         while timeDif(curSec(), spawns[pos]['time']) < 60:
             time.sleep(1)
-        location = []
-        location.append(spawns[pos]['lat'])
-        location.append(spawns[pos]['lng'])
-        location.append(0)
-        for step, step_location in enumerate(generate_location_steps(location, 1), 1):
-                log.debug('Queueing step %d @ %f/%f/%f', pos, step_location[0], step_location[1], step_location[2])
-                search_args = (step, step_location, spawns[pos]['time'])
-                search_items_queue.put(search_args)
+        # make location with a dummy height (seems to be more reliable than 0 height)
+        location = [spawns[pos]['lat'], spawns[pos]['lng'], 40.32]
+        search_args = (pos, location, spawns[pos]['time'])
+        search_items_queue.put(search_args)
         pos = (pos + 1) % len(spawns)
-        if pos == 0:
-            while not(search_items_queue.empty()):
-                log.info('Search_items_queue not empty. Waiting 10 secconds. Restarting at top of hour')
-                time.sleep(10)
-            log.info('Restarting from top of list and finding current time')
-            pos = SbSearch(spawns, (curSec() + 3540) % 3600)
 
 
 def search_worker_thread(args, account, search_items_queue, parse_lock, encryption_lib_path):
@@ -378,69 +364,42 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
 
 
 def search_worker_thread_ss(args, account, search_items_queue, parse_lock, encryption_lib_path):
-
     stagger_thread(args, account)
-
     log.debug('Search worker ss thread starting')
-
-    # The forever loop for the thread
+    # forever loop (for catching when the other forever loop fails)
     while True:
         try:
             log.debug('Entering search loop')
-
-            # Create the API instance this will use
+            # create api instance
             api = PGoApi()
             if args.proxy:
                 api.set_proxy({'http': args.proxy, 'https': args.proxy})
-
-            # Get current time
-            loop_start_time = int(round(time.time() * 1000))
-
-            # The forever loop for the searches
+            api.activate_signature(encryption_lib_path)
+            # search forever loop
             while True:
-
                 # Grab the next thing to search (when available)
                 step, step_location, spawntime = search_items_queue.get()
-
                 log.info('Searching step %d, remaining %d', step, search_items_queue.qsize())
                 if timeDif(curSec(), spawntime) < 840:  # if we arnt 14mins too late
-                    # Let the api know where we intend to be for this loop
+                    # set position
                     api.set_position(*step_location)
-
-                    # The loop to try very hard to scan this step
+                    # try scan (with retries)
                     failed_total = 0
                     while True:
-
-                        # After so many attempts, let's get out of here
                         if failed_total >= args.scan_retries:
-                            # I am choosing to NOT place this item back in the queue
-                            # otherwise we could get a "bad scan" area and be stuck
-                            # on this overall loop forever. Better to lose one cell
-                            # than have the scanner, essentially, halt.
                             log.error('Search step %d went over max scan_retires; abandoning', step)
                             break
-
-                        # Increase sleep delay between each failed scan
-                        # By default scan_dela=5, scan_retries=5 so
-                        # We'd see timeouts of 5, 10, 15, 20, 25
                         sleep_time = args.scan_delay * (1 + failed_total)
-
-                        # Ok, let's get started -- check our login status
                         check_login(args, account, api, step_location)
-
-                        api.activate_signature(encryption_lib_path)
-
-                        # Make the actual request (finally!)
+                        # make the map request
                         response_dict = map_request(api, step_location)
-
-                        # G'damnit, nothing back. Mark it up, sleep, carry on
+                        # check if got anything back
                         if not response_dict:
                             log.error('Search step %d area download failed, retyring request in %g seconds', step, sleep_time)
                             failed_total += 1
                             time.sleep(sleep_time)
                             continue
-
-                        # Got the response, lock for parsing and do so (or fail, whatever)
+                        # got responce try and parse it
                         with parse_lock:
                             try:
                                 parse_map(response_dict, step_location)
@@ -455,16 +414,6 @@ def search_worker_thread_ss(args, account, search_items_queue, parse_lock, encry
                 else:
                     search_items_queue.task_done()
                     log.info('Cant keep up. Skipping')
-
-                # If there's any time left between the start time and the time when we should be kicking off the next
-                # loop, hang out until its up.
-                sleep_delay_remaining = loop_start_time + (args.scan_delay * 1000) - int(round(time.time() * 1000))
-                if sleep_delay_remaining > 0:
-                        time.sleep(sleep_delay_remaining / 1000)
-
-                loop_start_time += args.scan_delay * 1000
-
-        # catch any process exceptions, log them, and continue the thread
         except Exception as e:
             log.exception('Exception in search_worker: %s', e)
 
@@ -513,12 +462,10 @@ def stagger_thread(args, account):
     # If we have more than one account, stagger the logins such that they occur evenly over scan_delay
     if len(args.accounts) > 1:
         if len(args.accounts) > args.scan_delay:  # force ~1 second delay between threads if you have many accounts
-            delay = args.accounts.index(account) \
-                + ((random.random() - .5) / 2) if args.accounts.index(account) > 0 else 0
+            delay = args.accounts.index(account) + ((random.random() - .5) / 2) if args.accounts.index(account) > 0 else 0
         else:
             delay = (args.scan_delay / len(args.accounts)) * args.accounts.index(account)
-
-        log.debug('Delaying thread startup for %.2f seconds', delay)
+            log.debug('Delaying thread startup for %.2f seconds', delay)
         time.sleep(delay)
 
 
