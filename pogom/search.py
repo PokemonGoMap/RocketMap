@@ -333,7 +333,7 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
 
                     # G'damnit, nothing back. Mark it up, sleep, carry on
                     if not response_dict:
-                        log.error('Search step %d area download failed, retrying request in %g seconds', step, sleep_time)
+                        log.exception('Search step %s map parsing failed, retrying request in %g seconds. Username: %s', step, sleep_time, account['username'])
                         failed_total += 1
                         time.sleep(sleep_time)
                         continue
