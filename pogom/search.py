@@ -405,12 +405,11 @@ def search_worker_thread_ss(args, account, search_items_queue, parse_lock, encry
                             continue
                         # got responce try and parse it
                         with parse_lock:
-                            try:
-                                parse_map(response_dict, step_location)
+                            if parse_map(response_dict, step_location):
                                 log.debug('Search step %s completed', step)
                                 search_items_queue.task_done()
                                 break
-                            except KeyError:
+                            else:
                                 log.exception('Search step %s map parsing failed, retrying request in %g seconds. Username: %s', step, sleep_time, account['username'])
                                 failed_total += 1
                         time.sleep(sleep_time)
