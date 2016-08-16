@@ -138,6 +138,7 @@ def SbSearch(Slist, T):
             last = mp
     return first
 
+
 # print out the status of each worker
 def print_status(enabled, status_queues, worker_status, search_items_queue, overseer_status):
     # Gather worker status
@@ -154,6 +155,7 @@ def print_status(enabled, status_queues, worker_status, search_items_queue, over
         print 'Overseer: {}'.format(overseer_status)
         for worker, message in worker_status.iteritems():
             print "Worker {} - {}".format(worker, message)
+
 
 # The main search loop that keeps an eye on the over all process
 def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_path):
