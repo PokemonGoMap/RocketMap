@@ -9,7 +9,7 @@ var $selectStyle
 var $selectIconResolution
 var $selectIconSize
 var $selectLuredPokestopsOnly
-var $selectIconMarker
+var $selectSearchIconMarker
 
 var language = document.documentElement.lang === '' ? 'en' : document.documentElement.lang
 var idToPokemon = {}
@@ -902,7 +902,7 @@ function initMap () { // eslint-disable-line no-unused-vars
   })
 }
 
-function getMarkerIconUrl (markerid) {
+function getSearchMarkerIconUrl (markerid) {
   if (markerid === 'default') {
     return null // use the default icon marker
   } else if (markerid === 'none') {
@@ -921,7 +921,7 @@ function createSearchMarker () {
     map: map,
     animation: google.maps.Animation.DROP,
     draggable: !Store.get('lockMarker'),
-    icon: getMarkerIconUrl(Store.get('searchMarkerStyle')),
+    icon: getSearchMarkerIconUrl(Store.get('searchMarkerStyle')),
     zIndex: google.maps.Marker.MAX_ZINDEX + 1
   })
 
@@ -1841,21 +1841,20 @@ $(function () {
     updateMap()
   })
 
-  // Icon marker style
-  $selectIconMarker = $('#iconmarker-style')
+  $selectSearchIconMarker = $('#iconmarker-style')
 
-  $selectIconMarker.select2({
+  $selectSearchIconMarker.select2({
     placeholder: 'Select Icon Marker',
     minimumResultsForSearch: Infinity
   })
 
-  $selectIconMarker.on('change', function (e) {
-    var selectIconMarker = $selectIconMarker.val()
-    Store.set('searchMarkerStyle', selectIconMarker)
-    marker.setIcon(getMarkerIconUrl(selectIconMarker))
+  $selectSearchIconMarker.on('change', function (e) {
+    var selectSearchIconMarker = $selectSearchIconMarker.val()
+    Store.set('searchMarkerStyle', selectSearchIconMarker)
+    marker.setIcon(getSearchMarkerIconUrl(selectSearchIconMarker))
   })
 
-  $selectIconMarker.val(Store.get('searchMarkerStyle')).trigger('change')
+  $selectSearchIconMarker.val(Store.get('searchMarkerStyle')).trigger('change')
 })
 
 $(function () {
