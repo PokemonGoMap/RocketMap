@@ -1851,7 +1851,7 @@ $(function () {
     Store.set('originalMarker', selectIconMarker)
     marker.setIcon(getMarkerIconUrl(selectIconMarker))
   })
-  
+
   $selectIconMarker.val(Store.get('originalMarker')).trigger('change')
 })
 
