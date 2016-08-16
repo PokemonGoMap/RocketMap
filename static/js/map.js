@@ -763,7 +763,7 @@ var StoreOptions = {
     default: 0,
     type: StoreTypes.Number
   },
-  'originalMarker': {
+  'searchMarkerStyle': {
     default: 'default',
     type: StoreTypes.String
   }
@@ -902,13 +902,13 @@ function initMap () { // eslint-disable-line no-unused-vars
   })
 }
 
-function getMarkerIconUrl (originalMarker) {
-  if (originalMarker === 'default') {
+function getMarkerIconUrl (markerid) {
+  if (markerid === 'default') {
     return null // use the default icon marker
-  } else if (originalMarker === 'none') {
+  } else if (markerid === 'none') {
     return 'static/marker_icons/transparent.png'
   } else {
-    return 'static/marker_icons/' + originalMarker + '.png'
+    return 'static/marker_icons/' + markerid + '.png'
   }
 }
 
@@ -921,7 +921,7 @@ function createSearchMarker () {
     map: map,
     animation: google.maps.Animation.DROP,
     draggable: !Store.get('lockMarker'),
-    icon: getMarkerIconUrl(Store.get('originalMarker')),
+    icon: getMarkerIconUrl(Store.get('searchMarkerStyle')),
     zIndex: google.maps.Marker.MAX_ZINDEX + 1
   })
 
@@ -1851,11 +1851,11 @@ $(function () {
 
   $selectIconMarker.on('change', function (e) {
     var selectIconMarker = $selectIconMarker.val()
-    Store.set('originalMarker', selectIconMarker)
+    Store.set('searchMarkerStyle', selectIconMarker)
     marker.setIcon(getMarkerIconUrl(selectIconMarker))
   })
 
-  $selectIconMarker.val(Store.get('originalMarker')).trigger('change')
+  $selectIconMarker.val(Store.get('searchMarkerStyle')).trigger('change')
 })
 
 $(function () {
