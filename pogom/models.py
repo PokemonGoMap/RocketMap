@@ -312,6 +312,30 @@ class ScannedLocation(BaseModel):
 
         return scans
 
+class PoGoAccount(BaseModel):
+    Username = CharField(primary_key=True)
+    Password = CharField()
+    Auth_service = CharField()
+    Active = BooleanField()
+    In_use = BooleanField()
+
+    class Meta:
+        indexes = ((('latitude', 'longitude'), False),)
+
+    @staticmethod
+    def get_active_unused():
+        query = (PoGoAccount
+                 .select()
+                 .where((PoGoAccount.active = True) &
+                        (PoGo.In_use = False))
+                 .dicts())
+
+        accounts = []
+        for a in query:
+            accounts.append(a)
+
+        return accounts
+
 
 class Versions(flaskDb.Model):
     key = CharField()
@@ -480,13 +504,13 @@ def bulk_upsert(cls, data):
 def create_tables(db):
     db.connect()
     verify_database_schema(db)
-    db.create_tables([Pokemon, Pokestop, Gym, ScannedLocation], safe=True)
+    db.create_tables([Pokemon, Pokestop, Gym, ScannedLocation, PoGoAccount], safe=True)
     db.close()
 
 
 def drop_tables(db):
     db.connect()
-    db.drop_tables([Pokemon, Pokestop, Gym, ScannedLocation, Versions], safe=True)
+    db.drop_tables([Pokemon, Pokestop, Gym, ScannedLocation, PoGoAccount, Versions], safe=True)
     db.close()
 
 
@@ -554,3 +578,7 @@ def database_migrate(db, old_ver):
                  .where(Pokemon.disappear_time >
                         (datetime.utcnow() - timedelta(hours=24))))
         query.execute()
+
+    if old_ver < 6:
+        db.add_tables([PoGoAccount])
+        

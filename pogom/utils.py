@@ -383,7 +383,4 @@ def remove_account(defective_user,accounts_location):
     
     os.rename(accounts_location+'\\clean_accounts.csv', accounts_location+'\\accounts.csv')
     
-    
 
-    
-    
