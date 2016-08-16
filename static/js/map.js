@@ -639,6 +639,15 @@ var pokemonSprites = {
     spriteHeight: 1430,
     filename: 'static/icons-large-sprite.png',
     name: 'High-Res'
+  },
+  shuffle: {
+    columns: 7,
+    iconWidth: 65,
+    iconHeight: 65,
+    spriteWidth: 455,
+    spriteHeight: 1430,
+    filename: 'static/icons-shuffle-sprite.png',
+    name: 'Shuffle'
   }
 }
 
@@ -897,6 +906,7 @@ function createSearchMarker () {
     map: map,
     animation: google.maps.Animation.DROP,
     draggable: !Store.get('lockMarker'),
+    icon: 'static/marker_icon.png',
     zIndex: google.maps.Marker.MAX_ZINDEX + 1
   })
 
