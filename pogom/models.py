@@ -23,7 +23,7 @@ log = logging.getLogger(__name__)
 args = get_args()
 flaskDb = FlaskDB()
 
-db_schema_version = 5
+db_schema_version = 6
 
 
 class MyRetryDB(RetryOperationalError, PooledMySQLDatabase):
@@ -355,7 +355,7 @@ def insert_accounts():
             query.execute()
         except:
             log.info(account['username']+" already exists reseting password and status")
-            query = PoGoAccount.update(Password=account['password'],Auth_service=account['auth_service'],Active=True,In_use=False).where(PoGoAccount.Username==account['username'])
+            query = PoGoAccount.update(Password=account['password'],Auth_service=account['auth_service'],Active=True,In_use=datetime.utcnow() - timedelta(seconds=args.scan_delay)).where(PoGoAccount.Username==account['username'])
             query.execute()
         
 def deactivate_account(faulty_account):
@@ -618,5 +618,5 @@ def database_migrate(db, old_ver):
         query.execute()
 
     if old_ver < 6:
-        db.add_tables([PoGoAccount])
+        db.create([PoGoAccount])
         
