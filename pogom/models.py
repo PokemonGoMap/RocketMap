@@ -420,9 +420,11 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue):
         for f in cell.get('forts', []):
             if config['parse_pokestops'] and f.get('type') == 1:  # Pokestops
                 if 'active_fort_modifier' in f:
+                    lure_info = f.get('lure_info')
                     lure_expiration = datetime.utcfromtimestamp(
                         f['last_modified_timestamp_ms'] / 1000.0) + timedelta(minutes=30)
                     active_fort_modifier = f['active_fort_modifier']
+
                     if args.webhooks and args.webhook_updates_only:
                         wh_update_queue.put(('pokestop', {
                             'pokestop_id': b64encode(str(f['id'])),
@@ -433,6 +435,18 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue):
                             'lure_expiration': calendar.timegm(lure_expiration.timetuple()),
                             'active_fort_modifier': active_fort_modifier
                         }))
+
+                    if lure_info is not None:
+                        d_t = datetime.utcfromtimestamp(lure_info['lure_expires_timestamp_ms'] / 1000)
+                        pokemons[lure_info['encounter_id']] = {
+                            'encounter_id': b64encode(str(lure_info['encounter_id'])),
+                            'spawnpoint_id': 'lure',
+                            'pokemon_id': lure_info['active_pokemon_id'],
+                            'latitude': f['latitude'] + 0.00005,
+                            'longitude': f['longitude'] + 0.00005,
+                            'disappear_time': d_t
+                        }
+
                 else:
                     lure_expiration, active_fort_modifier = None, None
 
