@@ -446,7 +446,7 @@ def parse_map(map_dict, step_location):
                     'active_fort_modifier': active_fort_modifier,
                 }
 
-                # Send all pokéstops to
+                # Send all pokéstops to webhooks
                 if args.webhook_all_stops:
                     # Explicitly set 'webhook_data', in case we want to change the information pushed to webhooks,
                     # similar to above and previous commits.
