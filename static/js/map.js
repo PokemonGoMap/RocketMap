@@ -1182,6 +1182,33 @@ function setupPokemonMarker (item, skipNotification, isBounceDisabled) {
   return marker
 }
 
+function getMarkerPath (item) {
+  var gymLevel;
+  if (item.gym_points >= 50000) {
+    gymLevel = 10;
+  } else if (item.gym_points >= 40000) {
+    gymLevel = 9;
+  } else if (item.gym_points >= 30000) {
+    gymLevel = 8;
+  } else if (item.gym_points >= 20000) {
+    gymLevel = 7;
+  } else if (item.gym_points >= 16000) {
+    gymLevel = 6;
+  } else if (item.gym_points >= 12000) {
+    gymLevel = 5;
+  } else if (item.gym_points >= 8000) {
+    gymLevel = 4;
+  } else if (item.gym_points >= 4000) {
+    gymLevel = 3;
+  } else if (item.gym_points >= 2000) {
+    gymLevel = 2;
+  } else {
+    gymLevel = 1;
+  }
+
+  return 'static/forts/' + gymTypes[item['team_id']] + '_' + gymLevel + '.png';
+}
+
 function setupGymMarker (item) {
   var marker = new google.maps.Marker({
     position: {
@@ -1189,7 +1216,8 @@ function setupGymMarker (item) {
       lng: item['longitude']
     },
     map: map,
-    icon: 'static/forts/' + gymTypes[item['team_id']] + '.png'
+    /* icon: 'static/forts/' + gymTypes[item['team_id']] + '.png'*/
+    icon: getMarkerPath(item)
   })
 
   marker.infoWindow = new google.maps.InfoWindow({
@@ -1202,7 +1230,7 @@ function setupGymMarker (item) {
 }
 
 function updateGymMarker (item, marker) {
-  marker.setIcon('static/forts/' + gymTypes[item['team_id']] + '.png')
+  marker.setIcon(getMarkerPath(item))
   marker.infoWindow.setContent(gymLabel(gymTypes[item['team_id']], item['team_id'], item['gym_points'], item['latitude'], item['longitude']))
   return marker
 }
