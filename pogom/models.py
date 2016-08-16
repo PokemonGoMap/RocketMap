@@ -229,8 +229,7 @@ class Pokemon(BaseModel):
                          ((Pokemon.disappear_time.minute * 60) + (Pokemon.disappear_time.second + 2700) % 3600).alias('time'),
                          Pokemon.spawnpoint_id
                          ))
-        query = (query.where(
-                             (Pokemon.latitude <= north) &
+        query = (query.where((Pokemon.latitude <= north) &
                              (Pokemon.latitude >= south) &
                              (Pokemon.longitude >= west) &
                              (Pokemon.longitude <= east)
@@ -246,10 +245,7 @@ class Pokemon(BaseModel):
         trueSpawns = []
         for spawn in s:
             # get the offset from the center of each spawn in km
-            offset = [
-                      math.radians(spawn['lat'] - center[0]) * R,
-                      math.radians(spawn['lng'] - center[1]) * (R * math.cos(math.radians(center[0]))),
-                     ]
+            offset = [math.radians(spawn['lat'] - center[0]) * R, math.radians(spawn['lng'] - center[1]) * (R * math.cos(math.radians(center[0])))]
             # check agains the 4 lines that make up the diagonals
             if (offset[1] + (offset[0] * 0.5)) > hdist:  # too far ne
                 continue
