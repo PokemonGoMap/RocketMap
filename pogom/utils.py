@@ -139,7 +139,7 @@ def get_args():
     parser.add_argument('--db-max_connections', help='Max connections (per thread) for the database',
                         type=int, default=5)
     parser.add_argument('-wh', '--webhook', help='Define URL(s) to POST webhook information to',
-                        nargs='*', default=False, dest='webhooks')
+                        nargs='*', default=[], dest='webhooks', action='append')
     parser.add_argument('--ssl-certificate', help='Path to SSL certificate file')
     parser.add_argument('--ssl-privatekey', help='Path to SSL private key file')
     parser.set_defaults(DEBUG=False)
