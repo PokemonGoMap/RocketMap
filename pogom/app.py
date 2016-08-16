@@ -72,8 +72,7 @@ class Pogom(Flask):
                                gmaps_key=config['GMAPS_KEY'],
                                lang=config['LOCALE'],
                                is_fixed=fixed_display,
-                               search_control=search_display,
-                               originalMarker=args.original_marker
+                               search_control=search_display
                                )
 
     def raw_data(self):

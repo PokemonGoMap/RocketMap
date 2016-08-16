@@ -764,7 +764,7 @@ var StoreOptions = {
     type: StoreTypes.Number
   },
   'originalMarker': {
-    default: originalMarker, // eslint-disable-line no-undef
+    default: 'default',
     type: StoreTypes.String
   }
 }
