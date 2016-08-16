@@ -138,6 +138,21 @@ def SbSearch(Slist, T):
             last = mp
     return first
 
+# print out the status of each worker
+def print_status(status_queues, worker_status, search_items_queue, overseer_status):
+    # Gather worker status
+    for worker, q in status_queues.iteritems():
+        try:
+            worker_status[worker] = q.get(False)
+        except Empty:
+            continue
+    # Clear the screen - This, unfortunately, only seems to work on linux. Anyone know a good cross platform way to clear the screen?
+    print(chr(27) + "[2J")
+    # Print the status
+    print 'Queue: {} items'.format(search_items_queue.qsize())
+    print 'Overseer: {}'.format(overseer_status)
+    for worker, message in worker_status.iteritems():
+        print "Worker {} - {}".format(worker, message)
 
 # The main search loop that keeps an eye on the over all process
 def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_path):
@@ -146,15 +161,19 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
 
     search_items_queue = Queue()
     parse_lock = Lock()
+    worker_status = dict()
+    status_queues = dict()
 
     # Create a search_worker_thread per account
     log.info('Starting search worker threads')
     for i, account in enumerate(args.accounts):
         log.debug('Starting search worker thread %d for user %s', i, account['username'])
+        status_queues[i] = Queue()
+        worker_status[i] = "Creating thread..."
         t = Thread(target=search_worker_thread,
                    name='search_worker_{}'.format(i),
                    args=(args, account, search_items_queue, parse_lock,
-                         encryption_lib_path))
+                         encryption_lib_path, status_queues[i]))
         t.daemon = True
         t.start()
 
@@ -174,6 +193,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
                         search_items_queue.get_nowait()
                 except Empty:
                     pass
+            print_status(status_queues, worker_status, search_items_queue, "Scanning is paused")
             time.sleep(1)
             continue
 
@@ -225,10 +245,12 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
             log.debug('Search queue empty, restarting loop')
             for step, step_location in enumerate(locations, 1):
                 log.debug('Queueing step %d @ %f/%f/%f', step, step_location[0], step_location[1], step_location[2])
+                print_status(status_queues, worker_status, search_items_queue, "Queuing next step")
                 search_args = (step, step_location)
                 search_items_queue.put(search_args)
-        # else:
-        #     log.info('Search queue processing, %d items left', search_items_queue.qsize())
+        else:
+            #   log.info('Search queue processing, %d items left', search_items_queue.qsize())
+            print_status(status_queues, worker_status, search_items_queue, "Processing search queue")
 
         # Now we just give a little pause here
         time.sleep(1)
@@ -239,18 +261,23 @@ def search_overseer_thread_ss(args, new_location_queue, pause_bit, encryption_li
     search_items_queue = Queue()
     parse_lock = Lock()
     spawns = []
+    worker_status = dict()
+    status_queues = dict()
 
     # Create a search_worker_thread per account
     log.info('Starting search worker threads')
     for i, account in enumerate(args.accounts):
         log.debug('Starting search worker thread %d for user %s', i, account['username'])
+        status_queues[i] = Queue()
+        worker_status[i] = "Creating thread..."
         t = Thread(target=search_worker_thread_ss,
                    name='ss_search_worker_{}'.format(i),
-                   args=(args, account, search_items_queue, parse_lock, encryption_lib_path))
+                   args=(args, account, search_items_queue, parse_lock, encryption_lib_path, status_queues[i]))
         t.daemon = True
         t.start()
 
     if os.path.isfile(args.spawnpoint_scanning):  # if the spawns file exists use it
+        print_status(status_queues, worker_status, search_items_queue, "Getting spawnpoints from file")
         try:
             with open(args.spawnpoint_scanning) as file:
                 try:
@@ -263,6 +290,7 @@ def search_overseer_thread_ss(args, new_location_queue, pause_bit, encryption_li
             log.error("Error opening " + args.spawnpoint_scanning)
             return
     else:  # if spawns file dose not exist use the db
+        print_status(status_queues, worker_status, search_items_queue, "Getting spawnpoints from database")
         loc = new_location_queue.get()
         spawns = Pokemon.get_spawnpoints_in_hex(loc, args.step_limit)
     spawns.sort(key=itemgetter('time'))
@@ -271,15 +299,17 @@ def search_overseer_thread_ss(args, new_location_queue, pause_bit, encryption_li
     pos = SbSearch(spawns, (curSec() + 3540) % 3600)
     while True:
         while timeDif(curSec(), spawns[pos]['time']) < 60:
+            print_status(status_queues, worker_status, search_items_queue, "Waiting for spawnpoint {} of {} to spawn at {}".format(pos, len(spawns), spawns[pos]['time']))
             time.sleep(1)
         # make location with a dummy height (seems to be more reliable than 0 height)
+        print_status(status_queues, worker_status, search_items_queue, "Queuing spawnpoint {} of {}".format(pos, len(spawns)))
         location = [spawns[pos]['lat'], spawns[pos]['lng'], 40.32]
         search_args = (pos, location, spawns[pos]['time'])
         search_items_queue.put(search_args)
         pos = (pos + 1) % len(spawns)
 
 
-def search_worker_thread(args, account, search_items_queue, parse_lock, encryption_lib_path):
+def search_worker_thread(args, account, search_items_queue, parse_lock, encryption_lib_path, status):
 
     stagger_thread(args, account)
 
@@ -289,6 +319,7 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
     while True:
         try:
             log.debug('Entering search loop')
+            status.put("Entering search loop")
 
             # Create the API instance this will use
             api = PGoApi()
@@ -302,8 +333,9 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
             while True:
 
                 # Grab the next thing to search (when available)
+                status.put("Waiting for item from queue")
                 step, step_location = search_items_queue.get()
-
+                status.put("Searching at {},{}".format(step_location[0], step_location[1]))
                 log.info('Search step %d beginning (queue size is %d)', step, search_items_queue.qsize())
 
                 # Let the api know where we intend to be for this loop
@@ -339,6 +371,7 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
                     if not response_dict:
                         log.error('Search step %d area download failed, retrying request in %g seconds', step, sleep_time)
                         failed_total += 1
+                        status.put("Failed {} times to scan {},{} - no response - sleeping {} seconds. Username: {}".format(failed_total, step_location[0], step_location[1], sleep_time, account['username']))
                         time.sleep(sleep_time)
                         continue
 
@@ -352,12 +385,14 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
                         except KeyError:
                             log.exception('Search step %s map parsing failed, retrying request in %g seconds. Username: %s', step, sleep_time, account['username'])
                             failed_total += 1
+                            status.put("Failed {} times to scan {},{} - map parsing failed - sleeping {} seconds. Username: {}".format(failed_total, step_location[0], step_location[1], sleep_time, account['username']))
                     time.sleep(sleep_time)
 
                 # If there's any time left between the start time and the time when we should be kicking off the next
                 # loop, hang out until its up.
                 sleep_delay_remaining = loop_start_time + (args.scan_delay * 1000) - int(round(time.time() * 1000))
                 if sleep_delay_remaining > 0:
+                    status.put("Waiting {} seconds for scan delay".format(sleep_delay_remaining / 1000))
                     time.sleep(sleep_delay_remaining / 1000)
 
                 loop_start_time += args.scan_delay * 1000
@@ -367,13 +402,15 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
             log.exception('Exception in search_worker: %s. Username: %s', e, account['username'])
 
 
-def search_worker_thread_ss(args, account, search_items_queue, parse_lock, encryption_lib_path):
+def search_worker_thread_ss(args, account, search_items_queue, parse_lock, encryption_lib_path, status):
     stagger_thread(args, account)
     log.debug('Search worker ss thread starting')
+    status.put("Search worker ss thread starting")
     # forever loop (for catching when the other forever loop fails)
     while True:
         try:
             log.debug('Entering search loop')
+            status.put("Entering search loop")
             # create api instance
             api = PGoApi()
             if args.proxy:
@@ -382,7 +419,9 @@ def search_worker_thread_ss(args, account, search_items_queue, parse_lock, encry
             # search forever loop
             while True:
                 # Grab the next thing to search (when available)
+                status.put("Waiting for item from queue")
                 step, step_location, spawntime = search_items_queue.get()
+                status.put("Searching at {},{}".format(step_location[0], step_location[1]))
                 log.info('Searching step %d, remaining %d', step, search_items_queue.qsize())
                 if timeDif(curSec(), spawntime) < 840:  # if we arnt 14mins too late
                     # set position
@@ -401,6 +440,7 @@ def search_worker_thread_ss(args, account, search_items_queue, parse_lock, encry
                         if not response_dict:
                             log.error('Search step %d area download failed, retyring request in %g seconds', step, sleep_time)
                             failed_total += 1
+                            status.put("Failed {} times to scan {},{} - no response - sleeping {} seconds. Username: {}".format(failed_total, step_location[0], step_location[1], sleep_time, account['username']))
                             time.sleep(sleep_time)
                             continue
                         # got responce try and parse it
@@ -413,11 +453,14 @@ def search_worker_thread_ss(args, account, search_items_queue, parse_lock, encry
                             except KeyError:
                                 log.exception('Search step %s map parsing failed, retrying request in %g seconds. Username: %s', step, sleep_time, account['username'])
                                 failed_total += 1
+                                status.put("Failed {} times to scan {},{} - map parsing failed - sleeping {} seconds. Username: {}".format(failed_total, step_location[0], step_location[1], sleep_time, account['username']))
                         time.sleep(sleep_time)
+                    status.put("Waiting {} seconds for scan delay".format(sleep_time))
                     time.sleep(sleep_time)
                 else:
                     search_items_queue.task_done()
                     log.info('Cant keep up. Skipping')
+                    status.put("Skipping spawnpoint - can't keep up.")
         except Exception as e:
             log.exception('Exception in search_worker: %s', e)
 
