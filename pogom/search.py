@@ -115,6 +115,8 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
 
     search_items_queue = Queue()
     parse_lock = Lock()
+    # assume parse lock will prevent race
+    gyms_timeout = {}
 
     # Create a search_worker_thread per account
     log.info('Starting search worker threads')
@@ -123,7 +125,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
         t = Thread(target=search_worker_thread,
                    name='search_worker_{}'.format(i),
                    args=(args, account, search_items_queue, parse_lock,
-                         encryption_lib_path))
+                         encryption_lib_path, gyms_timeout))
         t.daemon = True
         t.start()
 
@@ -203,7 +205,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
         time.sleep(1)
 
 
-def search_worker_thread(args, account, search_items_queue, parse_lock, encryption_lib_path):
+def search_worker_thread(args, account, search_items_queue, parse_lock, encryption_lib_path, gyms_timeout):
 
     # If we have more than one account, stagger the logins such that they occur evenly over scan_delay
     if len(args.accounts) > 1:
@@ -278,7 +280,7 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
                     # Got the response, lock for parsing and do so (or fail, whatever)
                     with parse_lock:
                         try:
-                            parse_map(response_dict, step_location)
+                            parse_map(response_dict, step_location, api, gyms_timeout)
                             log.debug('Search step %s completed', step)
                             search_items_queue.task_done()
                             break  # All done, get out of the request-retry loop
