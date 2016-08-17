@@ -32,3 +32,12 @@ Example:
 username: [thunderfox01, thunderfox02]
 password: password
 ```
+
+If you have multiple accounts using Google and PTC, you can specify auth-service for each account.
+
+Example:
+```
+auth-service: [ptc, ptc, google]
+username: [thunderfox01, thunderfox02, thunderfox03@gmail.com]
+password: [password01, password02, password03]
+```
