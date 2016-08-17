@@ -188,16 +188,16 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
     log.info('Starting search worker threads')
     for i, account in enumerate(args.accounts):
         log.debug('Starting search worker thread %d for user %s', i, account['username'])
-        threadStatus['Worker {}'.format(i)] = {}
-        threadStatus['Worker {}'.format(i)]['type'] = "Worker"
-        threadStatus['Worker {}'.format(i)]['message'] = "Creating thread..."
-        threadStatus['Worker {}'.format(i)]['success'] = 0
-        threadStatus['Worker {}'.format(i)]['fail'] = 0
+        threadStatus['Worker {:03}'.format(i)] = {}
+        threadStatus['Worker {:03}'.format(i)]['type'] = "Worker"
+        threadStatus['Worker {:03}'.format(i)]['message'] = "Creating thread..."
+        threadStatus['Worker {:03}'.format(i)]['success'] = 0
+        threadStatus['Worker {:03}'.format(i)]['fail'] = 0
 
         t = Thread(target=search_worker_thread,
                    name='search_worker_{}'.format(i),
                    args=(args, account, search_items_queue, parse_lock,
-                         encryption_lib_path, threadStatus['Worker {}'.format(i)]))
+                         encryption_lib_path, threadStatus['Worker {:03}'.format(i)]))
         t.daemon = True
         t.start()
 
@@ -303,15 +303,15 @@ def search_overseer_thread_ss(args, new_location_queue, pause_bit, encryption_li
     log.info('Starting search worker threads')
     for i, account in enumerate(args.accounts):
         log.debug('Starting search worker thread %d for user %s', i, account['username'])
-        threadStatus['Worker {}'.format(i)] = {}
-        threadStatus['Worker {}'.format(i)]['type'] = "Worker"
-        threadStatus['Worker {}'.format(i)]['message'] = "Creating thread..."
-        threadStatus['Worker {}'.format(i)]['success'] = 0
-        threadStatus['Worker {}'.format(i)]['fail'] = 0
-        threadStatus['Worker {}'.format(i)]['skip'] = 0
+        threadStatus['Worker {:03}'.format(i)] = {}
+        threadStatus['Worker {:03}'.format(i)]['type'] = "Worker"
+        threadStatus['Worker {:03}'.format(i)]['message'] = "Creating thread..."
+        threadStatus['Worker {:03}'.format(i)]['success'] = 0
+        threadStatus['Worker {:03}'.format(i)]['fail'] = 0
+        threadStatus['Worker {:03}'.format(i)]['skip'] = 0
         t = Thread(target=search_worker_thread_ss,
                    name='ss_search_worker_{}'.format(i),
-                   args=(args, account, search_items_queue, parse_lock, encryption_lib_path, threadStatus['Worker {}'.format(i)]))
+                   args=(args, account, search_items_queue, parse_lock, encryption_lib_path, threadStatus['Worker {:03}'.format(i)]))
         t.daemon = True
         t.start()
 
