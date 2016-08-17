@@ -384,7 +384,7 @@ def parse_map(map_dict, step_location):
         cells = map_dict['responses']['GET_MAP_OBJECTS']['map_cells']
     except KeyError:
         return False
-    
+
     for cell in cells:
         if config['parse_pokemon']:
             for p in cell.get('wild_pokemons', []):
