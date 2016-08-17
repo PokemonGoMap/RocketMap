@@ -154,11 +154,10 @@ def status_printer(threadStatus, search_items_queue):
         # Print the status of each worker, sorted by worker number
         for item in sorted(threadStatus):
             if(threadStatus[item]['type'] == "Worker"):
-                print '{} - {}'.format(item, threadStatus[item]['message'])
                 if 'skip' in threadStatus[item]:
-                    print '\tSuccess: {}\tFailed: {}\tSkipped: {}'.format(threadStatus[item]['success'], threadStatus[item]['fail'], threadStatus[item]['skip'])
+                    print '{} - Success: {}, Failed: {}, Skipped: {} - {}'.format(item, threadStatus[item]['success'], threadStatus[item]['fail'], threadStatus[item]['skip'], threadStatus[item]['message'])
                 else:
-                    print '\tSuccess: {}\tFailed: {}'.format(threadStatus[item]['success'], threadStatus[item]['fail'])
+                    print '{} - Success: {}, Failed: {} - {}'.format(item, threadStatus[item]['success'], threadStatus[item]['fail'], threadStatus[item]['message'])
 
         time.sleep(1)
 
