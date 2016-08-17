@@ -185,13 +185,13 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
     log.info('Starting search worker threads')
     for i, account in enumerate(args.accounts):
         log.debug('Starting search worker thread %d for user %s', i, account['username'])
-        threadStatus['Worker ' + str(i)] = {}
-        threadStatus['Worker ' + str(i)]['type'] = "Worker"
-        threadStatus['Worker ' + str(i)]['message'] = "Creating thread..."
+        threadStatus['Worker {}'.format(i)] = {}
+        threadStatus['Worker {}'.format(i)]['type'] = "Worker"
+        threadStatus['Worker {}'.format(i)]['message'] = "Creating thread..."
         t = Thread(target=search_worker_thread,
                    name='search_worker_{}'.format(i),
                    args=(args, account, search_items_queue, parse_lock,
-                         encryption_lib_path, threadStatus['Worker ' + str(i)]))
+                         encryption_lib_path, threadStatus['Worker {}'.format(i)]))
         t.daemon = True
         t.start()
 
@@ -297,12 +297,12 @@ def search_overseer_thread_ss(args, new_location_queue, pause_bit, encryption_li
     log.info('Starting search worker threads')
     for i, account in enumerate(args.accounts):
         log.debug('Starting search worker thread %d for user %s', i, account['username'])
-        threadStatus['Worker ' + str(i)] = {}
-        threadStatus['Worker ' + str(i)]['type'] = "Worker"
-        threadStatus['Worker ' + str(i)]['message'] = "Creating thread..."
+        threadStatus['Worker {}'.format(i)] = {}
+        threadStatus['Worker {}'.format(i)]['type'] = "Worker"
+        threadStatus['Worker {}'.format(i)]['message'] = "Creating thread..."
         t = Thread(target=search_worker_thread_ss,
                    name='ss_search_worker_{}'.format(i),
-                   args=(args, account, search_items_queue, parse_lock, encryption_lib_path, threadStatus['Worker ' + str(i)]))
+                   args=(args, account, search_items_queue, parse_lock, encryption_lib_path, threadStatus['Worker {}'.format(i)]))
         t.daemon = True
         t.start()
 
