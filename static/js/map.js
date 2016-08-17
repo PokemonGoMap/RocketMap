@@ -766,7 +766,7 @@ var StoreOptions = {
     type: StoreTypes.Number
   },
   'searchMarkerStyle': {
-    default: 'default',
+    default: 'google',
     type: StoreTypes.String
   }
 }
