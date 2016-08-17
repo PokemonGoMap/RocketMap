@@ -3,6 +3,7 @@
 # thunderfox : can we put an example.py in 2.0 that just prints "you're a fucking retard"
 # invisiblek wuz here
 # balthemel wuz also 'ere
+# "Niantic can suck my Niandick" - Quadrewple
 
 # DO NOT MAKE PR'S TO FIX TYPOS!
 
