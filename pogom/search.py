@@ -323,7 +323,7 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
                         # We didn't succeed, but we are done with this queue item
                         search_items_queue.task_done()
                         log.error('Worker %s failed, possibly banned account.  Sleeping for 2 hours.', account['username'])
-                        time.sleep(2*60*60)
+                        time.sleep(2 * 60 * 60)
                         break
 
                     # Increase sleep delay between each failed scan
@@ -399,7 +399,7 @@ def search_worker_thread_ss(args, account, search_items_queue, parse_lock, encry
                             # We didn't succeed, but we are done with this queue item
                             search_items_queue.task_done()
                             log.error('Worker %s failed, possibly banned account.  Sleeping for 2 hours.', account['username'])
-                            time.sleep(2*60*60)
+                            time.sleep(2 * 60 * 60)
                             break
                         sleep_time = args.scan_delay * (1 + failed_total)
                         check_login(args, account, api, step_location)
