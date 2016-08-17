@@ -379,7 +379,7 @@ def parse_map(map_dict, step_location):
     gyms = {}
     scanned = {}
 
-    #attempt to get cells from map data and return false if it fails (can be caused by banned accounts)
+    # attempt to get cells from map data and return false if it fails (can be caused by banned accounts)
     try:
         cells = map_dict['responses']['GET_MAP_OBJECTS']['map_cells']
     except KeyError:
