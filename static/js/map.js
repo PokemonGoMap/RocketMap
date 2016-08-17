@@ -1187,7 +1187,7 @@ function setupPokemonMarker (item, skipNotification, isBounceDisabled) {
     }
   }
 
-  if (notifiedPokemon.indexOf(item['pokemon_id']) > -1 || notifiedRarity.indexOf(item['pokemon_rarity']) > -1) {
+  if (!notificationTitle && (notifiedPokemon.indexOf(item['pokemon_id']) > -1 || notifiedRarity.indexOf(item['pokemon_rarity']) > -1)) {
     if (!skipNotification) {
       notificationTitle = 'A wild ' + item['pokemon_name'] + ' appeared!'
       notificationMessage = 'Click to load map'
