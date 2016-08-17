@@ -92,10 +92,13 @@ class Pokemon(BaseModel):
             query = (Pokemon
                      .select()
                      .where((Pokemon.disappear_time > datetime.utcnow()) &
-                            (Pokemon.latitude >= swLat) &
-                            (Pokemon.longitude >= swLng) &
-                            (Pokemon.latitude <= neLat) &
-                            (Pokemon.longitude <= neLng))
+                            (((Pokemon.latitude >= swLat) &
+                              (Pokemon.longitude >= swLng) &
+                              (Pokemon.latitude <= neLat) &
+                              (Pokemon.longitude <= neLng)) |
+                             (Pokemon.pokemon_id << Pokemon.rare_pokemon)
+                            )
+                           )
                      .dicts())
 
         pokemons = []
