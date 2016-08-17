@@ -96,8 +96,7 @@ class Pokemon(BaseModel):
                             (((Pokemon.latitude >= swLat) &
                               (Pokemon.longitude >= swLng) &
                               (Pokemon.latitude <= neLat) &
-                              (Pokemon.longitude <= neLng)) |
-                             (Pokemon.pokemon_id << Pokemon.rare_pokemon)
+                              (Pokemon.longitude <= neLng))
                             )
                            )
                      .dicts())
