@@ -470,8 +470,8 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue):
                             'encounter_id': b64encode(str(lure_info['encounter_id'])),
                             'pokestop_id': f['id'],
                             'pokemon_id': lure_info['active_pokemon_id'],
-                            'latitude': f['latitude'] + 0.00005,
-                            'longitude': f['longitude'] + 0.00005,
+                            'latitude': f['latitude'] + 0.0001,
+                            'longitude': f['longitude'] + 0.0001,
                             'disappear_time': d_t
                         }
 

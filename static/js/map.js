@@ -1108,15 +1108,39 @@ function gymLabel (teamName, teamId, gymPoints, latitude, longitude) {
   return str
 }
 
-function pokestopLabel (expireTime, latitude, longitude) {
+function pokestopLabel (expireTime, latitude, longitude, lureInfo) {
   var str
   if (expireTime) {
     var expireDate = new Date(expireTime)
+
+    var luredPokemonStr = ''
+    if (lureInfo) {
+      var activePokemonName = lureInfo['pokemon_name']
+      var activePokemonId = lureInfo['pokemon_id']
+      var rarityDisplay = lureInfo['pokemon_rarity'] ? '(' + lureInfo['pokemon_rarity'] + ')' : ''
+      var typesDisplay = ''
+      $.each(lureInfo['pokemon_types'], function (index, type) {
+        typesDisplay += getTypeSpan(type)
+      })
+      luredPokemonStr = `
+            <div>
+              Lured Pokémon: ${activePokemonName}
+              <span> - </span>
+              <small>
+                <a href='http://www.pokemon.com/us/pokedex/${activePokemonId}' target='_blank' title='View in Pokedex'>#${activePokemonId}</a>
+              </small>
+              <span> ${rarityDisplay}</span>
+              <span> - </span>
+              <span>${typesDisplay}</span>
+            </div>
+      `
+    }
 
     str = `
       <div>
         <b>Lured Pokéstop</b>
       </div>
+      ${luredPokemonStr}
       <div>
         Lure expires at ${pad(expireDate.getHours())}:${pad(expireDate.getMinutes())}:${pad(expireDate.getSeconds())}
         <span class='label-countdown' disappears-at='${expireTime}'>(00m00s)</span>
@@ -1250,7 +1274,7 @@ function setupPokestopMarker (item) {
   })
 
   marker.infoWindow = new google.maps.InfoWindow({
-    content: pokestopLabel(item['lure_expiration'], item['latitude'], item['longitude']),
+    content: pokestopLabel(item['lure_expiration'], item['latitude'], item['longitude'], item['lure_pokemon']),
     disableAutoPan: true
   })
 
@@ -1477,8 +1501,24 @@ function processPokestops (i, item) {
     item.marker = setupPokestopMarker(item)
     mapData.pokestops[item['pokestop_id']] = item
   } else {
+    var redraw = false
     var item2 = mapData.pokestops[item['pokestop_id']]
     if (!!item['lure_expiration'] !== !!item2['lure_expiration']) {
+      redraw = true
+    } else if ('lure_pokemon' in item) {
+      if ('lure_pokemon' in item2) {
+        var lurePokemon1 = item['lure_pokemon']
+        var lurePokemon2 = item2['lure_pokemon']
+        if (lurePokemon1['encounter_id'] !== lurePokemon2['encounter_id']) {
+          redraw = true
+        }
+      } else {
+        redraw = true
+      }
+    } else if ('lure_pokemon' in item2) {
+      redraw = true
+    }
+    if (redraw) {
       item2.marker.setMap(null)
       item.marker = setupPokestopMarker(item)
       mapData.pokestops[item['pokestop_id']] = item
@@ -1539,6 +1579,20 @@ function processSpawnpoints (i, item) {
 
 function updateMap () {
   loadRawData().done(function (result) {
+    var lurePokemons = {}
+    $.each(result.pokemons, function (i, item) {
+      if ('pokestop_id' in item) {
+        var pokestopId = item['pokestop_id']
+        lurePokemons[pokestopId] = item
+      }
+    })
+    $.each(result.pokestops, function (i, item) {
+      var pokestopId = item['pokestop_id']
+      if (pokestopId in lurePokemons) {
+        item['lure_pokemon'] = lurePokemons[pokestopId]
+      }
+    })
+
     $.each(result.pokemons, processPokemons)
     $.each(result.pokestops, processPokestops)
     $.each(result.gyms, processGyms)
