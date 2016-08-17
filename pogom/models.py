@@ -466,14 +466,25 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue):
 
                     if lure_info is not None:
                         d_t = datetime.utcfromtimestamp(lure_info['lure_expires_timestamp_ms'] / 1000)
+                        encounter_id = b64encode(str(lure_info['encounter_id']))
                         lure_pokemons[lure_info['encounter_id']] = {
-                            'encounter_id': b64encode(str(lure_info['encounter_id'])),
+                            'encounter_id': encounter_id,
                             'pokestop_id': f['id'],
                             'pokemon_id': lure_info['active_pokemon_id'],
                             'latitude': f['latitude'] + 0.0001,
                             'longitude': f['longitude'] + 0.0001,
                             'disappear_time': d_t
                         }
+                        webhook_data = {
+                            'encounter_id': encounter_id,
+                            'pokemon_id': lure_info['active_pokemon_id'],
+                            'pokestop_id': f['id'],
+                            'latitude': f['latitude'],
+                            'longitude': f['longitude'],
+                            'disappear_time': calendar.timegm(d_t.timetuple()),
+                            'active_fort_modifier': active_fort_modifier
+                        }
+                        send_to_webhook('pokemon', webhook_data)
 
                 else:
                     lure_expiration, active_fort_modifier = None, None
