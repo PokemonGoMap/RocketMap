@@ -78,7 +78,6 @@ class PokemonBaseModel(BaseModel):
     longitude = DoubleField()
     disappear_time = DateTimeField(index=True)
 
-
     @staticmethod
     def _get_active(base, swLat, swLng, neLat, neLng):
 
@@ -705,4 +704,3 @@ def database_migrate(db, old_ver):
                  .where(Pokemon.disappear_time >
                         (datetime.utcnow() - timedelta(hours=24))))
         query.execute()
-
