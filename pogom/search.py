@@ -416,6 +416,7 @@ def search_worker_thread_ss(args, account, search_items_queue, parse_lock, encry
                             except KeyError:
                                 log.exception('Search step %s map parsing failed, retrying request in %g seconds. Username: %s', step, sleep_time, account['username'])
                                 failed_total += 1
+                        time.sleep(sleep_time)
                     # If there's any time left between the start time and the time when we should be kicking off the next
                     # loop, hang out until its up.
                     sleep_delay_remaining = loop_start_time + (args.scan_delay * 1000) - int(round(time.time() * 1000))
