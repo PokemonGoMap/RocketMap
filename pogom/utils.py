@@ -58,6 +58,9 @@ def get_args():
                         help='Location, can be an address or coordinates')
     parser.add_argument('-st', '--step-limit', help='Steps', type=int,
                         default=12)
+    parser.add_argument('-wd', '--wave-delay',
+                        help='Time delay once STEP_LIMIT is reached',
+                        type=float, default=0)
     parser.add_argument('-sd', '--scan-delay',
                         help='Time delay between requests in scan threads',
                         type=float, default=10)
