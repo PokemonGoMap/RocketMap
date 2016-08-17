@@ -139,19 +139,24 @@ def SbSearch(Slist, T):
     return first
 
 
-# print out the status of each worker
-def print_status(enabled, threadStatus, search_items_queue):
-    # Gather worker status
-    if enabled:
+# Thread to print out the status of each worker
+def status_printer(threadStatus, search_items_queue):
+    while True:
         # Clear the screen - This, unfortunately, only seems to work on linux. Anyone know a good cross platform way to clear the screen?
         print(chr(27) + "[2J")
-        # Print the status
+    
+        # Print the queue length
         print 'Queue: {} items'.format(search_items_queue.qsize())
+    
+        # Print status of overseer
         print threadStatus['Overseer']['message']
+    
+        # Print the status of each worker, sorted by worker number
         for item in sorted (threadStatus):
             if(threadStatus[item]['type'] == "Worker"):
                 print '{} - {}'.format(item, threadStatus[item]['message'])
-        #print 'Overseer: {}'.format(overseer_status)
+    
+        time.sleep(1)
 
 
 # The main search loop that keeps an eye on the over all process
@@ -166,6 +171,15 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
     threadStatus['Overseer'] = {}
     threadStatus['Overseer']['message'] = "Initializing"
     threadStatus['Overseer']['type'] = "Overseer"
+
+    if(args.print_status):
+        log.info('Starting status printer thread')
+        t = Thread(target=status_printer, 
+                    name='status_printer',
+                    args = (threadStatus, search_items_queue))
+        t.daemon = True
+        t.start()
+
 
     # Create a search_worker_thread per account
     log.info('Starting search worker threads')
@@ -198,7 +212,6 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
                 except Empty:
                     pass
             threadStatus['Overseer']['message'] = "Scanning is paused"
-            print_status(args.print_status, threadStatus, search_items_queue)
             time.sleep(1)
             continue
 
@@ -251,16 +264,13 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
             for step, step_location in enumerate(locations, 1):
                 log.debug('Queueing step %d @ %f/%f/%f', step, step_location[0], step_location[1], step_location[2])
                 threadStatus['Overseer']['message'] = "Queuing next step"
-                print_status(args.print_status, threadStatus, search_items_queue)
                 search_args = (step, step_location)
                 search_items_queue.put(search_args)
         else:
             #   log.info('Search queue processing, %d items left', search_items_queue.qsize())
             threadStatus['Overseer']['message'] = "Processing search queue"
-            print_status(args.print_status, threadStatus, search_items_queue)
 
         # Now we just give a little pause here
-        print_status(args.print_status, threadStatus, search_items_queue)
         time.sleep(1)
 
 
@@ -274,6 +284,14 @@ def search_overseer_thread_ss(args, new_location_queue, pause_bit, encryption_li
     threadStatus['Overseer'] = {}
     threadStatus['Overseer']['message'] = "Initializing"
     threadStatus['Overseer']['type'] = "Overseer"
+
+    if(args.print_status):
+        log.info('Starting status printer thread')
+        t = Thread(target=status_printer, 
+                    name='status_printer',
+                    args = (threadStatus, search_items_queue))
+        t.daemon = True
+        t.start()
 
     # Create a search_worker_thread per account
     log.info('Starting search worker threads')
@@ -290,7 +308,6 @@ def search_overseer_thread_ss(args, new_location_queue, pause_bit, encryption_li
 
     if os.path.isfile(args.spawnpoint_scanning):  # if the spawns file exists use it
         threadStatus['Overseer']['message'] = "Getting spawnpoints from file" 
-        print_status(args.print_status, threadStatus, search_items_queue)
         try:
             with open(args.spawnpoint_scanning) as file:
                 try:
@@ -304,7 +321,6 @@ def search_overseer_thread_ss(args, new_location_queue, pause_bit, encryption_li
             return
     else:  # if spawns file dose not exist use the db
         threadStatus['Overseer']['message'] = "Getting spawnpoints from database" 
-        print_status(args.print_status, threadStatus, search_items_queue)
         loc = new_location_queue.get()
         spawns = Pokemon.get_spawnpoints_in_hex(loc, args.step_limit)
     spawns.sort(key=itemgetter('time'))
@@ -314,11 +330,9 @@ def search_overseer_thread_ss(args, new_location_queue, pause_bit, encryption_li
     while True:
         while timeDif(curSec(), spawns[pos]['time']) < 60:
             threadStatus['Overseer']['message'] = "Waiting for spawnpoints {} of {} to spawn at {}".format(pos, len(spawns), spawns[pos]['time'])
-            print_status(args.print_status, threadStatus, search_items_queue)
             time.sleep(1)
         # make location with a dummy height (seems to be more reliable than 0 height)
         threadStatus['Overseer']['message'] = "Queuing spawnpoint {} of {}".format(pos, len(spawns)) 
-        print_status(args.print_status, threadStatus, search_items_queue)
         location = [spawns[pos]['lat'], spawns[pos]['lng'], 40.32]
         search_args = (pos, location, spawns[pos]['time'])
         search_items_queue.put(search_args)
