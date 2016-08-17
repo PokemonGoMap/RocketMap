@@ -149,12 +149,16 @@ def status_printer(threadStatus, search_items_queue):
         print 'Queue: {} items'.format(search_items_queue.qsize())
 
         # Print status of overseer
-        print threadStatus['Overseer']['message']
+        print 'Overseer: {}'.format(threadStatus['Overseer']['message'])
 
         # Print the status of each worker, sorted by worker number
         for item in sorted(threadStatus):
             if(threadStatus[item]['type'] == "Worker"):
                 print '{} - {}'.format(item, threadStatus[item]['message'])
+                if 'skip' in threadStatus[item]:
+                    print '\tSuccess: {}\tFailed: {}\tSkipped: {}'.format(threadStatus[item]['success'], threadStatus[item]['fail'], threadStatus[item]['skip'])
+                else:
+                    print '\tSuccess: {}\tFailed: {}'.format(threadStatus[item]['success'], threadStatus[item]['fail'])
 
         time.sleep(1)
 
@@ -187,6 +191,9 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
         threadStatus['Worker {}'.format(i)] = {}
         threadStatus['Worker {}'.format(i)]['type'] = "Worker"
         threadStatus['Worker {}'.format(i)]['message'] = "Creating thread..."
+        threadStatus['Worker {}'.format(i)]['success'] = 0
+        threadStatus['Worker {}'.format(i)]['fail'] = 0
+
         t = Thread(target=search_worker_thread,
                    name='search_worker_{}'.format(i),
                    args=(args, account, search_items_queue, parse_lock,
@@ -299,6 +306,9 @@ def search_overseer_thread_ss(args, new_location_queue, pause_bit, encryption_li
         threadStatus['Worker {}'.format(i)] = {}
         threadStatus['Worker {}'.format(i)]['type'] = "Worker"
         threadStatus['Worker {}'.format(i)]['message'] = "Creating thread..."
+        threadStatus['Worker {}'.format(i)]['success'] = 0
+        threadStatus['Worker {}'.format(i)]['fail'] = 0
+        threadStatus['Worker {}'.format(i)]['skip'] = 0
         t = Thread(target=search_worker_thread_ss,
                    name='ss_search_worker_{}'.format(i),
                    args=(args, account, search_items_queue, parse_lock, encryption_lib_path, threadStatus['Worker {}'.format(i)]))
@@ -401,6 +411,7 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
                     if not response_dict:
                         log.error('Search step %d area download failed, retrying request in %g seconds', step, sleep_time)
                         failed_total += 1
+                        status['fail'] += 1
                         status['message'] = "Failed {} times to scan {},{} - no response - sleeping {} seconds. Username: {}".format(failed_total, step_location[0], step_location[1], sleep_time, account['username'])
                         time.sleep(sleep_time)
                         continue
@@ -411,10 +422,12 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
                             parse_map(response_dict, step_location)
                             log.debug('Search step %s completed', step)
                             search_items_queue.task_done()
+                            status['success'] += 1
                             break  # All done, get out of the request-retry loop
                         except KeyError:
                             log.exception('Search step %s map parsing failed, retrying request in %g seconds. Username: %s', step, sleep_time, account['username'])
                             failed_total += 1
+                            status['fail'] += 1
                             status['message'] = "Failed {} times to scan {},{} - map parsing failed - sleeping {} seconds. Username: {}".format(failed_total, step_location[0], step_location[1], sleep_time, account['username'])
                     time.sleep(sleep_time)
 
@@ -472,6 +485,7 @@ def search_worker_thread_ss(args, account, search_items_queue, parse_lock, encry
                         if not response_dict:
                             log.error('Search step %d area download failed, retyring request in %g seconds', step, sleep_time)
                             failed_total += 1
+                            status['fail'] += 1
                             status['message'] = "Failed {} times to scan {},{} - no response - sleeping {} seconds. Username: {}".format(failed_total, step_location[0], step_location[1], sleep_time, account['username'])
                             time.sleep(sleep_time)
                             continue
@@ -481,10 +495,12 @@ def search_worker_thread_ss(args, account, search_items_queue, parse_lock, encry
                                 parse_map(response_dict, step_location)
                                 log.debug('Search step %s completed', step)
                                 search_items_queue.task_done()
+                                status['success'] += 1
                                 break
                             except KeyError:
                                 log.exception('Search step %s map parsing failed, retrying request in %g seconds. Username: %s', step, sleep_time, account['username'])
                                 failed_total += 1
+                                status['fail'] += 1
                                 status['message'] = "Failed {} times to scan {},{} - map parsing failed - sleeping {} seconds. Username: {}".format(failed_total, step_location[0], step_location[1], sleep_time, account['username'])
                         time.sleep(sleep_time)
                     status['message'] = "Waiting {} seconds for scan delay".format(sleep_time)
@@ -492,6 +508,7 @@ def search_worker_thread_ss(args, account, search_items_queue, parse_lock, encry
                 else:
                     search_items_queue.task_done()
                     log.info('Cant keep up. Skipping')
+                    status['skip'] += 1
                     status['message'] = "Skipping spawnpoint - can't keep up."
         except Exception as e:
             status['message'] = "Exception in search_worker.  Username: {}".format(account['username'])
