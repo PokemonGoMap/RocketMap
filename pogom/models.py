@@ -96,11 +96,8 @@ class Pokemon(BaseModel):
                             (((Pokemon.latitude >= swLat) &
                               (Pokemon.longitude >= swLng) &
                               (Pokemon.latitude <= neLat) &
-                              (Pokemon.longitude <= neLng))
-                            )
-                           )
+                              (Pokemon.longitude <= neLng))))
                      .dicts())
-
 
         # Performance: Disable the garbage collector prior to creating a (potentially) large dict with append()
         gc.disable()
@@ -400,7 +397,6 @@ class ScannedLocation(BaseModel):
                         (ScannedLocation.latitude <= neLat) &
                         (ScannedLocation.longitude <= neLng))
                  .dicts())
-
 
         # Disable the garbage collector prior to creating a (potentially) large dict with append()
         gc.disable()
