@@ -3,6 +3,7 @@
 import logging
 import calendar
 import sys
+import gc
 import math
 from peewee import SqliteDatabase, InsertQuery, \
     IntegerField, CharField, DoubleField, BooleanField, \
@@ -101,6 +102,10 @@ class Pokemon(BaseModel):
                            )
                      .dicts())
 
+
+        # Performance: Disable the garbage collector prior to creating a (potentially) large dict with append()
+        gc.disable()
+
         pokemons = []
         for p in query:
             p['pokemon_name'] = get_pokemon_name(p['pokemon_id'])
@@ -110,6 +115,9 @@ class Pokemon(BaseModel):
                 p['latitude'], p['longitude'] = \
                     transform_from_wgs_to_gcj(p['latitude'], p['longitude'])
             pokemons.append(p)
+
+        # Re-enable the GC.
+        gc.enable()
 
         return pokemons
 
@@ -132,6 +140,9 @@ class Pokemon(BaseModel):
                             (Pokemon.longitude <= neLng))
                      .dicts())
 
+        # Performance: Disable the garbage collector prior to creating a (potentially) large dict with append()
+        gc.disable()
+
         pokemons = []
         for p in query:
             p['pokemon_name'] = get_pokemon_name(p['pokemon_id'])
@@ -141,6 +152,9 @@ class Pokemon(BaseModel):
                 p['latitude'], p['longitude'] = \
                     transform_from_wgs_to_gcj(p['latitude'], p['longitude'])
             pokemons.append(p)
+
+        # Re-enable the GC.
+        gc.enable()
 
         return pokemons
 
@@ -167,12 +181,19 @@ class Pokemon(BaseModel):
                  .where(Pokemon.disappear_time == pokemon_count_query.c.lastappeared)
                  .dicts()
                  )
+
+        # Performance: Disable the garbage collector prior to creating a (potentially) large dict with append()
+        gc.disable()
+
         pokemons = []
         total = 0
         for p in query:
             p['pokemon_name'] = get_pokemon_name(p['pokemon_id'])
             pokemons.append(p)
             total += p['count']
+
+        # Re-enable the GC.
+        gc.enable()
 
         return {'pokemon': pokemons, 'total': total}
 
@@ -186,9 +207,17 @@ class Pokemon(BaseModel):
                  .order_by(Pokemon.disappear_time.asc())
                  .dicts()
                  )
+
+        # Performance: Disable the garbage collector prior to creating a (potentially) large dict with append()
+        gc.disable()
+
         appearances = []
         for a in query:
             appearances.append(a)
+
+        # Re-enable the GC.
+        gc.enable()
+
         return appearances
 
     @classmethod
@@ -291,12 +320,18 @@ class Pokestop(BaseModel):
                             (Pokestop.longitude <= neLng))
                      .dicts())
 
+        # Performance: Disable the garbage collector prior to creating a (potentially) large dict with append()
+        gc.disable()
+
         pokestops = []
         for p in query:
             if args.china:
                 p['latitude'], p['longitude'] = \
                     transform_from_wgs_to_gcj(p['latitude'], p['longitude'])
             pokestops.append(p)
+
+        # Re-enable the GC.
+        gc.enable()
 
         return pokestops
 
@@ -334,9 +369,15 @@ class Gym(BaseModel):
                             (Gym.longitude <= neLng))
                      .dicts())
 
+        # Performance: Disable the garbage collector prior to creating a (potentially) large dict with append()
+        gc.disable()
+
         gyms = []
         for g in query:
             gyms.append(g)
+
+        # Re-enable the GC.
+        gc.enable()
 
         return gyms
 
@@ -361,9 +402,16 @@ class ScannedLocation(BaseModel):
                         (ScannedLocation.longitude <= neLng))
                  .dicts())
 
+
+        # Disable the garbage collector prior to creating a (potentially) large dict with append()
+        gc.disable()
+
         scans = []
         for s in query:
             scans.append(s)
+
+        # Re-enable the GC.
+        gc.enable()
 
         return scans
 
