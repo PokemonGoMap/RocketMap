@@ -140,6 +140,8 @@ def get_args():
                         type=int, default=5)
     parser.add_argument('-wh', '--webhook', help='Define URL(s) to POST webhook information to',
                         nargs='*', default=False, dest='webhooks')
+    parser.add_argument('--webhook-updates-only', help='Only send updates (pokémon & lured pokéstops)',
+                        action='store_true', default=False)
     parser.add_argument('--ssl-certificate', help='Path to SSL certificate file')
     parser.add_argument('--ssl-privatekey', help='Path to SSL private key file')
     parser.set_defaults(DEBUG=False)
@@ -178,14 +180,6 @@ def get_args():
             args.auth_service = ['ptc']
         else:
             num_auths = len(args.auth_service)
-
-        # Can't add CLI, but configargparse requires it by design choice... Figure out what you want guys...
-        # TODO: add to configargparse as CLI & replace "not in" w/ "is None"
-        if "webhook_all_stops" not in args:
-            args.webhook_all_stops = False
-
-        if "webhook_gyms" not in args:
-            args.webhook_gyms = False
 
         if num_usernames > 1:
             if num_passwords > 1 and num_usernames != num_passwords:

@@ -23,8 +23,7 @@
 #gmaps-key:             # your Google Maps API key
 #proxy:                 # Proxy URL e.g. socks5://127.0.0.1:9050
 #webhook:               # webhook URL (including http://)
-#webhook-all-stops:               # send all pokéstops to webhooks, not only lured pokéstops
-#webhook-gyms:               # send gyms to webhooks
+#webhook-updates-only:               # only send updates to webhooks, (excludes gyms & non-lured pokéstops)
 
 # Webserver settings
 #host:                  # address to listen on (default 127.0.0.1)
