@@ -69,18 +69,14 @@ class BaseModel(flaskDb.Model):
         return results
 
 
-class Pokemon(BaseModel):
+class PokemonBaseModel(BaseModel):
     # We are base64 encoding the ids delivered by the api
     # because they are too big for sqlite to handle
     encounter_id = CharField(primary_key=True, max_length=50)
-    spawnpoint_id = CharField(index=True)
     pokemon_id = IntegerField(index=True)
     latitude = DoubleField()
     longitude = DoubleField()
     disappear_time = DateTimeField(index=True)
-
-    class Meta:
-        indexes = ((('latitude', 'longitude'), False),)
 
     @staticmethod
     def get_active(swLat, swLng, neLat, neLng):
@@ -141,6 +137,13 @@ class Pokemon(BaseModel):
             pokemons.append(p)
 
         return pokemons
+
+
+class Pokemon(PokemonBaseModel):
+    spawnpoint_id = CharField(index=True)
+
+    class Meta:
+        indexes = ((('latitude', 'longitude'), False),)
 
     @classmethod
     def get_seen(cls, timediff):
@@ -262,6 +265,12 @@ class Pokemon(BaseModel):
         return trueSpawns
 
 
+class LurePokemon(PokemonBaseModel):
+    pokestop_id = CharField(index=True, max_length=50)
+
+    class Meta:
+        indexes = ((('latitude', 'longitude'), False),)
+
 class Pokestop(BaseModel):
     pokestop_id = CharField(primary_key=True, max_length=50)
     enabled = BooleanField()
@@ -377,6 +386,7 @@ class Versions(flaskDb.Model):
 # todo: this probably shouldn't _really_ be in "models" anymore, but w/e
 def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue):
     pokemons = {}
+    lure_pokemons = {}
     pokestops = {}
     gyms = {}
 
@@ -438,9 +448,9 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue):
 
                     if lure_info is not None:
                         d_t = datetime.utcfromtimestamp(lure_info['lure_expires_timestamp_ms'] / 1000)
-                        pokemons[lure_info['encounter_id']] = {
+                        lure_pokemons[lure_info['encounter_id']] = {
                             'encounter_id': b64encode(str(lure_info['encounter_id'])),
-                            'spawnpoint_id': 'lure',
+                            'pokestop_id': f['id'],
                             'pokemon_id': lure_info['active_pokemon_id'],
                             'latitude': f['latitude'] + 0.00005,
                             'longitude': f['longitude'] + 0.00005,
@@ -514,26 +524,28 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue):
         db_update_queue.put((Pokestop, pokestops))
     if len(gyms):
         db_update_queue.put((Gym, gyms))
+    if len(lure_pokemons):
+        db_update_queue.put((LurePokemon, lure_pokemons))
 
-    log.info('Parsing found %d pokemons, %d pokestops, and %d gyms',
+    log.info('Parsing found %d pokemons, %d lured pokemon, %d pokestops, and %d gyms',
              len(pokemons),
+             len(lure_pokemons),
              len(pokestops),
              len(gyms))
 
     db_update_queue.put((ScannedLocation, {0: {
+        'last_modified': calendar.timegm(gyms[f['id']]['last_modified'].timetuple()),
         'latitude': step_location[0],
         'longitude': step_location[1],
         'last_modified': datetime.utcnow()
     }}))
 
-    return len(pokemons) + len(pokestops) + len(gyms)
-
+    return len(pokemons) + len(lure_pokemons) + len(pokestops) + len(gyms)
 
 def db_updater(args, q):
     # The forever loop
     while True:
         try:
-
             while True:
                 try:
                     flaskDb.connect_db()
@@ -600,13 +612,13 @@ def bulk_upsert(cls, data):
 def create_tables(db):
     db.connect()
     verify_database_schema(db)
-    db.create_tables([Pokemon, Pokestop, Gym, ScannedLocation], safe=True)
+    db.create_tables([Pokemon, LurePokemon, Pokestop, Gym, ScannedLocation], safe=True)
     db.close()
 
 
 def drop_tables(db):
     db.connect()
-    db.drop_tables([Pokemon, Pokestop, Gym, ScannedLocation, Versions], safe=True)
+    db.drop_tables([Pokemon, LurePokemon, Pokestop, Gym, ScannedLocation, Versions], safe=True)
     db.close()
 
 
@@ -674,3 +686,4 @@ def database_migrate(db, old_ver):
                  .where(Pokemon.disappear_time >
                         (datetime.utcnow() - timedelta(hours=24))))
         query.execute()
+
