@@ -1,15 +1,11 @@
 {
+  "none": {
+    "name": "Hidden",
+    "icon": "static/marker_icons/transparent.png"
+  },
   "google": {
     "name": "Default Google Marker",
     "icon": null
-  },
-  "pokesition": {
-    "name": "Pokesition",
-    "icon": "static/marker_icons/pokesition.png"
-  },
-  "pokeball": {
-    "name": "Pokeball",
-    "icon": "static/marker_icons/pokeball.png"
   },
   "red": {
     "name": "Red",
@@ -35,8 +31,12 @@
     "name": "Yellow (Animated)",
     "icon": "static/marker_icons/yellow_animated.gif"
   },
-  "none": {
-    "name": "Hidden",
-    "icon": "static/marker_icons/transparent.png"
+  "pokesition": {
+    "name": "Pokesition",
+    "icon": "static/marker_icons/pokesition.png"
+  },
+  "pokeball": {
+    "name": "Pokeball",
+    "icon": "static/marker_icons/pokeball.gif"
   }
 }
