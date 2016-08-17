@@ -484,7 +484,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue):
                             'disappear_time': calendar.timegm(d_t.timetuple()),
                             'active_fort_modifier': active_fort_modifier
                         }
-                        send_to_webhook('pokemon', webhook_data)
+                        send_to_webhook('lure_pokemon', webhook_data)
 
                 else:
                     lure_expiration, active_fort_modifier = None, None
