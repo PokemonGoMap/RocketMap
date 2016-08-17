@@ -1,0 +1,22 @@
+{
+  "google": {
+    "name": "Default Google Marker",
+    "icon": null
+  },
+  "pokesition": {
+    "name": "Pokesition",
+    "icon": "static/marker_icons/pokesition.png"
+  },
+  "pokeball": {
+    "name": "Pokeball",
+    "icon": "static/marker_icons/pokeball.png"
+  },
+  "red": {
+    "name": "Red",
+    "icon": "static/marker_icons/red.png"
+  },
+  "none": {
+    "name": "Hidden",
+    "icon": "static/marker_icons/transparent.png"
+  }
+}

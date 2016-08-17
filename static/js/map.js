@@ -920,7 +920,7 @@ function createSearchMarker () {
     },
     map: map,
     animation: google.maps.Animation.DROP,
-    draggable: !Store.get('searchMarkerStyle'),
+    draggable: !Store.get('lockMarker'),
     icon: null,
     zIndex: google.maps.Marker.MAX_ZINDEX + 1
   })
