@@ -421,7 +421,8 @@ def search_worker_thread_ss(args, account, search_items_queue, parse_lock, encry
                     sleep_delay_remaining = loop_start_time + (args.scan_delay * 1000) - int(round(time.time() * 1000))
                     if sleep_delay_remaining > 0:
                         time.sleep(sleep_delay_remaining / 1000)
-                    loop_start_time = int(round(time.time() * 1000))
+
+                    loop_start_time += args.scan_delay * 1000
                 else:
                     search_items_queue.task_done()
                     log.info('Cant keep up. Skipping')
@@ -443,11 +444,10 @@ def check_login(args, account, api, position):
     api.set_position(position[0], position[1], position[2])
     while i < args.login_retries:
         try:
+            stagger_thread(args, account)
             if args.proxy:
-                stagger_thread(args, account)
                 api.set_authentication(provider=account['auth_service'], username=account['username'], password=account['password'], proxy_config={'http': args.proxy, 'https': args.proxy})
             else:
-                stagger_thread(args, account)
                 api.set_authentication(provider=account['auth_service'], username=account['username'], password=account['password'])
             break
         except AuthException:
