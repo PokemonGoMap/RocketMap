@@ -78,21 +78,23 @@ class PokemonBaseModel(BaseModel):
     longitude = DoubleField()
     disappear_time = DateTimeField(index=True)
 
+
     @staticmethod
-    def get_active(swLat, swLng, neLat, neLng):
+    def _get_active(base, swLat, swLng, neLat, neLng):
+
         if swLat is None or swLng is None or neLat is None or neLng is None:
-            query = (Pokemon
+            query = (base
                      .select()
-                     .where(Pokemon.disappear_time > datetime.utcnow())
+                     .where(base.disappear_time > datetime.utcnow())
                      .dicts())
         else:
-            query = (Pokemon
+            query = (base
                      .select()
-                     .where((Pokemon.disappear_time > datetime.utcnow()) &
-                            (Pokemon.latitude >= swLat) &
-                            (Pokemon.longitude >= swLng) &
-                            (Pokemon.latitude <= neLat) &
-                            (Pokemon.longitude <= neLng))
+                     .where((base.disappear_time > datetime.utcnow()) &
+                            (base.latitude >= swLat) &
+                            (base.longitude >= swLng) &
+                            (base.latitude <= neLat) &
+                            (base.longitude <= neLng))
                      .dicts())
 
         pokemons = []
@@ -108,22 +110,22 @@ class PokemonBaseModel(BaseModel):
         return pokemons
 
     @staticmethod
-    def get_active_by_id(ids, swLat, swLng, neLat, neLng):
+    def _get_active_by_id(base, ids, swLat, swLng, neLat, neLng):
         if swLat is None or swLng is None or neLat is None or neLng is None:
-            query = (Pokemon
+            query = (base
                      .select()
-                     .where((Pokemon.pokemon_id << ids) &
-                            (Pokemon.disappear_time > datetime.utcnow()))
+                     .where((base.pokemon_id << ids) &
+                            (base.disappear_time > datetime.utcnow()))
                      .dicts())
         else:
-            query = (Pokemon
+            query = (base
                      .select()
-                     .where((Pokemon.pokemon_id << ids) &
-                            (Pokemon.disappear_time > datetime.utcnow()) &
-                            (Pokemon.latitude >= swLat) &
-                            (Pokemon.longitude >= swLng) &
-                            (Pokemon.latitude <= neLat) &
-                            (Pokemon.longitude <= neLng))
+                     .where((base.pokemon_id << ids) &
+                            (base.disappear_time > datetime.utcnow()) &
+                            (base.latitude >= swLat) &
+                            (base.longitude >= swLng) &
+                            (base.latitude <= neLat) &
+                            (base.longitude <= neLng))
                      .dicts())
 
         pokemons = []
@@ -144,6 +146,14 @@ class Pokemon(PokemonBaseModel):
 
     class Meta:
         indexes = ((('latitude', 'longitude'), False),)
+
+    @staticmethod
+    def get_active_by_id(ids, swLat, swLng, neLat, neLng):
+        return PokemonBaseModel._get_active_by_id(Pokemon, ids, swLat, swLng, neLat, neLng)
+
+    @staticmethod
+    def get_active(swLat, swLng, neLat, neLng):
+        return PokemonBaseModel._get_active(Pokemon, swLat, swLng, neLat, neLng)
 
     @classmethod
     def get_seen(cls, timediff):
@@ -270,6 +280,15 @@ class LurePokemon(PokemonBaseModel):
 
     class Meta:
         indexes = ((('latitude', 'longitude'), False),)
+
+    @staticmethod
+    def get_active_by_id(ids, swLat, swLng, neLat, neLng):
+        return PokemonBaseModel._get_active_by_id(LurePokemon, ids, swLat, swLng, neLat, neLng)
+
+    @staticmethod
+    def get_active(swLat, swLng, neLat, neLng):
+        return PokemonBaseModel._get_active(LurePokemon, swLat, swLng, neLat, neLng)
+
 
 class Pokestop(BaseModel):
     pokestop_id = CharField(primary_key=True, max_length=50)
