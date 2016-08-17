@@ -54,6 +54,7 @@ if not hasattr(pgoapi, "__version__") or StrictVersion(pgoapi.__version__) < Str
     log.critical("It seems `pgoapi` is not up-to-date. You must run pip install -r requirements.txt again")
     sys.exit(1)
 
+
 def main():
     # Check if we have the proper encryption library file and get its path
     encryption_lib_path = get_encryption_lib_path()
