@@ -439,12 +439,13 @@ def check_login(args, account, api, position):
             log.debug('Credentials remain valid for another %f seconds', remaining_time)
             return
 
+    stagger_thread(args, account)
+
     # Try to login (a few times, but don't get stuck here)
     i = 0
     api.set_position(position[0], position[1], position[2])
     while i < args.login_retries:
         try:
-            stagger_thread(args, account)
             if args.proxy:
                 api.set_authentication(provider=account['auth_service'], username=account['username'], password=account['password'], proxy_config={'http': args.proxy, 'https': args.proxy})
             else:
