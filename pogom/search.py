@@ -250,6 +250,7 @@ def search_overseer_thread_ss(args, new_location_queue, pause_bit, encryption_li
         t.daemon = True
         t.start()
 
+    log.info('Loading spawnpoints')
     if os.path.isfile(args.spawnpoint_scanning):  # if the spawns file exists use it
         try:
             with open(args.spawnpoint_scanning) as file:
@@ -265,8 +266,34 @@ def search_overseer_thread_ss(args, new_location_queue, pause_bit, encryption_li
     else:  # if spawns file dose not exist use the db
         loc = new_location_queue.get()
         spawns = Pokemon.get_spawnpoints_in_hex(loc, args.step_limit)
-    spawns.sort(key=itemgetter('time'))
-    log.info('Total of %d spawns to track', len(spawns))
+
+    log.info('%d spawnpoints loaded. Compressing spawnpoints...', len(spawns))
+
+    spawns.sort(key=itemgetter('time'), reverse=True)
+    compressed = []
+    while len(spawns) != 0:
+        spawn = spawns.pop(0)
+        compressed.append(spawn)
+        # log.debug('Processing spawn %r', spawn)
+
+        # Remove any other spawns that fall within range of this one
+        redundant = []
+        for sp_to_check in spawns:
+            if timeDif(spawn['time'], sp_to_check['time']) > args.sp_compression:
+                break  # We're already outside the time, no sense continuing
+            dist = geopy_distance.distance((spawn['lat'], spawn['lng']), (sp_to_check['lat'], sp_to_check['lng'])).meters
+            if dist < 70:
+                # log.debug('Removing spawn %d m away: %r', dist, sp_to_check)
+                redundant.append(sp_to_check)
+
+        for x in redundant:
+            spawns.remove(x)
+
+    spawns = compressed
+    spawns.reverse()  # put them back in ascending order
+
+    log.info('Total of %d locations to scan', len(spawns))
+
     # find the inital location (spawn thats 60sec old)
     pos = SbSearch(spawns, (curSec() + 3540) % 3600)
     while True:
