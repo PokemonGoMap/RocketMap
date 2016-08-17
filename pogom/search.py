@@ -342,14 +342,13 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
                         time.sleep(sleep_time)
                         continue
 
-                    # Got the response, lock for parsing and do so (or fail, whatever)
+                    # Got the response, lock for parsing and check for fail.
                     with parse_lock:
-                        try:
-                            parse_map(response_dict, step_location)
+                        if parse_map(response_dict, step_location):
                             log.debug('Search step %s completed', step)
                             search_items_queue.task_done()
-                            break  # All done, get out of the request-retry loop
-                        except KeyError:
+                            break
+                        else:
                             log.exception('Search step %s map parsing failed, retrying request in %g seconds. Username: %s', step, sleep_time, account['username'])
                             failed_total += 1
                     time.sleep(sleep_time)
@@ -403,14 +402,13 @@ def search_worker_thread_ss(args, account, search_items_queue, parse_lock, encry
                             failed_total += 1
                             time.sleep(sleep_time)
                             continue
-                        # got responce try and parse it
+                        # Got the response, lock for parsing and check for fail.
                         with parse_lock:
-                            try:
-                                parse_map(response_dict, step_location)
+                            if parse_map(response_dict, step_location):
                                 log.debug('Search step %s completed', step)
                                 search_items_queue.task_done()
                                 break
-                            except KeyError:
+                            else:
                                 log.exception('Search step %s map parsing failed, retrying request in %g seconds. Username: %s', step, sleep_time, account['username'])
                                 failed_total += 1
                         time.sleep(sleep_time)

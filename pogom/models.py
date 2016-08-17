@@ -379,7 +379,12 @@ def parse_map(map_dict, step_location):
     gyms = {}
     scanned = {}
 
-    cells = map_dict['responses']['GET_MAP_OBJECTS']['map_cells']
+    # attempt to get cells from map data and return false if it fails (can be caused by banned accounts)
+    try:
+        cells = map_dict['responses']['GET_MAP_OBJECTS']['map_cells']
+    except KeyError:
+        return False
+
     for cell in cells:
         if config['parse_pokemon']:
             for p in cell.get('wild_pokemons', []):
