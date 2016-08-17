@@ -322,11 +322,6 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
                         log.error('Search step %d went over max scan_retires; abandoning', step)
                         break
 
-                    # Increase sleep delay between each failed scan
-                    # By default scan_dela=5, scan_retries=5 so
-                    # We'd see timeouts of 5, 10, 15, 20, 25
-                    sleep_time = args.scan_delay * (1 + failed_total)
-
                     # Ok, let's get started -- check our login status
                     check_login(args, account, api, step_location)
 
@@ -339,6 +334,7 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
                     if not response_dict:
                         log.error('Search step %d area download failed, retrying request in %g seconds', step, sleep_time)
                         failed_total += 1
+                        sleep_time = args.scan_delay * (1 + failed_total)
                         time.sleep(sleep_time)
                         continue
 
@@ -352,7 +348,15 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
                         except KeyError:
                             log.exception('Search step %s map parsing failed, retrying request in %g seconds. Username: %s', step, sleep_time, account['username'])
                             failed_total += 1
-                    time.sleep(sleep_time)
+                            # Increase sleep delay between each failed scan
+                            # By default scan_dela=5, scan_retries=5 so
+                            # We'd see timeouts of 5, 10, 15, 20, 25
+                            sleep_time = args.scan_delay * (1 + failed_total)
+
+                            time.sleep(sleep_time)
+
+                time.sleep(args.scan_delay)
+
 
                 # If there's any time left between the start time and the time when we should be kicking off the next
                 # loop, hang out until its up.
