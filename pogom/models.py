@@ -24,7 +24,7 @@ log = logging.getLogger(__name__)
 args = get_args()
 flaskDb = FlaskDB()
 
-db_schema_version = 5
+db_schema_version = 6
 
 
 class MyRetryDB(RetryOperationalError, PooledMySQLDatabase):
@@ -342,6 +342,7 @@ class ScannedLocation(BaseModel):
     latitude = DoubleField()
     longitude = DoubleField()
     last_modified = DateTimeField(index=True)
+    hue = IntegerField()
 
     class Meta:
         primary_key = CompositeKey('latitude', 'longitude')
@@ -508,6 +509,7 @@ def parse_map(map_dict, step_location):
         'latitude': step_location[0],
         'longitude': step_location[1],
         'last_modified': datetime.utcnow(),
+        'hue': 190
     }
 
     while True:
@@ -651,3 +653,6 @@ def database_migrate(db, old_ver):
                  .where(Pokemon.disappear_time >
                         (datetime.utcnow() - timedelta(hours=24))))
         query.execute()
+
+    if old_ver < 6:
+        db.drop_tables([ScannedLocation])
