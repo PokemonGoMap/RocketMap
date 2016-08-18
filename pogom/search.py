@@ -322,8 +322,14 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
                         log.error('Search step %d went over max scan_retires; abandoning', step)
                         # We didn't succeed, but we are done with this queue item
                         search_items_queue.task_done()
-                        log.error('Worker %s failed, possibly banned account.  Sleeping for 2 hours.', account['username'])
-                        time.sleep(2 * 60 * 60)
+
+                        # Sleep for 2 hours, print a log message every 5 minutes.
+                        sleep_time = 0
+                        sleep_started = time.strftime("%H:%M")
+                        while sleep_time < (2*60*60):
+                            log.error('Worker %s failed, possibly banned account. Sleeping for 2 hours from %s', account['username'], sleep_started)
+                            sleep_time += 300
+                            time.sleep(300)
                         break
 
                     # Increase sleep delay between each failed scan
@@ -398,8 +404,14 @@ def search_worker_thread_ss(args, account, search_items_queue, parse_lock, encry
                             log.error('Search step %d went over max scan_retires; abandoning', step)
                             # We didn't succeed, but we are done with this queue item
                             search_items_queue.task_done()
-                            log.error('Worker %s failed, possibly banned account.  Sleeping for 2 hours.', account['username'])
-                            time.sleep(2 * 60 * 60)
+
+                            # Sleep for 2 hours, print a log message every 5 minutes.
+                            sleep_time = 0
+                            sleep_started = time.strftime("%H:%M")
+                            while sleep_time < (2*60*60):
+                                log.error('Worker %s failed, possibly banned account. Sleeping for 2 hours from %s', account['username'], sleep_started)
+                                sleep_time += 300
+                                time.sleep(300)
                             break
                         sleep_time = args.scan_delay * (1 + failed_total)
                         check_login(args, account, api, step_location)
