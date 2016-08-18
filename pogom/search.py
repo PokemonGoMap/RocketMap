@@ -168,8 +168,8 @@ def status_printer(threadStatus, search_items_queue):
 
     while True:
         if display_enabled[0]:
-            # Clear the screen by printing 100 newlines.  Not ideal, but cross platform and doesn't require os.system calls
-            print('\n' * 100)
+            # Clear the screen
+            os.system('cls' if os.name == 'nt' else 'clear')
 
             # Print the queue length
             print 'Queue: {} items'.format(search_items_queue.qsize())
