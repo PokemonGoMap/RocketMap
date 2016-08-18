@@ -270,7 +270,7 @@ def search_overseer_thread_ss(args, new_location_queue, pause_bit, encryption_li
     # find the inital location (spawn thats 60sec old)
     pos = SbSearch(spawns, (curSec() + 3540) % 3600)
     while True:
-        while timeDif(curSec(), spawns[pos]['time']) < 30:
+        while timeDif(curSec(), spawns[pos]['time']) < 10:
             time.sleep(1)
         # make location with a dummy height (seems to be more reliable than 0 height)
         location = [spawns[pos]['lat'], spawns[pos]['lng'], 40.32]
