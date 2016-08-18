@@ -145,6 +145,8 @@ def get_args():
                         action='store_true', default=False)
     parser.add_argument('--ssl-certificate', help='Path to SSL certificate file')
     parser.add_argument('--ssl-privatekey', help='Path to SSL private key file')
+    parser.add_argument('--max-speed', help='Maximum speed a scanner can "travel" between scan locations in meters/second \
+                        (0 to disable). Defaults to 24 (88 km/h or 55 mph).', type=float, default=24)
     parser.set_defaults(DEBUG=False)
 
     args = parser.parse_args()
