@@ -142,6 +142,8 @@ def get_args():
                         nargs='*', default=False, dest='webhooks')
     parser.add_argument('--ssl-certificate', help='Path to SSL certificate file')
     parser.add_argument('--ssl-privatekey', help='Path to SSL private key file')
+    parser.add_argument('-ps', '--print-status', action='store_true',
+                        help='Print status messages to STDOUT.', default=False)
     parser.set_defaults(DEBUG=False)
 
     args = parser.parse_args()
