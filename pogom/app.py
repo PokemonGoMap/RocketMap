@@ -86,13 +86,16 @@ class Pogom(Flask):
                 ids = [int(x) for x in request.args.get('ids').split(',')]
                 d['pokemons'] = Pokemon.get_active_by_id(ids, swLat, swLng,
                                                          neLat, neLng)
-                d['pokemons'].extend(LurePokemon.get_active_by_id(ids, swLat, swLng,
-                                                                  neLat, neLng))
-
             else:
                 d['pokemons'] = Pokemon.get_active(swLat, swLng, neLat, neLng)
-                d['pokemons'].extend(LurePokemon.get_active(swLat, swLng,
-                                                            neLat, neLng))
+
+        if request.args.get('lurePokemon', 'true') == 'true':
+            if request.args.get('ids'):
+                ids = [int(x) for x in request.args.get('ids').split(',')]
+                d['lurePokemons'] = LurePokemon.get_active_by_id(ids, swLat, swLng,
+                                                                 neLat, neLng)
+            else:
+                d['lurePokemons'] = LurePokemon.get_active(swLat, swLng, neLat, neLng)
 
         if request.args.get('pokestops', 'true') == 'true':
             d['pokestops'] = Pokestop.get_stops(swLat, swLng, neLat, neLng)

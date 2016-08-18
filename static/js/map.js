@@ -738,6 +738,10 @@ var StoreOptions = {
     default: true,
     type: StoreTypes.Boolean
   },
+  'showLurePokemon': {
+    default: true,
+    type: StoreTypes.Boolean
+  },
   'showPokestops': {
     default: true,
     type: StoreTypes.Boolean
@@ -980,6 +984,7 @@ function updateSearchStatus () {
 function initSidebar () {
   $('#gyms-switch').prop('checked', Store.get('showGyms'))
   $('#pokemon-switch').prop('checked', Store.get('showPokemon'))
+  $('#lure-pokemon-switch').prop('checked', Store.get('showLurePokemon'))
   $('#pokestops-switch').prop('checked', Store.get('showPokestops'))
   $('#lured-pokestops-only-switch').val(Store.get('showLuredPokestopsOnly'))
   $('#lured-pokestops-only-wrapper').toggle(Store.get('showPokestops'))
@@ -1370,7 +1375,7 @@ function clearStaleMarkers () {
   })
 
   $.each(mapData.lurePokemons, function (key, value) {
-    if (mapData.lurePokemons[key]['lure_expiration'] < new Date().getTime() ||
+    if (mapData.lurePokemons[key]['disappear_time'] < new Date().getTime() ||
       excludedPokemon.indexOf(mapData.lurePokemons[key]['pokemon_id']) >= 0) {
       mapData.lurePokemons[key].marker.setMap(null)
       delete mapData.lurePokemons[key]
@@ -1420,6 +1425,7 @@ function showInBoundsMarkers (markers) {
 
 function loadRawData () {
   var loadPokemon = Store.get('showPokemon')
+  var loadLurePokemon = Store.get('showLurePokemon')
   var loadGyms = Store.get('showGyms')
   var loadPokestops = Store.get('showPokestops')
   var loadScanned = Store.get('showScanned')
@@ -1438,6 +1444,7 @@ function loadRawData () {
     type: 'GET',
     data: {
       'pokemon': loadPokemon,
+      'lurePokemon': loadLurePokemon,
       'pokestops': loadPokestops,
       'gyms': loadGyms,
       'scanned': loadScanned,
@@ -1476,6 +1483,24 @@ function processPokemons (i, item) {
     if (!item.hidden) {
       item.marker = setupPokemonMarker(item)
       mapData.pokemons[item['encounter_id']] = item
+    }
+  }
+}
+
+function processLurePokemons (i, item) {
+  if (!Store.get('showLurePokemon')) {
+    return false // in case the checkbox was unchecked in the meantime.
+  }
+
+  if (!(item['encounter_id'] in mapData.lurePokemons) &&
+    excludedPokemon.indexOf(item['pokemon_id']) < 0) {
+    // add marker to map and item to dict
+    if (item.marker) {
+      item.marker.setMap(null)
+    }
+    if (!item.hidden) {
+      item.marker = setupPokemonMarker(item)
+      mapData.lurePokemons[item['encounter_id']] = item
     }
   }
 }
@@ -1580,11 +1605,9 @@ function processSpawnpoints (i, item) {
 function updateMap () {
   loadRawData().done(function (result) {
     var lurePokemons = {}
-    $.each(result.pokemons, function (i, item) {
-      if ('pokestop_id' in item) {
-        var pokestopId = item['pokestop_id']
-        lurePokemons[pokestopId] = item
-      }
+    $.each(result.lurePokemons, function (i, item) {
+      var pokestopId = item['pokestop_id']
+      lurePokemons[pokestopId] = item
     })
     $.each(result.pokestops, function (i, item) {
       var pokestopId = item['pokestop_id']
@@ -1594,6 +1617,7 @@ function updateMap () {
     })
 
     $.each(result.pokemons, processPokemons)
+    $.each(result.lurePokemons, processLurePokemons)
     $.each(result.pokestops, processPokestops)
     $.each(result.gyms, processGyms)
     $.each(result.scanned, processScanned)
@@ -2067,6 +2091,7 @@ $(function () {
   // Setup UI element interactions
   $('#gyms-switch').change(buildSwitchChangeListener(mapData, ['gyms'], 'showGyms'))
   $('#pokemon-switch').change(buildSwitchChangeListener(mapData, ['pokemons'], 'showPokemon'))
+  $('#lure-pokemon-switch').change(buildSwitchChangeListener(mapData, ['lurePokemons'], 'showLurePokemon'))
   $('#scanned-switch').change(buildSwitchChangeListener(mapData, ['scanned'], 'showScanned'))
   $('#spawnpoints-switch').change(buildSwitchChangeListener(mapData, ['spawnpoints'], 'showSpawnpoints'))
 
