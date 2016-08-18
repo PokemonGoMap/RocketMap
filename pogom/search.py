@@ -28,6 +28,7 @@ import geopy.distance as geopy_distance
 from operator import itemgetter
 from threading import Thread, Lock
 from queue import Queue, Empty
+from collections import deque
 
 from pgoapi import PGoApi
 from pgoapi.utilities import f2i
@@ -258,6 +259,7 @@ def search_overseer_thread_ss(args, new_location_queue, pause_bit, encryption_li
         t.daemon = True
         t.start()
 
+    log.info('Loading spawnpoints')
     if os.path.isfile(args.spawnpoint_scanning):  # if the spawns file exists use it
         try:
             with open(args.spawnpoint_scanning) as file:
@@ -273,8 +275,25 @@ def search_overseer_thread_ss(args, new_location_queue, pause_bit, encryption_li
     else:  # if spawns file dose not exist use the db
         loc = new_location_queue.get()
         spawns = Pokemon.get_spawnpoints_in_hex(loc, args.step_limit)
-    spawns.sort(key=itemgetter('time'))
-    log.info('Total of %d spawns to track', len(spawns))
+
+    log.info('%d spawnpoints loaded. Compressing spawnpoints...', len(spawns))
+
+    spawns.sort(key=itemgetter('time'), reverse=True)
+
+    if args.sp_compression > 0:
+        spawns_deque = deque(spawns)
+        iterations = len(spawns) if args.aggressive_compress else 1
+        for i in range(iterations):
+            compressed = compress_spawnpoints(spawns_deque, args.sp_compression, len(spawns))
+            if compressed is not None:
+                # We've found a new best optimization, use it
+                spawns = compressed
+            spawns_deque.rotate(1)
+
+    spawns.reverse()  # put them back in ascending order
+
+    log.info('Total of %d locations to scan', len(spawns))
+
     # find the inital location (spawn thats 60sec old)
     pos = SbSearch(spawns, (curSec() + 3540) % 3600)
     while True:
@@ -285,6 +304,32 @@ def search_overseer_thread_ss(args, new_location_queue, pause_bit, encryption_li
         search_args = (pos, location, spawns[pos]['time'])
         search_items_queue.put(search_args)
         pos = (pos + 1) % len(spawns)
+
+
+def compress_spawnpoints(spawns, threshold, early_cutoff):
+    compressed = []
+    spawns = deque(spawns)  # duplicate so we can modify it
+    while len(spawns) != 0:
+        spawn = spawns.popleft()
+        compressed.append(spawn)
+        if len(compressed) >= early_cutoff:
+            return None  # List grew too big, no longer optimal
+        # log.debug('Processing spawn %r', spawn)
+
+        # Remove any other spawns that fall within range of this one
+        redundant = []
+        for sp_to_check in spawns:
+            if timeDif(spawn['time'], sp_to_check['time']) > threshold:
+                break  # We're already outside the time, no sense continuing
+            dist = geopy_distance.distance((spawn['lat'], spawn['lng']), (sp_to_check['lat'], sp_to_check['lng'])).meters
+            if dist < 70:
+                # log.debug('Removing spawn %d m away: %r', dist, sp_to_check)
+                redundant.append(sp_to_check)
+
+        for x in redundant:
+            spawns.remove(x)
+
+    return compressed
 
 
 def search_worker_thread(args, account, search_items_queue, parse_lock, encryption_lib_path):

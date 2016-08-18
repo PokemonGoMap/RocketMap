@@ -124,6 +124,11 @@ def get_args():
                         action='store_true', default=False)
     parser.add_argument('-ss', '--spawnpoint-scanning',
                         help='Use spawnpoint scanning (instead of hex grid)', nargs='?', const='null.null', default=None)
+    parser.add_argument('--sp-compression', help="The maximum time separation (in seconds) of two spawnpoints for them to be \
+                        compressed. Compression reduces redundant scans. Specify 0 to disable compression. Defaults \
+                        to 120 (2 minutes)", type=int, default=120)
+    parser.add_argument('--aggressive-compress', help='Spend extra time compressing the spawnpoints to find a better compression',
+                        action='store_true', default=False)
     parser.add_argument('--dump-spawnpoints', help='dump the spawnpoints from the db to json (only for use with -ss)',
                         action='store_true', default=False)
     parser.add_argument('-pd', '--purge-data',
