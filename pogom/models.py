@@ -18,6 +18,7 @@ from . import config
 from .utils import get_pokemon_name, get_pokemon_rarity, get_pokemon_types, get_args, send_to_webhook
 from .transform import transform_from_wgs_to_gcj
 from .customLog import printPokemon
+from pgoapi.exceptions import AuthException
 
 log = logging.getLogger(__name__)
 
@@ -378,8 +379,18 @@ def parse_map(map_dict, step_location):
     pokestops = {}
     gyms = {}
     scanned = {}
-
-    cells = map_dict['responses']['GET_MAP_OBJECTS']['map_cells']
+    
+    
+        
+    try:
+        cells = map_dict['responses']['GET_MAP_OBJECTS']['map_cells']['map_cells']
+    except KeyError as e:
+        log.error("Unable to parse map: {}".format(e))
+        raise AuthException
+    except TypeError as e:
+        log.error("Unable to parse map: {}".format(e))
+        raise AuthException
+    
     for cell in cells:
         if config['parse_pokemon']:
             for p in cell.get('wild_pokemons', []):
@@ -434,7 +445,7 @@ def parse_map(map_dict, step_location):
                         'active_fort_modifier': active_fort_modifier
                     }
 
-                    # Include lured pokÃ©stops in our updates to webhooks
+                    # Include lured pokéstops in our updates to webhooks
                     if args.webhook_updates_only:
                         send_to_webhook('pokestop', webhook_data)
                 else:
@@ -451,7 +462,7 @@ def parse_map(map_dict, step_location):
                     'active_fort_modifier': active_fort_modifier,
                 }
 
-                # Send all pokÃ©stops to webhooks
+                # Send all pokéstops to webhooks
                 if not args.webhook_updates_only:
                     # Explicitly set 'webhook_data', in case we want to change the information pushed to webhooks,
                     # similar to above and previous commits.

@@ -24,6 +24,7 @@ import os
 import random
 import time
 import geopy.distance as geopy_distance
+from datetime import datetime
 
 from operator import itemgetter
 from threading import Thread, Lock
@@ -32,7 +33,7 @@ from queue import Queue, Empty
 from pgoapi import PGoApi
 from pgoapi.utilities import f2i
 from pgoapi import utilities as util
-from pgoapi.exceptions import AuthException
+from pgoapi.exceptions import AuthException,NotLoggedInException
 
 from .models import parse_map, Pokemon
 
@@ -312,7 +313,7 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
                 # Grab the next thing to search (when available)
                 step, step_location = search_items_queue.get()
 
-                log.info('Search step %d beginning (queue size is %d)', step, search_items_queue.qsize())
+                log.debug('Search step %d beginning (queue size is %d)', step, search_items_queue.qsize())
 
                 # Let the api know where we intend to be for this loop
                 api.set_position(*step_location)
@@ -320,7 +321,10 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
                 # The loop to try very hard to scan this step
                 failed_total = 0
                 while True:
-
+                    time_now = datetime.now().strftime("%Y-%m-%d %H:%M")
+                    
+                    if 'disabled' in account and account['disabled']: return
+                    
                     # After so many attempts, let's get out of here
                     if failed_total >= args.scan_retries:
                         # I am choosing to NOT place this item back in the queue
@@ -344,9 +348,27 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
                     response_dict = map_request(api, step_location)
 
                     # G'damnit, nothing back. Mark it up, sleep, carry on
-                    if not response_dict:
-                        log.error('Search step %d area download failed, retrying request in %g seconds', step, sleep_time)
+                    
+                    if response_dict is NotLoggedInException:
+                        log.error('User {}: search area download failed: not logged in'.format(account['username'],e))
+                        account['disabled'] = True
+                        with open("loginerrors.log", "a") as myfile:
+                            myfile.write(str(time_now) + "\t" + str(account['username']) + "\t Reason: " + str(response_dict))
+                            myfile.write("\n")
+                        return
+                        
+                    elif not response_dict or type(response_dict) != type({}):
+                        log.error('User {}: search step %d area download failed, retrying request in %g seconds'.format(account['username']), step, sleep_time)
                         failed_total += 1
+                        
+                        if not 'fails' in account: account['fails'] = 0
+                        account['fails'] += 1
+                        if account['fails'] > 3:
+                            account['disabled'] = True
+                            log.error('User {}: Exceeded map download retries: removed worker'.format(account['username']))
+                            with open("loginerrors.log", "a") as myfile:
+                                myfile.write(str(time_now) + "\t" + str(account['username']) + "\t Reason: " + str(response_dict))
+                                myfile.write("\n")
                         time.sleep(sleep_time)
                         continue
 
@@ -355,18 +377,37 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
                         try:
                             parse_map(response_dict, step_location)
                             log.debug('Search step %s completed', step)
+                            account['fails'] = 0
                             search_items_queue.task_done()
                             break  # All done, get out of the request-retry loop
-                        except KeyError:
-                            log.exception('Search step %s map parsing failed, retrying request in %g seconds. Username: %s', step, sleep_time, account['username'])
+                        except KeyError as e:
+                            log.warning('User {}: Search step {} map parsing failed: {}, retrying request in {} seconds'.format(account['username'],step,e,sleep_time))
                             failed_total += 1
-                    time.sleep(sleep_time)
+                            time.sleep(sleep_time)
+                        except TypeError as e:
+                            log.warning('User {}: Search step {} map parsing failed: {}, retrying request in {} seconds'.format(account['username'],step,e,sleep_time))
+                            failed_total += 1
+                            time.sleep(sleep_time)
+                        except AuthException as e:
+                            log.warning('User {}: Search step {} map parsing failed!, retrying request in {} seconds'.format(account['username'],step,e,sleep_time))
+                            failed_total += 1
+                            time.sleep(sleep_time)
+                        # If there's any time left between the start time and the time when we should be kicking off the next
+                        # loop, hang out until its up.
+                        sleep_delay_remaining = loop_start_time + (args.scan_delay * 1000) - int(round(time.time() * 1000))
+                        if sleep_delay_remaining > 0:
+                            time.sleep(sleep_delay_remaining / 1000)
 
-                # If there's any time left between the start time and the time when we should be kicking off the next
-                # loop, hang out until its up.
-                sleep_delay_remaining = loop_start_time + (args.scan_delay * 1000) - int(round(time.time() * 1000))
-                if sleep_delay_remaining > 0:
-                    time.sleep(sleep_delay_remaining / 1000)
+                            if not 'fails' in account: account['fails'] = 0
+                            account['fails'] += 1
+                            
+                            if account['fails'] > 3:
+                                account['disabled'] = True
+                                with open("loginerrors.log", "a") as myfile:
+                                    myfile.write(str(time_now) + "\t" + str(account['username']) + "\t Reason: " + str(response_dict))
+                                    myfile.write("\n")
+                                log.error('User {}: Exceeded map parsing retries: removed worker'.format(account['username']))
+                            break
 
                 loop_start_time += args.scan_delay * 1000
 
