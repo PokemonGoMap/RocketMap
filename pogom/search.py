@@ -222,9 +222,9 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
         # Setting delay interval for filling in search queue to throttle down search workers
         if len(args.accounts) > 1:
             if len(args.accounts) > args.scan_delay:  # force ~1 second delay between threads if you have many accounts
-                delay_interval = ((random.random() - .5) / 2)
+                delay_interval = random.random() / 2
             else:
-                delay_interval = (args.scan_delay / len(args.accounts))
+                delay_interval = args.scan_delay / len(args.accounts)
         else:
             delay_interval = args.scan_delay
 
