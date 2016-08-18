@@ -139,27 +139,52 @@ def SbSearch(Slist, T):
     return first
 
 
+# Thread to handle user input
+def switch_status_printer(display_enabled):
+    while True:
+        # Wait for the user to press enter.
+        temp = raw_input()
+
+        # Switch between logging and display.
+        if display_enabled[0] == True:
+            logging.disable(logging.NOTSET)
+            display_enabled[0] = False
+        else:
+            logging.disable(logging.ERROR)
+            display_enabled[0] = True
+
 # Thread to print out the status of each worker
 def status_printer(threadStatus, search_items_queue):
+    display_enabled = [True]
+    logging.disable(logging.ERROR)
+
+    # Start another thread to get user input
+    t = Thread(target=switch_status_printer,
+               name='switch_status_printer',
+               args=(display_enabled,))
+    t.daemon = True
+    t.start()
+
     while True:
-        # Clear the screen - This, unfortunately, only seems to work on linux. Anyone know a good cross platform way to clear the screen?
-        print(chr(27) + "[2J")
+        if display_enabled[0]:
+            # Clear the screen by printing 100 newlines.  Not ideal, but cross platform and doesn't require os.system calls
+            print('\n' * 100)
 
-        # Print the queue length
-        print 'Queue: {} items'.format(search_items_queue.qsize())
+            # Print the queue length
+            print 'Queue: {} items'.format(search_items_queue.qsize())
 
-        # Print status of overseer
-        print 'Overseer: {}'.format(threadStatus['Overseer']['message'])
+            # Print status of overseer
+            print 'Overseer: {}'.format(threadStatus['Overseer']['message'])
 
-        # Print the status of each worker, sorted by worker number
-        for item in sorted(threadStatus):
-            if(threadStatus[item]['type'] == "Worker"):
-                if 'skip' in threadStatus[item]:
-                    print '{} - Success: {}, Failed: {}, Skipped: {} - {}'.format(item, threadStatus[item]['success'], threadStatus[item]['fail'], threadStatus[item]['skip'], threadStatus[item]['message'])
-                else:
-                    print '{} - Success: {}, Failed: {} - {}'.format(item, threadStatus[item]['success'], threadStatus[item]['fail'], threadStatus[item]['message'])
-
-        time.sleep(1)
+            # Print the status of each worker, sorted by worker number
+            for item in sorted(threadStatus):
+                if(threadStatus[item]['type'] == "Worker"):
+                    if 'skip' in threadStatus[item]:
+                        print '{} - Success: {}, Failed: {}, Skipped: {} - {}'.format(item, threadStatus[item]['success'], threadStatus[item]['fail'], threadStatus[item]['skip'], threadStatus[item]['message'])
+                    else:
+                        print '{} - Success: {}, Failed: {} - {}'.format(item, threadStatus[item]['success'], threadStatus[item]['fail'], threadStatus[item]['message'])
+            print '\nPress <ENTER> to switch between status and log view'
+        time.sleep(0.5)
 
 
 # The main search loop that keeps an eye on the over all process
