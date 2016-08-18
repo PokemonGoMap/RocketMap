@@ -19,10 +19,13 @@ Search Architecture:
 
 import logging
 import math
+import json
+import os
 import random
 import time
 import geopy.distance as geopy_distance
 
+from operator import itemgetter
 from threading import Thread, Lock
 from queue import Queue, Empty
 
@@ -108,6 +111,34 @@ def fake_search_loop():
         time.sleep(10)
 
 
+# gets the current time past the hour
+def curSec():
+    return (60 * time.gmtime().tm_min) + time.gmtime().tm_sec
+
+
+# gets the diference between two times past the hour (in a range from -1800 to 1800)
+def timeDif(a, b):
+    dif = a - b
+    if (dif < -1800):
+        dif += 3600
+    if (dif > 1800):
+        dif -= 3600
+    return dif
+
+
+# binary search to get the lowest index of the item in Slist that has atleast time T
+def SbSearch(Slist, T):
+    first = 0
+    last = len(Slist) - 1
+    while first < last:
+        mp = (first + last) // 2
+        if Slist[mp]['time'] < T:
+            first = mp + 1
+        else:
+            last = mp
+    return first
+
+
 # The main search loop that keeps an eye on the over all process
 def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_path):
 
@@ -116,28 +147,14 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
     search_items_queue = Queue()
     parse_lock = Lock()
 
-    # Needed vars for proxy
-    last_proxy_index = 0
-    proxy = ""
-
     # Create a search_worker_thread per account
     log.info('Starting search worker threads')
     for i, account in enumerate(args.accounts):
-
-        # Loop args.proxy and send proxy to worker thread
-        if args.proxy:
-
-            if last_proxy_index >= len(args.proxy):
-                last_proxy_index = 0
-
-            proxy = args.proxy[last_proxy_index]
-            last_proxy_index = last_proxy_index + 1
-
         log.debug('Starting search worker thread %d for user %s', i, account['username'])
         t = Thread(target=search_worker_thread,
                    name='search_worker_{}'.format(i),
                    args=(args, account, search_items_queue, parse_lock,
-                         encryption_lib_path, proxy))
+                         encryption_lib_path))
         t.daemon = True
         t.start()
 
@@ -217,18 +234,54 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
         time.sleep(1)
 
 
-def search_worker_thread(args, account, search_items_queue, parse_lock, encryption_lib_path, proxy):
+def search_overseer_thread_ss(args, new_location_queue, pause_bit, encryption_lib_path):
+    log.info('Search ss overseer starting')
+    search_items_queue = Queue()
+    parse_lock = Lock()
+    spawns = []
 
-    # If we have more than one account, stagger the logins such that they occur evenly over scan_delay
-    if len(args.accounts) > 1:
-        if len(args.accounts) > args.scan_delay:  # force ~1 second delay between threads if you have many accounts
-            delay = args.accounts.index(account) \
-                + ((random.random() - .5) / 2) if args.accounts.index(account) > 0 else 0
-        else:
-            delay = (args.scan_delay / len(args.accounts)) * args.accounts.index(account)
+    # Create a search_worker_thread per account
+    log.info('Starting search worker threads')
+    for i, account in enumerate(args.accounts):
+        log.debug('Starting search worker thread %d for user %s', i, account['username'])
+        t = Thread(target=search_worker_thread_ss,
+                   name='ss_search_worker_{}'.format(i),
+                   args=(args, account, search_items_queue, parse_lock, encryption_lib_path))
+        t.daemon = True
+        t.start()
 
-        log.debug('Delaying thread startup for %.2f seconds', delay)
-        time.sleep(delay)
+    if os.path.isfile(args.spawnpoint_scanning):  # if the spawns file exists use it
+        try:
+            with open(args.spawnpoint_scanning) as file:
+                try:
+                    spawns = json.load(file)
+                except ValueError:
+                    log.error(args.spawnpoint_scanning + " is not valid")
+                    return
+                file.close()
+        except IOError:
+            log.error("Error opening " + args.spawnpoint_scanning)
+            return
+    else:  # if spawns file dose not exist use the db
+        loc = new_location_queue.get()
+        spawns = Pokemon.get_spawnpoints_in_hex(loc, args.step_limit)
+    spawns.sort(key=itemgetter('time'))
+    log.info('Total of %d spawns to track', len(spawns))
+    # find the inital location (spawn thats 60sec old)
+    pos = SbSearch(spawns, (curSec() + 3540) % 3600)
+    while True:
+        while timeDif(curSec(), spawns[pos]['time']) < 60:
+            time.sleep(1)
+        # make location with a dummy height (seems to be more reliable than 0 height)
+        location = [spawns[pos]['lat'], spawns[pos]['lng'], 40.32]
+        search_args = (pos, location, spawns[pos]['time'])
+        search_items_queue.put(search_args)
+        pos = (pos + 1) % len(spawns)
+
+
+def search_worker_thread(args, account, search_items_queue, parse_lock, encryption_lib_path):
+
+    stagger_thread(args, account)
 
     log.debug('Search worker thread starting')
 
@@ -239,10 +292,8 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
 
             # Create the API instance this will use
             api = PGoApi()
-
-            if proxy:
-                log.debug('Using proxy %s', proxy)
-                api.set_proxy({'http': proxy, 'https': proxy})
+            if args.proxy:
+                api.set_proxy({'http': args.proxy, 'https': args.proxy})
 
             # Get current time
             loop_start_time = int(round(time.time() * 1000))
@@ -316,6 +367,61 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
             log.exception('Exception in search_worker: %s. Username: %s', e, account['username'])
 
 
+def search_worker_thread_ss(args, account, search_items_queue, parse_lock, encryption_lib_path):
+    stagger_thread(args, account)
+    log.debug('Search worker ss thread starting')
+    # forever loop (for catching when the other forever loop fails)
+    while True:
+        try:
+            log.debug('Entering search loop')
+            # create api instance
+            api = PGoApi()
+            if args.proxy:
+                api.set_proxy({'http': args.proxy, 'https': args.proxy})
+            api.activate_signature(encryption_lib_path)
+            # search forever loop
+            while True:
+                # Grab the next thing to search (when available)
+                step, step_location, spawntime = search_items_queue.get()
+                log.info('Searching step %d, remaining %d', step, search_items_queue.qsize())
+                if timeDif(curSec(), spawntime) < 840:  # if we arnt 14mins too late
+                    # set position
+                    api.set_position(*step_location)
+                    # try scan (with retries)
+                    failed_total = 0
+                    while True:
+                        if failed_total >= args.scan_retries:
+                            log.error('Search step %d went over max scan_retires; abandoning', step)
+                            break
+                        sleep_time = args.scan_delay * (1 + failed_total)
+                        check_login(args, account, api, step_location)
+                        # make the map request
+                        response_dict = map_request(api, step_location)
+                        # check if got anything back
+                        if not response_dict:
+                            log.error('Search step %d area download failed, retyring request in %g seconds', step, sleep_time)
+                            failed_total += 1
+                            time.sleep(sleep_time)
+                            continue
+                        # got responce try and parse it
+                        with parse_lock:
+                            try:
+                                parse_map(response_dict, step_location)
+                                log.debug('Search step %s completed', step)
+                                search_items_queue.task_done()
+                                break
+                            except KeyError:
+                                log.exception('Search step %s map parsing failed, retrying request in %g seconds. Username: %s', step, sleep_time, account['username'])
+                                failed_total += 1
+                        time.sleep(sleep_time)
+                    time.sleep(sleep_time)
+                else:
+                    search_items_queue.task_done()
+                    log.info('Cant keep up. Skipping')
+        except Exception as e:
+            log.exception('Exception in search_worker: %s', e)
+
+
 def check_login(args, account, api, position):
 
     # Logged in? Enough time left? Cool!
@@ -330,7 +436,10 @@ def check_login(args, account, api, position):
     api.set_position(position[0], position[1], position[2])
     while i < args.login_retries:
         try:
-            api.set_authentication(provider=account['auth_service'], username=account['username'], password=account['password'])
+            if args.proxy:
+                api.set_authentication(provider=account['auth_service'], username=account['username'], password=account['password'], proxy_config={'http': args.proxy, 'https': args.proxy})
+            else:
+                api.set_authentication(provider=account['auth_service'], username=account['username'], password=account['password'])
             break
         except AuthException:
             if i >= args.login_retries:
@@ -354,6 +463,17 @@ def map_request(api, position):
     except Exception as e:
         log.warning('Exception while downloading map: %s', e)
         return False
+
+
+def stagger_thread(args, account):
+    # If we have more than one account, stagger the logins such that they occur evenly over scan_delay
+    if len(args.accounts) > 1:
+        if len(args.accounts) > args.scan_delay:  # force ~1 second delay between threads if you have many accounts
+            delay = args.accounts.index(account) + ((random.random() - .5) / 2) if args.accounts.index(account) > 0 else 0
+        else:
+            delay = (args.scan_delay / len(args.accounts)) * args.accounts.index(account)
+            log.debug('Delaying thread startup for %.2f seconds', delay)
+        time.sleep(delay)
 
 
 class TooManyLoginAttempts(Exception):
