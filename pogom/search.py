@@ -227,16 +227,28 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
             if len(locations) == 0:
                 log.warning('Nothing to scan!')
 
+        # Setting delay interval for filling in search queue to throttle down search workers
+        if len(args.accounts) > 1:
+            if len(args.accounts) > args.scan_delay:  # force ~1 second delay between threads if you have many accounts
+                delay_interval = ((random.random() - .5) / 2)
+            else:
+                delay_interval = (args.scan_delay / len(args.accounts))
+        else:
+            delay_interval = args.scan_delay
+
         # If there are no search_items_queue either the loop has finished (or been
         # cleared above) -- either way, time to fill it back up
         if search_items_queue.empty():
             log.debug('Search queue empty, restarting loop')
             for step, step_location in enumerate(locations, 1):
+                # Stop filling the queue if paused or new location has been found
+                if pause_bit.is_set() or not new_location_queue.empty():
+                    break
+                # Throttle down the workers by filling the queue slowly
+                time.sleep(delay_interval)
                 log.debug('Queueing step %d @ %f/%f/%f', step, step_location[0], step_location[1], step_location[2])
                 search_args = (step, step_location)
                 search_items_queue.put(search_args)
-        # else:
-        #     log.info('Search queue processing, %d items left', search_items_queue.qsize())
 
         # Now we just give a little pause here
         time.sleep(1)
@@ -303,6 +315,8 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
             if args.proxy:
                 api.set_proxy({'http': args.proxy, 'https': args.proxy})
 
+            api.activate_signature(encryption_lib_path)
+
             # Get current time
             loop_start_time = int(round(time.time() * 1000))
 
@@ -312,7 +326,7 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
                 # Grab the next thing to search (when available)
                 step, step_location = search_items_queue.get()
 
-                log.info('Search step %d beginning (queue size is %d)', step, search_items_queue.qsize())
+                log.info('Search step %d beginning', step)
 
                 # Let the api know where we intend to be for this loop
                 api.set_position(*step_location)
@@ -337,8 +351,6 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
 
                     # Ok, let's get started -- check our login status
                     check_login(args, account, api, step_location)
-
-                    api.activate_signature(encryption_lib_path)
 
                     # Make the actual request (finally!)
                     response_dict = map_request(api, step_location)
@@ -365,10 +377,12 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
                 # If there's any time left between the start time and the time when we should be kicking off the next
                 # loop, hang out until its up.
                 sleep_delay_remaining = loop_start_time + (args.scan_delay * 1000) - int(round(time.time() * 1000))
-                if sleep_delay_remaining > 0:
+                if sleep_delay_remaining < 0:
+                    time.sleep(args.scan_delay)
+                else:
                     time.sleep(sleep_delay_remaining / 1000)
 
-                loop_start_time += args.scan_delay * 1000
+                loop_start_time = int(round(time.time() * 1000))
 
         # catch any process exceptions, log them, and continue the thread
         except Exception as e:
