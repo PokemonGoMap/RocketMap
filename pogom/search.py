@@ -149,7 +149,6 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
 
     # Needed vars for proxy
     last_proxy_index = 0
-    proxy = ""
 
     # Create a search_worker_thread per account
     log.info('Starting search worker threads')
@@ -161,14 +160,16 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
             if last_proxy_index >= len(args.proxy):
                 last_proxy_index = 0
 
-            proxy = args.proxy[last_proxy_index]
+            account['proxy'] = args.proxy[last_proxy_index]
             last_proxy_index = last_proxy_index + 1
+        else:
+            account['proxy'] = False
 
         log.debug('Starting search worker thread %d for user %s', i, account['username'])
         t = Thread(target=search_worker_thread,
                    name='search_worker_{}'.format(i),
                    args=(args, account, search_items_queue, parse_lock,
-                         encryption_lib_path, proxy))
+                         encryption_lib_path))
         t.daemon = True
         t.start()
 
@@ -254,9 +255,24 @@ def search_overseer_thread_ss(args, new_location_queue, pause_bit, encryption_li
     parse_lock = Lock()
     spawns = []
 
+    # Needed vars for proxy
+    last_proxy_index = 0
+
     # Create a search_worker_thread per account
     log.info('Starting search worker threads')
     for i, account in enumerate(args.accounts):
+
+        # Loop args.proxy and send proxy to worker thread
+        if args.proxy:
+
+            if last_proxy_index >= len(args.proxy):
+                last_proxy_index = 0
+
+            account['proxy'] = args.proxy[last_proxy_index]
+            last_proxy_index = last_proxy_index + 1
+        else:
+            account['proxy'] = False
+
         log.debug('Starting search worker thread %d for user %s', i, account['username'])
         t = Thread(target=search_worker_thread_ss,
                    name='ss_search_worker_{}'.format(i),
@@ -307,9 +323,9 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
             # Create the API instance this will use
             api = PGoApi()
 
-            if proxy:
-                log.debug('Using proxy %s', proxy)
-                api.set_proxy({'http': proxy, 'https': proxy})
+            if account['proxy']:
+                log.debug('Using proxy %s', account['proxy'])
+                api.set_proxy({'http': account['proxy'], 'https': account['proxy']})
 
             # Get current time
             loop_start_time = int(round(time.time() * 1000))
@@ -392,8 +408,8 @@ def search_worker_thread_ss(args, account, search_items_queue, parse_lock, encry
             log.debug('Entering search loop')
             # create api instance
             api = PGoApi()
-            if args.proxy:
-                api.set_proxy({'http': args.proxy, 'https': args.proxy})
+            if account['proxy']:
+                api.set_proxy({'http': account['proxy'], 'https': account['proxy']})
             api.activate_signature(encryption_lib_path)
             # search forever loop
             while True:
@@ -452,8 +468,9 @@ def check_login(args, account, api, position):
     api.set_position(position[0], position[1], position[2])
     while i < args.login_retries:
         try:
-            if args.proxy:
-                api.set_authentication(provider=account['auth_service'], username=account['username'], password=account['password'], proxy_config={'http': args.proxy, 'https': args.proxy})
+            if account['proxy']:
+                log.debug('check_login: Using proxy: %s',account['proxy'])
+                api.set_authentication(provider=account['auth_service'], username=account['username'], password=account['password'], proxy_config={'http': account['proxy'], 'https': account['proxy']})
             else:
                 api.set_authentication(provider=account['auth_service'], username=account['username'], password=account['password'])
             break
