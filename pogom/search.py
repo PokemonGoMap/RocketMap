@@ -469,7 +469,7 @@ def check_login(args, account, api, position):
     while i < args.login_retries:
         try:
             if account['proxy']:
-                log.debug('check_login: Using proxy: %s',account['proxy'])
+                log.debug('check_login: Using proxy: %s', account['proxy'])
                 api.set_authentication(provider=account['auth_service'], username=account['username'], password=account['password'], proxy_config={'http': account['proxy'], 'https': account['proxy']})
             else:
                 api.set_authentication(provider=account['auth_service'], username=account['username'], password=account['password'])
