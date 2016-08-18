@@ -24,6 +24,7 @@ var map
 var rawDataIsLoading = false
 var locationMarker
 var marker
+var moves
 
 var noLabelsStyle = [{
   featureType: 'poi',
@@ -998,14 +999,27 @@ function getTypeSpan (type) {
   return `<span style='padding: 2px 5px; text-transform: uppercase; color: white; margin-right: 2px; border-radius: 4px; font-size: 0.8em; vertical-align: text-bottom; background-color: ${type['color']}'>${type['type']}</span>`
 }
 
-function pokemonLabel (name, rarity, types, disappearTime, id, latitude, longitude, encounterId) {
+function pokemonLabel (name, rarity, types, disappearTime, id, latitude, longitude, encounterId, pokemon) {
   var disappearDate = new Date(disappearTime)
   var rarityDisplay = rarity ? '(' + rarity + ')' : ''
   var typesDisplay = ''
   $.each(types, function (index, type) {
     typesDisplay += getTypeSpan(type)
   })
-
+  var details = ''
+  if ('iv' in pokemon && pokemon['iv'] != null) {
+    details = `
+      <div>
+        IV: ${pokemon['iv'].toFixed(2)}  Details: ${pokemon['individual_attack']}/${pokemon['individual_defense']}/${pokemon['individual_stamina']}
+      </div>
+      <div>
+        Moves: ${moves[pokemon['move_1']]} / ${moves[pokemon['move_2']]}
+      </div>
+      <div>
+        Probability: ${pokemon['capture_probability_1'].toFixed(2)}/${pokemon['capture_probability_2'].toFixed(2)}/${pokemon['capture_probability_3'].toFixed(3)}
+      </div>
+      `
+  }
   var contentstring = `
     <div>
       <b>${name}</b>
@@ -1024,6 +1038,7 @@ function pokemonLabel (name, rarity, types, disappearTime, id, latitude, longitu
     <div>
       Location: ${latitude.toFixed(6)}, ${longitude.toFixed(7)}
     </div>
+      ${details}
     <div>
       <a href='javascript:excludePokemon(${id})'>Exclude</a>&nbsp;&nbsp
       <a href='javascript:notifyAboutPokemon(${id})'>Notify</a>&nbsp;&nbsp
@@ -1168,7 +1183,7 @@ function setupPokemonMarker (item, skipNotification, isBounceDisabled) {
   })
 
   marker.infoWindow = new google.maps.InfoWindow({
-    content: pokemonLabel(item['pokemon_name'], item['pokemon_rarity'], item['pokemon_types'], item['disappear_time'], item['pokemon_id'], item['latitude'], item['longitude'], item['encounter_id']),
+    content: pokemonLabel(item['pokemon_name'], item['pokemon_rarity'], item['pokemon_types'], item['disappear_time'], item['pokemon_id'], item['latitude'], item['longitude'], item['encounter_id'], item),
     disableAutoPan: true
   })
 
@@ -1847,6 +1862,10 @@ $(function () {
   if (Store.get('startAtUserLocation')) {
     centerMapOnLocation()
   }
+
+  $.getJSON('static/dist/data/moves.min.json').done(function (data) {
+    moves = data
+  })
 
   $selectExclude = $('#exclude-pokemon')
   $selectPokemonNotify = $('#notify-pokemon')

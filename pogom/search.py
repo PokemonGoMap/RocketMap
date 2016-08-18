@@ -319,6 +319,7 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
 
                 # The loop to try very hard to scan this step
                 failed_total = 0
+
                 while True:
 
                     # After so many attempts, let's get out of here
@@ -353,7 +354,7 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
                     # Got the response, lock for parsing and do so (or fail, whatever)
                     with parse_lock:
                         try:
-                            parse_map(response_dict, step_location)
+                            parse_map(api, response_dict, step_location)
                             log.debug('Search step %s completed', step)
                             search_items_queue.task_done()
                             break  # All done, get out of the request-retry loop

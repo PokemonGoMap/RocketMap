@@ -18,7 +18,7 @@ from . import config
 from .utils import get_pokemon_name, get_pokemon_rarity, get_pokemon_types, get_args, send_to_webhook
 from .transform import transform_from_wgs_to_gcj
 from .customLog import printPokemon
-
+import time
 log = logging.getLogger(__name__)
 
 args = get_args()
@@ -77,9 +77,34 @@ class Pokemon(BaseModel):
     latitude = DoubleField()
     longitude = DoubleField()
     disappear_time = DateTimeField(index=True)
+    iv = DoubleField(null=True)
+    height = DoubleField(null=True)
+    individual_attack = IntegerField(null=True)
+    individual_defense = IntegerField(null=True)
+    individual_stamina = IntegerField(null=True)
+    move_1 = IntegerField(null=True)
+    move_2 = IntegerField(null=True)
+    stamina = IntegerField(null=True)
+    stamina_max = IntegerField(null=True)
+    weight = DoubleField(null=True)
+    capture_probability_1 = DoubleField(null=True)
+    capture_probability_2 = DoubleField(null=True)
+    capture_probability_3 = DoubleField(null=True)
 
     class Meta:
         indexes = ((('latitude', 'longitude'), False),)
+
+    @staticmethod
+    def get_encountered_pokemon(encounter_id):
+        query = (Pokemon
+                 .select()
+                 .where(Pokemon.encounter_id == encounter_id)
+                 .dicts()
+                 )
+        pokemon = []
+        for a in query:
+            pokemon.append(a)
+        return pokemon
 
     @staticmethod
     def get_active(swLat, swLng, neLat, neLng):
@@ -373,12 +398,45 @@ class Versions(flaskDb.Model):
         primary_key = False
 
 
-def parse_map(map_dict, step_location):
+def construct_pokemon_dict(pokemons, p, encounter_result, d_t):
+    pokemons[p['encounter_id']] = {
+        'encounter_id': b64encode(str(p['encounter_id'])),
+        'spawnpoint_id': p['spawn_point_id'],
+        'pokemon_id': p['pokemon_data']['pokemon_id'],
+        'latitude': p['latitude'],
+        'longitude': p['longitude'],
+        'disappear_time': d_t,
+    }
+    if encounter_result is not None:
+        ecounter_info = encounter_result['responses']['ENCOUNTER']
+        capture_probability = ecounter_info['capture_probability']['capture_probability']
+        pokemon_info = ecounter_info['wild_pokemon']['pokemon_data']
+        attack = pokemon_info.get('individual_attack', 0)
+        defense = pokemon_info.get('individual_defense', 0)
+        stamina = pokemon_info.get('individual_stamina', 0)
+        iv = float(attack + defense + stamina) / 45
+        pokemons[p['encounter_id']].update({
+            'iv': iv,
+            'height': pokemon_info['height_m'],
+            'individual_attack': attack,
+            'individual_defense': defense,
+            'individual_stamina': stamina,
+            'move_1': pokemon_info['move_1'],
+            'move_2': pokemon_info['move_2'],
+            'stamina': pokemon_info['stamina'],
+            'stamina_max': pokemon_info['stamina_max'],
+            'weight': pokemon_info['weight_kg'],
+            'capture_probability_1': capture_probability[0],
+            'capture_probability_2': capture_probability[1],
+            'capture_probability_3': capture_probability[2]
+        })
+
+
+def parse_map(api, map_dict, step_location):
     pokemons = {}
     pokestops = {}
     gyms = {}
     scanned = {}
-
     cells = map_dict['responses']['GET_MAP_OBJECTS']['map_cells']
     for cell in cells:
         if config['parse_pokemon']:
@@ -395,15 +453,14 @@ def parse_map(map_dict, step_location):
 
                 printPokemon(p['pokemon_data']['pokemon_id'], p['latitude'],
                              p['longitude'], d_t)
-                pokemons[p['encounter_id']] = {
-                    'encounter_id': b64encode(str(p['encounter_id'])),
-                    'spawnpoint_id': p['spawn_point_id'],
-                    'pokemon_id': p['pokemon_data']['pokemon_id'],
-                    'latitude': p['latitude'],
-                    'longitude': p['longitude'],
-                    'disappear_time': d_t
-                }
-
+                result = None
+                if args.scan_iv and not Pokemon.get_encountered_pokemon(p['encounter_id']):
+                    result = api.encounter(encounter_id=p['encounter_id'],
+                                           spawn_point_id=p['spawn_point_id'],
+                                           player_latitude=step_location[0],
+                                           player_longitude=step_location[1])
+                    time.sleep(args.encounter_delay)
+                construct_pokemon_dict(pokemons, p, result, d_t)
                 webhook_data = {
                     'encounter_id': b64encode(str(p['encounter_id'])),
                     'spawnpoint_id': p['spawn_point_id'],
@@ -416,7 +473,6 @@ def parse_map(map_dict, step_location):
                 }
 
                 send_to_webhook('pokemon', webhook_data)
-
         for f in cell.get('forts', []):
             if config['parse_pokestops'] and f.get('type') == 1:  # Pokestops
                 if 'active_fort_modifier' in f:

@@ -62,6 +62,12 @@ def get_args():
     parser.add_argument('-sd', '--scan-delay',
                         help='Time delay between requests in scan threads',
                         type=float, default=10)
+    parser.add_argument('-ed', '--encounter-delay',
+                        help='Time delay between encounter pokemon in scan threads',
+                        type=float, default=1)
+    parser.add_argument('-si', '--scan-iv',
+                        help='Scan the IV of the pokemon',
+                        action='store_true', default=False)
     parser.add_argument('-ld', '--login-delay',
                         help='Time delay between each login attempt',
                         type=float, default=5)
