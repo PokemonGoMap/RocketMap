@@ -24,6 +24,7 @@ var map
 var rawDataIsLoading = false
 var locationMarker
 var marker
+var storeZoom = true
 
 var noLabelsStyle = [{
   featureType: 'poi',
@@ -761,6 +762,10 @@ var StoreOptions = {
   'iconSizeModifier': {
     default: 0,
     type: StoreTypes.Number
+  },
+  'zoomLevel': {
+    default: 16,
+    type: StoreTypes.Number
   }
 }
 
@@ -820,7 +825,7 @@ function initMap () { // eslint-disable-line no-unused-vars
       lat: centerLat,
       lng: centerLng
     },
-    zoom: 16,
+    zoom: Store.get('zoomLevel'),
     fullscreenControl: true,
     streetViewControl: false,
     mapTypeControl: false,
@@ -878,6 +883,13 @@ function initMap () { // eslint-disable-line no-unused-vars
 
   map.addListener('maptypeid_changed', function (s) {
     Store.set('map_style', this.mapTypeId)
+  })
+
+  map.addListener('zoom_changed', function () {
+    if (storeZoom !== false) {
+      Store.set('zoomLevel', this.getZoom())
+    }
+    storeZoom = true
   })
 
   map.setMapTypeId(Store.get('map_style'))
@@ -1702,6 +1714,7 @@ function centerMap (lat, lng, zoom) {
   map.setCenter(loc)
 
   if (zoom) {
+    storeZoom = false
     map.setZoom(zoom)
   }
 }
