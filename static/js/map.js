@@ -620,7 +620,7 @@ var mapData = {
   spawnpoints: {}
 }
 var gymTypes = ['Uncontested', 'Mystic', 'Valor', 'Instinct']
-var audio = new Audio('static/sounds/ding.mp3')
+createjs.Sound.registerSound('static/sounds/ding.mp3', 'ding')
 var pokemonSprites = {
   normal: {
     columns: 12,
@@ -1163,7 +1163,7 @@ function setupPokemonMarker (item, skipNotification, isBounceDisabled) {
   if (notifiedPokemon.indexOf(item['pokemon_id']) > -1 || notifiedRarity.indexOf(item['pokemon_rarity']) > -1) {
     if (!skipNotification) {
       if (Store.get('playSound')) {
-        audio.play()
+        createjs.Sound.play('ding')
       }
       sendNotification('A wild ' + item['pokemon_name'] + ' appeared!', 'Click to load map', 'static/icons/' + item['pokemon_id'] + '.png', item['latitude'], item['longitude'])
     }
@@ -1570,21 +1570,18 @@ function sendNotification (title, text, icon, lat, lng) {
     return false // Notifications are not present in browser
   }
 
-  if (Notification.permission !== 'granted') {
-    Notification.requestPermission()
-  } else {
-    var notification = new Notification(title, {
+  if (Push.isSupported) {
+    Push.create(title, {
       icon: icon,
       body: text,
-      sound: 'sounds/ding.mp3'
+      vibrate: 1000,
+      onClick: function () {
+        window.focus()
+        this.close()
+
+        centerMap(lat, lng, 20)
+      }
     })
-
-    notification.onclick = function () {
-      window.focus()
-      notification.close()
-
-      centerMap(lat, lng, 20)
-    }
   }
 }
 
@@ -1739,14 +1736,12 @@ function isTouchDevice () {
 //
 
 $(function () {
-  if (!Notification) {
+  if (!Push.isSupported) {
     console.log('could not load notifications')
     return
   }
 
-  if (Notification.permission !== 'granted') {
-    Notification.requestPermission()
-  }
+  Push.Permission.request()
 })
 
 $(function () {
