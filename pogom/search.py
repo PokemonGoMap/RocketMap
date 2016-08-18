@@ -143,15 +143,16 @@ def SbSearch(Slist, T):
 def switch_status_printer(display_enabled):
     while True:
         # Wait for the user to press enter.
-        temp = raw_input()
+        raw_input()
 
         # Switch between logging and display.
-        if display_enabled[0] == True:
+        if display_enabled[0]:
             logging.disable(logging.NOTSET)
             display_enabled[0] = False
         else:
             logging.disable(logging.ERROR)
             display_enabled[0] = True
+
 
 # Thread to print out the status of each worker
 def status_printer(threadStatus, search_items_queue):
