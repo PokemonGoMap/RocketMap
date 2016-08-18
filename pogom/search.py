@@ -324,11 +324,11 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
                         search_items_queue.task_done()
 
                         # Sleep for 2 hours, print a log message every 5 minutes.
-                        sleep_time = 0
-                        sleep_started = time.strftime("%H:%M")
-                        while sleep_time < (2 * 60 * 60):
-                            log.error('Worker %s failed, possibly banned account. Sleeping for 2 hours from %s', account['username'], sleep_started)
-                            sleep_time += 300
+                        long_sleep_time = 0
+                        long_sleep_started = time.strftime("%H:%M")
+                        while long_sleep_time < (2 * 60 * 60):
+                            log.error('Worker %s failed, possibly banned account. Sleeping for 2 hours from %s', account['username'], long_sleep_started)
+                            long_sleep_time += 300
                             time.sleep(300)
                         break
 
@@ -406,11 +406,11 @@ def search_worker_thread_ss(args, account, search_items_queue, parse_lock, encry
                             search_items_queue.task_done()
 
                             # Sleep for 2 hours, print a log message every 5 minutes.
-                            sleep_time = 0
-                            sleep_started = time.strftime("%H:%M")
-                            while sleep_time < (2 * 60 * 60):
-                                log.error('Worker %s failed, possibly banned account. Sleeping for 2 hours from %s', account['username'], sleep_started)
-                                sleep_time += 300
+                            long_sleep_time = 0
+                            long_sleep_started = time.strftime("%H:%M")
+                            while long_sleep_time < (2 * 60 * 60):
+                                log.error('Worker %s failed, possibly banned account. Sleeping for 2 hours from %s', account['username'], long_sleep_started)
+                                long_sleep_time += 300
                                 time.sleep(300)
                             break
                         sleep_time = args.scan_delay * (1 + failed_total)
