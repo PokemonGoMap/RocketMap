@@ -23,6 +23,7 @@ import json
 import os
 import random
 import time
+import geopy
 import geopy.distance as geopy_distance
 
 from operator import itemgetter
@@ -102,6 +103,15 @@ def generate_location_steps(initial_loc, step_count, step_distance):
                     loc = get_new_coords(loc, xdist / 2, EAST)
                 yield (loc[0], loc[1], 0)
         ring += 1
+
+
+# Apply a location jitter
+def jitterLocation(location=None, maxMeters=10):
+    origin = geopy.Point(location[0], location[1])
+    b = random.randint(0, 360)
+    d = math.sqrt(random.random()) * (float(maxMeters) / 1000)
+    destination = geopy_distance.VincentyDistance(kilometers=d).destination(origin, b)
+    return (destination.latitude, destination.longitude, location[2])
 
 
 # gets the current time past the hour
@@ -451,8 +461,17 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
                     # Ok, let's get started -- check our login status
                     check_login(args, account, api, step_location)
 
+                    # create scan_location to send to the api based off of step_location
+                    if args.jitter:
+                        # if requested, apply jitter to scan_location
+                        scan_location = jitterLocation(step_location)
+                        log.debug("Jittered to: %f/%f/%f", scan_location[0], scan_location[1], scan_location[2])
+                    else:
+                        # Just use the original coordinates
+                        scan_location = step_location
+
                     # Make the actual request (finally!)
-                    response_dict = map_request(api, step_location)
+                    response_dict = map_request(api, scan_location)
 
                     # G'damnit, nothing back. Mark it up, sleep, carry on
                     if not response_dict:
@@ -542,8 +561,16 @@ def search_worker_thread_ss(args, account, search_items_queue, parse_lock, encry
                             break
                         sleep_time = args.scan_delay * (1 + failed_total)
                         check_login(args, account, api, step_location)
+                        # create scan_location to send to the api based off of step_location
+                        if args.jitter:
+                            # if requested, apply jitter to scan_location
+                            scan_location = jitterLocation(step_location)
+                            log.debug("Jittered to: %f/%f/%f", scan_location[0], scan_location[1], scan_location[2])
+                        else:
+                            # Just use the original coordinates
+                            scan_location = step_location
                         # make the map request
-                        response_dict = map_request(api, step_location)
+                        response_dict = map_request(api, scan_location)
                         # check if got anything back
                         if not response_dict:
                             log.error('Search step %d area download failed, retyring request in %g seconds', step, sleep_time)
