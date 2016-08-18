@@ -353,7 +353,8 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
                         log.error('User {}: search area download failed: not logged in'.format(account['username'],e))
                         account['disabled'] = True
                         with open("loginerrors.log", "a") as myfile:
-                            myfile.write(str(time_now) + "\t" + str(account['username']) + "\t" + str(response_dict))
+                            myfile.write(str(time_now) + "\t" + str(account['username']) + "\t Reason: " + str(response_dict))
+                            myfile.write("\n")
                         return
                         
                     elif not response_dict or type(response_dict) != type({}):
@@ -366,7 +367,8 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
                             account['disabled'] = True
                             log.error('User {}: Exceeded map download retries: removed worker'.format(account['username']))
                             with open("loginerrors.log", "a") as myfile:
-                                myfile.write(str(time_now) + "\t" + str(account['username']) + "\t" + str(response_dict))
+                                myfile.write(str(time_now) + "\t" + str(account['username']) + "\t Reason: " + str(response_dict))
+                                myfile.write("\n")
                         time.sleep(sleep_time)
                         continue
 
@@ -375,6 +377,7 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
                         try:
                             parse_map(response_dict, step_location)
                             log.debug('Search step %s completed', step)
+                            account['fails'] = 0
                             search_items_queue.task_done()
                             break  # All done, get out of the request-retry loop
                         except KeyError as e:
@@ -401,7 +404,8 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
                             if account['fails'] > 3:
                                 account['disabled'] = True
                                 with open("loginerrors.log", "a") as myfile:
-                                    myfile.write(str(time_now) + "\t" + str(account['username']) + "\t" + str(e))
+                                    myfile.write(str(time_now) + "\t" + str(account['username']) + "\t Reason: " + str(response_dict))
+                                    myfile.write("\n")
                                 log.error('User {}: Exceeded map parsing retries: removed worker'.format(account['username']))
                             break
 
