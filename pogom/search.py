@@ -278,7 +278,7 @@ def search_overseer_thread_ss(args, new_location_queue, pause_bit, encryption_li
     # find the inital location (spawn thats 60sec old)
     pos = SbSearch(spawns, (curSec() + 3540) % 3600)
     while True:
-        while timeDif(curSec(), spawns[pos]['time']) < 60:
+        while timeDif(curSec(), spawns[pos]['time']) < 30:
             time.sleep(1)
         # make location with a dummy height (seems to be more reliable than 0 height)
         location = [spawns[pos]['lat'], spawns[pos]['lng'], 40.32]
@@ -391,8 +391,8 @@ def search_worker_thread_ss(args, account, search_items_queue, parse_lock, encry
             while True:
                 # Grab the next thing to search (when available)
                 step, step_location, spawntime = search_items_queue.get()
-                log.info('Searching step %d, remaining %d', step, search_items_queue.qsize())
-                if timeDif(curSec(), spawntime) < 840:  # if we arnt 14mins too late
+                if timeDif(curSec(), spawntime) < args.max_dt:  # If we aren't 'args.max_dt' seconds too late
+                    log.info('Searching step %d, remaining %d', step, search_items_queue.qsize())
                     # set position
                     api.set_position(*step_location)
                     # try scan (with retries)
