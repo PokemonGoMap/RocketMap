@@ -150,7 +150,6 @@ def switch_status_printer(display_enabled, current_page):
         elif command.isdigit():
                 current_page[0] = int(command)
 
-
 # Thread to print out the status of each worker
 def status_printer(threadStatus, search_items_queue):
     display_enabled = [True]
@@ -166,19 +165,20 @@ def status_printer(threadStatus, search_items_queue):
 
     while True:
         if display_enabled[0]:
-            # Clear the screen
-            os.system('cls' if os.name == 'nt' else 'clear')
 
             # Get the terminal size
             width, height = terminalsize.get_terminal_size()
             # Queue and overseer take 2 lines.  Switch message takes up 2 lines.  Remove an extra 2 for things like screen status lines.
             usable_height = height - 6
 
+            # Create a list to hold all the status lines, so they can be printed all at once to reduce flicker
+            status_text = []
+
             # Print the queue length
-            print 'Queue: {} items'.format(search_items_queue.qsize())
+            status_text.append('Queue: {} items'.format(search_items_queue.qsize()))
 
             # Print status of overseer
-            print 'Overseer: {}'.format(threadStatus['Overseer']['message'])
+            status_text.append('Overseer: {}'.format(threadStatus['Overseer']['message']))
 
             # Calculate the total number of pages.  Subtracting 1 for the overseer.
             total_pages = math.ceil((len(threadStatus) - 1)/float(usable_height))
@@ -206,11 +206,15 @@ def status_printer(threadStatus, search_items_queue):
                         break
 
                     if 'skip' in threadStatus[item]:
-                        print '{} - Success: {}, Failed: {}, No Items: {}, Skipped: {} - {}'.format(item, threadStatus[item]['success'], threadStatus[item]['fail'], threadStatus[item]['noitems'], threadStatus[item]['skip'], threadStatus[item]['message'])
+                        status_text.append('{} - Success: {}, Failed: {}, No Items: {}, Skipped: {} - {}'.format(item, threadStatus[item]['success'], threadStatus[item]['fail'], threadStatus[item]['noitems'], threadStatus[item]['skip'], threadStatus[item]['message']))
                     else:
-                        print '{} - Success: {}, Failed: {}, No Items: {} - {}'.format(item, threadStatus[item]['success'], threadStatus[item]['fail'], threadStatus[item]['noitems'], threadStatus[item]['message'])
-            print 'Page {}/{}.  Type page number and <ENTER> to switch pages.  Press <ENTER> alone to switch between status and log view'.format(current_page[0], total_pages)
-        time.sleep(0.5)
+                        status_text.append('{} - Success: {}, Failed: {}, No Items: {} - {}'.format(item, threadStatus[item]['success'], threadStatus[item]['fail'], threadStatus[item]['noitems'], threadStatus[item]['message']))
+            status_text.append('Page {}/{}.  Type page number and <ENTER> to switch pages.  Press <ENTER> alone to switch between status and log view'.format(current_page[0], total_pages))
+            # Clear the screen
+            os.system('cls' if os.name == 'nt' else 'clear')
+            # Print status
+            print "\n".join(status_text)
+        time.sleep(1)
 
 
 # The main search loop that keeps an eye on the over all process
