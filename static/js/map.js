@@ -1258,7 +1258,7 @@ function setupPokestopMarker (item) {
   return marker
 }
 
-function getColorByDate (value) {
+function getColorByDate(value, hue) {
   // Changes the color from red to green over 15 mins
   var diff = (Date.now() - value) / 1000 / 60 / 15
 
@@ -1266,9 +1266,9 @@ function getColorByDate (value) {
     diff = 1
   }
 
-  // value from 0 to 1 - Green to Red
-  var hue = ((1 - diff) * 120).toString(10)
-  return ['hsl(', hue, ',100%,50%)'].join('')
+  // value from 0 to 1 - color to white
+  var lightness = (50 + (diff * 50)).toString(10)
+  return ['hsl(',hue,',90%,',lightness,'%)'].join('')
 }
 
 function setupScannedMarker (item) {
@@ -1279,8 +1279,8 @@ function setupScannedMarker (item) {
     clickable: false,
     center: circleCenter,
     radius: 70, // metres
-    fillColor: getColorByDate(item['last_modified']),
-    strokeWeight: 1
+    fillColor: getColorByDate(item['last_modified'], item['hue']),
+    strokeWeight: 0
   })
 
   return marker
@@ -1508,7 +1508,7 @@ function processScanned (i, item) {
 
   if (scanId in mapData.scanned) {
     mapData.scanned[scanId].marker.setOptions({
-      fillColor: getColorByDate(item['last_modified'])
+      fillColor: getColorByDate(item['last_modified'],item['hue'])
     })
   } else { // add marker to map and item to dict
     if (item.marker) {
