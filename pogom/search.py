@@ -182,7 +182,7 @@ def status_printer(threadStatus, search_items_queue, db_updates_queue, wh_queue)
             status_text.append('{} Overseer: {}'.format(threadStatus['Overseer']['method'], threadStatus['Overseer']['message']))
 
             # Calculate the total number of pages.  Subtracting 1 for the overseer.
-            total_pages = math.ceil((len(threadStatus) - 1)/float(usable_height))
+            total_pages = math.ceil((len(threadStatus) - 1) / float(usable_height))
 
             # Prevent moving outside the valid range of pages
             if current_page[0] > total_pages:
