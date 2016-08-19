@@ -12,10 +12,10 @@ def check_proxy(proxy):
 
     proxy_test_url = 'https://sso.pokemon.com/'
 
-    log.debug('Checking proxy %s ...', proxy)
+    log.info('Checking proxy %s ...', proxy)
 
     try:
-        proxy_response = requests.get(proxy_test_url, proxies={'http': proxy, 'https': proxy})
+        proxy_response = requests.get(proxy_test_url, proxies={'http': proxy, 'https': proxy}, timeout=5)
 
         if proxy_response.status_code == 200:
             log.info('Proxy %s is ok', proxy)
