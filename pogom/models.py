@@ -475,16 +475,16 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue):
                             'longitude': f['longitude'] + 0.0001,
                             'disappear_time': d_t
                         }
-                        webhook_data = {
-                            'encounter_id': encounter_id,
-                            'pokemon_id': lure_info['active_pokemon_id'],
-                            'pokestop_id': f['id'],
-                            'latitude': f['latitude'],
-                            'longitude': f['longitude'],
-                            'disappear_time': calendar.timegm(d_t.timetuple()),
-                            'active_fort_modifier': active_fort_modifier
-                        }
-                        send_to_webhook('lure_pokemon', webhook_data)
+                        if args.webhooks:
+                            wh_update_queue.put(('lure_pokemon', {
+                                'encounter_id': encounter_id,
+                                'pokestop_id': f['id'],
+                                'pokemon_id': lure_info['active_pokemon_id'],
+                                'latitude': f['latitude'],
+                                'longitude': f['longitude'],
+                                'disappear_time': calendar.timegm(d_t.timetuple()),
+                                'active_fort_modifier': active_fort_modifier
+                            }))
 
                 else:
                     lure_expiration, active_fort_modifier = None, None
@@ -563,13 +563,13 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue):
              len(gyms))
 
     db_update_queue.put((ScannedLocation, {0: {
-        'last_modified': calendar.timegm(gyms[f['id']]['last_modified'].timetuple()),
         'latitude': step_location[0],
         'longitude': step_location[1],
         'last_modified': datetime.utcnow()
     }}))
 
     return len(pokemons) + len(lure_pokemons) + len(pokestops) + len(gyms)
+
 
 def db_updater(args, q):
     # The forever loop
