@@ -11,6 +11,10 @@ log = logging.getLogger(__name__)
 def send_to_webhook(message_type, message):
     args = get_args()
 
+    if not args.webhooks:
+        # what are you even doing here...
+        return
+
     data = {
         'type': message_type,
         'message': message

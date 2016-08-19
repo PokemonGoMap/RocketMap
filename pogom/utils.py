@@ -149,6 +149,8 @@ def get_args():
                         type=int, default=1)
     parser.add_argument('--ssl-certificate', help='Path to SSL certificate file')
     parser.add_argument('--ssl-privatekey', help='Path to SSL private key file')
+    parser.add_argument('-ps', '--print-status', action='store_true',
+                        help='Show a status screen instead of log messages. Can switch between status and logs by pressing enter.', default=False)
     parser.set_defaults(DEBUG=False)
 
     args = parser.parse_args()
@@ -226,7 +228,7 @@ def insert_mock_data(position):
 
     latitude, longitude = float(position[0]), float(position[1])
 
-    locations = [l for l in generate_location_steps((latitude, longitude), num_pokemon)]
+    locations = [l for l in generate_location_steps((latitude, longitude), num_pokemon, 0.07)]
     disappear_time = datetime.now() + timedelta(hours=1)
 
     detect_time = datetime.now()

@@ -448,7 +448,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue):
                 }
 
                 # Send all pokéstops to webhooks
-                if not args.webhook_updates_only:
+                if args.webhooks and not args.webhook_updates_only:
                     # Explicitly set 'webhook_data', in case we want to change the information pushed to webhooks,
                     # similar to above and previous commits.
                     l_e = None
@@ -480,7 +480,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue):
                 }
 
                 # Send gyms to webhooks
-                if not args.webhook_updates_only:
+                if args.webhooks and not args.webhook_updates_only:
                     # Explicitly set 'webhook_data', in case we want to change the information pushed to webhooks,
                     # similar to above and previous commits.
                     wh_update_queue.put(('gym', {
@@ -512,7 +512,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue):
         'last_modified': datetime.utcnow()
     }}))
 
-    return True
+    return len(pokemons) + len(pokestops) + len(gyms)
 
 
 def clean_database():
