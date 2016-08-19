@@ -204,17 +204,7 @@ class Pokemon(BaseModel):
                  .dicts()
                  )
 
-        # Performance: Disable the garbage collector prior to creating a (potentially) large dict with append()
-        gc.disable()
-
-        appearances = []
-        for a in query:
-            appearances.append(a)
-
-        # Re-enable the GC.
-        gc.enable()
-
-        return appearances
+        return list(query)
 
     @classmethod
     def get_spawnpoints(cls, swLat, swLng, neLat, neLng):
@@ -365,17 +355,7 @@ class Gym(BaseModel):
                             (Gym.longitude <= neLng))
                      .dicts())
 
-        # Performance: Disable the garbage collector prior to creating a (potentially) large dict with append()
-        gc.disable()
-
-        gyms = []
-        for g in query:
-            gyms.append(g)
-
-        # Re-enable the GC.
-        gc.enable()
-
-        return gyms
+        return list(query)
 
 
 class ScannedLocation(BaseModel):
@@ -398,18 +378,7 @@ class ScannedLocation(BaseModel):
                         (ScannedLocation.longitude <= neLng))
                  .dicts())
 
-        # Disable the garbage collector prior to creating a (potentially) large dict with append()
-        gc.disable()
-
-        scans = []
-        for s in query:
-            scans.append(s)
-
-        # Re-enable the GC.
-        gc.enable()
-
-        return scans
-
+        return list(query)
 
 class Versions(flaskDb.Model):
     key = CharField()
