@@ -6,24 +6,71 @@ Docker is a great way to run "containerized" applications easily and without ins
 
 To get started, [install Docker by following their instructions](https://www.docker.com/products/docker).
 
-## First Install
+Some VPS may have an image you can deploy that already has Dockers installed.
 
-For your first install, there's only a few steps. Let's get to it!
+- [Docker's commandline reference](https://docs.docker.com/engine/reference/commandline/)
 
-### Start the Map 
+### Downloading image
+Run this command to download the map files (image)
+```
+docker pull sych74/pokemongo-map
+```
 
-You'll need to change the command line params. If you don't know what they are, you can run `docker run --rm chuyskywalker/pokemongo-map -h` and you'll get the full help text. The command below examples out a very basic setup.
+### Commandline params
+
+This will print out the parmaters that you can use for your map
+```
+docker run --rm sych74/pokemongo-map:develop -h
+```
+
+### Installing map (default settings)
+
+Run the following command with your `LOGINTYPE`,`USERNAME`, `PASSWORD`, `LOCATION`, `GMAPSKEY` and any add any other params you would like to use.
+
+Login Type:  `google` or `ptc` (use your email as the username for google)
 
 ```
 docker run -d --name pogomap \
-  chuyskywalker/pokemongo-map \
-    -a ptc -u your -p login \
-    -k 'google-maps-key' \
-    -l 'coords' \
-    -st 5
+-p 80 \
+sych74/pokemongo-map:develop \
+-a LOGINTYPE -u USERNAME -p PASSWORD \
+-l "LOCATION" \
+--gmaps-key "GMAPSKEY" \
+-st 10
 ```
 
-If you've like to see that the application is outputting (console logs) you can run `docker logs -f pogomap` and just type `ctrl-c` when you're done watching.
+### Stopping and Starting Map
+
+Once you already have a container with the map all we have to do it start and stop it by it's container name
+```
+docker stop pogomap
+docker start pogomap
+```
+
+### Viewing Map logs
+
+You can run this command to view the logs and exit by hitting `ctrl-c`
+
+```
+docker logs -f pogomap
+```
+
+## Updating Map version
+
+Check https://hub.docker.com/r/sych74/pokemongo-map for updates
+
+When you update, you remove all the current containers, pull the latest version, and restart everything fresh.
+
+```
+docker rm -f pogomap
+docker pull sych74/pokemongo-map
+```
+
+Now just do the command from before to install again
+
+If you don't wish to lose data you have collected then I suggest using a database like [MariaDB](https://pgm.readthedocs.io/en/develop/extras/mysql.html)
+
+You can file the sqlite file under the /var/lib/docker/vfs/`<container name>`/usr/src/app/pogom.db and you can back that up if mysql is not an option for you.
 
 ### Start an SSL Tunnel
 
@@ -55,19 +102,6 @@ https://random-string-here.ngrok.io
 ```
 
 Open that up and you're ready to rock!
-
-## Updating Versions
-
-When you update, you remove all the current containers, pull the latest version, and restart everything.
-
-Run:
-
-```
-docker rm -f pogomap ngrok
-docker pull chuyskywalker/pokemongo-map
-```
-
-Then redo the steps from "First Install" and you'll be on the latest version!
 
 ## Running on docker cloud 
 
