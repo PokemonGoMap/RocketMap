@@ -148,7 +148,7 @@ def switch_status_printer(display_enabled):
 
 
 # Thread to print out the status of each worker
-def status_printer(threadStatus, search_items_queue):
+def status_printer(threadStatus, search_items_queue, db_updates_queue, wh_queue):
     display_enabled = [True]
     logging.disable(logging.ERROR)
 
@@ -165,10 +165,10 @@ def status_printer(threadStatus, search_items_queue):
             os.system('cls' if os.name == 'nt' else 'clear')
 
             # Print the queue length
-            print 'Queue: {} items'.format(search_items_queue.qsize())
+            print 'Queues: {} scans, {} db updates, {} webhook'.format(search_items_queue.qsize(), db_updates_queue.qsize(), wh_queue.qsize())
 
             # Print status of overseer
-            print 'Overseer: {}'.format(threadStatus['Overseer']['message'])
+            print '{} Overseer: {}'.format(threadStatus['Overseer']['method'], threadStatus['Overseer']['message'])
 
             # Print the status of each worker, sorted by worker number
             for item in sorted(threadStatus):
@@ -193,12 +193,13 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
     threadStatus['Overseer'] = {}
     threadStatus['Overseer']['message'] = "Initializing"
     threadStatus['Overseer']['type'] = "Overseer"
+    threadStatus['Overseer']['method'] = "Hex Grid"
 
     if(args.print_status):
         log.info('Starting status printer thread')
         t = Thread(target=status_printer,
                    name='status_printer',
-                   args=(threadStatus, search_items_queue))
+                   args=(threadStatus, search_items_queue, db_updates_queue, wh_queue))
         t.daemon = True
         t.start()
 
@@ -318,12 +319,13 @@ def search_overseer_thread_ss(args, new_location_queue, pause_bit, encryption_li
     threadStatus['Overseer'] = {}
     threadStatus['Overseer']['message'] = "Initializing"
     threadStatus['Overseer']['type'] = "Overseer"
+    threadStatus['Overseer']['method'] = "Spawn Scan"
 
     if(args.print_status):
         log.info('Starting status printer thread')
         t = Thread(target=status_printer,
                    name='status_printer',
-                   args=(threadStatus, search_items_queue))
+                   args=(threadStatus, search_items_queue, db_updates_queue, wh_queue))
         t.daemon = True
         t.start()
 
