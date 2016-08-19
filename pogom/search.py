@@ -35,6 +35,7 @@ from pgoapi import utilities as util
 from pgoapi.exceptions import AuthException
 
 from .models import parse_map, Pokemon
+from .proxy import check_proxy
 
 log = logging.getLogger(__name__)
 
@@ -160,7 +161,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
             if last_proxy_index >= len(args.proxy):
                 last_proxy_index = 0
 
-            account['proxy'] = args.proxy[last_proxy_index]
+            account['proxy'] = check_proxy(args.proxy[last_proxy_index])
             last_proxy_index = last_proxy_index + 1
         else:
             account['proxy'] = False
@@ -268,7 +269,7 @@ def search_overseer_thread_ss(args, new_location_queue, pause_bit, encryption_li
             if last_proxy_index >= len(args.proxy):
                 last_proxy_index = 0
 
-            account['proxy'] = args.proxy[last_proxy_index]
+            account['proxy'] = check_proxy(args.proxy[last_proxy_index])
             last_proxy_index = last_proxy_index + 1
         else:
             account['proxy'] = False
