@@ -381,6 +381,7 @@ class ScannedLocation(BaseModel):
 
         return list(query)
 
+
 class Versions(flaskDb.Model):
     key = CharField()
     val = IntegerField()
