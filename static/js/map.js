@@ -1260,7 +1260,7 @@ function getColorByDate(value, hue) {
 
   // value from 0 to 1 - color to white
   var lightness = (50 + (diff * 50)).toString(10)
-  return ['hsl(',hue,',90%,',lightness,'%)'].join('')
+  return ['hsl(', hue, ',90%,', lightness, '%)'].join('')
 }
 
 function setupScannedMarker (item) {
