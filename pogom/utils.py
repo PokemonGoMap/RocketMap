@@ -9,8 +9,9 @@ import json
 from datetime import datetime, timedelta
 import logging
 import shutil
-import requests
 import platform
+import pprint
+import time
 
 from . import config
 
@@ -85,9 +86,9 @@ def get_args():
                         help='Coordinates transformer for China',
                         action='store_true')
     parser.add_argument('-d', '--debug', help='Debug Mode', action='store_true')
-    parser.add_argument('-m', '--mock',
-                        help='Mock mode. Starts the web server but not the background thread.',
-                        action='store_true', default=False)
+    parser.add_argument('-m', '--mock', type=str,
+                        help='Mock mode - point to a fpgo endpoint instead of using the real PogoApi, ec: http://127.0.0.1:9090',
+                        default='')
     parser.add_argument('-ns', '--no-server',
                         help='No-Server Mode. Starts the searcher but not the Webserver.',
                         action='store_true', default=False)
@@ -138,12 +139,18 @@ def get_args():
     parser.add_argument('--db-port', help='Port for the database', type=int, default=3306)
     parser.add_argument('--db-max_connections', help='Max connections (per thread) for the database',
                         type=int, default=5)
+    parser.add_argument('--db-threads', help='Number of db threads; increase if the db queue falls behind',
+                        type=int, default=1)
     parser.add_argument('-wh', '--webhook', help='Define URL(s) to POST webhook information to',
                         nargs='*', default=False, dest='webhooks')
     parser.add_argument('--webhook-updates-only', help='Only send updates (pokémon & lured pokéstops)',
                         action='store_true', default=False)
+    parser.add_argument('--wh-threads', help='Number of webhook threads; increase if the webhook queue falls behind',
+                        type=int, default=1)
     parser.add_argument('--ssl-certificate', help='Path to SSL certificate file')
     parser.add_argument('--ssl-privatekey', help='Path to SSL private key file')
+    parser.add_argument('-ps', '--print-status', action='store_true',
+                        help='Show a status screen instead of log messages. Can switch between status and logs by pressing enter.', default=False)
     parser.set_defaults(DEBUG=False)
 
     args = parser.parse_args()
@@ -221,7 +228,7 @@ def insert_mock_data(position):
 
     latitude, longitude = float(position[0]), float(position[1])
 
-    locations = [l for l in generate_location_steps((latitude, longitude), num_pokemon)]
+    locations = [l for l in generate_location_steps((latitude, longitude), num_pokemon, 0.07)]
     disappear_time = datetime.now() + timedelta(hours=1)
 
     detect_time = datetime.now()
@@ -303,26 +310,6 @@ def get_pokemon_types(pokemon_id):
     return map(lambda x: {"type": i8ln(x['type']), "color": x['color']}, pokemon_types)
 
 
-def send_to_webhook(message_type, message):
-    args = get_args()
-
-    data = {
-        'type': message_type,
-        'message': message
-    }
-
-    if args.webhooks:
-        webhooks = args.webhooks
-
-        for w in webhooks:
-            try:
-                requests.post(w, json=data, timeout=(None, 1))
-            except requests.exceptions.ReadTimeout:
-                log.debug('Response timeout on webhook endpoint %s', w)
-            except requests.exceptions.RequestException as e:
-                log.debug(e)
-
-
 def get_encryption_lib_path():
     # win32 doesn't mean necessarily 32 bits
     if sys.platform == "win32" or sys.platform == "cygwin":
@@ -368,3 +355,21 @@ def get_encryption_lib_path():
         raise Exception(err)
 
     return lib_path
+
+
+class Timer():
+
+    def __init__(self, name):
+        self.times = [(name, time.time(), 0)]
+
+    def add(self, step):
+        t = time.time()
+        self.times.append((step, t, round((t - self.times[-1][1]) * 1000)))
+
+    def checkpoint(self, step):
+        t = time.time()
+        self.times.append(('total @ ' + step, t, t - self.times[0][1]))
+
+    def output(self):
+        self.checkpoint('end')
+        pprint.pprint(self.times)
