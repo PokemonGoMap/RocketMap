@@ -16,3 +16,5 @@ _build_html
 beehive.*
 config/ssl.cert
 config/ssl.key
+config/*.pem
+config/*.key
