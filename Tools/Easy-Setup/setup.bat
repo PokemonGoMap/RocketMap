@@ -36,20 +36,20 @@ set /p PATH2= Specify Python path:
 )
 
 
-echo ;%PATH%; | find /C /I "%PATH2%" > temp.txt
-find /c "1" temp.txt
-if %errorlevel% equ 1 goto Notfound
+for /f "tokens=*" %%i in ('echo "%PATH%" ^| find /c /i "%PATH2%"') do set output=%%i
+if %output% equ 1 (
 goto found
+) else (
+goto notfound
+)
 
 :found
 cls
-del temp.txt
 echo Path is already set, skipping...
 goto Continue
 
 :notfound
 cls
-del temp.txt
 setx PATH "%PATH%;%PATH2%;%PATH2%\Scripts;"
 echo.
 echo Path set, continuing..
