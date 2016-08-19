@@ -731,7 +731,7 @@ var StoreOptions = {
     type: StoreTypes.JSON
   },
   'remember_location': {
-    default: { lat: centerLat, lon: centerLng },
+    default: { lat: centerLat, lng: centerLng },
     type: StoreTypes.JSON
   },
   'showGyms': {
