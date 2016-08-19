@@ -150,6 +150,7 @@ def switch_status_printer(display_enabled, current_page):
         elif command.isdigit():
                 current_page[0] = int(command)
 
+
 # Thread to print out the status of each worker
 def status_printer(threadStatus, search_items_queue, db_updates_queue, wh_queue):
     display_enabled = [True]
