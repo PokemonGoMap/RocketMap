@@ -1720,7 +1720,7 @@ function changeLocation (lat, lng) {
   changeSearchLocation(lat, lng).done(function () {
     map.setCenter(loc)
     searchMarker.setPosition(loc)
-    position: Store.get('remember_location')
+    Store.set('remember_location', {lat: lat, lng: lng})
   })
 }
 
