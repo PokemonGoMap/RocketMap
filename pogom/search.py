@@ -203,6 +203,18 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
         t.daemon = True
         t.start()
 
+    # Check all proxies before use so we know witch are good.
+    proxies = False
+    if args.proxy:
+        proxies = []
+        for i, proxy in enumerate(args.proxy):
+            curr_proxy = check_proxy(proxy)
+            if curr_proxy:
+                proxies.append(curr_proxy)
+        if len(proxies) == 0:
+            log.error('Proxies was configured but it is not working.')
+            proxies = False
+
     # Needed var for proxy
     last_proxy_index = 0
 
@@ -217,12 +229,12 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
         threadStatus['Worker {:03}'.format(i)]['fail'] = 0
         threadStatus['Worker {:03}'.format(i)]['noitems'] = 0
 
-        if args.proxy:
-
-            if last_proxy_index >= len(args.proxy):
+        account['proxy'] = False
+        if proxies:
+            if last_proxy_index >= len(proxies):
                 last_proxy_index = 0
 
-            account['proxy'] = check_proxy(args.proxy[last_proxy_index])
+            account['proxy'] = proxies[last_proxy_index]
             last_proxy_index = last_proxy_index + 1
 
         t = Thread(target=search_worker_thread,
@@ -339,6 +351,18 @@ def search_overseer_thread_ss(args, new_location_queue, pause_bit, encryption_li
         t.daemon = True
         t.start()
 
+    # Check all proxies before use so we know witch are good.
+    proxies = False
+    if args.proxy:
+        proxies = []
+        for i, proxy in enumerate(args.proxy):
+            curr_proxy = check_proxy(proxy)
+            if curr_proxy:
+                proxies.append(curr_proxy)
+        if len(proxies) == 0:
+            log.error('Proxies was configured but is not working.')
+            proxies = False
+
     # Needed var for proxy
     last_proxy_index = 0
 
@@ -354,12 +378,12 @@ def search_overseer_thread_ss(args, new_location_queue, pause_bit, encryption_li
         threadStatus['Worker {:03}'.format(i)]['skip'] = 0
         threadStatus['Worker {:03}'.format(i)]['noitems'] = 0
 
-        if args.proxy:
-
-            if last_proxy_index >= len(args.proxy):
+        account['proxy'] = False
+        if proxies:
+            if last_proxy_index >= len(proxies):
                 last_proxy_index = 0
 
-            account['proxy'] = check_proxy(args.proxy[last_proxy_index])
+            account['proxy'] = proxies[last_proxy_index]
             last_proxy_index = last_proxy_index + 1
 
         t = Thread(target=search_worker_thread_ss,
