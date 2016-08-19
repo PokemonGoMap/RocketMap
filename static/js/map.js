@@ -1500,7 +1500,7 @@ function processScanned (i, item) {
 
   if (scanId in mapData.scanned) {
     mapData.scanned[scanId].marker.setOptions({
-      fillColor: getColorByDate(item['last_modified'],item['hue'])
+      fillColor: getColorByDate(item['last_modified'], item['hue'])
     })
   } else { // add marker to map and item to dict
     if (item.marker) {
