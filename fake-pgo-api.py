@@ -13,7 +13,7 @@ When first "logged into" it will create a static map of evenly distributed
 gyms and poke stops. As each "scan" is run, it will gerenate a set of pokemon
 for that scan area. "New" pokemon will be found every 10 minutes.
 
-You can run this as is, and then just add `-w http://127.0.0.1:9090` to your
+You can run this as is, and then just add `-m http://127.0.0.1:9090` to your
 runserver.py call to start using it.
 '''
 
