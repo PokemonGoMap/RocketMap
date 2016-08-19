@@ -24,7 +24,7 @@ import os
 import random
 import time
 import geopy
-import geopy.distance as geopy_distance
+import geopy.distance
 
 from operator import itemgetter
 from threading import Thread, Lock
@@ -110,7 +110,7 @@ def jitterLocation(location=None, maxMeters=10):
     origin = geopy.Point(location[0], location[1])
     b = random.randint(0, 360)
     d = math.sqrt(random.random()) * (float(maxMeters) / 1000)
-    destination = geopy_distance.VincentyDistance(kilometers=d).destination(origin, b)
+    destination = geopy.distance.distance(kilometers=d).destination(origin, b)
     return (destination.latitude, destination.longitude, location[2])
 
 
@@ -294,7 +294,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
                     log.warning('No spawnpoints found in the specified area! (Did you forget to run a normal scan in this area first?)')
 
                 def any_spawnpoints_in_range(coords):
-                    return any(geopy_distance.distance(coords, x).meters <= 70 for x in spawnpoints)
+                    return any(geopy.distance.distance(coords, x).meters <= 70 for x in spawnpoints)
 
                 locations = [coords for coords in locations if any_spawnpoints_in_range(coords)]
 
@@ -461,17 +461,8 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
                     # Ok, let's get started -- check our login status
                     check_login(args, account, api, step_location)
 
-                    # create scan_location to send to the api based off of step_location
-                    if args.jitter:
-                        # if requested, apply jitter to scan_location
-                        scan_location = jitterLocation(step_location)
-                        log.debug("Jittered to: %f/%f/%f", scan_location[0], scan_location[1], scan_location[2])
-                    else:
-                        # Just use the original coordinates
-                        scan_location = step_location
-
                     # Make the actual request (finally!)
-                    response_dict = map_request(api, scan_location)
+                    response_dict = map_request(api, step_location, args.jitter)
 
                     # G'damnit, nothing back. Mark it up, sleep, carry on
                     if not response_dict:
@@ -561,16 +552,8 @@ def search_worker_thread_ss(args, account, search_items_queue, parse_lock, encry
                             break
                         sleep_time = args.scan_delay * (1 + failed_total)
                         check_login(args, account, api, step_location)
-                        # create scan_location to send to the api based off of step_location
-                        if args.jitter:
-                            # if requested, apply jitter to scan_location
-                            scan_location = jitterLocation(step_location)
-                            log.debug("Jittered to: %f/%f/%f", scan_location[0], scan_location[1], scan_location[2])
-                        else:
-                            # Just use the original coordinates
-                            scan_location = step_location
                         # make the map request
-                        response_dict = map_request(api, scan_location)
+                        response_dict = map_request(api, step_location, args.jitter)
                         # check if got anything back
                         if not response_dict:
                             log.error('Search step %d area download failed, retyring request in %g seconds', step, sleep_time)
@@ -639,12 +622,21 @@ def check_login(args, account, api, position):
     log.debug('Login for account %s successful', account['username'])
 
 
-def map_request(api, position):
+def map_request(api, position, jitter=False):
+    # create scan_location to send to the api based off of position, because tuples aren't mutable
+    if jitter:
+        # jitter it, just a little bit.
+        scan_location = jitterLocation(position)
+        log.debug("Jittered to: %f/%f/%f", scan_location[0], scan_location[1], scan_location[2])
+    else:
+        # Just use the original coordinates
+        scan_location = position
+
     try:
-        cell_ids = util.get_cell_ids(position[0], position[1])
+        cell_ids = util.get_cell_ids(scan_location[0], scan_location[1])
         timestamps = [0, ] * len(cell_ids)
-        return api.get_map_objects(latitude=f2i(position[0]),
-                                   longitude=f2i(position[1]),
+        return api.get_map_objects(latitude=f2i(scan_location[0]),
+                                   longitude=f2i(scan_location[1]),
                                    since_timestamp_ms=timestamps,
                                    cell_id=cell_ids)
     except Exception as e:
