@@ -19,7 +19,7 @@ self.addEventListener('notificationclick', function(event) {
   
   if( event.action === 'navigate' ){
   
-    navigationURI = item.isMobile ? "google.navigation:q=" : "http://google.com/maps/dir/Current+Location/" + item.latitude + "," + item.longitude;
+    navigationURI = (item.isMobile ? "google.navigation:q=" : "http://google.com/maps/dir/Current+Location/") + item.latitude + "," + item.longitude;
     clients.openWindow("./?launch_intent=" + encodeURIComponent(navigationURI) );
 	//todo: close notification pulldown if possible - do this by shifting focus to the new open window, if js will let us	
     
