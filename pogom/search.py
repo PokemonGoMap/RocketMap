@@ -585,7 +585,7 @@ def search_worker_thread_ss(args, account, search_items_queue, parse_lock, encry
                         sleep_time = args.scan_delay * (1 + failed_total)
                         check_login(args, account, api, step_location)
                         # make the map request
-                        response_dict = map_request(api, step_location)
+                        response_dict = map_request(api, step_location, 70)
                         # check if got anything back
                         if not response_dict:
                             log.error('Search step %d area download failed, retyring request in %g seconds', step, sleep_time)
@@ -654,7 +654,7 @@ def check_login(args, account, api, position):
     log.debug('Login for account %s successful', account['username'])
 
 
-def map_request(api, position, radius=1000):
+def map_request(api, position, radius):
     try:
         cell_ids = util.get_cell_ids(position[0], position[1], radius) # radius in meters
         timestamps = [0, ] * len(cell_ids)
