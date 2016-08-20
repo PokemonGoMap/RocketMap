@@ -433,8 +433,6 @@ def search_overseer_thread_ss(args, new_location_queue, pause_bit, encryption_li
 
 def search_worker_thread(args, account, search_items_queue, parse_lock, encryption_lib_path, status, dbq, whq):
 
-    stagger_thread(args, account)
-
     log.debug('Search worker thread starting')
 
     # The forever loop for the thread
@@ -539,7 +537,7 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
                     status['message'] = "Waiting {} seconds for scan delay".format(sleep_delay_remaining / 1000)
                     time.sleep(sleep_delay_remaining / 1000)
 
-                loop_start_time += args.scan_delay * 1000
+                loop_start_time = int(round(time.time() * 1000))
 
         # catch any process exceptions, log them, and continue the thread
         except Exception as e:
@@ -549,7 +547,7 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
 
 
 def search_worker_thread_ss(args, account, search_items_queue, parse_lock, encryption_lib_path, status, dbq, whq):
-    stagger_thread(args, account)
+
     log.debug('Search worker ss thread starting')
     status['message'] = "Search worker ss thread starting"
     # forever loop (for catching when the other forever loop fails)
@@ -564,15 +562,20 @@ def search_worker_thread_ss(args, account, search_items_queue, parse_lock, encry
                 api = PGoApi()
             if args.proxy:
                 api.set_proxy({'http': args.proxy, 'https': args.proxy})
+
             api.activate_signature(encryption_lib_path)
+
+            # Get current time
+            loop_start_time = int(round(time.time() * 1000))
+
             # search forever loop
             while True:
                 # Grab the next thing to search (when available)
                 status['message'] = "Waiting for item from queue"
                 step, step_location, spawntime = search_items_queue.get()
-                status['message'] = "Searching at {},{}".format(step_location[0], step_location[1])
-                log.info('Searching step %d, remaining %d', step, search_items_queue.qsize())
                 if timeDif(curSec(), spawntime) < 840:  # if we arnt 14mins too late
+                    status['message'] = "Searching at {},{}".format(step_location[0], step_location[1])
+                    log.info('Searching step %d, remaining %d', step, search_items_queue.qsize())
                     # set position
                     api.set_position(*step_location)
                     # try scan (with retries)
@@ -620,9 +623,15 @@ def search_worker_thread_ss(args, account, search_items_queue, parse_lock, encry
                             status['fail'] += 1
                             status['message'] = "Failed {} times to scan {},{} - map parsing failed - sleeping {} seconds. Username: {}".format(failed_total, step_location[0], step_location[1], sleep_time, account['username'])
                             time.sleep(sleep_time)
-                        time.sleep(sleep_time)
-                    status['message'] = "Waiting {} seconds for scan delay".format(sleep_time)
-                    time.sleep(sleep_time)
+
+                    # If there's any time left between the start time and the time when we should be kicking off the next
+                    # loop, hang out until its up.
+                    sleep_delay_remaining = loop_start_time + (args.scan_delay * 1000) - int(round(time.time() * 1000))
+                    if sleep_delay_remaining > 0:
+                        status['message'] = "Waiting {} seconds for scan delay".format(sleep_delay_remaining)
+                        time.sleep(sleep_delay_remaining / 1000)
+
+                    loop_start_time = int(round(time.time() * 1000))
                 else:
                     search_items_queue.task_done()
                     log.info('Cant keep up. Skipping')
@@ -643,6 +652,8 @@ def check_login(args, account, api, position):
             log.debug('Credentials remain valid for another %f seconds', remaining_time)
             return
 
+    stagger_thread(args, account)
+
     # Try to login (a few times, but don't get stuck here)
     i = 0
     api.set_position(position[0], position[1], position[2])
@@ -662,6 +673,8 @@ def check_login(args, account, api, position):
                 time.sleep(args.login_delay)
 
     log.debug('Login for account %s successful', account['username'])
+    # Prevent 0,0,0 after login
+    time.sleep(10)
 
 
 def map_request(api, position, jitter=False):
