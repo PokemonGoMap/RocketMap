@@ -284,6 +284,43 @@ class Gym(BaseModel):
 
         return gyms
 
+class GymMember(BaseModel):
+    gym_id = CharField(index=True)
+    pokemon_uid = CharField()
+    last_scanned = DateTimeField(default=datetime.utcnow)
+    start = DateTimeField(default=datetime.utcnow)
+    end = DateTimeField(null=True, default=datetime.utcnow)
+
+    class Meta:
+        primary_key = CompositeKey('pokemon_uid', 'start')
+
+
+class TrainerPokemon(BaseModel):
+    pokemon_uid = CharField(primary_key=True)
+    pokemon_id = IntegerField()
+    cp = IntegerField()
+    trainer_name = CharField(index=True)
+    poke_name = CharField()
+    num_upgrades = IntegerField(null=True)
+    move_1 = IntegerField(null=True)
+    move_2 = IntegerField(null=True)
+    height = FloatField(null=True)
+    weight = FloatField(null=True)
+    stamina = IntegerField(null=True)
+    stamina_max = IntegerField(null=True)
+    cp_multiplier = FloatField(null=True)
+    additional_cp_multiplier = FloatField(null=True)
+    iv_defense = IntegerField(null=True)
+    iv_stamina = IntegerField(null=True)
+    iv_attack = IntegerField(null=True)
+    last_seen = DateTimeField(default=datetime.utcnow)
+
+
+class Trainer(BaseModel):
+    name = CharField(primary_key=True)
+    team = IntegerField()
+    level = IntegerField()
+    last_seen = DateTimeField(default=datetime.utcnow)
 
 class ScannedLocation(BaseModel):
     latitude = DoubleField()
@@ -320,11 +357,92 @@ class Versions(flaskDb.Model):
         primary_key = False
 
 
+def parse_gym(gym_state):
+    gym_id = gym_state['fort_data']['id']
+    
+    gym_members = {}
+    trainer_pokemon = {}
+    trainers = {}
+    old_member = {}
+    current_member = []
+
+    query = (GymMember
+             .select()
+             .where((GymMember.gym_id == gym_id)&
+                (GymMember.end == 'null'))
+             .dicts())
+    for m in query:
+        old_member[m['pokemon_uid']] = m
+
+    i = 0
+
+    for member in gym_state.get('memberships', []):
+        pid = str(member['pokemon_data']['id'])
+
+        if(pid not in old_member):
+            current_member.append(pid)
+            gym_members[i] = {
+                'gym_id': gym_id,
+                'pokemon_uid': member['pokemon_data']['id'],
+                'start': datetime.utcnow(),
+                'end': 'null',
+            }
+        elif old_member[pid]['end'] == 'null':
+            current_member.append(pid)
+
+        trainer_pokemon[i] = {
+            'pokemon_uid': member['pokemon_data']['id'],
+            'pokemon_id': member['pokemon_data']['pokemon_id'],
+            'cp': member['pokemon_data']['cp'],
+            'trainer_name': member['trainer_public_profile']['name'],
+            'poke_name': get_pokemon_name(member['pokemon_data']['pokemon_id']),
+            'num_upgrades': member['pokemon_data'].get('num_upgrades'),
+            'move_1': member['pokemon_data'].get('move_1'),
+            'move_2': member['pokemon_data'].get('move_2'),
+            'height': member['pokemon_data'].get('height_m'),
+            'weight': member['pokemon_data'].get('weight_kg'),
+            'stamina': member['pokemon_data'].get('stamina'),
+            'stamina_max': member['pokemon_data'].get('stamina_max'),
+            'cp_multiplier': member['pokemon_data'].get('cp_multiplier'),
+            'additional_cp_multiplier': member['pokemon_data'].get('additional_cp_multiplier'),
+            'iv_defense': member['pokemon_data'].get('individual_defense'),
+            'iv_stamina': member['pokemon_data'].get('individual_stamina'),
+            'iv_attack': member['pokemon_data'].get('individual_attack'),
+            'last_seen': datetime.utcnow(),
+        }
+        trainers[i] = {
+            'name': member['trainer_public_profile']['name'],
+            'team': gym_state['fort_data']['owned_by_team'],
+            'level': member['trainer_public_profile']['level'],
+            'last_seen': datetime.utcnow(),
+        }
+        i += 1
+
+    for o in old_member:
+        if o not in current_member:
+            gym_members[i] = {
+                'gym_id': gym_id,
+                'pokemon_uid': old_member[o]['pokemon_uid'],
+                'start': old_member[o]['start'],
+                'end': datetime.utcnow(),
+            }
+            i += 1
+
+    if len(trainer_pokemon):
+        bulk_upsert(TrainerPokemon, trainer_pokemon)
+    if len(trainers):
+        bulk_upsert(Trainer, trainers)
+    if len(gym_members):
+        bulk_upsert(GymMember, gym_members)
+
+
+
 def parse_map(map_dict, step_location, api, gyms_timeout):
     pokemons = {}
     pokestops = {}
     gyms = {}
     scanned = {}
+    gym_details = {}
 
     cells = map_dict['responses']['GET_MAP_OBJECTS']['map_cells']
     for cell in cells:
@@ -396,31 +514,36 @@ def parse_map(map_dict, step_location, api, gyms_timeout):
                 now = int(time.time())
                 distance = calc_distance(step_location, [f['latitude'], f['longitude']])
                 if distance < 0.9 and (gid not in gyms_timeout or gyms_timeout[gid] != last_modified):
-                    try:
-                        data = api.get_gym_details(gym_id=f['id'])['responses']['GET_GYM_DETAILS']
+
+                    data = api.get_gym_details(gym_id=f['id'])['responses']['GET_GYM_DETAILS']
+                    if data['result'] == 2:
+                        print 'oor'
+                    else:
+                        parse_gym(data['gym_state'])
                         print data['name']+' '+ str(f.get('gym_points', 0))
                         info += data['name'] + '<br>'
-                        for d in data['gym_state']['memberships']:
-                            try:
-                                d['trainer_public_profile']['avatar']['gender']
-                                info += '*'
-                            except:
-                                pass
-                            info += str(d['trainer_public_profile']['level']) + ' '
-                            d = d['pokemon_data']
-                            info += d['owner_name'] + ' '
-                            info += get_pokemon_name(d['pokemon_id']) + ' '
-                            info += str(d['cp']) + ' '
-                            info += shortMove(get_move_name(d['move_1'])) + '/'
-                            info += shortMove(get_move_name(d['move_2'])) + ' '
-                            try:
-                                info +=  d['nickname']
-                            except:
-                                pass
-                            info += '<br>'
+                        try:
+                            for d in data['gym_state']['memberships']:
+                                try:
+                                    d['trainer_public_profile']['avatar']['gender']
+                                    info += '*'
+                                except:
+                                    pass
+                                info += str(d['trainer_public_profile']['level']) + ' '
+                                d = d['pokemon_data']
+                                info += d['owner_name'] + ' '
+                                info += get_pokemon_name(d['pokemon_id']) + ' '
+                                info += str(d['cp']) + ' '
+                                info += shortMove(get_move_name(d['move_1'])) + '/'
+                                info += shortMove(get_move_name(d['move_2'])) + ' '
+                                try:
+                                    info +=  d['nickname']
+                                except:
+                                    pass
+                                info += '<br>'
+                        except:
+                            pass
                         gyms_timeout[gid] = last_modified
-                    except:
-                        pass
                     time.sleep(1)
                     gyms[gid] = {
                         'gym_id': gid,
@@ -470,10 +593,11 @@ def parse_map(map_dict, step_location, api, gyms_timeout):
 
     flaskDb.close_db(None)
 
-    log.info('Upserted %d pokemon, %d pokestops, and %d gyms',
-             pokemons_upserted,
-             pokestops_upserted,
-             gyms_upserted)
+    # log.info('Upserted %d pokemon, %d pokestops, and %d gyms',
+    #          pokemons_upserted,
+    #          pokestops_upserted,
+    #          gyms_upserted)
+        
 
     return True
 
@@ -482,41 +606,6 @@ def distance(lat1, lon1, lat2, lon2):
     a = 0.5 - cos((lat2 - lat1) * p) / 2 + cos(lat1 * p) * \
         cos(lat2 * p) * (1 - cos((lon2 - lon1) * p)) / 2
     return 12742 * asin(sqrt(a)) * 1000
-
-class GymMember(BaseModel):
-    gym_id = CharField(index=True)
-    pokemon_uid = CharField()
-    last_scanned = DateTimeField(default=datetime.utcnow)
-
-    class Meta:
-        primary_key = False
-
-
-class GymPokemon(BaseModel):
-    pokemon_uid = CharField(primary_key=True)
-    pokemon_id = IntegerField()
-    cp = IntegerField()
-    trainer_name = CharField()
-    num_upgrades = IntegerField(null=True)
-    move_1 = IntegerField(null=True)
-    move_2 = IntegerField(null=True)
-    height = FloatField(null=True)
-    weight = FloatField(null=True)
-    stamina = IntegerField(null=True)
-    stamina_max = IntegerField(null=True)
-    cp_multiplier = FloatField(null=True)
-    additional_cp_multiplier = FloatField(null=True)
-    iv_defense = IntegerField(null=True)
-    iv_stamina = IntegerField(null=True)
-    iv_attack = IntegerField(null=True)
-    last_seen = DateTimeField(default=datetime.utcnow)
-
-
-class Trainer(BaseModel):
-    name = CharField(primary_key=True)
-    team = IntegerField()
-    level = IntegerField()
-    last_seen = DateTimeField(default=datetime.utcnow)
 
 
 def clean_database():
@@ -553,13 +642,13 @@ def bulk_upsert(cls, data):
 def create_tables(db):
     db.connect()
     verify_database_schema(db)
-    db.create_tables([Pokemon, Pokestop, Gym, ScannedLocation, GymMember, Pokemon, Trainer], safe=True)
+    db.create_tables([Pokemon, Pokestop, Gym, ScannedLocation, GymMember, TrainerPokemon, Trainer], safe=True)
     db.close()
 
 
 def drop_tables(db):
     db.connect()
-    db.drop_tables([Pokemon, Pokestop, Gym, ScannedLocation, Versions, GymMember, Pokemon, Trainer], safe=True)
+    db.drop_tables([Pokemon, Pokestop, Gym, ScannedLocation, Versions, GymMember, TrainerPokemon, Trainer], safe=True)
     db.close()
 
 

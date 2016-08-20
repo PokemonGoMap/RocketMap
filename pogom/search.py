@@ -161,6 +161,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
                     while True:
                         search_items_queue.get_nowait()
                 except Empty:
+                    
                     pass
 
         # If there are no search_items_queue either the loop has finished (or been
@@ -212,7 +213,7 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
                 # Grab the next thing to search (when available)
                 step, step_location = search_items_queue.get()
 
-                log.info('Search step %d beginning (queue size is %d)', step, search_items_queue.qsize())
+                # log.info('Search step %d beginning (queue size is %d)', step, search_items_queue.qsize())
 
                 # Let the api know where we intend to be for this loop
                 api.set_position(*step_location)
