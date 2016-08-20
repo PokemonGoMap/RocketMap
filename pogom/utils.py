@@ -152,6 +152,7 @@ def get_args():
     parser.add_argument('-ps', '--print-status', action='store_true',
                         help='Show a status screen instead of log messages. Can switch between status and logs by pressing enter.', default=False)
     parser.add_argument('-el', '--encrypt-lib', help='Path to encrypt lib to be used instead of the shipped ones')
+    parser.add_argument('--csv', help='CSV file containing lat, lng columns to scan instead of generated patterns')
     parser.set_defaults(DEBUG=False)
 
     args = parser.parse_args()

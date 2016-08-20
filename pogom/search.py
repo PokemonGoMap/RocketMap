@@ -24,6 +24,7 @@ import os
 import random
 import time
 import geopy.distance as geopy_distance
+import csv
 
 from operator import itemgetter
 from threading import Thread, Lock
@@ -309,6 +310,12 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
 
             # update our list of coords
             locations = list(generate_location_steps(current_location, args.step_limit, step_distance))
+
+            # load scan locations from csv
+            if args.csv is not None and os.path.isfile(args.csv):
+                with open(args.csv, 'rU') as csvfile:
+                    spawn_csv = csv.DictReader(csvfile)
+                    locations = [(float(row['lat']), float(row['lng']), 0) for row in spawn_csv]
 
             # repopulate our spawn points
             if args.spawnpoints_only:
