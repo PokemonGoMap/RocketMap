@@ -157,6 +157,9 @@
     $stats.appendChild($statsClose)
   }
 
+  // Fill user token field from cookie
+  $('#userToken').val(document.cookie)
+
   // Event: Hide on ESC.
   window.addEventListener('keydown', function (event) {
     if (event.keyCode === 27) {

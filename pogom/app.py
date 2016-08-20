@@ -51,6 +51,14 @@ class Pogom(Flask):
         if not args.search_control:
             return 'Search control is disabled', 403
         action = request.args.get('action', 'none')
+        userToken = request.args.get('userToken', type=str)
+
+        if args.tokens:
+            if userToken in args.tokens:
+                log.info('userToken check PASSED: %s                     ---- %s ----', userToken, request.remote_addr)
+            else:
+                log.info('userToken check FAILED: %s                     ---- %s ----', userToken, request.remote_addr)
+                return 'bad token', 401
         if action == 'on':
             self.search_control.clear()
             log.info('Search thread resumed')
@@ -65,6 +73,7 @@ class Pogom(Flask):
         args = get_args()
         fixed_display = "none" if args.fixed_location else "inline"
         search_display = "inline" if args.search_control else "none"
+        authentication_display = "fixed" if args.tokens else "none"
 
         return render_template('map.html',
                                lat=self.current_location[0],
@@ -72,7 +81,8 @@ class Pogom(Flask):
                                gmaps_key=config['GMAPS_KEY'],
                                lang=config['LOCALE'],
                                is_fixed=fixed_display,
-                               search_control=search_display
+                               search_control=search_display,
+                               authentication_control=authentication_display
                                )
 
     def raw_data(self):
@@ -128,15 +138,23 @@ class Pogom(Flask):
         if request.args:
             lat = request.args.get('lat', type=float)
             lon = request.args.get('lon', type=float)
+            userToken = request.args.get('userToken', type=str)
         # from post requests
         if request.form:
             lat = request.form.get('lat', type=float)
             lon = request.form.get('lon', type=float)
+            userToken = request.args.get('userToken', type=str)
 
         if not (lat and lon):
             log.warning('Invalid next location: %s,%s', lat, lon)
             return 'bad parameters', 400
         else:
+            if args.tokens:
+                if userToken in args.tokens:
+                    log.info('userToken check PASSED: %s                     ---- %s ----', userToken, request.remote_addr)
+                else:
+                    log.info('userToken check FAILED: %s                     ---- %s ----', userToken, request.remote_addr)
+                    return 'bad token', 401
             self.location_queue.put((lat, lon, 0))
             self.set_current_location((lat, lon, 0))
             log.info('Changing next location: %s,%s', lat, lon)
