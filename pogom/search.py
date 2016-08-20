@@ -453,7 +453,7 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
                     response_dict = map_request(api, step_location)
 
                     # Get current time
-                    last_apicall_time = int(round(time.time() * 1000))
+                    loop_start_time = int(round(time.time() * 1000))
 
                     # G'damnit, nothing back. Mark it up, sleep, carry on
                     if not response_dict:
@@ -483,7 +483,7 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
 
                 # If there's any time left between the start time and the time when we should be kicking off the next
                 # loop, hang out until its up.
-                sleep_delay_remaining = last_apicall_time + (args.scan_delay * 1000) - int(round(time.time() * 1000))
+                sleep_delay_remaining = loop_start_time + (args.scan_delay * 1000) - int(round(time.time() * 1000))
                 if sleep_delay_remaining > 0:
                     status['message'] = "Waiting {} seconds for scan delay".format(sleep_delay_remaining / 1000)
                     time.sleep(sleep_delay_remaining / 1000)
