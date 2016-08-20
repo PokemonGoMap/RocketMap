@@ -10,20 +10,26 @@
 #db-user:               # required for mysql
 #db-pass:               # required for mysql
 #db-port:               # default 3306
+#db-threads:            # Number of db threads; increase if the db queue falls behind. (default 1)
 
 # Search settings
 #location:
+#fixed-location:        # prevents location from being changed (default false)
 #no-gyms:               # disables gym scanning (default false)
 #no-pokemon:            # disables pokemon scanning (default false)
 #no-pokestops:          # disables pokestop scanning (default false)
 #scan-delay:            # default 10
 #step-limit:            # default 12
+#spawnpoint-only        # does a normal "spiral" step scan but skips any steps with no known spawnpoints (default false)
+#spawnpoint-scanning    # no "spiral" step scan, jumps from spawnpoint to spawnpoint based on the known time that they will appear
+                        #(takes a file path to a json of known spawnpoints, if the file does not exist will use all known points from the database)
 
 # Misc
 #gmaps-key:             # your Google Maps API key
 #proxy:                 # Proxy URL e.g. socks5://127.0.0.1:9050
 #webhook:               # webhook URL (including http://)
 #webhook-updates-only:               # only send updates to webhooks, (excludes gyms & non-lured pokéstops)
+#print-satus:           # shows the status screen instead of log screen, can switch between with (ENTER)
 
 # Webserver settings
 #host:                  # address to listen on (default 127.0.0.1)
