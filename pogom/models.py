@@ -7,7 +7,7 @@ import sys
 import time
 from peewee import SqliteDatabase, InsertQuery, \
     IntegerField, CharField, DoubleField, BooleanField, \
-    DateTimeField, CompositeKey, TextField, fn
+    DateTimeField, CompositeKey, FloatField, TextField, fn
 from playhouse.flask_utils import FlaskDB
 from playhouse.pool import PooledMySQLDatabase
 from playhouse.shortcuts import RetryOperationalError
@@ -483,6 +483,41 @@ def distance(lat1, lon1, lat2, lon2):
         cos(lat2 * p) * (1 - cos((lon2 - lon1) * p)) / 2
     return 12742 * asin(sqrt(a)) * 1000
 
+class GymMember(BaseModel):
+    gym_id = CharField(index=True)
+    pokemon_uid = CharField()
+    last_scanned = DateTimeField(default=datetime.utcnow)
+
+    class Meta:
+        primary_key = False
+
+
+class GymPokemon(BaseModel):
+    pokemon_uid = CharField(primary_key=True)
+    pokemon_id = IntegerField()
+    cp = IntegerField()
+    trainer_name = CharField()
+    num_upgrades = IntegerField(null=True)
+    move_1 = IntegerField(null=True)
+    move_2 = IntegerField(null=True)
+    height = FloatField(null=True)
+    weight = FloatField(null=True)
+    stamina = IntegerField(null=True)
+    stamina_max = IntegerField(null=True)
+    cp_multiplier = FloatField(null=True)
+    additional_cp_multiplier = FloatField(null=True)
+    iv_defense = IntegerField(null=True)
+    iv_stamina = IntegerField(null=True)
+    iv_attack = IntegerField(null=True)
+    last_seen = DateTimeField(default=datetime.utcnow)
+
+
+class Trainer(BaseModel):
+    name = CharField(primary_key=True)
+    team = IntegerField()
+    level = IntegerField()
+    last_seen = DateTimeField(default=datetime.utcnow)
+
 
 def clean_database():
     query = (ScannedLocation
@@ -518,13 +553,13 @@ def bulk_upsert(cls, data):
 def create_tables(db):
     db.connect()
     verify_database_schema(db)
-    db.create_tables([Pokemon, Pokestop, Gym, ScannedLocation], safe=True)
+    db.create_tables([Pokemon, Pokestop, Gym, ScannedLocation, GymMember, Pokemon, Trainer], safe=True)
     db.close()
 
 
 def drop_tables(db):
     db.connect()
-    db.drop_tables([Pokemon, Pokestop, Gym, ScannedLocation, Versions], safe=True)
+    db.drop_tables([Pokemon, Pokestop, Gym, ScannedLocation, Versions, GymMember, Pokemon, Trainer], safe=True)
     db.close()
 
 
