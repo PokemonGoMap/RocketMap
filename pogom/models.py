@@ -398,19 +398,30 @@ def parse_map(map_dict, step_location, api, gyms_timeout):
                 if distance < 0.9 and (gid not in gyms_timeout or gyms_timeout[gid] != last_modified):
                     try:
                         data = api.get_gym_details(gym_id=f['id'])['responses']['GET_GYM_DETAILS']
+                        print data['name']+' '+ str(f.get('gym_points', 0))
                         info += data['name'] + '<br>'
                         for d in data['gym_state']['memberships']:
+                            try:
+                                d['trainer_public_profile']['avatar']['gender']
+                                info += '*'
+                            except:
+                                pass
                             info += str(d['trainer_public_profile']['level']) + ' '
                             d = d['pokemon_data']
                             info += d['owner_name'] + ' '
                             info += get_pokemon_name(d['pokemon_id']) + ' '
                             info += str(d['cp']) + ' '
                             info += shortMove(get_move_name(d['move_1'])) + '/'
-                            info += shortMove(get_move_name(d['move_2'])) + '<br>'
+                            info += shortMove(get_move_name(d['move_2'])) + ' '
+                            try:
+                                info +=  d['nickname']
+                            except:
+                                pass
+                            info += '<br>'
                         gyms_timeout[gid] = last_modified
                     except:
                         pass
-                    time.sleep(0.5)
+                    time.sleep(1)
                     gyms[gid] = {
                         'gym_id': gid,
                         'team_id': f.get('owned_by_team', 0),
