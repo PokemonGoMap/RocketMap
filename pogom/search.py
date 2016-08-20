@@ -62,6 +62,11 @@ def get_new_coords(init_loc, distance, bearing):
 
     return [math.degrees(new_lat), math.degrees(new_lon)]
 
+def get_distance(point_a,point_b):
+    R = 6378.1 #km radius of the earth
+    x = (math.radians(point_b[1]) - math.radians(point_a[1])) * math.cos( 0.5*(math.radians(point_b[0])+math.radians(point_a[0])) )
+    y = math.radians(point_b[0]) - math.radians(point_a[0])
+    return R * 1000 * math.sqrt( x*x + y*y )
 
 def generate_location_steps(initial_loc, step_count, step_distance):
     # Bearing (degrees)
@@ -346,6 +351,9 @@ def search_overseer_thread_ss(args, new_location_queue, pause_bit, encryption_li
         t.daemon = True
         t.start()
 
+    # A place to track the current location
+    current_location = False
+
     if os.path.isfile(args.spawnpoint_scanning):  # if the spawns file exists use it
         threadStatus['Overseer']['message'] = "Getting spawnpoints from file"
         try:
@@ -365,17 +373,36 @@ def search_overseer_thread_ss(args, new_location_queue, pause_bit, encryption_li
         spawns = Pokemon.get_spawnpoints_in_hex(loc, args.step_limit)
     spawns.sort(key=itemgetter('time'))
     log.info('Total of %d spawns to track', len(spawns))
-    # find the inital location (spawn thats 60sec old)
-    pos = SbSearch(spawns, (curSec() + 3540) % 3600)
+    # find the inital location (spawn thats 600sec old)
+    pos = SbSearch(spawns, (curSec() + 3000) % 3600)
     while True:
-        while timeDif(curSec(), spawns[pos]['time']) < 60:
-            threadStatus['Overseer']['message'] = "Waiting for spawnpoints {} of {} to spawn at {}".format(pos, len(spawns), spawns[pos]['time'])
-            time.sleep(1)
-        # make location with a dummy height (seems to be more reliable than 0 height)
-        threadStatus['Overseer']['message'] = "Queuing spawnpoint {} of {}".format(pos, len(spawns))
-        location = [spawns[pos]['lat'], spawns[pos]['lng'], 40.32]
-        search_args = (pos, location, spawns[pos]['time'])
-        search_items_queue.put(search_args)
+        proximity = 0
+        if args.spawnpoint_limit_radius > 0:
+            if not new_location_queue.empty():
+                log.info('New location caught, moving search radius')
+                try:
+                    while True:
+                        current_location = new_location_queue.get_nowait()
+                except Empty:
+                    pass
+
+                # We (may) need to clear the search_items_queue
+                if not search_items_queue.empty():
+                    try:
+                        while True:
+                            search_items_queue.get_nowait()
+                    except Empty:
+                        pass
+            proximity = get_distance([spawns[pos]['lat'], spawns[pos]['lng']],current_location)
+        if args.spawnpoint_limit_radius >= proximity:
+            while timeDif(curSec(), spawns[pos]['time']) < 60:
+                threadStatus['Overseer']['message'] = "Waiting for spawnpoints {} of {} to spawn at {}".format(pos, len(spawns), spawns[pos]['time'])
+                time.sleep(1)
+            # make location with a dummy height (seems to be more reliable than 0 height)
+            threadStatus['Overseer']['message'] = "Queuing spawnpoint {} of {}".format(pos, len(spawns))
+            location = [spawns[pos]['lat'], spawns[pos]['lng'], 40.32]
+            search_args = (pos, location, spawns[pos]['time'])
+            search_items_queue.put(search_args)
         pos = (pos + 1) % len(spawns)
 
 

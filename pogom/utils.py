@@ -126,6 +126,7 @@ def get_args():
                         help='Use spawnpoint scanning (instead of hex grid)', nargs='?', const='null.null', default=None)
     parser.add_argument('--dump-spawnpoints', help='dump the spawnpoints from the db to json (only for use with -ss)',
                         action='store_true', default=False)
+    parser.add_argument('-slr','--spawnpoint-limit-radius',type=int,default=0)
     parser.add_argument('-pd', '--purge-data',
                         help='Clear pokemon from database this many hours after they disappear \
                         (0 to disable)', type=int, default=0)
