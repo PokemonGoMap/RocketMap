@@ -237,7 +237,6 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
     log.info('Search overseer starting')
 
     search_items_queue = Queue()
-    parse_lock = Lock()
     threadStatus = {}
 
     threadStatus['Overseer'] = {}
@@ -266,7 +265,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
 
         t = Thread(target=search_worker_thread,
                    name='search-worker-{}'.format(i),
-                   args=(args, account, search_items_queue, parse_lock,
+                   args=(args, account, search_items_queue,
                          encryption_lib_path, threadStatus['Worker {:03}'.format(i)],
                          db_updates_queue, wh_queue))
         t.daemon = True
@@ -362,7 +361,6 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
 def search_overseer_thread_ss(args, new_location_queue, pause_bit, encryption_lib_path, db_updates_queue, wh_queue):
     log.info('Search ss overseer starting')
     search_items_queue = Queue()
-    parse_lock = Lock()
     spawns = []
     threadStatus = {}
 
@@ -392,7 +390,7 @@ def search_overseer_thread_ss(args, new_location_queue, pause_bit, encryption_li
         threadStatus['Worker {:03}'.format(i)]['noitems'] = 0
         t = Thread(target=search_worker_thread_ss,
                    name='ss-worker-{}'.format(i),
-                   args=(args, account, search_items_queue, parse_lock,
+                   args=(args, account, search_items_queue,
                          encryption_lib_path, threadStatus['Worker {:03}'.format(i)],
                          db_updates_queue, wh_queue))
         t.daemon = True
@@ -431,7 +429,7 @@ def search_overseer_thread_ss(args, new_location_queue, pause_bit, encryption_li
         pos = (pos + 1) % len(spawns)
 
 
-def search_worker_thread(args, account, search_items_queue, parse_lock, encryption_lib_path, status, dbq, whq):
+def search_worker_thread(args, account, search_items_queue, encryption_lib_path, status, dbq, whq):
 
     stagger_thread(args, account)
 
@@ -548,7 +546,7 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
             time.sleep(sleep_time)
 
 
-def search_worker_thread_ss(args, account, search_items_queue, parse_lock, encryption_lib_path, status, dbq, whq):
+def search_worker_thread_ss(args, account, search_items_queue, encryption_lib_path, status, dbq, whq):
     stagger_thread(args, account)
     log.debug('Search worker ss thread starting')
     status['message'] = "Search worker ss thread starting"
