@@ -28,5 +28,6 @@ create function haversine(lat1 double, lng1 double, lat2 double, lng2 double) re
     Full coverage required 56 scan locations
     Cleaning up database
     Coverage approximation via heatmap took 381.390 seconds
+    Optimized scan coordinates saved to spawns_17.627224_138.01003_700m_100s.csv
     $
 
