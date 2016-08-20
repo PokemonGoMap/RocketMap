@@ -563,6 +563,8 @@ def search_worker_thread_ss(args, account, search_items_queue, parse_lock, encry
             if args.proxy:
                 api.set_proxy({'http': args.proxy, 'https': args.proxy})
             api.activate_signature(encryption_lib_path)
+            # Get current time
+            loop_start_time = int(round(time.time() * 1000))
             # search forever loop
             while True:
                 # Grab the next thing to search (when available)
