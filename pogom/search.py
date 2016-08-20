@@ -408,7 +408,6 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
                 # Grab the next thing to search (when available)
                 status['message'] = "Waiting for item from queue"
                 step, step_location = search_items_queue.get()
-
                 status['message'] = "Searching at {},{}".format(step_location[0], step_location[1])
                 log.info('Search step %d beginning (queue size is %d)', step, search_items_queue.qsize())
 
