@@ -12,6 +12,12 @@ Pass the output CSV to runserver.py using the --csv flag to switch to optimized 
 
 Requires numpy to be installed in addition to upstream requirements
 
+Needs the following function created in MySQL as well:
+
+```sql
+create function haversine(lat1 double, lng1 double, lat2 double, lng2 double) returns double deterministic return 12756274 * asin(sqrt(0.5 - cos((lat2 - lat1) * 0.017453292519943295) / 2 + cos(lat1 * 0.017453292519943295) * cos(lat2 * 0.017453292519943295) * (1 - cos((lng2 - lng1) * 0.017453292519943295)) / 2));
+```
+
 ## Example
 
     $ python spawncover.py -lat 17.6272249 -lng 138.0100306 -st 5 -sl 100
