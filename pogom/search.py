@@ -339,7 +339,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
             for step, step_location in enumerate(locations, 1):
                 log.debug('Queueing step %d @ %f/%f/%f', step, step_location[0], step_location[1], step_location[2])
                 threadStatus['Overseer']['message'] = "Queuing next step"
-                search_args = (step, step_location)
+                search_args = (step, step_location, step_distance)
                 search_items_queue.put(search_args)
         else:
             #   log.info('Search queue processing, %d items left', search_items_queue.qsize())
@@ -452,7 +452,7 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
 
                 # Grab the next thing to search (when available)
                 status['message'] = "Waiting for item from queue"
-                step, step_location = search_items_queue.get()
+                step, step_location, step_distance = search_items_queue.get()
                 status['message'] = "Searching at {},{}".format(step_location[0], step_location[1])
                 log.info('Search step %d beginning (queue size is %d)', step, search_items_queue.qsize())
 
@@ -494,7 +494,7 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
                     check_login(args, account, api, step_location)
 
                     # Make the actual request (finally!)
-                    response_dict = map_request(api, step_location)
+                    response_dict = map_request(api, step_location, step_distance * 1000)
 
                     # G'damnit, nothing back. Mark it up, sleep, carry on
                     if not response_dict:
@@ -585,7 +585,7 @@ def search_worker_thread_ss(args, account, search_items_queue, parse_lock, encry
                         sleep_time = args.scan_delay * (1 + failed_total)
                         check_login(args, account, api, step_location)
                         # make the map request
-                        response_dict = map_request(api, step_location)
+                        response_dict = map_request(api, step_location, 70)
                         # check if got anything back
                         if not response_dict:
                             log.error('Search step %d area download failed, retyring request in %g seconds', step, sleep_time)
@@ -654,9 +654,9 @@ def check_login(args, account, api, position):
     log.debug('Login for account %s successful', account['username'])
 
 
-def map_request(api, position):
+def map_request(api, position, radius):
     try:
-        cell_ids = util.get_cell_ids(position[0], position[1])
+        cell_ids = util.get_cell_ids(position[0], position[1], radius)  # radius should be in meters
         timestamps = [0, ] * len(cell_ids)
         return api.get_map_objects(latitude=f2i(position[0]),
                                    longitude=f2i(position[1]),
