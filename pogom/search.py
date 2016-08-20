@@ -388,19 +388,20 @@ def search_overseer_thread_ss(args, new_location_queue, pause_bit, encryption_li
         latlng = LatLng.from_point(Cell(CellId(int('{}00000'.format(spawn['spawnpoint_id']),16))).get_center())
         spawn['lat'] = latlng.lat().degrees
         spawn['lng'] = latlng.lng().degrees
+        spawn['time'] = int(spawn['time'])
     log.info('sorting spawnpoints based on time')
     spawns.sort(key=itemgetter('time'))
     log.info('Total of %d spawns to track', len(spawns))
     # find the inital location (spawn thats 60sec old)
     pos = SbSearch(spawns, (curSec() + 3540) % 3600)
     while True:
-        while timeDif(curSec(), int(spawns[pos]['time'])) < 60:
+        while timeDif(curSec(), spawns[pos]['time']) < 60:
             threadStatus['Overseer']['message'] = "Waiting for spawnpoints {} of {} to spawn at {}".format(pos, len(spawns), spawns[pos]['time'])
             time.sleep(1)
         # make location with a dummy height (seems to be more reliable than 0 height)
         threadStatus['Overseer']['message'] = "Queuing spawnpoint {} of {}".format(pos, len(spawns))
         location = [spawns[pos]['lat'], spawns[pos]['lng'], 40.32]
-        search_args = (pos, location, int(spawns[pos]['time']) )
+        search_args = (pos, location, spawns[pos]['time'])
         search_items_queue.put(search_args)
         pos = (pos + 1) % len(spawns)
 
