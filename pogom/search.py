@@ -656,7 +656,6 @@ def check_login(args, account, api, position):
 
 def map_request(api, position, radius):
     try:
-        cell_ids = util.get_cell_ids(position[0], position[1], radius) # radius in meters
         timestamps = [0, ] * len(cell_ids)
         return api.get_map_objects(latitude=f2i(position[0]),
                                    longitude=f2i(position[1]),
