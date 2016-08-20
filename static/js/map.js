@@ -2,6 +2,25 @@
 // Global map.js variables
 //
 
+//ismobile?
+var isMobile = false;(function(a){if(/(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|mobile.+firefox|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows ce|xda|xiino|android|ipad|playbook|silk/i.test(a)||/1207|6310|6590|3gso|4thp|50[1-6]i|770s|802s|a wa|abac|ac(er|oo|s\-)|ai(ko|rn)|al(av|ca|co)|amoi|an(ex|ny|yw)|aptu|ar(ch|go)|as(te|us)|attw|au(di|\-m|r |s )|avan|be(ck|ll|nq)|bi(lb|rd)|bl(ac|az)|br(e|v)w|bumb|bw\-(n|u)|c55\/|capi|ccwa|cdm\-|cell|chtm|cldc|cmd\-|co(mp|nd)|craw|da(it|ll|ng)|dbte|dc\-s|devi|dica|dmob|do(c|p)o|ds(12|\-d)|el(49|ai)|em(l2|ul)|er(ic|k0)|esl8|ez([4-7]0|os|wa|ze)|fetc|fly(\-|_)|g1 u|g560|gene|gf\-5|g\-mo|go(\.w|od)|gr(ad|un)|haie|hcit|hd\-(m|p|t)|hei\-|hi(pt|ta)|hp( i|ip)|hs\-c|ht(c(\-| |_|a|g|p|s|t)|tp)|hu(aw|tc)|i\-(20|go|ma)|i230|iac( |\-|\/)|ibro|idea|ig01|ikom|im1k|inno|ipaq|iris|ja(t|v)a|jbro|jemu|jigs|kddi|keji|kgt( |\/)|klon|kpt |kwc\-|kyo(c|k)|le(no|xi)|lg( g|\/(k|l|u)|50|54|\-[a-w])|libw|lynx|m1\-w|m3ga|m50\/|ma(te|ui|xo)|mc(01|21|ca)|m\-cr|me(rc|ri)|mi(o8|oa|ts)|mmef|mo(01|02|bi|de|do|t(\-| |o|v)|zz)|mt(50|p1|v )|mwbp|mywa|n10[0-2]|n20[2-3]|n30(0|2)|n50(0|2|5)|n7(0(0|1)|10)|ne((c|m)\-|on|tf|wf|wg|wt)|nok(6|i)|nzph|o2im|op(ti|wv)|oran|owg1|p800|pan(a|d|t)|pdxg|pg(13|\-([1-8]|c))|phil|pire|pl(ay|uc)|pn\-2|po(ck|rt|se)|prox|psio|pt\-g|qa\-a|qc(07|12|21|32|60|\-[2-7]|i\-)|qtek|r380|r600|raks|rim9|ro(ve|zo)|s55\/|sa(ge|ma|mm|ms|ny|va)|sc(01|h\-|oo|p\-)|sdk\/|se(c(\-|0|1)|47|mc|nd|ri)|sgh\-|shar|sie(\-|m)|sk\-0|sl(45|id)|sm(al|ar|b3|it|t5)|so(ft|ny)|sp(01|h\-|v\-|v )|sy(01|mb)|t2(18|50)|t6(00|10|18)|ta(gt|lk)|tcl\-|tdg\-|tel(i|m)|tim\-|t\-mo|to(pl|sh)|ts(70|m\-|m3|m5)|tx\-9|up(\.b|g1|si)|utst|v400|v750|veri|vi(rg|te)|vk(40|5[0-3]|\-v)|vm40|voda|vulc|vx(52|53|60|61|70|80|81|83|85|98)|w3c(\-| )|webc|whit|wi(g |nc|nw)|wmlb|wonu|x700|yas\-|your|zeto|zte\-/i.test(a.substr(0,4)))isMobile = true})(navigator.userAgent||navigator.vendor||window.opera);
+
+//get query vars
+var qs = window.location.search.replace("?", "")
+var parameterListRaw = qs == "" ? [] : qs.split("&")
+var parameterList = {}
+for (var i = 0; i < parameterListRaw.length; i++) {
+	var parameter = parameterListRaw[i].split("=")
+	parameterList[parameter[0]] = parameter[1]
+}
+
+if( typeof parameterList['launch_intent'] !== 'undefined' ){
+	document.body.innerHTML = '<a style="       display: block;    text-align: center;    color: black;    text-decoration: none; width: 100%;    height: 100%;    font-size: 20vW;    padding: 0;    margin: 0;" id="clickme" href="' + decodeURIComponent(parameterList['launch_intent']) + '">GO!</a>';
+	document.getElementById('clickme').onclick = function(){ window.open( document.getElementById('clickme').href ); window.close(); }
+	document.getElementById('clickme').click()
+	throw new Error('do not continue');
+}
+
 var $selectExclude
 var $selectPokemonNotify
 var $selectRarityNotify
@@ -1163,6 +1182,21 @@ function getGoogleSprite (index, sprite, displayHeight) {
   }
 }
 
+function get_distance(lat1,lon1,lat2,lon2) {
+  function toRad(x) { return x * Math.PI / 180; }
+  var R = 6371; // km
+  var x1 = lat2 - lat1;
+  var dLat = toRad(x1);
+  var x2 = lon2 - lon1;
+  var dLon = toRad(x2)
+  var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  var d = R * c;
+  return Math.round(d * 100) * 10 ;
+}
+
 function setupPokemonMarker (item, skipNotification, isBounceDisabled) {
   // Scale icon size up with the map exponentially
   var iconSize = 2 + (map.getZoom() - 3) * (map.getZoom() - 3) * 0.2 + Store.get('iconSizeModifier')
@@ -1198,10 +1232,11 @@ function setupPokemonMarker (item, skipNotification, isBounceDisabled) {
 
   if (notifiedPokemon.indexOf(item['pokemon_id']) > -1 || notifiedRarity.indexOf(item['pokemon_rarity']) > -1) {
     if (!skipNotification) {
-      if (Store.get('playSound')) {
-        audio.play()
-      }
-      sendNotification('A wild ' + item['pokemon_name'] + ' appeared!', 'Click to load map', 'static/icons/' + item['pokemon_id'] + '.png', item['latitude'], item['longitude'])
+
+
+
+
+      sendNotification(item)
     }
     if (marker.animationDisabled !== true) {
       marker.setAnimation(google.maps.Animation.BOUNCE)
@@ -1551,6 +1586,7 @@ function updateMap () {
     showInBoundsMarkers(mapData.scanned)
     showInBoundsMarkers(mapData.spawnpoints)
     clearStaleMarkers()
+	sendLocation()
     if ($('#stats').hasClass('visible')) {
       countMarkers()
     }
@@ -1601,27 +1637,83 @@ function getPointDistance (pointA, pointB) {
   return google.maps.geometry.spherical.computeDistanceBetween(pointA, pointB)
 }
 
-function sendNotification (title, text, icon, lat, lng) {
-  if (!('Notification' in window)) {
-    return false // Notifications are not present in browser
-  }
 
-  if (Notification.permission !== 'granted') {
-    Notification.requestPermission()
-  } else {
-    var notification = new Notification(title, {
-      icon: icon,
-      body: text,
-      sound: 'sounds/ding.mp3'
-    })
 
-    notification.onclick = function () {
-      window.focus()
-      notification.close()
 
-      centerMap(lat, lng, 20)
+function appendLocationToQueryString(lat,lng) {
+    var queryString = window.location.search.replace("?", "");
+    var parameterListRaw = queryString == "" ? [] : queryString.split("&");
+    var parameterList = {};
+    for (var i = 0; i < parameterListRaw.length; i++) {
+        var parameter = parameterListRaw[i].split("=");
+        parameterList[parameter[0]] = parameter[1];
     }
-  }
+    parameterList['lat'] = lat;
+    parameterList['lng'] = lng;
+
+
+
+
+
+
+
+
+
+    var newQueryString = "?";
+    for (var item in parameterList) {
+        if (parameterList.hasOwnProperty(item)) {
+            newQueryString += item + "=" + parameterList[item] + "&";
+        }
+    }
+    newQueryString = newQueryString.replace(/&$/, "");
+    return location.origin + location.pathname + newQueryString;
+}
+
+
+
+
+
+navigator.serviceWorker.addEventListener('message', function(event){
+  if( event.data.action === 'clicked' ) centerMap(event.data.lat,event.data.lng,20)
+
+  if( event.data.action === 'playaudio' && Store.get('playSound') ) audio.play()
+  if( event.data.action === 'removeMarker' ) removePokemonMarker(event.data.encounter_id)
+  if( event.data.action === 'excludePokemon' ) excludePokemon(event.data.pokemon_id)
+});
+
+function sendNotification (item) {
+  navigator.serviceWorker.register('sw.js')
+  navigator.serviceWorker.ready.then(function(){
+    navigator.serviceWorker.controller.postMessage({
+      action: 'showNotification',
+      item: {
+        disappear_time: item.disappear_time,
+        encounter_id: item.encounter_id,
+        latitude: item.latitude,
+        longitude: item.longitude,
+        pokemon_id: item.pokemon_id,
+        pokemon_name: item.pokemon_name,
+        pokemon_rarity: item.pokemon_rarity,
+        pokemon_types: item.pokemon_types,
+        spawnpoint_id: item.spawnpoint_id
+      },
+      searchMarker: { lat: searchMarker.position.lat(), lng: searchMarker.position.lng() },
+      locationMarker: { lat: locationMarker.position.lat(), lng: locationMarker.position.lng() },
+      url: appendLocationToQueryString(item['latitude'],item['longitude']),
+	  isMobile: isMobile
+    })
+  })
+}
+
+function sendLocation(){
+  navigator.serviceWorker.register('sw.js')
+  navigator.serviceWorker.ready.then(function(){
+    navigator.serviceWorker.controller.postMessage({
+      action: 'updateLocation',
+      searchMarker: { lat: searchMarker.position.lat(), lng: searchMarker.position.lng() },
+      locationMarker: { lat: locationMarker.position.lat(), lng: locationMarker.position.lng() }
+    })
+  })
 }
 
 function myLocationButton (map, marker) {
@@ -2064,3 +2156,8 @@ $(function () {
     })
   }
 })
+
+//center the map if lat and lng query strings are present
+setTimeout( function(){
+    if ( typeof parameterList['lat'] !== 'undefined' && typeof parameterList['lng'] !== 'undefined' ) centerMap( parameterList['lat'], parameterList['lng'], 20 )
+}, 1000 );
