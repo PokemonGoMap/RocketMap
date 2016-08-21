@@ -386,90 +386,95 @@ def search_worker_thread(args, account, search_items_queue, pause_bit, encryptio
 
             # The forever loop for the searches
             while True:
+                try:
 
-                # If this account has been messing up too hard, let it rest
-                if status['fail'] >= args.max_failures:
-                    end_sleep = time.time() + (3600 * 2)
-                    long_sleep_started = time.strftime('%H:%M')
-                    while time.time() < end_sleep:
-                        status['message'] = 'Account "{}" has failed more than {} scans; possibly banned account. Sleeping for 2 hour sleep as of {}'.format(account['username'], args.max_failures, long_sleep_started)
-                        log.error(status['message'])
-                        time.sleep(300)
-                    break  # exit this loop to have the API recreated
+                    # If this account has been messing up too hard, let it rest
+                    if status['fail'] >= args.max_failures:
+                        end_sleep = time.time() + (3600 * 2)
+                        long_sleep_started = time.strftime('%H:%M')
+                        while time.time() < end_sleep:
+                            status['message'] = 'Account "{}" has failed more than {} scans; possibly banned account. Sleeping for 2 hour sleep as of {}'.format(account['username'], args.max_failures, long_sleep_started)
+                            log.error(status['message'])
+                            time.sleep(300)
+                        break  # exit this loop to have the API recreated
 
-                while pause_bit.is_set():
-                    status['message'] = 'Scanning paused'
-                    time.sleep(2)
+                    while pause_bit.is_set():
+                        status['message'] = 'Scanning paused'
+                        time.sleep(2)
 
-                # Grab the next thing to search (when available)
-                status['message'] = 'Waiting for item from queue'
-                step, step_location, appears, leaves = search_items_queue.get()
+                    # Grab the next thing to search (when available)
+                    status['message'] = 'Waiting for item from queue'
+                    step, step_location, appears, leaves = search_items_queue.get()
 
-                # too soon?
-                if appears and time.time() < appears + 10:  # adding a 10 second grace period
-                    paused = False
-                    while time.time() < appears + 10:
-                        if pause_bit.is_set():
-                            paused = True
-                            break  # why can't python just have `break 2`...
-                        remain = int(appears - time.time() + 10)
-                        status['message'] = '{}s early for location {},{}; waiting...'.format(remain, step_location[0], step_location[1])
-                        log.info(status['message'])
-                        time.sleep(5)
-                    if paused:
+                    # too soon?
+                    if appears and time.time() < appears + 10:  # adding a 10 second grace period
+                        paused = False
+                        while time.time() < appears + 10:
+                            if pause_bit.is_set():
+                                paused = True
+                                break  # why can't python just have `break 2`...
+                            remain = int(appears - time.time() + 10)
+                            status['message'] = '{}s early for location {},{}; waiting...'.format(remain, step_location[0], step_location[1])
+                            log.info(status['message'])
+                            time.sleep(5)
+                        if paused:
+                            search_items_queue.task_done()
+                            continue
+
+                    # too late?
+                    if leaves and time.time() > leaves:
                         search_items_queue.task_done()
+                        status['skip'] += 1
+                        status['message'] = 'Too late for location {},{}; skipping'.format(step_location[0], step_location[1])
+                        log.info(status['message'])
                         continue
 
-                # too late?
-                if leaves and time.time() > leaves:
-                    search_items_queue.task_done()
-                    status['skip'] += 1
-                    status['message'] = 'Too late for location {},{}; skipping'.format(step_location[0], step_location[1])
+                    status['message'] = 'Searching at {},{}'.format(step_location[0], step_location[1])
                     log.info(status['message'])
-                    continue
 
-                status['message'] = 'Searching at {},{}'.format(step_location[0], step_location[1])
-                log.info(status['message'])
+                    # Let the api know where we intend to be for this loop
+                    api.set_position(*step_location)
 
-                # Let the api know where we intend to be for this loop
-                api.set_position(*step_location)
+                    # Ok, let's get started -- check our login status
+                    check_login(args, account, api, step_location)
 
-                # Ok, let's get started -- check our login status
-                check_login(args, account, api, step_location)
+                    # Make the actual request (finally!)
+                    response_dict = map_request(api, step_location, args.jitter)
 
-                # Make the actual request (finally!)
-                response_dict = map_request(api, step_location, args.jitter)
+                    # G'damnit, nothing back. Mark it up, sleep, carry on
+                    if not response_dict:
+                        status['fail'] += 1
+                        status['message'] = 'Invalid response at {},{}, abandoning location'.format(step_location[0], step_location[1])
+                        log.error(status['message'])
+                        time.sleep(args.scan_delay)
+                        continue
 
-                # G'damnit, nothing back. Mark it up, sleep, carry on
-                if not response_dict:
-                    status['fail'] += 1
-                    status['message'] = 'Invalid response at {},{}, abandoning location'.format(step_location[0], step_location[1])
-                    log.error(status['message'])
+                    # Got the response, parse it out, send todo's to db/wh queues
+                    try:
+                        findCount = parse_map(args, response_dict, step_location, dbq, whq)
+                        search_items_queue.task_done()
+                        status[('success' if findCount > 0 else 'noitems')] += 1
+                        status['message'] = 'Search at {},{} completed with {} finds'.format(step_location[0], step_location[1], findCount)
+                        log.debug(status['message'])
+                    except KeyError:
+                        status['fail'] += 1
+                        status['message'] = 'Map parse failed at {},{}, abandoning location'.format(step_location[0], step_location[1])
+                        log.exception(status['message'])
+                        time.sleep(args.scan_delay)
+                        continue
+
+                    # Always delay the desired amount after "scan" completion
+                    status['message'] = 'Search at {},{} completed with {} finds, sleeping {}s'.format(step_location[0], step_location[1], findCount, args.scan_delay)
                     time.sleep(args.scan_delay)
-                    continue
 
-                # Got the response, parse it out, send todo's to db/wh queues
-                try:
-                    findCount = parse_map(args, response_dict, step_location, dbq, whq)
-                    search_items_queue.task_done()
-                    status[('success' if findCount > 0 else 'noitems')] += 1
-                    status['message'] = 'Search at {},{} completed with {} finds'.format(step_location[0], step_location[1], findCount)
-                    log.debug(status['message'])
-                except KeyError:
+                # catch any process exceptions, log them, and continue the thread
+                except Exception as e:
                     status['fail'] += 1
-                    status['message'] = 'Map parse failed at {},{}, abandoning location'.format(step_location[0], step_location[1])
+                    status['message'] = 'Exception in search_worker: {}'.format(e)
                     log.exception(status['message'])
                     time.sleep(args.scan_delay)
-                    continue
-
-                # Always delay the desired amount after "scan" completion
-                status['message'] = 'Search at {},{} completed with {} finds, sleeping {}s'.format(step_location[0], step_location[1], findCount, args.scan_delay)
-                time.sleep(args.scan_delay)
-
-        # catch any process exceptions, log them, and continue the thread
         except Exception as e:
-            status['fail'] += 1
-            status['message'] = 'Exception in search_worker: {}'.format(e)
+            status['message'] = 'Exception in outer loop: {}'.format(e)
             log.exception(status['message'])
             time.sleep(args.scan_delay)
 
