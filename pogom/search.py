@@ -498,6 +498,7 @@ def check_login(args, account, api, position):
                 time.sleep(args.login_delay)
 
     log.debug('Login for account %s successful', account['username'])
+    time.sleep(args.scan_delay)
 
 
 def map_request(api, position, jitter=False):
