@@ -332,14 +332,7 @@ def get_sps_location_list(args, current_location):
 
     log.info('Total of %d spawns to track', len(locations))
 
-    # at this point, 'time' is DISAPPEARANCE time, we're going to morph it to APPEARANCE time
     for location in locations:
-        # examples: time    shifted
-        #           0       (   0 + 2700) = 2700 % 3600 = 2700 (0th minute to 45th minute, 15 minutes prior to appearance as time wraps around the hour)
-        #           1800    (1800 + 2700) = 4500 % 3600 =  900 (30th minute, moved to arrive at 15th minute)
-        # todo: this DOES NOT ACCOUNT for pokemons that appear sooner and live longer, but you'll _always_ have at least 15 minutes, so it works well enough
-        location['time'] = (location['time'] + 2700) % 3600
-
         # Now, lets convert that to the next real unix timestamp since that's a ton easier to work with
         if location['time'] > cur_sec():
             # hasn't spawn in the current hour
