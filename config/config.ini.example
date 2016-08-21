@@ -27,7 +27,7 @@
 # Misc
 #gmaps-key:             # your Google Maps API key
 #proxy:                 # Proxy URL (e.g. socks5://127.0.0.1:9050)
-#webhook:               # webhook URL (e.g. http://127.0.0.1:4000)
+#webhook:               # one webhook URL (e.g. http://127.0.0.1:4000); multiple webhooks must use command line (e.g. -wh http://127.0.0.1:4000 http://127.0.0.1:6000) 
 #webhook-updates-only:  # don't send the webhook gyms or non-lured pokéstops (default false)
 #print-status:          # shows the status screen instead of log screen, can switch between with [ENTER] (default false)
 
