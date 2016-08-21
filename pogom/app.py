@@ -89,7 +89,7 @@ class Pogom(Flask):
             else:
                 d['pokemons'] = Pokemon.get_active(swLat, swLng, neLat, neLng)
 
-        if request.args.get('pokestops', 'false') == 'true':
+        if request.args.get('pokestops', 'true') == 'true':
             d['pokestops'] = Pokestop.get_stops(swLat, swLng, neLat, neLng)
 
         if request.args.get('gyms', 'true') == 'true':
@@ -140,7 +140,7 @@ class Pogom(Flask):
             self.location_queue.put((lat, lon, 0))
             self.set_current_location((lat, lon, 0))
             log.info('Changing next location: %s,%s', lat, lon)
-            return 'ok'
+            return self.loc()
 
     def list_pokemon(self):
         # todo: check if client is android/iOS/Desktop for geolink, currently
