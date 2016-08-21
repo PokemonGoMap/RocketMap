@@ -407,13 +407,13 @@ def search_worker_thread(args, account, search_items_queue, pause_bit, encryptio
                     step, step_location, appears, leaves = search_items_queue.get()
 
                     # too soon?
-                    if appears and time.time() < appears + 10:  # adding a 10 second grace period
+                    if appears and int(time.time()) < int(appears + 10):  # adding a 10 second grace period
                         paused = False
-                        while time.time() < appears + 10:
+                        while int(time.time()) < int(appears + 10):
                             if pause_bit.is_set():
                                 paused = True
                                 break  # why can't python just have `break 2`...
-                            remain = int(appears - time.time() + 10)
+                            remain = int(appears) - int(time.time()) + 10
                             status['message'] = '{}s early for location {},{}; waiting...'.format(remain, step_location[0], step_location[1])
                             log.info(status['message'])
                             time.sleep(5)
