@@ -468,6 +468,7 @@ def search_worker_thread(args, account, search_items_queue, pause_bit, encryptio
 
         # catch any process exceptions, log them, and continue the thread
         except Exception as e:
+            status['fail'] += 1
             status['message'] = 'Exception in search_worker: {}'.format(e)
             log.exception(status['message'])
             time.sleep(args.scan_delay)
