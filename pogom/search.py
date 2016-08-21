@@ -426,7 +426,6 @@ def search_worker_thread(args, account, search_items_queue, pause_bit, encryptio
                     status['skip'] += 1
                     status['message'] = 'Too late for location {},{}; skipping'.format(step_location[0], step_location[1])
                     log.info(status['message'])
-                    time.sleep(args.scan_delay)
                     continue
 
                 status['message'] = 'Searching at {},{}'.format(step_location[0], step_location[1])
