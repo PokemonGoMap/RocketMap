@@ -244,6 +244,10 @@ class Pokemon(BaseModel):
                 if geopy.distance.distance(hl, (sp['lat'], sp['lng'])).meters <= 70:
                     filtered.append(s.pop(idx))
 
+        # Fix time to be appear time instead of disappear time
+        for spawn in filtered:
+            spawn['time'] = (spawn['time'] + 2700) % 3600
+
         return filtered
 
 
