@@ -26,13 +26,13 @@
 
 # Misc
 #gmaps-key:             # your Google Maps API key
-#proxy:                 # Proxy URL e.g. socks5://127.0.0.1:9050
-#webhook:               # webhook URL (including http://)
-#webhook-updates-only:               # only send updates to webhooks, (excludes gyms & non-lured pokéstops)
-#print-status:           # shows the status screen instead of log screen, can switch between with [ENTER] (default false)
+#proxy:                 # Proxy URL (e.g. socks5://127.0.0.1:9050)
+#webhook:               # webhook URL (e.g. http://127.0.0.1:4000)
+#webhook-updates-only:  # don't send the webhook gyms or non-lured pokéstops (default false)
+#print-status:          # shows the status screen instead of log screen, can switch between with [ENTER] (default false)
 
 # Webserver settings
-#host:                  # address to listen on (default 127.0.0.1)
+#host:                  # address to listen on (default 127.0.0.1; use 0.0.0.0 to listen on all addresses)
 #port:                  # port to listen on (default 5000)
 #locale:                # pokemon name translation (default en)
 #ssl-certificate:       # relative or absolute path to ssl certificate (e.g. ./config/ssl.cert)
