@@ -553,7 +553,7 @@ def clean_db_loop(args):
                      .where((ScannedLocation.last_modified <
                             (datetime.utcnow() - timedelta(minutes=30)))))
             query.execute()
-            
+
             # Remove active modifier from expired lured pokestops
             query = (Pokestop
                      .update(lure_expiration=None)
