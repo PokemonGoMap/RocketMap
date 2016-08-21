@@ -388,7 +388,7 @@ def search_worker_thread(args, account, search_items_queue, pause_bit, encryptio
             while True:
 
                 # If this account has been messing up too hard, let it rest
-                if status['fail'] > args.max_failures:
+                if status['fail'] >= args.max_failures:
                     end_sleep = time.time() + (3600 * 2)
                     long_sleep_started = time.strftime('%H:%M')
                     while time.time() < end_sleep:
@@ -443,7 +443,7 @@ def search_worker_thread(args, account, search_items_queue, pause_bit, encryptio
                 # G'damnit, nothing back. Mark it up, sleep, carry on
                 if not response_dict:
                     status['fail'] += 1
-                    status['message'] = 'Invalid response at {},{}, abandoning location'.format(status['fail'], step_location[0], step_location[1])
+                    status['message'] = 'Invalid response at {},{}, abandoning location'.format(step_location[0], step_location[1])
                     log.error(status['message'])
                     time.sleep(args.scan_delay)
                     continue
@@ -459,8 +459,11 @@ def search_worker_thread(args, account, search_items_queue, pause_bit, encryptio
                     status['fail'] += 1
                     status['message'] = 'Map parse failed at {},{}, abandoning location'.format(step_location[0], step_location[1])
                     log.exception(status['message'])
+                    time.sleep(args.scan_delay)
+                    continue
 
                 # Always delay the desired amount after "scan" completion
+                status['message'] = 'Search at {},{} completed with {} finds, sleeping {}s'.format(step_location[0], step_location[1], findCount, args.scan_delay)
                 time.sleep(args.scan_delay)
 
         # catch any process exceptions, log them, and continue the thread
