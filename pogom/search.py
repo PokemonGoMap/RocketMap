@@ -125,7 +125,7 @@ def status_printer(threadStatus, search_items_queue, db_updates_queue, wh_queue)
             current_line = 1
 
             # longest username
-            userlen = 0
+            userlen = 6
             for item in threadStatus:
                 if threadStatus[item]['type'] == 'Worker':
                     userlen = max(userlen, len(threadStatus[item]['user']))
