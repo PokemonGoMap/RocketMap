@@ -73,6 +73,9 @@ def get_args():
     parser.add_argument('-mf', '--max-failures',
                         help='Maximum number of failures to parse locations before an account will go into a two hour sleep',
                         type=int, default=5)
+    parser.add_argument('-msl', '--max-seconds-left',
+                        help='Max seconds that must be left on a spawnpoint scan before skipping it',
+                        type=int, default=10)
     parser.add_argument('-dc', '--display-in-console',
                         help='Display Found Pokemon in Console',
                         action='store_true', default=False)

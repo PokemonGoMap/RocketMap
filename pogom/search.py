@@ -422,7 +422,7 @@ def search_worker_thread(args, account, search_items_queue, pause_bit, encryptio
                             continue
 
                     # too late?
-                    if leaves and time.time() > leaves:
+                    if leaves and time.time() > (leaves - args.max_seconds_left):
                         search_items_queue.task_done()
                         status['skip'] += 1
                         status['message'] = 'Too late for location {},{}; skipping'.format(step_location[0], step_location[1])
