@@ -524,14 +524,14 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
 
                 # If there's any time left between the start time and the time when we should be kicking off the next
                 # loop, hang out until its up.
-                # add random delay of 0-5 seconds to avoid account ban
-                randomDelay = random.randint(0, 5)
-                sleep_delay_remaining = loop_start_time + ((args.scan_delay + randomDelay) * 1000) - int(round(time.time() * 1000))
+                # add --random-delay
+                random_delay = random.randint(0, args.random_delay)
+                sleep_delay_remaining = loop_start_time + ((args.scan_delay + random_delay) * 1000) - int(round(time.time() * 1000))
                 if sleep_delay_remaining > 0:
                     status['message'] = "Waiting {} seconds for scan delay".format(sleep_delay_remaining / 1000)
                     time.sleep(sleep_delay_remaining / 1000)
 
-                loop_start_time += (args.scan_delay + randomDelay) * 1000
+                loop_start_time += (args.scan_delay + random_delay) * 1000
 
         # catch any process exceptions, log them, and continue the thread
         except Exception as e:
@@ -584,7 +584,9 @@ def search_worker_thread_ss(args, account, search_items_queue, parse_lock, encry
                                 long_sleep_time += 300
                                 time.sleep(300)
                             break
-                        sleep_time = args.scan_delay * (1 + failed_total)
+                        # add --random-delay
+                        random_delay = random.randint(0, args.random_delay)
+                        sleep_time = args.scan_delay * (1 + failed_total) + random_delay
                         check_login(args, account, api, step_location)
                         # make the map request
                         response_dict = map_request(api, step_location)
