@@ -498,6 +498,7 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
                 api = PGoApi()
 
             if account['proxy']:
+                log.debug('Using proxy %s for API calls',account['proxy'])
                 api.set_proxy({'http': account['proxy'], 'https': account['proxy']})
 
             api.activate_signature(encryption_lib_path)
@@ -611,6 +612,7 @@ def search_worker_thread_ss(args, account, search_items_queue, parse_lock, encry
             else:
                 api = PGoApi()
             if account['proxy']:
+                log.debug('Using proxy %s',account['proxy'])
                 api.set_proxy({'http': account['proxy'], 'https': account['proxy']})
             api.activate_signature(encryption_lib_path)
             # search forever loop
@@ -698,6 +700,7 @@ def check_login(args, account, api, position):
         try:
             if account['proxy']:
                 try:
+                    log.debug('Using proxy %s for login',account['proxy'])
                     api.set_authentication(provider=account['auth_service'], username=account['username'], password=account['password'], proxy_config={'http': account['proxy'], 'https': account['proxy']})
                 except:
                     log.error('Error using proxy for auth, going on without proxy in auth')
