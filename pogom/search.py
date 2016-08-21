@@ -511,7 +511,7 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
                         log.error('Search step %d area download failed, retrying request in %g seconds', step, sleep_time)
                         failed_total += 1
                         status['fail'] += 1
-                        status['message'] = "Failed {} times to scan {},{} - no response - sleeping {} seconds. Username: {}".format(failed_total, step_location[0], step_location[1], sleep_time, account['username'])
+                        status['message'] = "Failed {} times to scan {},{} - no response - sleeping {} seconds at {}. Username: {}".format(failed_total, step_location[0], step_location[1], sleep_time, time.strftime("%H:%M:%S"), account['username'])
                         time.sleep(sleep_time)
                         continue
 
@@ -529,21 +529,21 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
                         log.exception('Search step %s map parsing failed, retrying request in %g seconds. Username: %s', step, sleep_time, account['username'])
                         failed_total += 1
                         status['fail'] += 1
-                        status['message'] = "Failed {} times to scan {},{} - map parsing failed - sleeping {} seconds. Username: {}".format(failed_total, step_location[0], step_location[1], sleep_time, account['username'])
+                        status['message'] = "Failed {} times to scan {},{} - map parsing failed - sleeping {} seconds at {}. Username: {}".format(failed_total, step_location[0], step_location[1], sleep_time, time.strftime("%H:%M:%S"), account['username'])
                         time.sleep(sleep_time)
 
                 # If there's any time left between the start time and the time when we should be kicking off the next
                 # loop, hang out until its up.
                 sleep_delay_remaining = loop_start_time + (args.scan_delay * 1000) - int(round(time.time() * 1000))
                 if sleep_delay_remaining > 0:
-                    status['message'] = "Waiting {} seconds for scan delay".format(sleep_delay_remaining / 1000)
+                    status['message'] = "Waiting {} seconds for scan delay at {}".format(sleep_delay_remaining / 1000, time.strftime("%H:%M:%S"))
                     time.sleep(sleep_delay_remaining / 1000)
 
                 loop_start_time += args.scan_delay * 1000
 
         # catch any process exceptions, log them, and continue the thread
         except Exception as e:
-            status['message'] = "Exception in search_worker. Username: {}".format(account['username'])
+            status['message'] = "Exception in search_worker at {}. Username: {}".format(account['username'], time.strftime("%H:%M:%S"))
             log.exception('Exception in search_worker: %s. Username: %s', e, account['username'])
             time.sleep(sleep_time)
 
@@ -601,7 +601,7 @@ def search_worker_thread_ss(args, account, search_items_queue, parse_lock, encry
                             log.error('Search step %d area download failed, retyring request in %g seconds', step, sleep_time)
                             failed_total += 1
                             status['fail'] += 1
-                            status['message'] = "Failed {} times to scan {},{} - no response - sleeping {} seconds. Username: {}".format(failed_total, step_location[0], step_location[1], sleep_time, account['username'])
+                            status['message'] = "Failed {} times to scan {},{} - no response - sleeping {} seconds at {}. Username: {}".format(failed_total, step_location[0], step_location[1], sleep_time, time.strftime("%H:%M:%S"), account['username'])
                             time.sleep(sleep_time)
                             continue
                         # got responce try and parse it
@@ -618,10 +618,10 @@ def search_worker_thread_ss(args, account, search_items_queue, parse_lock, encry
                             log.exception('Search step %s map parsing failed, retrying request in %g seconds. Username: %s', step, sleep_time, account['username'])
                             failed_total += 1
                             status['fail'] += 1
-                            status['message'] = "Failed {} times to scan {},{} - map parsing failed - sleeping {} seconds. Username: {}".format(failed_total, step_location[0], step_location[1], sleep_time, account['username'])
+                            status['message'] = "Failed {} times to scan {},{} - map parsing failed - sleeping {} seconds at {}. Username: {}".format(failed_total, step_location[0], step_location[1], sleep_time, time.strftime("%H:%M:%S"), account['username'])
                             time.sleep(sleep_time)
                         time.sleep(sleep_time)
-                    status['message'] = "Waiting {} seconds for scan delay".format(sleep_time)
+                    status['message'] = "Waiting {} seconds for scan delay at {}".format(sleep_time, time.strftime("%H:%M:%S"))
                     time.sleep(sleep_time)
                 else:
                     search_items_queue.task_done()
