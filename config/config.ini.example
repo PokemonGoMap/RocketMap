@@ -37,6 +37,7 @@
 #locale:                # pokemon name translation (default en)
 #ssl-certificate:       # relative or absolute path to ssl certificate (e.g. ./config/ssl.cert)
 #ssl-privatekey:        # relative or absolute path to ssl private key (e.g. ./config/ssl.key)
+#encrypt-lib:           # path to encrypt lib to be used instead of the shipped ones
 
 #Uncomment a line when you want to change its default value (Remove # at the beginning)
 #username, password, location and gmaps-key are required
