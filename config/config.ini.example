@@ -20,8 +20,8 @@
 #no-pokestops:          # disables pokestop scanning (default false)
 #scan-delay:            # seconds to wait before sending an account to do its next scan (default 10)
 #step-limit:            # search radius measured as 140m "steps" from the current search location (default 12)
-#spawnpoint-only        # does a normal "spiral" step scan but skips any steps with no known spawnpoints (default false)
-#spawnpoint-scanning    # no "spiral" step scan, jumps from spawnpoint to spawnpoint based on the known time that they will appear
+#spawnpoint-only:       # does a normal "spiral" step scan but skips any steps with no known spawnpoints (default false)
+#spawnpoint-scanning:   # no "spiral" step scan, jumps from spawnpoint to spawnpoint based on the known time that they will appear
                         #(takes a file path to a json of known spawnpoints, if the file does not exist will use all known points from the database)
 
 # Misc
