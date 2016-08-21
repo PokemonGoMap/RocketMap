@@ -63,6 +63,36 @@ troubleshooting:
 
 	pip freeze | xargs pip uninstall -y
 	
+	If you're getting the following error:
+
+.. code-block:: bash
+
+	root:~/PokemonGo-Map# ./runserver.py
+	Traceback (most recent call last):
+  		File "./runserver.py", line 10, in <module>
+  		import requests
+	ImportError: No module named requests
+	
+	You will need to completely uninstall all of your pip packages, pip, and python, then re-install from source again. Something from your previous installation is still hanging around.
+	
+Debian 7
+********
+
+Additional steps are required to get Debian 7 (wheezy) working. You'll need to update from glibc to eglibc
+
+edit your `/etc/apt/sources.list` file and add the following line:
+
+.. code-block:: bash
+
+	deb http://ftp.debian.org/debian sid main
+	
+Then install the packages for eglibc:
+
+.. code-block:: bash
+
+	sudo apt-get update
+	apt-get -t sid install libc6-amd64 libc6-dev libc6-dbg
+	reboot
 
 Red Hat or CentOs or Fedora
 ***************************
