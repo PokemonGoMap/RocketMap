@@ -3,7 +3,8 @@
 import logging
 import calendar
 import sys
-import math
+import time
+import geopy
 from peewee import SqliteDatabase, InsertQuery, \
     IntegerField, CharField, DoubleField, BooleanField, \
     DateTimeField, CompositeKey, fn
@@ -15,8 +16,8 @@ from datetime import datetime, timedelta
 from base64 import b64encode
 
 from . import config
-from .utils import get_pokemon_name, get_pokemon_rarity, get_pokemon_types, get_args, send_to_webhook
-from .transform import transform_from_wgs_to_gcj
+from .utils import get_pokemon_name, get_pokemon_rarity, get_pokemon_types, get_args
+from .transform import transform_from_wgs_to_gcj, get_new_coords, generate_location_steps
 from .customLog import printPokemon
 
 log = logging.getLogger(__name__)
@@ -189,17 +190,16 @@ class Pokemon(BaseModel):
         return appearances
 
     @classmethod
-    def get_spawnpoints(cls, swLat, swLng, neLat, neLng):
+    def get_spawnpoints(cls, southBoundary, westBoundary, northBoundary, eastBoundary):
         query = Pokemon.select(Pokemon.latitude, Pokemon.longitude, Pokemon.spawnpoint_id)
 
-        if None not in (swLat, swLng, neLat, neLng):
+        if None not in (northBoundary, southBoundary, westBoundary, eastBoundary):
             query = (query
-                     .where((Pokemon.latitude >= swLat) &
-                            (Pokemon.longitude >= swLng) &
-                            (Pokemon.latitude <= neLat) &
-                            (Pokemon.longitude <= neLng)
-                            )
-                     )
+                     .where((Pokemon.latitude <= northBoundary) &
+                            (Pokemon.latitude >= southBoundary) &
+                            (Pokemon.longitude >= westBoundary) &
+                            (Pokemon.longitude <= eastBoundary)
+                            ))
 
         # Sqlite doesn't support distinct on columns
         if args.db_type == 'mysql':
@@ -211,28 +211,20 @@ class Pokemon(BaseModel):
 
     @classmethod
     def get_spawnpoints_in_hex(cls, center, steps):
-        log.info('got {}steps'.format(steps))
-        # work out hex bounding box
-        hdist = ((steps * 120.0) - 50.0) / 1000.0
-        vdist = ((steps * 105.0) - 35.0) / 1000.0
-        R = 6378.1  # km radius of the earth
-        vang = math.degrees(vdist / R)
-        hang = math.degrees(hdist / (R * math.cos(math.radians(center[0]))))
-        north = center[0] + vang
-        south = center[0] - vang
-        east = center[1] + hang
-        west = center[1] - hang
-        # get all spawns in that box
+        log.info('Finding spawn points {} steps away'.format(steps))
+
+        n, e, s, w = hex_bounds(center, steps)
+
         query = (Pokemon
                  .select(Pokemon.latitude.alias('lat'),
                          Pokemon.longitude.alias('lng'),
                          ((Pokemon.disappear_time.minute * 60) + Pokemon.disappear_time.second).alias('time'),
                          Pokemon.spawnpoint_id
                          ))
-        query = (query.where((Pokemon.latitude <= north) &
-                             (Pokemon.latitude >= south) &
-                             (Pokemon.longitude >= west) &
-                             (Pokemon.longitude <= east)
+        query = (query.where((Pokemon.latitude <= n) &
+                             (Pokemon.latitude >= s) &
+                             (Pokemon.longitude >= w) &
+                             (Pokemon.longitude <= e)
                              ))
         # Sqlite doesn't support distinct on columns
         if args.db_type == 'mysql':
@@ -241,24 +233,26 @@ class Pokemon(BaseModel):
             query = query.group_by(Pokemon.spawnpoint_id)
 
         s = list(query.dicts())
-        # for each spawn work out if it is in the hex (clipping the diagonals)
-        trueSpawns = []
-        for spawn in s:
-            spawn['time'] = (spawn['time'] + 2700) % 3600
-            # get the offset from the center of each spawn in km
-            offset = [math.radians(spawn['lat'] - center[0]) * R, math.radians(spawn['lng'] - center[1]) * (R * math.cos(math.radians(center[0])))]
-            # check agains the 4 lines that make up the diagonals
-            if (offset[1] + (offset[0] * 0.5)) > hdist:  # too far ne
-                continue
-            if (offset[1] - (offset[0] * 0.5)) > hdist:  # too far se
-                continue
-            if ((offset[0] * 0.5) - offset[1]) > hdist:  # too far nw
-                continue
-            if ((0 - offset[1]) - (offset[0] * 0.5)) > hdist:  # too far sw
-                continue
-            # if it gets to here its  a good spawn
-            trueSpawns.append(spawn)
-        return trueSpawns
+
+        # Filter to spawns which actually fall in the hex locations
+        # This loop is about as non-pythonic as you can get, I bet.
+        # Oh well.
+        filtered = []
+        hex_locations = list(generate_location_steps(center, steps, 0.07))
+        for hl in hex_locations:
+            for idx, sp in enumerate(s):
+                if geopy.distance.distance(hl, (sp['lat'], sp['lng'])).meters <= 70:
+                    filtered.append(s.pop(idx))
+
+        # at this point, 'time' is DISAPPEARANCE time, we're going to morph it to APPEARANCE time
+        for location in filtered:
+            # examples: time    shifted
+            #           0       (   0 + 2700) = 2700 % 3600 = 2700 (0th minute to 45th minute, 15 minutes prior to appearance as time wraps around the hour)
+            #           1800    (1800 + 2700) = 4500 % 3600 =  900 (30th minute, moved to arrive at 15th minute)
+            # todo: this DOES NOT ACCOUNT for pokemons that appear sooner and live longer, but you'll _always_ have at least 15 minutes, so it works well enough
+            location['time'] = (location['time'] + 2700) % 3600
+
+        return filtered
 
 
 class Pokestop(BaseModel):
@@ -373,11 +367,22 @@ class Versions(flaskDb.Model):
         primary_key = False
 
 
-def parse_map(map_dict, step_location):
+def hex_bounds(center, steps):
+    # Make a box that is (70m * step_limit * 2) + 70m away from the center point
+    # Rationale is that you need to travel
+    sp_dist = 0.07 * 2 * steps
+    n = get_new_coords(center, sp_dist, 0)[0]
+    e = get_new_coords(center, sp_dist, 90)[1]
+    s = get_new_coords(center, sp_dist, 180)[0]
+    w = get_new_coords(center, sp_dist, 270)[1]
+    return (n, e, s, w)
+
+
+# todo: this probably shouldn't _really_ be in "models" anymore, but w/e
+def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue):
     pokemons = {}
     pokestops = {}
     gyms = {}
-    scanned = {}
 
     cells = map_dict['responses']['GET_MAP_OBJECTS']['map_cells']
     for cell in cells:
@@ -404,18 +409,17 @@ def parse_map(map_dict, step_location):
                     'disappear_time': d_t
                 }
 
-                webhook_data = {
-                    'encounter_id': b64encode(str(p['encounter_id'])),
-                    'spawnpoint_id': p['spawn_point_id'],
-                    'pokemon_id': p['pokemon_data']['pokemon_id'],
-                    'latitude': p['latitude'],
-                    'longitude': p['longitude'],
-                    'disappear_time': calendar.timegm(d_t.timetuple()),
-                    'last_modified_time': p['last_modified_timestamp_ms'],
-                    'time_until_hidden_ms': p['time_till_hidden_ms']
-                }
-
-                send_to_webhook('pokemon', webhook_data)
+                if args.webhooks:
+                    wh_update_queue.put(('pokemon', {
+                        'encounter_id': b64encode(str(p['encounter_id'])),
+                        'spawnpoint_id': p['spawn_point_id'],
+                        'pokemon_id': p['pokemon_data']['pokemon_id'],
+                        'latitude': p['latitude'],
+                        'longitude': p['longitude'],
+                        'disappear_time': calendar.timegm(d_t.timetuple()),
+                        'last_modified_time': p['last_modified_timestamp_ms'],
+                        'time_until_hidden_ms': p['time_till_hidden_ms']
+                    }))
 
         for f in cell.get('forts', []):
             if config['parse_pokestops'] and f.get('type') == 1:  # Pokestops
@@ -423,20 +427,16 @@ def parse_map(map_dict, step_location):
                     lure_expiration = datetime.utcfromtimestamp(
                         f['last_modified_timestamp_ms'] / 1000.0) + timedelta(minutes=30)
                     active_fort_modifier = f['active_fort_modifier']
-
-                    webhook_data = {
-                        'pokestop_id': b64encode(str(f['id'])),
-                        'enabled': f['enabled'],
-                        'latitude': f['latitude'],
-                        'longitude': f['longitude'],
-                        'last_modified_time': f['last_modified_timestamp_ms'],
-                        'lure_expiration': calendar.timegm(lure_expiration.timetuple()),
-                        'active_fort_modifier': active_fort_modifier
-                    }
-
-                    # Include lured pokéstops in our updates to webhooks
-                    if args.webhook_updates_only:
-                        send_to_webhook('pokestop', webhook_data)
+                    if args.webhooks and args.webhook_updates_only:
+                        wh_update_queue.put(('pokestop', {
+                            'pokestop_id': b64encode(str(f['id'])),
+                            'enabled': f['enabled'],
+                            'latitude': f['latitude'],
+                            'longitude': f['longitude'],
+                            'last_modified_time': f['last_modified_timestamp_ms'],
+                            'lure_expiration': calendar.timegm(lure_expiration.timetuple()),
+                            'active_fort_modifier': active_fort_modifier
+                        }))
                 else:
                     lure_expiration, active_fort_modifier = None, None
 
@@ -448,11 +448,11 @@ def parse_map(map_dict, step_location):
                     'last_modified': datetime.utcfromtimestamp(
                         f['last_modified_timestamp_ms'] / 1000.0),
                     'lure_expiration': lure_expiration,
-                    'active_fort_modifier': active_fort_modifier,
+                    'active_fort_modifier': active_fort_modifier
                 }
 
                 # Send all pokéstops to webhooks
-                if not args.webhook_updates_only:
+                if args.webhooks and not args.webhook_updates_only:
                     # Explicitly set 'webhook_data', in case we want to change the information pushed to webhooks,
                     # similar to above and previous commits.
                     l_e = None
@@ -460,16 +460,15 @@ def parse_map(map_dict, step_location):
                     if lure_expiration is not None:
                         l_e = calendar.timegm(lure_expiration.timetuple())
 
-                    webhook_data = {
+                    wh_update_queue.put(('pokestop', {
                         'pokestop_id': b64encode(str(f['id'])),
                         'enabled': f['enabled'],
                         'latitude': f['latitude'],
                         'longitude': f['longitude'],
                         'last_modified': calendar.timegm(pokestops[f['id']]['last_modified'].timetuple()),
                         'lure_expiration': l_e,
-                        'active_fort_modifier': active_fort_modifier,
-                    }
-                    send_to_webhook('pokestop', webhook_data)
+                        'active_fort_modifier': active_fort_modifier
+                    }))
 
             elif config['parse_gyms'] and f.get('type') is None:  # Currently, there are only stops and gyms
                 gyms[f['id']] = {
@@ -485,10 +484,10 @@ def parse_map(map_dict, step_location):
                 }
 
                 # Send gyms to webhooks
-                if not args.webhook_updates_only:
+                if args.webhooks and not args.webhook_updates_only:
                     # Explicitly set 'webhook_data', in case we want to change the information pushed to webhooks,
                     # similar to above and previous commits.
-                    webhook_data = {
+                    wh_update_queue.put(('gym', {
                         'gym_id': b64encode(str(f['id'])),
                         'team_id': f.get('owned_by_team', 0),
                         'guard_pokemon_id': f.get('guard_pokemon_id', 0),
@@ -496,66 +495,80 @@ def parse_map(map_dict, step_location):
                         'enabled': f['enabled'],
                         'latitude': f['latitude'],
                         'longitude': f['longitude'],
-                        'last_modified': calendar.timegm(gyms[f['id']]['last_modified'].timetuple()),
-                    }
-                    send_to_webhook('gym', webhook_data)
+                        'last_modified': calendar.timegm(gyms[f['id']]['last_modified'].timetuple())
+                    }))
 
-    pokemons_upserted = 0
-    pokestops_upserted = 0
-    gyms_upserted = 0
+    if len(pokemons):
+        db_update_queue.put((Pokemon, pokemons))
+    if len(pokestops):
+        db_update_queue.put((Pokestop, pokestops))
+    if len(gyms):
+        db_update_queue.put((Gym, gyms))
 
-    scanned[0] = {
+    log.info('Parsing found %d pokemons, %d pokestops, and %d gyms',
+             len(pokemons),
+             len(pokestops),
+             len(gyms))
+
+    db_update_queue.put((ScannedLocation, {0: {
         'latitude': step_location[0],
         'longitude': step_location[1],
-        'last_modified': datetime.utcnow(),
-    }
+        'last_modified': datetime.utcnow()
+    }}))
 
+    return len(pokemons) + len(pokestops) + len(gyms)
+
+
+def db_updater(args, q):
+    # The forever loop
     while True:
         try:
-            flaskDb.connect_db()
-            break
+
+            while True:
+                try:
+                    flaskDb.connect_db()
+                    break
+                except Exception as e:
+                    log.warning('%s... Retrying', e)
+
+            # Loop the queue
+            while True:
+                model, data = q.get()
+                bulk_upsert(model, data)
+                q.task_done()
+                log.debug('Upserted to %s, %d records (upsert queue remaining: %d)',
+                          model.__name__,
+                          len(data),
+                          q.qsize())
+                if q.qsize() > 50:
+                    log.warning("DB queue is > 50 (@%d); try increasing --db-threads", q.qsize())
+
         except Exception as e:
-            log.warning('%s... Retrying', e)
-
-    if pokemons and config['parse_pokemon']:
-        pokemons_upserted = len(pokemons)
-        bulk_upsert(Pokemon, pokemons)
-
-    if pokestops and config['parse_pokestops']:
-        pokestops_upserted = len(pokestops)
-        bulk_upsert(Pokestop, pokestops)
-
-    if gyms and config['parse_gyms']:
-        gyms_upserted = len(gyms)
-        bulk_upsert(Gym, gyms)
-
-    bulk_upsert(ScannedLocation, scanned)
-
-    clean_database()
-
-    flaskDb.close_db(None)
-
-    log.info('Upserted %d pokemon, %d pokestops, and %d gyms',
-             pokemons_upserted,
-             pokestops_upserted,
-             gyms_upserted)
-
-    return True
+            log.exception('Exception in db_updater: %s', e)
 
 
-def clean_database():
-    query = (ScannedLocation
-             .delete()
-             .where((ScannedLocation.last_modified <
-                    (datetime.utcnow() - timedelta(minutes=30)))))
-    query.execute()
+def clean_db_loop(args):
+    while True:
+        try:
 
-    if args.purge_data > 0:
-        query = (Pokemon
-                 .delete()
-                 .where((Pokemon.disappear_time <
-                        (datetime.utcnow() - timedelta(hours=args.purge_data)))))
-        query.execute()
+            # Clean out old scanned locations
+            query = (ScannedLocation
+                     .delete()
+                     .where((ScannedLocation.last_modified <
+                            (datetime.utcnow() - timedelta(minutes=30)))))
+            query.execute()
+
+            # If desired, clear old pokemon spawns
+            if args.purge_data > 0:
+                query = (Pokemon
+                         .delete()
+                         .where((Pokemon.disappear_time <
+                                (datetime.utcnow() - timedelta(hours=args.purge_data)))))
+
+            log.info('Regular database cleaning complete')
+            time.sleep(60)
+        except Exception as e:
+            log.exception('Exception in clean_db_loop: %s', e)
 
 
 def bulk_upsert(cls, data):
