@@ -462,7 +462,7 @@ def search_worker_thread(args, account, search_items_queue, pause_bit, encryptio
                         continue
 
                 # too late?
-                if leaves and now() > leaves:
+                if leaves and now() > (leaves - args.min_seconds_left):
                     search_items_queue.task_done()
                     status['skip'] += 1
                     # it is slightly silly to put this in status['message'] since it'll be overwritten very shortly after. Oh well.
