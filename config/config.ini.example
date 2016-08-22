@@ -10,27 +10,33 @@
 #db-user:               # required for mysql
 #db-pass:               # required for mysql
 #db-port:               # default 3306
+#db-threads:            # Number of db threads; increase if the db queue falls behind. (default 1)
 
 # Search settings
 #location:
+#fixed-location:        # prevents location from being changed (default false)
 #no-gyms:               # disables gym scanning (default false)
 #no-pokemon:            # disables pokemon scanning (default false)
 #no-pokestops:          # disables pokestop scanning (default false)
-#scan-delay:            # default 10
-#step-limit:            # default 12
+#scan-delay:            # seconds to wait before sending an account to do its next scan (default 10)
+#step-limit:            # search radius measured as 140m "steps" from the current search location (default 12)
+#spawnpoint-only:       # does a normal "spiral" step scan but skips any steps with no known spawnpoints (default false)
+#spawnpoint-scanning:   # no "spiral" step scan, jumps from spawnpoint to spawnpoint based on the known time that they will appear
+                        #(takes a file path to a json of known spawnpoints, if the file does not exist will use all known points from the database)
 
 # Misc
 #gmaps-key:             # your Google Maps API key
-#proxy:                 # Proxy URL e.g. socks5://127.0.0.1:9050
-#webhook:               # webhook URL (including http://)
-#webhook-updates-only:               # only send updates to webhooks, (excludes gyms & non-lured pokéstops)
+#proxy:                 # Proxy URL (e.g. socks5://127.0.0.1:9050)
+#webhook:               # one webhook URL (e.g. http://127.0.0.1:4000); multiple webhooks must use command line (e.g. -wh http://127.0.0.1:4000 http://127.0.0.1:6000) 
+#webhook-updates-only:  # don't send the webhook gyms or non-lured pokéstops (default false)
+#print-status:          # shows the status screen instead of log screen, can switch between with [ENTER] (default false)
 
 # Webserver settings
-#host:                  # address to listen on (default 127.0.0.1)
+#host:                  # address to listen on (default 127.0.0.1; use 0.0.0.0 to listen on all addresses)
 #port:                  # port to listen on (default 5000)
-#locale:                # pokemon translation
-#ssl-certificate:       # path to ssl certificate
-#ssl-privatekey:        # path to ssl private key
+#locale:                # pokemon name translation (default en)
+#ssl-certificate:       # relative or absolute path to ssl certificate (e.g. ./config/ssl.cert)
+#ssl-privatekey:        # relative or absolute path to ssl private key (e.g. ./config/ssl.key)
 #encrypt-lib:           # path to encrypt lib to be used instead of the shipped ones
 
 #Uncomment a line when you want to change its default value (Remove # at the beginning)
