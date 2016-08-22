@@ -1278,7 +1278,7 @@ function setupScannedMarker (item) {
     map: map,
     clickable: false,
     center: circleCenter,
-    radius: 70, // metres
+    radius: item['radius'], // metres
     fillColor: getColorByDate(item['last_modified']),
     strokeWeight: 1
   })

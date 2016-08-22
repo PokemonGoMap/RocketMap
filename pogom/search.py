@@ -72,7 +72,7 @@ def generate_location_steps(initial_loc, step_count, step_distance):
     SOUTH = 180
     WEST = 270
 
-    pulse_radius = step_distance            # km - radius of players heartbeat is 70m
+    pulse_radius = step_distance            # km - radius of players heartbeat is 70m, and 900m for gyms/pokestops
     xdist = math.sqrt(3) * pulse_radius   # dist between column centers
     ydist = 3 * (pulse_radius / 2)          # dist between row centers
 
