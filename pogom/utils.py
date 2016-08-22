@@ -57,6 +57,8 @@ def get_args():
                         help='Passwords, either single one for all accounts or one per account.')
     parser.add_argument('-l', '--location', type=parse_unicode,
                         help='Location, can be an address or coordinates')
+    parser.add_argument('-j', '--jitter', help='Apply random -9m to +9m jitter to location',
+                        action='store_true', default=False)
     parser.add_argument('-st', '--step-limit', help='Steps', type=int,
                         default=12)
     parser.add_argument('-sd', '--scan-delay',
@@ -68,8 +70,8 @@ def get_args():
     parser.add_argument('-lr', '--login-retries',
                         help='Number of logins attempts before refreshing a thread',
                         type=int, default=3)
-    parser.add_argument('-sr', '--scan-retries',
-                        help='Number of retries for a given scan cell',
+    parser.add_argument('-mf', '--max-failures',
+                        help='Maximum number of failures to parse locations before an account will go into a two hour sleep',
                         type=int, default=5)
     parser.add_argument('-dc', '--display-in-console',
                         help='Display Found Pokemon in Console',
@@ -123,7 +125,7 @@ def get_args():
                         help='Disables PokeStops from the map (including parsing them into local db)',
                         action='store_true', default=False)
     parser.add_argument('-ss', '--spawnpoint-scanning',
-                        help='Use spawnpoint scanning (instead of hex grid)', nargs='?', const='null.null', default=None)
+                        help='Use spawnpoint scanning (instead of hex grid)', nargs='?', const='nofile', default=False)
     parser.add_argument('--dump-spawnpoints', help='dump the spawnpoints from the db to json (only for use with -ss)',
                         action='store_true', default=False)
     parser.add_argument('-pd', '--purge-data',
@@ -264,6 +266,11 @@ def insert_mock_data(position):
                    enabled=True,
                    gym_points=1000
                    )
+
+
+def now():
+    # The fact that you need this helper...
+    return int(time.time())
 
 
 def i8ln(word):
