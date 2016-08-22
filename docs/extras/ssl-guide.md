@@ -1,6 +1,5 @@
 SSL Certificate Windows
 ===================
-[TOC]
 
 Disclaimer: **If you can use letsencrypt, then do so, it is the preffered method for Linux users, Also If you can get achme set up and running on Windows, then use that. If not this guide is for you.**
 
