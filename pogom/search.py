@@ -398,23 +398,50 @@ def search_overseer_thread_ss(args, new_location_queue, pause_bit, encryption_li
         t.daemon = True
         t.start()
 
+    if not os.path.isfile(args.spawnpoint_scanning): # if the spawns file does not exist, maybe the user provided a relative path, try to find the full path
+        maybe_this_is_the_file = os.path.join(os.path.dirname(__file__),args.spawnpoint_scanning)
+        if os.path.isfile(maybe_this_is_the_file):
+            args.spawnpoint_scanning = maybe_this_is_the_file
     if os.path.isfile(args.spawnpoint_scanning):  # if the spawns file exists use it
         threadStatus['Overseer']['message'] = "Getting spawnpoints from file"
         try:
             with open(args.spawnpoint_scanning) as file:
-                try:
-                    spawns = json.load(file)
-                except ValueError:
-                    log.error(args.spawnpoint_scanning + " is not valid")
-                    return
+                if args.spawnpoint_scanning.endswith('.csv'):
+                    try:
+                        log.info('trying to load csv')
+                        from csv import DictReader
+                        csvfile = file.read()
+                        csvobj = DictReader(csvfile.splitlines())
+                        thejson = json.dumps([row for row in csvobj])
+                        spawns = json.loads(thejson)
+                    except ValueError:
+                        log.error(args.spawnpoint_scanning + " is not valid csv")
+                        return
+                else:
+                    try:
+                        log.info('trying to load json')
+                        spawns = json.load(file)
+                    except ValueError:
+                        log.error(args.spawnpoint_scanning + " is not valid json")
+                        return
                 file.close()
         except IOError:
             log.error("Error opening " + args.spawnpoint_scanning)
             return
     else:  # if spawns file dose not exist use the db
+        log.info('trying to load spawnpoints from db')
         threadStatus['Overseer']['message'] = "Getting spawnpoints from database"
         loc = new_location_queue.get()
         spawns = Pokemon.get_spawnpoints_in_hex(loc, args.step_limit)
+    #ignore lat and lng provided, we'll calculate it ourselves from spawnpoint ID
+    from s2sphere import LatLng, Cell, CellId
+    log.info('calculating lat and lng for all spawnpoints based on their cell id')
+    for spawn in spawns:
+        latlng = LatLng.from_point(Cell(CellId(int('{}00000'.format(spawn['spawnpoint_id']),16))).get_center())
+        spawn['lat'] = latlng.lat().degrees
+        spawn['lng'] = latlng.lng().degrees
+        spawn['time'] = int(spawn['time'])
+    log.info('sorting spawnpoints based on time')
     spawns.sort(key=itemgetter('time'))
     log.info('Total of %d spawns to track', len(spawns))
     # find the inital location (spawn thats 60sec old)
