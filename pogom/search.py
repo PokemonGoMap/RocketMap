@@ -192,9 +192,6 @@ def search_overseer_thread(args, method, new_location_queue, pause_bit, encrypti
             log.error('Proxies was configured but it is not working.')
             proxies = False
 
-    # Needed var for proxy
-    last_proxy_index = 0
-
     # Create a search_worker_thread per account
     log.info('Starting search worker threads')
     for i, account in enumerate(args.accounts):
@@ -212,11 +209,7 @@ def search_overseer_thread(args, method, new_location_queue, pause_bit, encrypti
 
         account['proxy'] = False
         if proxies:
-            if last_proxy_index >= len(proxies):
-                last_proxy_index = 0
-
-            account['proxy'] = proxies[last_proxy_index]
-            last_proxy_index = last_proxy_index + 1
+            account['proxy'] = proxies[i % len(proxies)]
 
         t = Thread(target=search_worker_thread,
                    name='search-worker-{}'.format(i),
@@ -442,7 +435,7 @@ def search_worker_thread(args, account, search_items_queue, pause_bit, encryptio
                 api = PGoApi()
 
             if account['proxy']:
-                log.info("Using proxy: %s", account['proxy'])
+                log.debug("Using proxy %s for account %s", account['proxy'], account['username'])
                 api.set_proxy({'http': account['proxy'], 'https': account['proxy']})
 
             api.activate_signature(encryption_lib_path)
