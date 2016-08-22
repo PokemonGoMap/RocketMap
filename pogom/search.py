@@ -454,9 +454,6 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
 
             api.activate_signature(encryption_lib_path)
 
-            # Get current time
-            loop_start_time = int(round(time.time() * 1000))
-
             # The forever loop for the searches
             while True:
 
@@ -506,6 +503,9 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
                     # Make the actual request (finally!)
                     response_dict = map_request(api, step_location, args.jitter)
 
+                    # Get current time
+                    loop_start_time = int(round(time.time() * 1000))
+
                     # G'damnit, nothing back. Mark it up, sleep, carry on
                     if not response_dict:
                         log.error('Search step %d area download failed, retrying request in %g seconds', step, sleep_time)
@@ -538,8 +538,6 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
                 if sleep_delay_remaining > 0:
                     status['message'] = "Waiting {} seconds for scan delay".format(sleep_delay_remaining / 1000)
                     time.sleep(sleep_delay_remaining / 1000)
-
-                loop_start_time += args.scan_delay * 1000
 
         # catch any process exceptions, log them, and continue the thread
         except Exception as e:
