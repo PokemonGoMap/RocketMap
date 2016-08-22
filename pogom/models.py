@@ -190,6 +190,32 @@ class Pokemon(BaseModel):
         return appearances
 
     @classmethod
+    def get_history(cls, swLat, swLng, neLat, neLng):
+        if swLat is None or swLng is None or neLat is None or neLng is None:
+            query = (Pokemon
+                     .select()
+                     .where()
+                     .dicts())
+        else:
+            query = (Pokemon
+                     .select(fn.Count(Pokemon.pokemon_id).alias('count'), Pokemon.pokemon_id)
+                     .where((Pokemon.latitude >= swLat) &
+                            (Pokemon.longitude >= swLng) &
+                            (Pokemon.latitude <= neLat) &
+                            (Pokemon.longitude <= neLng))
+                     .group_by(Pokemon.pokemon_id)
+                     .order_by(Pokemon.pokemon_id)
+                     .dicts())
+
+        pokemons = []
+        for p in query:
+            p['pokemon_name'] = get_pokemon_name(p['pokemon_id'])
+            p['pokemon_rarity'] = get_pokemon_rarity(p['pokemon_id'])
+            pokemons.append(p)
+
+        return pokemons
+
+    @classmethod
     def get_spawnpoints(cls, swLat, swLng, neLat, neLng):
         query = Pokemon.select(Pokemon.latitude, Pokemon.longitude, Pokemon.spawnpoint_id)
 

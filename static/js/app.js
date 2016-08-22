@@ -63,7 +63,6 @@
       })
     }
   })()
-
   // Vars.
   var $body = document.querySelector('body')
 
@@ -93,6 +92,11 @@
   var $statsToggle = document.querySelector('a[href="#stats"]')
   var $statsClose
 
+  // Stats.
+  var $history = document.querySelector('#history')
+  var $historyToggle = document.querySelector('a[href="#history"]')
+  var $historyClose
+
   // Event: Prevent clicks/taps inside the nav from bubbling.
   addEventsListener($nav, 'click touchend', function (event) {
     event.stopPropagation()
@@ -101,6 +105,12 @@
   if ($stats) {
     // Event: Prevent clicks/taps inside the stats from bubbling.
     addEventsListener($stats, 'click touchend', function (event) {
+      event.stopPropagation()
+    })
+  }
+  if ($history) {
+    // Event: Prevent clicks/taps inside the stats from bubbling.
+    addEventsListener($history, 'click touchend', function (event) {
       event.stopPropagation()
     })
   }
@@ -116,9 +126,15 @@
     if ($stats && event.target.matches('a[href="#stats"]')) {
       return
     }
+    if ($history && event.target.matches('a[href="#all]')) {
+      return
+    }
     $nav.classList.remove('visible')
     if ($stats) {
       $stats.classList.remove('visible')
+    }
+    if ($history) {
+      $history.classList.remove('visible')
     }
   })
 
@@ -137,6 +153,26 @@
       event.preventDefault()
       event.stopPropagation()
       $stats.classList.toggle('visible')
+      if ($('#stats').hasClass('visible')) {
+        if ($('#history').hasClass('visible')) {
+          $history.classList.toggle('visible')
+        }
+      }
+    })
+  }
+
+  // Event: Toggle history on click.
+  if ($historyToggle) {
+    $historyToggle.addEventListener('click', function (event) {
+      event.preventDefault()
+      event.stopPropagation()
+      $history.classList.toggle('visible')
+      if ($('#history').hasClass('visible')) {
+        if ($('#stats').hasClass('visible')) {
+          $stats.classList.toggle('visible')
+        }
+        getHistory()
+      }
     })
   }
 
@@ -155,6 +191,14 @@
     $statsClose.className = 'close'
     $statsClose.tabIndex = 0
     $stats.appendChild($statsClose)
+  }
+
+  if ($history) {
+    $historyClose = document.createElement('a')
+    $historyClose.href = '#'
+    $historyClose.className = 'close'
+    $historyClose.tabIndex = 0
+    $history.appendChild($historyClose)
   }
 
   // Event: Hide on ESC.
@@ -180,6 +224,14 @@
       event.preventDefault()
       event.stopPropagation()
       $stats.classList.remove('visible')
+    })
+  }
+  if ($historyClose) {
+    // Event: Hide stats on click.
+    $historyClose.addEventListener('click', function (event) {
+      event.preventDefault()
+      event.stopPropagation()
+      $history.classList.remove('visible')
     })
   }
 })()

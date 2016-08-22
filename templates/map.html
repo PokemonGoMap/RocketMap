@@ -38,7 +38,8 @@
       <header id="header">
         <a href="#nav"><span class="label">Options</span></a>
         <h1><a href="#">Pokémon Go Map</a></h1>
-        <a href="#stats" id="statsToggle" class="statsNav" style="float: right;"><span class="label">Stats</span></a>
+		<a href="#stats" id="statsToggle" class="statsNav" style="float: right;"><span class="label">Stats</span></a>
+        <a href="#history" id="historyToggle" class="historyNav" style="float: right;"><span class="label">History</span></a>
       </header>
       <!-- NAV -->
       <nav id="nav">
@@ -55,7 +56,7 @@
                 </label>
               </div>
             </div>
-            <div class="form-control switch-container">
+              <div class="form-control switch-container">
               <h3>Gyms</h3>
               <div class="onoffswitch">
                 <input id="gyms-switch" type="checkbox" name="gyms-switch" class="onoffswitch-checkbox" checked>
@@ -194,7 +195,7 @@
           <h3>Style Settings</h3>
           <div>
             <div class="form-control switch-container">
-              <h3>Map Style</h3>
+            <h3>Map Style</h3>
               <select id="map-style"></select>
             </div>
             <div class="form-control switch-container">
@@ -217,23 +218,31 @@
           </div>
         </div>
       </nav>
-      <nav id="stats">
-        <div class="switch-container">
-          <div class="switch-container">
-            <center><h1 id="stats-pkmn-label">Loading...</h1></center>
-          </div>
-          <div id="pokemonList" style="color: black;"></div>
+	  <nav id="stats">
+		<div class="switch-container">
+		  <div class="switch-container">
+			<center><h1 id="stats-pkmn-label">Loading...</h1></center>
+		  </div>
+		  <div id="pokemonList" style="color: black;"></div>
           <div><a href="stats">Full Stats</a></div>
-          <div class="switch-container">
-            <center><h1 id="stats-gym-label"></h1></center>
-          </div>
-          <div id="arenaList" style="color: black;"></div>
-          <div class="switch-container">
-            <center><h1 id="stats-pkstop-label"></h1></center>
-          </div>
-          <div id="pokestopList" style="color: black;"></div>
-        </div>
-      </nav>
+		  <div class="switch-container">
+			<center><h1 id="stats-gym-label"></h1></center>
+		  </div>
+		  <div id="arenaList" style="color: black;"></div>
+		  <div class="switch-container">
+			<center><h1 id="stats-pkstop-label"></h1></center>
+		  </div>
+		  <div id="pokestopList" style="color: black;"></div>
+		</div>
+	  </nav>
+        <nav id="history">
+		<div class="switch-container">
+		  <div class="switch-container">
+			<center><h1 id="history-pkmn-label">Loading...</h1></center>
+		  </div>
+            <div id="historyList" style="color: black;"></div>
+		</div>
+	  </nav>
       <div id="map"></div>
     </div>
     <!-- Scripts -->
@@ -245,11 +254,12 @@
     <script src="{{ url_for('static', filename='dist/js/app.min.js').lstrip('/') }}"></script>
     <script src="{{ url_for('static', filename='js/vendor/classie.js').lstrip('/') }}"></script>
     <script>
-      var centerLat = {{lat}};
+        var centerLat = {{lat}};
       var centerLng = {{lng}};
     </script>
     <script src="{{ url_for('static', filename='dist/js/map.min.js').lstrip('/') }}"></script>
     <script src="{{ url_for('static', filename='dist/js/stats.min.js').lstrip('/') }}"></script>
+    <script src="{{ url_for('static', filename='dist/js/history.min.js').lstrip('/') }}"></script>
     <script defer src="https://maps.googleapis.com/maps/api/js?key={{ gmaps_key }}&amp;callback=initMap&amp;libraries=places,geometry"></script>
   </body>
 </html>
