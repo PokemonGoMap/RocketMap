@@ -9,12 +9,15 @@ var $selectStyle
 var $selectIconResolution
 var $selectIconSize
 var $selectLuredPokestopsOnly
+var $selectSearchIconMarker
 
 var language = document.documentElement.lang === '' ? 'en' : document.documentElement.lang
 var idToPokemon = {}
 var i8lnDictionary = {}
 var languageLookups = 0
 var languageLookupThreshold = 3
+
+var searchMarkerStyles
 
 var excludedPokemon = []
 var notifiedPokemon = []
@@ -23,14 +26,27 @@ var notifiedRarity = []
 var map
 var rawDataIsLoading = false
 var locationMarker
-var marker
 var rangeMarkers = ['pokemon', 'pokestop', 'gym']
+var searchMarker
+var storeZoom = true
 
 var noLabelsStyle = [{
   featureType: 'poi',
   elementType: 'labels',
   stylers: [{
     visibility: 'off'
+  }]
+}, {
+  'featureType': 'all',
+  'elementType': 'labels.text.stroke',
+  'stylers': [{
+    'visibility': 'off'
+  }]
+}, {
+  'featureType': 'all',
+  'elementType': 'labels.text.fill',
+  'stylers': [{
+    'visibility': 'off'
   }]
 }, {
   'featureType': 'all',
@@ -766,6 +782,14 @@ var StoreOptions = {
   'iconSizeModifier': {
     default: 0,
     type: StoreTypes.Number
+  },
+  'searchMarkerStyle': {
+    default: 'google',
+    type: StoreTypes.String
+  },
+  'zoomLevel': {
+    default: 16,
+    type: StoreTypes.Number
   }
 }
 
@@ -827,7 +851,7 @@ function initMap () { // eslint-disable-line no-unused-vars
       lat: centerLat,
       lng: centerLng
     },
-    zoom: 16,
+    zoom: Store.get('zoomLevel'),
     fullscreenControl: true,
     streetViewControl: false,
     mapTypeControl: false,
@@ -888,24 +912,35 @@ function initMap () { // eslint-disable-line no-unused-vars
   })
 
   map.setMapTypeId(Store.get('map_style'))
-  google.maps.event.addListener(map, 'idle', updateMap)
+  map.addListener('idle', updateMap)
 
-  marker = createSearchMarker()
+  map.addListener('zoom_changed', function () {
+    if (storeZoom === true) {
+      Store.set('zoomLevel', this.getZoom())
+    } else {
+      storeZoom = true
+    }
 
-  addMyLocationButton()
-  initSidebar()
-  google.maps.event.addListenerOnce(map, 'idle', function () {
-    updateMap()
-  })
-
-  google.maps.event.addListener(map, 'zoom_changed', function () {
     redrawPokemon(mapData.pokemons)
     redrawPokemon(mapData.lurePokemons)
   })
+
+  searchMarker = createSearchMarker()
+
+  addMyLocationButton()
+  initSidebar()
+}
+
+function updateSearchMarker (style) {
+  if (style in searchMarkerStyles) {
+    searchMarker.setIcon(searchMarkerStyles[style].icon)
+    Store.set('searchMarkerStyle', style)
+  }
+  return searchMarker
 }
 
 function createSearchMarker () {
-  var marker = new google.maps.Marker({ // need to keep reference.
+  var searchMarker = new google.maps.Marker({ // need to keep reference.
     position: {
       lat: centerLat,
       lng: centerLng
@@ -913,35 +948,36 @@ function createSearchMarker () {
     map: map,
     animation: google.maps.Animation.DROP,
     draggable: !Store.get('lockMarker'),
-    icon: 'static/marker_icon.png',
+    icon: null,
+    optimized: false,
     zIndex: google.maps.Marker.MAX_ZINDEX + 1
   })
 
-  if (!marker.rangeCircle && isRangeActive(map)) {
-    marker.rangeCircle = addRangeCircle(marker, map, 'search')
+  if (!searchMarker.rangeCircle && isRangeActive(map)) {
+    searchMarker.rangeCircle = addRangeCircle(searchMarker, map, 'search')
   }
   var oldLocation = null
-  google.maps.event.addListener(marker, 'dragstart', function () {
-    oldLocation = marker.getPosition()
+  google.maps.event.addListener(searchMarker, 'dragstart', function () {
+    oldLocation = searchMarker.getPosition()
   })
 
-  google.maps.event.addListener(marker, 'dragend', function () {
-    var newLocation = marker.getPosition()
+  google.maps.event.addListener(searchMarker, 'dragend', function () {
+    var newLocation = searchMarker.getPosition()
     changeSearchLocation(newLocation.lat(), newLocation.lng())
       .done(function () {
         oldLocation = null
-        if (marker.rangeCircle && Store.get('showRanges')) {
-          marker.rangeCircle.setCenter(newLocation)
+        if (searchMarker.rangeCircle && Store.get('showRanges')) {
+          searchMarker.rangeCircle.setCenter(newLocation)
         }
       })
       .fail(function () {
         if (oldLocation) {
-          marker.setPosition(oldLocation)
+          searchMarker.setPosition(oldLocation)
         }
       })
   })
 
-  return marker
+  return searchMarker
 }
 
 var searchControlURI = 'search_control'
@@ -1445,7 +1481,7 @@ function showInBoundsMarkers (markers, type) {
 function loadRawData () {
   var loadPokemon = Store.get('showPokemon')
   var loadGyms = Store.get('showGyms')
-  var loadPokestops = Store.get('showPokestops') || Store.get('showPokemon')
+  var loadPokestops = Store.get('showPokestops')
   var loadScanned = Store.get('showScanned')
   var loadSpawnpoints = Store.get('showSpawnpoints')
 
@@ -1782,8 +1818,8 @@ function changeLocation (lat, lng) {
   var loc = new google.maps.LatLng(lat, lng)
   changeSearchLocation(lat, lng).done(function () {
     map.setCenter(loc)
-    marker.setPosition(loc)
-    if (marker.rangeCircle) marker.rangeCircle.setCenter(loc)
+    searchMarker.setPosition(loc)
+    if (searchMarker.rangeCircle) searchMarker.rangeCircle.setCenter(loc)
   })
 }
 
@@ -1797,6 +1833,7 @@ function centerMap (lat, lng, zoom) {
   map.setCenter(loc)
 
   if (zoom) {
+    storeZoom = false
     map.setZoom(zoom)
   }
 }
@@ -1914,6 +1951,36 @@ $(function () {
     Store.set('showLuredPokestopsOnly', this.value)
     updateMap()
   })
+
+  $selectSearchIconMarker = $('#iconmarker-style')
+
+  $.getJSON('static/dist/data/searchmarkerstyle.min.json').done(function (data) {
+    searchMarkerStyles = data
+    var searchMarkerStyleList = []
+
+    $.each(data, function (key, value) {
+      searchMarkerStyleList.push({
+        id: key,
+        text: value.name
+      })
+    })
+
+    $selectSearchIconMarker.select2({
+      placeholder: 'Select Icon Marker',
+      data: searchMarkerStyleList,
+      minimumResultsForSearch: Infinity
+    })
+
+    $selectSearchIconMarker.on('change', function (e) {
+      var selectSearchIconMarker = $selectSearchIconMarker.val()
+      Store.set('searchMarkerStyle', selectSearchIconMarker)
+      updateSearchMarker(selectSearchIconMarker)
+    })
+
+    $selectSearchIconMarker.val(Store.get('searchMarkerStyle')).trigger('change')
+
+    updateSearchMarker(Store.get('lockMarker'))
+  })
 })
 
 $(function () {
@@ -2010,11 +2077,11 @@ $(function () {
         var lon = position.coords.longitude
 
         // the search function makes any small movements cause a loop. Need to increase resolution
-        if (getPointDistance(marker.getPosition(), (new google.maps.LatLng(lat, lon))) > 40) {
+        if (getPointDistance(searchMarker.getPosition(), (new google.maps.LatLng(lat, lon))) > 40) {
           $.post(baseURL + '/next_loc?lat=' + lat + '&lon=' + lon).done(function () {
             var center = new google.maps.LatLng(lat, lon)
             map.panTo(center)
-            marker.setPosition(center)
+            searchMarker.setPosition(center)
           })
         }
       })
@@ -2082,7 +2149,7 @@ $(function () {
 
   $('#lock-marker-switch').change(function () {
     Store.set('lockMarker', this.checked)
-    marker.setDraggable(!this.checked)
+    searchMarker.setDraggable(!this.checked)
   })
 
   $('#search-switch').change(function () {
@@ -2093,9 +2160,11 @@ $(function () {
     Store.set('startAtUserLocation', this.checked)
   })
 
-  $('#nav-accordion').accordion({
-    active: 0,
-    collapsible: true,
-    heightStyle: 'content'
-  })
+  if ($('#nav-accordion').length) {
+    $('#nav-accordion').accordion({
+      active: 0,
+      collapsible: true,
+      heightStyle: 'content'
+    })
+  }
 })
