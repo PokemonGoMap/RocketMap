@@ -106,8 +106,14 @@ def status_printer(threadStatus, search_items_queue, db_updates_queue, wh_queue)
             # Create a list to hold all the status lines, so they can be printed all at once to reduce flicker
             status_text = []
 
+            # Calculate total skipped items
+            skip_total = 0
+            for item in threadStatus:
+                if 'skip' in threadStatus[item]:
+                    skip_total += threadStatus[item]['skip']
+
             # Print the queue length
-            status_text.append('Queues: {} items, {} db updates, {} webhook'.format(search_items_queue.qsize(), db_updates_queue.qsize(), wh_queue.qsize()))
+            status_text.append('Queues: {} search items, {} db updates, {} webhook.  Total skipped items: {}'.format(search_items_queue.qsize(), db_updates_queue.qsize(), wh_queue.qsize(), skip_total))
 
             # Print status of overseer
             status_text.append('{} Overseer: {}'.format(threadStatus['Overseer']['method'], threadStatus['Overseer']['message']))
