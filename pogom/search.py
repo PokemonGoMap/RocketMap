@@ -166,7 +166,7 @@ def search_overseer_thread(args, method, new_location_queue, pause_bit, encrypti
     search_items_queue = Queue()
     threadStatus = {}
 
-    method_string = { 'hex': 'Hex Grid', 'sps': 'Spawn Point', 'csv': 'Custom List' }
+    method_string = {'hex': 'Hex Grid', 'sps': 'Spawn Point', 'csv': 'Custom List'}
 
     threadStatus['Overseer'] = {
         'message': 'Initializing',

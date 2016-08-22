@@ -64,7 +64,7 @@ phase = 1
 
 while spawn_count > 0:
     heatmap = {}
-    
+
     # grab points favoring high-density before just grabbing whatever is left
     if phase == 1:
         stm = 'select s1.spawnpoint_id, s1.lat, s1.lng from spawnpoints s1 cross join spawnpoints s2 on (s1.spawnpoint_id != s2.spawnpoint_id and haversine(s1.lat, s1.lng, s2.lat, s2.lng) < %f * 2) group by s1.spawnpoint_id, s1.lat, s1.lng order by count(*) desc limit 1'
