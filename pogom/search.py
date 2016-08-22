@@ -460,7 +460,7 @@ def search_worker_thread(args, account, search_items_queue, pause_bit, encryptio
                             paused = True
                             break  # why can't python just have `break 2`...
                         remain = appears - now() + 10
-                        status['message'] = '{}s early for location {},{}; waiting...'.format(remain, step_location[0], step_location[1])
+                        status['message'] = '{}s early for location {:6f},{:6f}; waiting...'.format(remain, step_location[0], step_location[1])
                         if first_loop:
                             log.info(status['message'])
                             first_loop = False
@@ -474,12 +474,12 @@ def search_worker_thread(args, account, search_items_queue, pause_bit, encryptio
                     search_items_queue.task_done()
                     status['skip'] += 1
                     # it is slightly silly to put this in status['message'] since it'll be overwritten very shortly after. Oh well.
-                    status['message'] = 'Too late for location {},{}; skipping'.format(step_location[0], step_location[1])
+                    status['message'] = 'Too late for location {:6f},{:6f}; skipping'.format(step_location[0], step_location[1])
                     log.info(status['message'])
                     # No sleep here; we've not done anything worth sleeping for. Plus we clearly need to catch up!
                     continue
 
-                status['message'] = 'Searching at {},{}'.format(step_location[0], step_location[1])
+                status['message'] = 'Searching at {:6f},{:6f}'.format(step_location[0], step_location[1])
                 log.info(status['message'])
 
                 # Let the api know where we intend to be for this loop
@@ -494,7 +494,7 @@ def search_worker_thread(args, account, search_items_queue, pause_bit, encryptio
                 # G'damnit, nothing back. Mark it up, sleep, carry on
                 if not response_dict:
                     status['fail'] += 1
-                    status['message'] = 'Invalid response at {},{}, abandoning location'.format(step_location[0], step_location[1])
+                    status['message'] = 'Invalid response at {:6f},{:6f}, abandoning location'.format(step_location[0], step_location[1])
                     log.error(status['message'])
                     time.sleep(args.scan_delay)
                     continue
@@ -504,11 +504,11 @@ def search_worker_thread(args, account, search_items_queue, pause_bit, encryptio
                     findCount = parse_map(args, response_dict, step_location, dbq, whq)
                     search_items_queue.task_done()
                     status[('success' if findCount > 0 else 'noitems')] += 1
-                    status['message'] = 'Search at {},{} completed with {} finds'.format(step_location[0], step_location[1], findCount)
+                    status['message'] = 'Search at {:6f},{:6f} completed with {} finds'.format(step_location[0], step_location[1], findCount)
                     log.debug(status['message'])
                 except KeyError:
                     status['fail'] += 1
-                    status['message'] = 'Map parse failed at {},{}, abandoning location'.format(step_location[0], step_location[1])
+                    status['message'] = 'Map parse failed at {:6f},{:6f}, abandoning location'.format(step_location[0], step_location[1])
                     log.exception(status['message'])
 
                 # Always delay the desired amount after "scan" completion
