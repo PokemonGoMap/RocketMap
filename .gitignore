@@ -6,8 +6,8 @@
 *.orig
 *.json
 *.csv
-
-config/config.ini
+config/*
+!config/config.ini.example
 static/dist/
 node_modules/
 venv/
@@ -16,5 +16,3 @@ src/
 _build
 _build_html
 beehive.*
-config/ssl.cert
-config/ssl.key
