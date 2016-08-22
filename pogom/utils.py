@@ -64,6 +64,9 @@ def get_args():
     parser.add_argument('-sd', '--scan-delay',
                         help='Time delay between requests in scan threads',
                         type=float, default=10)
+    parser.add_argument('-rd', '--random-delay',
+                        help='Add additional random delay between 0 and argument to the standard scan delay',
+                        type=int, default=0)
     parser.add_argument('-ld', '--login-delay',
                         help='Time delay between each login attempt',
                         type=float, default=5)
