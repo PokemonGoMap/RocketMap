@@ -496,8 +496,8 @@ def search_worker_thread(args, account, search_items_queue, parse_lock, encrypti
                         break
 
                     # Increase sleep delay between each failed scan
-                    # By default scan_dela=5, scan_retries=5 so
-                    # We'd see timeouts of 5, 10, 15, 20, 25
+                    # By default scan_delay=10, scan_retries=5 so
+                    # We'd see timeouts of 10, 20, 30, 40, 50
                     sleep_time = args.scan_delay * (1 + failed_total)
 
                     # Ok, let's get started -- check our login status
