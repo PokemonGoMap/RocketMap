@@ -839,8 +839,10 @@ function notifyAboutPokemon (id) { // eslint-disable-line no-unused-vars
 }
 
 function removePokemonMarker (encounterId) { // eslint-disable-line no-unused-vars
-  mapData.pokemons[encounterId].marker.rangeCircle.setMap(null)
-  delete mapData.pokemons[encounterId].marker.rangeCircle
+  if (mapData.pokemons[encounterId].marker.rangeCircle) {
+    mapData.pokemons[encounterId].marker.rangeCircle.setMap(null)
+    delete mapData.pokemons[encounterId].marker.rangeCircle
+  }
   mapData.pokemons[encounterId].marker.setMap(null)
   mapData.pokemons[encounterId].hidden = true
 }
