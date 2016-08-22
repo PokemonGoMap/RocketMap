@@ -436,7 +436,7 @@ def search_worker_thread(args, account, search_items_queue, pause_bit, encryptio
                 # If this account has been messing up too hard, let it rest
                 if status['fail'] >= args.max_failures:
                     end_sleep = now() + (3600 * 2)
-                    long_sleep_started = time.strftime('%H:%M')
+                    long_sleep_started = time.strftime('%H:%M:%S')
                     while now() < end_sleep:
                         status['message'] = 'Worker failed more than {} scans; possibly banned account. Sleeping for 2 hour sleep as of {}'.format(args.max_failures, long_sleep_started)
                         log.error(status['message'])
@@ -460,7 +460,7 @@ def search_worker_thread(args, account, search_items_queue, pause_bit, encryptio
                             paused = True
                             break  # why can't python just have `break 2`...
                         remain = appears - now() + 10
-                        status['message'] = '{}s early for location {:6f},{:6f}; waiting...'.format(remain, step_location[0], step_location[1])
+                        status['message'] = 'Early for {:6f},{:6f}; waiting {}s...'.format(step_location[0], step_location[1], remain)
                         if first_loop:
                             log.info(status['message'])
                             first_loop = False
@@ -512,6 +512,7 @@ def search_worker_thread(args, account, search_items_queue, pause_bit, encryptio
                     log.exception(status['message'])
 
                 # Always delay the desired amount after "scan" completion
+                status['message'] += ', sleeping {}s until {}'.format(args.scan_delay, time.strftime('%H:%M:%S', time.localtime(time.time() + args.scan_delay)))
                 time.sleep(args.scan_delay)
 
         # catch any process exceptions, log them, and continue the thread
