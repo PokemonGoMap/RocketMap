@@ -19,6 +19,7 @@ from . import config
 from .utils import get_pokemon_name, get_pokemon_rarity, get_pokemon_types, get_args
 from .transform import transform_from_wgs_to_gcj
 from .customLog import printPokemon
+from playhouse.hybrid import hybrid_property, hybrid_method
 
 log = logging.getLogger(__name__)
 
@@ -83,55 +84,21 @@ class Pokemon(BaseModel):
         indexes = ((('latitude', 'longitude'), False),)
 
     @staticmethod
-    def get_active(swLat, swLng, neLat, neLng):
-        if swLat is None or swLng is None or neLat is None or neLng is None:
-            query = (Pokemon
-                     .select()
-                     .where(Pokemon.disappear_time > datetime.utcnow())
-                     .dicts())
-        else:
-            query = (Pokemon
-                     .select()
-                     .where((Pokemon.disappear_time > datetime.utcnow()) &
-                            (Pokemon.latitude >= swLat) &
-                            (Pokemon.longitude >= swLng) &
-                            (Pokemon.latitude <= neLat) &
-                            (Pokemon.longitude <= neLng))
-                     .dicts())
+    def get_active(ids=None, swLat=None, swLng=None, neLat=None, neLng=None):
+        query = (Pokemon
+                 .select()
+                 .where(Pokemon.isActive)
+                 )
+        if swLat is not None and swLng is not None and neLat is not None and neLng is not None:
+            query = query.where(Pokemon.inArea(swLat, swLng, neLat, neLng))
+
+        if ids is not None:
+            query = query.where(Pokemon.isPokemonIdIn(ids))
+
+        result = query.dicts()
 
         pokemons = []
-        for p in query:
-            p['pokemon_name'] = get_pokemon_name(p['pokemon_id'])
-            p['pokemon_rarity'] = get_pokemon_rarity(p['pokemon_id'])
-            p['pokemon_types'] = get_pokemon_types(p['pokemon_id'])
-            if args.china:
-                p['latitude'], p['longitude'] = \
-                    transform_from_wgs_to_gcj(p['latitude'], p['longitude'])
-            pokemons.append(p)
-
-        return pokemons
-
-    @staticmethod
-    def get_active_by_id(ids, swLat, swLng, neLat, neLng):
-        if swLat is None or swLng is None or neLat is None or neLng is None:
-            query = (Pokemon
-                     .select()
-                     .where((Pokemon.pokemon_id << ids) &
-                            (Pokemon.disappear_time > datetime.utcnow()))
-                     .dicts())
-        else:
-            query = (Pokemon
-                     .select()
-                     .where((Pokemon.pokemon_id << ids) &
-                            (Pokemon.disappear_time > datetime.utcnow()) &
-                            (Pokemon.latitude >= swLat) &
-                            (Pokemon.longitude >= swLng) &
-                            (Pokemon.latitude <= neLat) &
-                            (Pokemon.longitude <= neLng))
-                     .dicts())
-
-        pokemons = []
-        for p in query:
+        for p in result:
             p['pokemon_name'] = get_pokemon_name(p['pokemon_id'])
             p['pokemon_rarity'] = get_pokemon_rarity(p['pokemon_id'])
             p['pokemon_types'] = get_pokemon_types(p['pokemon_id'])
@@ -193,14 +160,8 @@ class Pokemon(BaseModel):
     def get_spawnpoints(cls, swLat, swLng, neLat, neLng):
         query = Pokemon.select(Pokemon.latitude, Pokemon.longitude, Pokemon.spawnpoint_id)
 
-        if None not in (swLat, swLng, neLat, neLng):
-            query = (query
-                     .where((Pokemon.latitude >= swLat) &
-                            (Pokemon.longitude >= swLng) &
-                            (Pokemon.latitude <= neLat) &
-                            (Pokemon.longitude <= neLng)
-                            )
-                     )
+        if swLat is not None and swLng is not None and neLat is not None and neLng is not None:
+            query = query.where(Pokemon.inArea(swLat, swLng, neLat, neLng))
 
         # Sqlite doesn't support distinct on columns
         if args.db_type == 'mysql':
@@ -261,6 +222,23 @@ class Pokemon(BaseModel):
             trueSpawns.append(spawn)
         return trueSpawns
 
+    @hybrid_property
+    def isActive(self):
+        return self.disappear_time > datetime.utcnow()
+
+    @hybrid_method
+    def inArea(self, swLat, swLng, neLat, neLng):
+        return (
+            (self.latitude >= swLat) &
+            (self.longitude >= swLng) &
+            (self.latitude <= neLat) &
+            (self.longitude <= neLng)
+        )
+
+    @hybrid_method
+    def isPokemonIdIn(self, ids):
+        return self.pokemon_id << ids
+
 
 class Pokestop(BaseModel):
     pokestop_id = CharField(primary_key=True, max_length=50)
@@ -276,27 +254,29 @@ class Pokestop(BaseModel):
 
     @staticmethod
     def get_stops(swLat, swLng, neLat, neLng):
-        if swLat is None or swLng is None or neLat is None or neLng is None:
-            query = (Pokestop
-                     .select()
-                     .dicts())
-        else:
-            query = (Pokestop
-                     .select()
-                     .where((Pokestop.latitude >= swLat) &
-                            (Pokestop.longitude >= swLng) &
-                            (Pokestop.latitude <= neLat) &
-                            (Pokestop.longitude <= neLng))
-                     .dicts())
+        query = Pokestop.select()
+        if swLat is not None and swLng is not None and neLat is not None and neLng is not None:
+            query = query.where(Pokestop.inArea(swLat, swLng, neLat, neLng))
+
+        result = query.dicts()
 
         pokestops = []
-        for p in query:
+        for p in result:
             if args.china:
                 p['latitude'], p['longitude'] = \
                     transform_from_wgs_to_gcj(p['latitude'], p['longitude'])
             pokestops.append(p)
 
         return pokestops
+
+    @hybrid_method
+    def inArea(self, swLat, swLng, neLat, neLng):
+        return (
+            (self.latitude >= swLat) &
+            (self.longitude >= swLng) &
+            (self.latitude <= neLat) &
+            (self.longitude <= neLng)
+        )
 
 
 class Gym(BaseModel):
@@ -319,24 +299,26 @@ class Gym(BaseModel):
 
     @staticmethod
     def get_gyms(swLat, swLng, neLat, neLng):
-        if swLat is None or swLng is None or neLat is None or neLng is None:
-            query = (Gym
-                     .select()
-                     .dicts())
-        else:
-            query = (Gym
-                     .select()
-                     .where((Gym.latitude >= swLat) &
-                            (Gym.longitude >= swLng) &
-                            (Gym.latitude <= neLat) &
-                            (Gym.longitude <= neLng))
-                     .dicts())
+        query = Gym.select()
+        if swLat is not None and swLng is not None and neLat is not None and neLng is not None:
+            query = query.where(Gym.inArea(swLat, swLng, neLat, neLng))
+
+        result = query.dicts()
 
         gyms = []
-        for g in query:
+        for g in result:
             gyms.append(g)
 
         return gyms
+
+    @hybrid_method
+    def inArea(self, swLat, swLng, neLat, neLng):
+        return (
+            (self.latitude >= swLat) &
+            (self.longitude >= swLng) &
+            (self.latitude <= neLat) &
+            (self.longitude <= neLng)
+        )
 
 
 class ScannedLocation(BaseModel):
@@ -349,21 +331,31 @@ class ScannedLocation(BaseModel):
 
     @staticmethod
     def get_recent(swLat, swLng, neLat, neLng):
-        query = (ScannedLocation
-                 .select()
-                 .where((ScannedLocation.last_modified >=
-                        (datetime.utcnow() - timedelta(minutes=15))) &
-                        (ScannedLocation.latitude >= swLat) &
-                        (ScannedLocation.longitude >= swLng) &
-                        (ScannedLocation.latitude <= neLat) &
-                        (ScannedLocation.longitude <= neLng))
-                 .dicts())
+        result = (ScannedLocation
+                  .select()
+                  .where(ScannedLocation.isRecent)
+                  .where(ScannedLocation.inArea(swLat, swLng, neLat, neLng))
+                  .dicts()
+                  )
 
         scans = []
-        for s in query:
+        for s in result:
             scans.append(s)
 
         return scans
+
+    @hybrid_method
+    def inArea(self, swLat, swLng, neLat, neLng):
+        return (
+            (self.latitude >= swLat) &
+            (self.longitude >= swLng) &
+            (self.latitude <= neLat) &
+            (self.longitude <= neLng)
+        )
+
+    @hybrid_property
+    def isRecent(self):
+        return self.last_modified >= (datetime.utcnow() - timedelta(minutes=15))
 
 
 class Versions(flaskDb.Model):
