@@ -277,7 +277,15 @@ def search_overseer_thread(args, method, new_location_queue, pause_bit, encrypti
                 search_args = (step, step_location[0], step_location[1], step_location[2])
                 search_items_queue.put(search_args)
         else:
-            threadStatus['Overseer']['message'] = 'Processing search queue'
+            nextitem = search_items_queue.queue[0]
+            threadStatus['Overseer']['message'] = 'Processing search queue, next item is {:6f},{:6f}'.format(nextitem[1][0],nextitem[1][1])
+            # If times are specified, print the time of the next queue item, and how many seconds ahead/behind realtime
+            if nextitem[2]:
+                threadStatus['Overseer']['message'] += ' @ {}'.format(time.strftime('%H:%M:%S', time.localtime(nextitem[2])))
+                if nextitem[2] > now():
+                    threadStatus['Overseer']['message'] += ' ({}s ahead)'.format(nextitem[2] - now())
+                else:
+                    threadStatus['Overseer']['message'] += ' ({}s behind)'.format(now() - nextitem[2])
 
         # Now we just give a little pause here
         time.sleep(1)
