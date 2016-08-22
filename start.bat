@@ -1,3 +1,3 @@
-@echo Starting Server..
-python runserver.py
+@echo Starting Workers..
+python startv3.py
 pause
