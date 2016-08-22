@@ -445,7 +445,7 @@ def search_worker_thread(args, account, search_items_queue, pause_bit, encryptio
                     long_sleep_started = time.strftime('%H:%M:%S')
                     while now() < end_sleep:
                         status['message'] = 'Worker failed more than {} scans; possibly banned account. Sleeping for 2 hour sleep as of {}'.format(args.max_failures, long_sleep_started)
-                        log.error(status['message'])
+                        log.error('Account {} - {}'.format(account['username'], status['message']))
                         time.sleep(300)
                     break  # exit this loop to have the API recreated
 
