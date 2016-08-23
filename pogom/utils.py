@@ -90,6 +90,8 @@ def get_args():
                         help='Coordinates transformer for China',
                         action='store_true')
     parser.add_argument('-d', '--debug', help='Debug Mode', action='store_true')
+    parser.add_argument('-f', '--logfile', nargs='?', const='pokemongo-map.log',
+                        help='Append log messages to a log file')
     parser.add_argument('-m', '--mock', type=str,
                         help='Mock mode - point to a fpgo endpoint instead of using the real PogoApi, ec: http://127.0.0.1:9090',
                         default='')

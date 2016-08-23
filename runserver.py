@@ -59,6 +59,12 @@ if not hasattr(pgoapi, "__version__") or StrictVersion(pgoapi.__version__) < Str
 def main():
     args = get_args()
 
+    # Add file logging if enabled
+    if args.logfile:
+        filelog = logging.FileHandler(args.logfile)
+        filelog.setFormatter(logging.Formatter('%(asctime)s [%(threadName)16s][%(module)14s][%(levelname)8s] %(message)s'))
+        logging.getLogger('').addHandler(filelog)
+
     # Check if we have the proper encryption library file and get its path
     encryption_lib_path = get_encryption_lib_path(args)
     if encryption_lib_path is "":
