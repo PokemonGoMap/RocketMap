@@ -8,14 +8,14 @@ log = logging.getLogger(__name__)
 
 
 # Simple function to do a call to Niantic's system for testing proxy connectivity
-def check_proxy(proxy):
+def check_proxy(proxy, timeout):
 
     proxy_test_url = 'https://sso.pokemon.com/'
 
-    log.info('Checking proxy %s ...', proxy)
-
     try:
-        proxy_response = requests.get(proxy_test_url, proxies={'http': proxy, 'https': proxy}, timeout=5)
+
+        log.info('Checking proxy %s ...', proxy)
+        proxy_response = requests.get(proxy_test_url, proxies={'http': proxy, 'https': proxy}, timeout=timeout)
 
         if proxy_response.status_code == 200:
             log.info('Proxy %s is ok', proxy)

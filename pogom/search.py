@@ -135,15 +135,18 @@ def status_printer(threadStatus, search_items_queue, db_updates_queue, wh_queue)
 
             # longest username
             userlen = 4
+            proxylen = 5
             for item in threadStatus:
                 if threadStatus[item]['type'] == 'Worker':
                     userlen = max(userlen, len(threadStatus[item]['user']))
+                    if threadStatus[item]['proxy']:
+                        proxylen = max(proxylen, len(str(threadStatus[item]['proxy'])))
 
             # How pretty
-            status = '{:10} | {:' + str(userlen) + '} | {:7} | {:6} | {:5} | {:7} | {:10}'
+            status = '{:10} | {:' + str(userlen) + '} | {:' + str(proxylen) + '} | {:7} | {:6} | {:5} | {:7} | {:10}'
 
             # Print the worker status
-            status_text.append(status.format('Worker ID', 'User', 'Success', 'Failed', 'Empty', 'Skipped', 'Message'))
+            status_text.append(status.format('Worker ID', 'User', 'Proxy', 'Success', 'Failed', 'Empty', 'Skipped', 'Message'))
             for item in sorted(threadStatus):
                 if(threadStatus[item]['type'] == 'Worker'):
                     current_line += 1
@@ -153,8 +156,12 @@ def status_printer(threadStatus, search_items_queue, db_updates_queue, wh_queue)
                         continue
                     if current_line > end_line:
                         break
+                    if threadStatus[item]['proxy'] or isinstance(threadStatus[item]['proxy'], int):
+                        used_proxy = threadStatus[item]['proxy']
+                    else:
+                        used_proxy = 'No'
 
-                    status_text.append(status.format(item, threadStatus[item]['user'], threadStatus[item]['success'], threadStatus[item]['fail'], threadStatus[item]['noitems'], threadStatus[item]['skip'], threadStatus[item]['message']))
+                    status_text.append(status.format(item, threadStatus[item]['user'], used_proxy, threadStatus[item]['success'], threadStatus[item]['fail'], threadStatus[item]['noitems'], threadStatus[item]['skip'], threadStatus[item]['message']))
 
             status_text.append('Page {}/{}.  Type page number and <ENTER> to switch pages.  Press <ENTER> alone to switch between status and log view'.format(current_page[0], total_pages))
             # Clear the screen
@@ -172,6 +179,18 @@ def search_overseer_thread(args, method, new_location_queue, pause_bit, encrypti
     search_items_queue = Queue()
     threadStatus = {}
 
+    # Check all proxies before use so we know witch are good.
+    proxies = False
+    if args.proxy:
+        proxies = []
+        for i, proxy in enumerate(args.proxy):
+            curr_proxy = check_proxy(proxy, args.proxy_timeout)
+            if curr_proxy:
+                proxies.append(curr_proxy)
+        if len(proxies) == 0:
+            log.error('Proxies was configured but it is not working.')
+            proxies = False
+
     threadStatus['Overseer'] = {
         'message': 'Initializing',
         'type': 'Overseer',
@@ -186,23 +205,21 @@ def search_overseer_thread(args, method, new_location_queue, pause_bit, encrypti
         t.daemon = True
         t.start()
 
-    # Check all proxies before use so we know witch are good.
-    proxies = False
-    if args.proxy:
-        proxies = []
-        for i, proxy in enumerate(args.proxy):
-            curr_proxy = check_proxy(proxy)
-            if curr_proxy:
-                proxies.append(curr_proxy)
-        if len(proxies) == 0:
-            log.error('Proxies was configured but it is not working.')
-            proxies = False
-
     # Create a search_worker_thread per account
     log.info('Starting search worker threads')
     for i, account in enumerate(args.accounts):
+
+        # Set proxy to account, using round rubin
+        using_proxy = ''
+        account['proxy'] = False
+        if proxies:
+            using_proxy = account['proxy'] = proxies[i % len(proxies)]
+            if args.proxy_display.upper() != 'FULL':
+                using_proxy = i % len(proxies)
+
         log.debug('Starting search worker thread %d for user %s', i, account['username'])
         workerId = 'Worker {:03}'.format(i)
+
         threadStatus[workerId] = {
             'type': 'Worker',
             'message': 'Creating thread...',
@@ -210,12 +227,9 @@ def search_overseer_thread(args, method, new_location_queue, pause_bit, encrypti
             'fail': 0,
             'noitems': 0,
             'skip': 0,
-            'user': account['username']
+            'user': account['username'],
+            'proxy': using_proxy
         }
-
-        account['proxy'] = False
-        if proxies:
-            account['proxy'] = proxies[i % len(proxies)]
 
         t = Thread(target=search_worker_thread,
                    name='search-worker-{}'.format(i),
