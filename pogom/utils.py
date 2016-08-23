@@ -47,10 +47,9 @@ def memoize(function):
 def get_args():
     # fuck PEP8
     configpath = os.path.join(os.path.dirname(__file__), '../config/config.ini')
-    parser = configargparse.ArgParser(default_config_files=[configpath])
+    parser = configargparse.ArgParser(default_config_files=[configpath], auto_env_var_prefix='POGOMAP_')
     parser.add_argument('-a', '--auth-service', type=str.lower, action='append',
-                        help='Auth Services, either one for all accounts or one per account. \
-                        ptc or google. Defaults all to ptc.')
+                        help='Auth Services, either one for all accounts or one per account: ptc or google. Defaults all to ptc.')
     parser.add_argument('-u', '--username', action='append',
                         help='Usernames, one per account.')
     parser.add_argument('-p', '--password', action='append',
@@ -73,6 +72,9 @@ def get_args():
     parser.add_argument('-mf', '--max-failures',
                         help='Maximum number of failures to parse locations before an account will go into a two hour sleep',
                         type=int, default=5)
+    parser.add_argument('-msl', '--min-seconds-left',
+                        help='Time that must be left on a spawn before considering it too late and skipping it. eg. 600 would skip anything with < 10 minutes remaining. Default 0.',
+                        type=int, default=0)
     parser.add_argument('-dc', '--display-in-console',
                         help='Display Found Pokemon in Console',
                         action='store_true', default=False)

@@ -106,8 +106,14 @@ def status_printer(threadStatus, search_items_queue, db_updates_queue, wh_queue)
             # Create a list to hold all the status lines, so they can be printed all at once to reduce flicker
             status_text = []
 
+            # Calculate total skipped items
+            skip_total = 0
+            for item in threadStatus:
+                if 'skip' in threadStatus[item]:
+                    skip_total += threadStatus[item]['skip']
+
             # Print the queue length
-            status_text.append('Queues: {} items, {} db updates, {} webhook'.format(search_items_queue.qsize(), db_updates_queue.qsize(), wh_queue.qsize()))
+            status_text.append('Queues: {} search items, {} db updates, {} webhook.  Total skipped items: {}'.format(search_items_queue.qsize(), db_updates_queue.qsize(), wh_queue.qsize(), skip_total))
 
             # Print status of overseer
             status_text.append('{} Overseer: {}'.format(threadStatus['Overseer']['method'], threadStatus['Overseer']['message']))
@@ -438,7 +444,7 @@ def search_worker_thread(args, account, search_items_queue, pause_bit, encryptio
                     end_sleep = now() + (3600 * 2)
                     long_sleep_started = time.strftime('%H:%M:%S')
                     while now() < end_sleep:
-                        status['message'] = 'Worker failed more than {} scans; possibly banned account. Sleeping for 2 hour sleep as of {}'.format(args.max_failures, long_sleep_started)
+                        status['message'] = 'Worker {} failed more than {} scans; possibly banned account. Sleeping for 2 hour sleep as of {}'.format(account['username'], args.max_failures, long_sleep_started)
                         log.error(status['message'])
                         time.sleep(300)
                     break  # exit this loop to have the API recreated
@@ -470,7 +476,7 @@ def search_worker_thread(args, account, search_items_queue, pause_bit, encryptio
                         continue
 
                 # too late?
-                if leaves and now() > leaves:
+                if leaves and now() > (leaves - args.min_seconds_left):
                     search_items_queue.task_done()
                     status['skip'] += 1
                     # it is slightly silly to put this in status['message'] since it'll be overwritten very shortly after. Oh well.
@@ -508,7 +514,7 @@ def search_worker_thread(args, account, search_items_queue, pause_bit, encryptio
                     log.debug(status['message'])
                 except KeyError:
                     status['fail'] += 1
-                    status['message'] = 'Map parse failed at {:6f},{:6f}, abandoning location'.format(step_location[0], step_location[1])
+                    status['message'] = 'Map parse failed at {:6f},{:6f}, abandoning location. {} may be banned.'.format(step_location[0], step_location[1], account['username'])
                     log.exception(status['message'])
 
                 # Always delay the desired amount after "scan" completion
