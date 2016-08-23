@@ -84,7 +84,8 @@ def get_args():
                         env_var='PGM_MAX_FAILURES')
     parser.add_argument('-msl', '--min-seconds-left',
                         help='Time that must be left on a spawn before considering it too late and skipping it. eg. 600 would skip anything with < 10 minutes remaining. Default 0.',
-                        type=int, default=0)
+                        type=int, default=0,
+                        env_var='PGM_MIN_SECONDS_LEFT')
     parser.add_argument('-dc', '--display-in-console',
                         help='Display Found Pokemon in Console',
                         action='store_true', default=False,
