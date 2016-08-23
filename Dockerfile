@@ -18,8 +18,7 @@ ENTRYPOINT ["dumb-init", "-r", "15:2", "python", "./runserver.py", "--host", "0.
 CMD ["-h"]
 
 # Install required system packages
-RUN apk add --no-cache ca-certificates
-RUN apk add --no-cache bash git openssh
+RUN apk add --no-cache ca-certificates git
 
 COPY requirements.txt /usr/src/app/
 
