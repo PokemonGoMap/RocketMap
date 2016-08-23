@@ -12,7 +12,7 @@ EXPOSE 5000
 WORKDIR /usr/src/app
 
 # Set Entrypoint with hard-coded options
-ENTRYPOINT ["python", "./runserver.py", "--host", "0.0.0.0"]
+ENTRYPOINT ["dumb-init", "-r", "15:2", "python", "./runserver.py", "--host", "0.0.0.0"]
 
 # Set default options when container is run without any command line arguments
 CMD ["-h"]
