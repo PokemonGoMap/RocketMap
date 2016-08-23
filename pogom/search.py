@@ -64,7 +64,49 @@ def get_new_coords(init_loc, distance, bearing):
 
     return [math.degrees(new_lat), math.degrees(new_lon)]
 
+#NORMAL MODE, WORKER WALKS FROM INSIDE OUT AND TELEPORTS BACK TO START, would like to select mode using args but dont know how 
 
+#def generate_location_steps(initial_loc, step_count, step_distance):
+#    # Bearing (degrees)
+#    NORTH = 0
+#    EAST = 90
+#    SOUTH = 180
+#    WEST = 270
+#
+#    pulse_radius = step_distance            # km - radius of players heartbeat is 70m
+#    xdist = math.sqrt(3) * pulse_radius   # dist between column centers
+#    ydist = 3 * (pulse_radius / 2)          # dist between row centers
+#
+#    yield (initial_loc[0], initial_loc[1], 0)  # insert initial location
+#
+#    ring = 1
+#    loc = initial_loc
+#    while ring < step_count:
+#        # Set loc to start at top left
+#        loc = get_new_coords(loc, ydist, NORTH)
+#        loc = get_new_coords(loc, xdist / 2, WEST)
+#        for direction in range(6):
+#            for i in range(ring):
+#                if direction == 0:  # RIGHT
+#                    loc = get_new_coords(loc, xdist, EAST)
+#                if direction == 1:  # DOWN + RIGHT
+#                    loc = get_new_coords(loc, ydist, SOUTH)
+#                    loc = get_new_coords(loc, xdist / 2, EAST)
+#                if direction == 2:  # DOWN + LEFT
+#                    loc = get_new_coords(loc, ydist, SOUTH)
+#                    loc = get_new_coords(loc, xdist / 2, WEST)
+#                if direction == 3:  # LEFT
+#                    loc = get_new_coords(loc, xdist, WEST)
+#                if direction == 4:  # UP + LEFT
+#                    loc = get_new_coords(loc, ydist, NORTH)
+#                    loc = get_new_coords(loc, xdist / 2, WEST)
+#                if direction == 5:  # UP + RIGHT
+#                    loc = get_new_coords(loc, ydist, NORTH)
+#                    loc = get_new_coords(loc, xdist / 2, EAST)
+#                yield (loc[0], loc[1], 0)
+#        ring += 1
+
+#ENDLESS LINE MODE -> I would like to implement args for selecting ENDLESS LINE MODE or NORMAL (HIVE) MODE
 def generate_location_steps(initial_loc, step_count, step_distance):
     # Bearing (degrees)
     NORTH = 0
@@ -78,32 +120,65 @@ def generate_location_steps(initial_loc, step_count, step_distance):
 
     yield (initial_loc[0], initial_loc[1], 0)  # insert initial location
 
-    ring = 1
-    loc = initial_loc
-    while ring < step_count:
-        # Set loc to start at top left
-        loc = get_new_coords(loc, ydist, NORTH)
-        loc = get_new_coords(loc, xdist / 2, WEST)
-        for direction in range(6):
+    if step_count > 1:
+        loc = initial_loc
+
+        # upper part
+        ring = 1
+        while ring < step_count:
+
+            loc = get_new_coords(loc, xdist, WEST if ring % 2 == 1 else EAST)
+            yield (loc[0], loc[1], 0)
+
             for i in range(ring):
-                if direction == 0:  # RIGHT
-                    loc = get_new_coords(loc, xdist, EAST)
-                if direction == 1:  # DOWN + RIGHT
-                    loc = get_new_coords(loc, ydist, SOUTH)
-                    loc = get_new_coords(loc, xdist / 2, EAST)
-                if direction == 2:  # DOWN + LEFT
-                    loc = get_new_coords(loc, ydist, SOUTH)
-                    loc = get_new_coords(loc, xdist / 2, WEST)
-                if direction == 3:  # LEFT
-                    loc = get_new_coords(loc, xdist, WEST)
-                if direction == 4:  # UP + LEFT
-                    loc = get_new_coords(loc, ydist, NORTH)
-                    loc = get_new_coords(loc, xdist / 2, WEST)
-                if direction == 5:  # UP + RIGHT
-                    loc = get_new_coords(loc, ydist, NORTH)
-                    loc = get_new_coords(loc, xdist / 2, EAST)
+                loc = get_new_coords(loc, ydist, NORTH)
+                loc = get_new_coords(loc, xdist / 2, EAST if ring % 2 == 1 else WEST)
                 yield (loc[0], loc[1], 0)
-        ring += 1
+
+            for i in range(ring):
+                loc = get_new_coords(loc, xdist, EAST if ring % 2 == 1 else WEST)
+                yield (loc[0], loc[1], 0)
+
+            for i in range(ring):
+                loc = get_new_coords(loc, ydist, SOUTH)
+                loc = get_new_coords(loc, xdist / 2, EAST if ring % 2 == 1 else WEST)
+                yield (loc[0], loc[1], 0)
+
+            ring += 1
+
+        # lower part
+        ring = step_count - 1
+
+        loc = get_new_coords(loc, ydist, SOUTH)
+        loc = get_new_coords(loc, xdist / 2, WEST if ring % 2 == 1 else EAST)
+        yield (loc[0], loc[1], 0)
+
+        while ring > 0:
+
+            if ring == 1:
+                loc = get_new_coords(loc, xdist, WEST)
+                yield (loc[0], loc[1], 0)
+
+            else:
+                for i in range(ring - 1):
+                    loc = get_new_coords(loc, ydist, SOUTH)
+                    loc = get_new_coords(loc, xdist / 2, WEST if ring % 2 == 1 else EAST)
+                    yield (loc[0], loc[1], 0)
+
+                for i in range(ring):
+                    loc = get_new_coords(loc, xdist, WEST if ring % 2 == 1 else EAST)
+                    yield (loc[0], loc[1], 0)
+
+                for i in range(ring - 1):
+                    loc = get_new_coords(loc, ydist, NORTH)
+                    loc = get_new_coords(loc, xdist / 2, WEST if ring % 2 == 1 else EAST)
+                    yield (loc[0], loc[1], 0)
+
+                loc = get_new_coords(loc, xdist, EAST if ring % 2 == 1 else WEST)
+                yield (loc[0], loc[1], 0)
+
+            ring -= 1
+
 
 
 # Apply a location jitter
