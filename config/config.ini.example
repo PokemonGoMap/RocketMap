@@ -18,6 +18,7 @@
 #no-pokestops:          # disables pokestop scanning (default false)
 #scan-delay:            # default 10
 #step-limit:            # default 12
+#spawnpoints-only:      # only scan known spawnpoints for pokemon (default false) needs an already populated DB
 
 # Misc
 #gmaps-key:             # your Google Maps API key
