@@ -49,111 +49,158 @@ def get_args():
     configpath = os.path.join(os.path.dirname(__file__), '../config/config.ini')
     parser = configargparse.ArgParser(default_config_files=[configpath])
     parser.add_argument('-a', '--auth-service', type=str.lower, action='append',
-                        help='Auth Services, either one for all accounts or one per account. \
-                        ptc or google. Defaults all to ptc.')
+                        help='Auth Services, either one for all accounts or one per account: ptc or google. Defaults all to ptc.',
+                        env_var='PGM_AUTH_SERVICE')
     parser.add_argument('-u', '--username', action='append',
-                        help='Usernames, one per account.')
+                        help='Usernames, one per account.',
+                        env_var='PGM_USERNAME')
     parser.add_argument('-p', '--password', action='append',
-                        help='Passwords, either single one for all accounts or one per account.')
+                        help='Passwords, either single one for all accounts or one per account.',
+                        env_var='PGM_PASSWORD')
     parser.add_argument('-l', '--location', type=parse_unicode,
-                        help='Location, can be an address or coordinates')
+                        help='Location, can be an address or coordinates',
+                        env_var='PGM_LOCATION')
     parser.add_argument('-j', '--jitter', help='Apply random -9m to +9m jitter to location',
-                        action='store_true', default=False)
+                        action='store_true', default=False,
+                        env_var='PGM_JITTER')
     parser.add_argument('-st', '--step-limit', help='Steps', type=int,
-                        default=12)
+                        default=12,
+                        env_var='PGM_STEP_LIMIT')
     parser.add_argument('-sd', '--scan-delay',
                         help='Time delay between requests in scan threads',
-                        type=float, default=10)
+                        type=float, default=10,
+                        env_var='PGM_SCAN_DELAY')
     parser.add_argument('-ld', '--login-delay',
                         help='Time delay between each login attempt',
-                        type=float, default=5)
+                        type=float, default=5,
+                        env_var='PGM_LOGIN_DELAY')
     parser.add_argument('-lr', '--login-retries',
                         help='Number of logins attempts before refreshing a thread',
-                        type=int, default=3)
+                        type=int, default=3,
+                        env_var='PGM_LOGIN_RETRIES')
     parser.add_argument('-mf', '--max-failures',
                         help='Maximum number of failures to parse locations before an account will go into a two hour sleep',
-                        type=int, default=5)
+                        type=int, default=5,
+                        env_var='PGM_MAX_FAILURES')
     parser.add_argument('-dc', '--display-in-console',
                         help='Display Found Pokemon in Console',
-                        action='store_true', default=False)
+                        action='store_true', default=False,
+                        env_var='PGM_DISPLAY_IN_CONSOLE')
     parser.add_argument('-H', '--host', help='Set web server listening host',
-                        default='127.0.0.1')
+                        default='127.0.0.1',
+                        env_var='PGM_HOST')
     parser.add_argument('-P', '--port', type=int,
-                        help='Set web server listening port', default=5000)
+                        help='Set web server listening port', default=5000,
+                        env_var='PGM_PORT')
     parser.add_argument('-L', '--locale',
                         help='Locale for Pokemon names (default: {},\
                         check {} for more)'.
-                        format(config['LOCALE'], config['LOCALES_DIR']), default='en')
+                        format(config['LOCALE'], config['LOCALES_DIR']), default='en',
+                        env_var='PGM_LOCALE')
     parser.add_argument('-c', '--china',
                         help='Coordinates transformer for China',
-                        action='store_true')
-    parser.add_argument('-d', '--debug', help='Debug Mode', action='store_true')
+                        action='store_true',
+                        env_var='PGM_CHINA')
+    parser.add_argument('-d', '--debug', help='Debug Mode', action='store_true',
+                        env_var='PGM_DEBUG')
     parser.add_argument('-m', '--mock', type=str,
                         help='Mock mode - point to a fpgo endpoint instead of using the real PogoApi, ec: http://127.0.0.1:9090',
-                        default='')
+                        default='',
+                        env_var='PGM_MOCK')
     parser.add_argument('-ns', '--no-server',
                         help='No-Server Mode. Starts the searcher but not the Webserver.',
-                        action='store_true', default=False)
+                        action='store_true', default=False,
+                        env_var='PGM_NO_SERVER')
     parser.add_argument('-os', '--only-server',
                         help='Server-Only Mode. Starts only the Webserver without the searcher.',
-                        action='store_true', default=False)
+                        action='store_true', default=False,
+                        env_var='PGM_ONLY_SERVER')
     parser.add_argument('-nsc', '--no-search-control',
                         help='Disables search control',
-                        action='store_false', dest='search_control', default=True)
+                        action='store_false', dest='search_control', default=True,
+                        env_var='PGM_NO_SEARCH_CONTROL')
     parser.add_argument('-fl', '--fixed-location',
                         help='Hides the search bar for use in shared maps.',
-                        action='store_true', default=False)
+                        action='store_true', default=False,
+                        env_var='PGM_FIXED_LOCATION')
     parser.add_argument('-k', '--gmaps-key',
                         help='Google Maps Javascript API Key',
-                        required=True)
+                        required=True,
+                        env_var='PGM_GMAPS_KEY')
     parser.add_argument('--spawnpoints-only', help='Only scan locations with spawnpoints in them.',
-                        action='store_true', default=False)
+                        action='store_true', default=False,
+                        env_var='PGM_SPAWNPOINTS_ONLY')
     parser.add_argument('-C', '--cors', help='Enable CORS on web server',
-                        action='store_true', default=False)
+                        action='store_true', default=False,
+                        env_var='PGM_CORS')
     parser.add_argument('-D', '--db', help='Database filename',
-                        default='pogom.db')
+                        default='pogom.db',
+                        env_var='PGM_DB')
     parser.add_argument('-cd', '--clear-db',
                         help='Deletes the existing database before starting the Webserver.',
-                        action='store_true', default=False)
+                        action='store_true', default=False,
+                        env_var='PGM_CLEAR_DB')
     parser.add_argument('-np', '--no-pokemon',
                         help='Disables Pokemon from the map (including parsing them into local db)',
-                        action='store_true', default=False)
+                        action='store_true', default=False,
+                        env_var='PGM_NO_POKEMON')
     parser.add_argument('-ng', '--no-gyms',
                         help='Disables Gyms from the map (including parsing them into local db)',
-                        action='store_true', default=False)
+                        action='store_true', default=False,
+                        env_var='PGM_NO_GYMS')
     parser.add_argument('-nk', '--no-pokestops',
                         help='Disables PokeStops from the map (including parsing them into local db)',
-                        action='store_true', default=False)
+                        action='store_true', default=False,
+                        env_var='PGM_NO_POKESTOPS')
     parser.add_argument('-ss', '--spawnpoint-scanning',
-                        help='Use spawnpoint scanning (instead of hex grid)', nargs='?', const='nofile', default=False)
+                        help='Use spawnpoint scanning (instead of hex grid)', nargs='?', const='nofile', default=False,
+                        env_var='PGM_SPAWNPOINT_SCANNING')
     parser.add_argument('--dump-spawnpoints', help='dump the spawnpoints from the db to json (only for use with -ss)',
-                        action='store_true', default=False)
+                        action='store_true', default=False,
+                        env_var='PGM_DUMP_SPAWNPOINTS')
     parser.add_argument('-pd', '--purge-data',
                         help='Clear pokemon from database this many hours after they disappear \
-                        (0 to disable)', type=int, default=0)
-    parser.add_argument('-px', '--proxy', help='Proxy url (e.g. socks5://127.0.0.1:9050)')
+                        (0 to disable)', type=int, default=0,
+                        env_var='PGM_PURGE_DATA')
+    parser.add_argument('-px', '--proxy', help='Proxy url (e.g. socks5://127.0.0.1:9050)',
+                        env_var='PGM_PROXY')
     parser.add_argument('--db-type', help='Type of database to be used (default: sqlite)',
-                        default='sqlite')
-    parser.add_argument('--db-name', help='Name of the database to be used')
-    parser.add_argument('--db-user', help='Username for the database')
-    parser.add_argument('--db-pass', help='Password for the database')
-    parser.add_argument('--db-host', help='IP or hostname for the database')
-    parser.add_argument('--db-port', help='Port for the database', type=int, default=3306)
+                        default='sqlite',
+                        env_var='PGM_DB_TYPE')
+    parser.add_argument('--db-name', help='Name of the database to be used',
+                        env_var='PGM_DB_NAME')
+    parser.add_argument('--db-user', help='Username for the database',
+                        env_var='PGM_DB_USER')
+    parser.add_argument('--db-pass', help='Password for the database',
+                        env_var='PGM_DB_PASS')
+    parser.add_argument('--db-host', help='IP or hostname for the database',
+                        env_var='PGM_DB_HOST')
+    parser.add_argument('--db-port', help='Port for the database', type=int, default=3306,
+                        env_var='PGM_DB_PORT')
     parser.add_argument('--db-max_connections', help='Max connections (per thread) for the database',
-                        type=int, default=5)
+                        type=int, default=5,
+                        env_var='PGM_DB_MAX_CONNECTIONS')
     parser.add_argument('--db-threads', help='Number of db threads; increase if the db queue falls behind',
-                        type=int, default=1)
+                        type=int, default=1,
+                        env_var='PGM_DB_THREADS')
     parser.add_argument('-wh', '--webhook', help='Define URL(s) to POST webhook information to',
-                        nargs='*', default=False, dest='webhooks')
+                        nargs='*', default=False, dest='webhooks',
+                        env_var='PGM_WEBHOOK')
     parser.add_argument('--webhook-updates-only', help='Only send updates (pokémon & lured pokéstops)',
-                        action='store_true', default=False)
+                        action='store_true', default=False,
+                        env_var='PGM_WEBHOOK_UPDATES_ONLY')
     parser.add_argument('--wh-threads', help='Number of webhook threads; increase if the webhook queue falls behind',
-                        type=int, default=1)
-    parser.add_argument('--ssl-certificate', help='Path to SSL certificate file')
-    parser.add_argument('--ssl-privatekey', help='Path to SSL private key file')
+                        type=int, default=1,
+                        env_var='PGM_WEBHOOK_THREADS')
+    parser.add_argument('--ssl-certificate', help='Path to SSL certificate file',
+                        env_var='PGM_SSL_CERTIFICATE')
+    parser.add_argument('--ssl-privatekey', help='Path to SSL private key file',
+                        env_var='PGM_SSL_PRIVATEKEY')
     parser.add_argument('-ps', '--print-status', action='store_true',
-                        help='Show a status screen instead of log messages. Can switch between status and logs by pressing enter.', default=False)
-    parser.add_argument('-el', '--encrypt-lib', help='Path to encrypt lib to be used instead of the shipped ones')
+                        help='Show a status screen instead of log messages. Can switch between status and logs by pressing enter.', default=False,
+                        env_var='PGM_PREINT_STATUS')
+    parser.add_argument('-el', '--encrypt-lib', help='Path to encrypt lib to be used instead of the shipped ones',
+                        env_var='PGM_ENCRYPT_LIB')
     parser.set_defaults(DEBUG=False)
 
     args = parser.parse_args()
