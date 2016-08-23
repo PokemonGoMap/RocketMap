@@ -34,7 +34,7 @@
    ```
    CREATE DATABASE pokemongomapdb;
    CREATE USER 'pogomapuser'@'localhost' IDENTIFIED BY 'password';
-   GRANT ALL PRIVILEGES ON pokemongomapdb . * TO 'pogomapuser'@'localhost;
+   GRANT ALL PRIVILEGES ON pokemongomapdb . * TO 'pogomapuser'@'localhost';
    exit
    ```
    You can change `pokemongomapdb` to whatever you want the name of the database to be.
@@ -118,7 +118,7 @@ I'd also like to specifically credit Znuff2471 on discord for their great assist
 
  - CREATE DATABASE pokemongomapdb;
  - CREATE USER 'pogomapuser'@'localhost' IDENTIFIED BY 'password';
- - GRANT ALL PRIVILEGES ON pokemongomapdb . * TO 'pogomapuser'@'localhost;
+ - GRANT ALL PRIVILEGES ON pokemongomapdb . * TO 'pogomapuser'@'localhost';
 
 4. Quit the MySQL command line tool `quit`
 5. Edit the `config/config.ini` file
@@ -138,7 +138,7 @@ Note: These are preliminary until better Docker support in the official containe
 Note: These commands require git to be installed
 
 ```
-docker build -t pokemap https://github.com/AHAAAAAAA/PokemonGo-Map.git:develop
+docker build -t pokemap https://github.com/PokemonGoMap/PokemonGo-Map.git:develop
 docker run --name pokesql -e MYSQL_ROOT_PASSWORD=some-string -e MYSQL_DATABASE pokemap -d mysql:5.6
 ```
 
