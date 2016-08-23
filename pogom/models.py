@@ -69,65 +69,31 @@ class BaseModel(flaskDb.Model):
         return results
 
 
-class Pokemon(BaseModel):
+class PokemonBaseModel(BaseModel):
     # We are base64 encoding the ids delivered by the api
     # because they are too big for sqlite to handle
     encounter_id = CharField(primary_key=True, max_length=50)
-    spawnpoint_id = CharField(index=True)
     pokemon_id = IntegerField(index=True)
     latitude = DoubleField()
     longitude = DoubleField()
     disappear_time = DateTimeField(index=True)
 
-    class Meta:
-        indexes = ((('latitude', 'longitude'), False),)
+    @classmethod
+    def get_active(cls, swLat, swLng, neLat, neLng):
 
-    @staticmethod
-    def get_active(swLat, swLng, neLat, neLng):
         if swLat is None or swLng is None or neLat is None or neLng is None:
-            query = (Pokemon
+            query = (cls
                      .select()
-                     .where(Pokemon.disappear_time > datetime.utcnow())
+                     .where(cls.disappear_time > datetime.utcnow())
                      .dicts())
         else:
-            query = (Pokemon
+            query = (cls
                      .select()
-                     .where((Pokemon.disappear_time > datetime.utcnow()) &
-                            (Pokemon.latitude >= swLat) &
-                            (Pokemon.longitude >= swLng) &
-                            (Pokemon.latitude <= neLat) &
-                            (Pokemon.longitude <= neLng))
-                     .dicts())
-
-        pokemons = []
-        for p in query:
-            p['pokemon_name'] = get_pokemon_name(p['pokemon_id'])
-            p['pokemon_rarity'] = get_pokemon_rarity(p['pokemon_id'])
-            p['pokemon_types'] = get_pokemon_types(p['pokemon_id'])
-            if args.china:
-                p['latitude'], p['longitude'] = \
-                    transform_from_wgs_to_gcj(p['latitude'], p['longitude'])
-            pokemons.append(p)
-
-        return pokemons
-
-    @staticmethod
-    def get_active_by_id(ids, swLat, swLng, neLat, neLng):
-        if swLat is None or swLng is None or neLat is None or neLng is None:
-            query = (Pokemon
-                     .select()
-                     .where((Pokemon.pokemon_id << ids) &
-                            (Pokemon.disappear_time > datetime.utcnow()))
-                     .dicts())
-        else:
-            query = (Pokemon
-                     .select()
-                     .where((Pokemon.pokemon_id << ids) &
-                            (Pokemon.disappear_time > datetime.utcnow()) &
-                            (Pokemon.latitude >= swLat) &
-                            (Pokemon.longitude >= swLng) &
-                            (Pokemon.latitude <= neLat) &
-                            (Pokemon.longitude <= neLng))
+                     .where((cls.disappear_time > datetime.utcnow()) &
+                            (cls.latitude >= swLat) &
+                            (cls.longitude >= swLng) &
+                            (cls.latitude <= neLat) &
+                            (cls.longitude <= neLng))
                      .dicts())
 
         pokemons = []
@@ -143,26 +109,72 @@ class Pokemon(BaseModel):
         return pokemons
 
     @classmethod
+    def get_active_by_id(cls, ids, swLat, swLng, neLat, neLng):
+        if swLat is None or swLng is None or neLat is None or neLng is None:
+            query = (cls
+                     .select()
+                     .where((cls.pokemon_id << ids) &
+                            (cls.disappear_time > datetime.utcnow()))
+                     .dicts())
+        else:
+            query = (cls
+                     .select()
+                     .where((cls.pokemon_id << ids) &
+                            (cls.disappear_time > datetime.utcnow()) &
+                            (cls.latitude >= swLat) &
+                            (cls.longitude >= swLng) &
+                            (cls.latitude <= neLat) &
+                            (cls.longitude <= neLng))
+                     .dicts())
+
+        pokemons = []
+        for p in query:
+            p['pokemon_name'] = get_pokemon_name(p['pokemon_id'])
+            p['pokemon_rarity'] = get_pokemon_rarity(p['pokemon_id'])
+            p['pokemon_types'] = get_pokemon_types(p['pokemon_id'])
+            if args.china:
+                p['latitude'], p['longitude'] = \
+                    transform_from_wgs_to_gcj(p['latitude'], p['longitude'])
+            pokemons.append(p)
+
+        return pokemons
+
+    @classmethod
+    def get_appearances(cls, pokemon_id, last_appearance):
+        query = (cls
+                 .select()
+                 .where((cls.pokemon_id == pokemon_id) &
+                        (cls.disappear_time > datetime.utcfromtimestamp(last_appearance / 1000.0))
+                        )
+                 .order_by(cls.disappear_time.asc())
+                 .dicts()
+                 )
+        appearances = []
+        for a in query:
+            appearances.append(a)
+        return appearances
+
+    @classmethod
     def get_seen(cls, timediff):
         if timediff:
             timediff = datetime.utcnow() - timediff
-        pokemon_count_query = (Pokemon
-                               .select(Pokemon.pokemon_id,
-                                       fn.COUNT(Pokemon.pokemon_id).alias('count'),
-                                       fn.MAX(Pokemon.disappear_time).alias('lastappeared')
+        pokemon_count_query = (cls
+                               .select(cls.pokemon_id,
+                                       fn.COUNT(cls.pokemon_id).alias('count'),
+                                       fn.MAX(cls.disappear_time).alias('lastappeared')
                                        )
-                               .where(Pokemon.disappear_time > timediff)
-                               .group_by(Pokemon.pokemon_id)
+                               .where(cls.disappear_time > timediff)
+                               .group_by(cls.pokemon_id)
                                .alias('counttable')
                                )
-        query = (Pokemon
-                 .select(Pokemon.pokemon_id,
-                         Pokemon.disappear_time,
-                         Pokemon.latitude,
-                         Pokemon.longitude,
+        query = (cls
+                 .select(cls.pokemon_id,
+                         cls.disappear_time,
+                         cls.latitude,
+                         cls.longitude,
                          pokemon_count_query.c.count)
-                 .join(pokemon_count_query, on=(Pokemon.pokemon_id == pokemon_count_query.c.pokemon_id))
-                 .where(Pokemon.disappear_time == pokemon_count_query.c.lastappeared)
+                 .join(pokemon_count_query, on=(cls.pokemon_id == pokemon_count_query.c.pokemon_id))
+                 .where(cls.disappear_time == pokemon_count_query.c.lastappeared)
                  .dicts()
                  )
         pokemons = []
@@ -174,20 +186,12 @@ class Pokemon(BaseModel):
 
         return {'pokemon': pokemons, 'total': total}
 
-    @classmethod
-    def get_appearances(cls, pokemon_id, last_appearance):
-        query = (Pokemon
-                 .select()
-                 .where((Pokemon.pokemon_id == pokemon_id) &
-                        (Pokemon.disappear_time > datetime.utcfromtimestamp(last_appearance / 1000.0))
-                        )
-                 .order_by(Pokemon.disappear_time.asc())
-                 .dicts()
-                 )
-        appearances = []
-        for a in query:
-            appearances.append(a)
-        return appearances
+
+class Pokemon(PokemonBaseModel):
+    spawnpoint_id = CharField(index=True)
+
+    class Meta:
+        indexes = ((('latitude', 'longitude'), False),)
 
     @classmethod
     def get_spawnpoints(cls, southBoundary, westBoundary, northBoundary, eastBoundary):
@@ -253,6 +257,13 @@ class Pokemon(BaseModel):
             location['time'] = (location['time'] + 2700) % 3600
 
         return filtered
+
+
+class LurePokemon(PokemonBaseModel):
+    pokestop_id = CharField(index=True, max_length=50)
+
+    class Meta:
+        indexes = ((('latitude', 'longitude'), False),)
 
 
 class Pokestop(BaseModel):
@@ -381,6 +392,7 @@ def hex_bounds(center, steps):
 # todo: this probably shouldn't _really_ be in "models" anymore, but w/e
 def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue):
     pokemons = {}
+    lure_pokemons = {}
     pokestops = {}
     gyms = {}
 
@@ -424,9 +436,11 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue):
         for f in cell.get('forts', []):
             if config['parse_pokestops'] and f.get('type') == 1:  # Pokestops
                 if 'active_fort_modifier' in f:
+                    lure_info = f.get('lure_info')
                     lure_expiration = datetime.utcfromtimestamp(
                         f['last_modified_timestamp_ms'] / 1000.0) + timedelta(minutes=30)
                     active_fort_modifier = f['active_fort_modifier']
+
                     if args.webhooks and args.webhook_updates_only:
                         wh_update_queue.put(('pokestop', {
                             'pokestop_id': b64encode(str(f['id'])),
@@ -437,6 +451,29 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue):
                             'lure_expiration': calendar.timegm(lure_expiration.timetuple()),
                             'active_fort_modifier': active_fort_modifier
                         }))
+
+                    if lure_info is not None:
+                        d_t = datetime.utcfromtimestamp(lure_info['lure_expires_timestamp_ms'] / 1000)
+                        encounter_id = b64encode(str(lure_info['encounter_id']))
+                        lure_pokemons[lure_info['encounter_id']] = {
+                            'encounter_id': encounter_id,
+                            'pokestop_id': f['id'],
+                            'pokemon_id': lure_info['active_pokemon_id'],
+                            'latitude': f['latitude'] + 0.0001,
+                            'longitude': f['longitude'] + 0.0001,
+                            'disappear_time': d_t
+                        }
+                        if args.webhooks:
+                            wh_update_queue.put(('lure_pokemon', {
+                                'encounter_id': encounter_id,
+                                'pokestop_id': f['id'],
+                                'pokemon_id': lure_info['active_pokemon_id'],
+                                'latitude': f['latitude'],
+                                'longitude': f['longitude'],
+                                'disappear_time': calendar.timegm(d_t.timetuple()),
+                                'active_fort_modifier': active_fort_modifier
+                            }))
+
                 else:
                     lure_expiration, active_fort_modifier = None, None
 
@@ -504,9 +541,12 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue):
         db_update_queue.put((Pokestop, pokestops))
     if len(gyms):
         db_update_queue.put((Gym, gyms))
+    if len(lure_pokemons):
+        db_update_queue.put((LurePokemon, lure_pokemons))
 
-    log.info('Parsing found %d pokemons, %d pokestops, and %d gyms',
+    log.info('Parsing found %d pokemons, %d lured pokemon, %d pokestops, and %d gyms',
              len(pokemons),
+             len(lure_pokemons),
              len(pokestops),
              len(gyms))
 
@@ -516,14 +556,13 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue):
         'last_modified': datetime.utcnow()
     }}))
 
-    return len(pokemons) + len(pokestops) + len(gyms)
+    return len(pokemons) + len(lure_pokemons) + len(pokestops) + len(gyms)
 
 
 def db_updater(args, q):
     # The forever loop
     while True:
         try:
-
             while True:
                 try:
                     flaskDb.connect_db()
@@ -590,13 +629,13 @@ def bulk_upsert(cls, data):
 def create_tables(db):
     db.connect()
     verify_database_schema(db)
-    db.create_tables([Pokemon, Pokestop, Gym, ScannedLocation], safe=True)
+    db.create_tables([Pokemon, LurePokemon, Pokestop, Gym, ScannedLocation], safe=True)
     db.close()
 
 
 def drop_tables(db):
     db.connect()
-    db.drop_tables([Pokemon, Pokestop, Gym, ScannedLocation, Versions], safe=True)
+    db.drop_tables([Pokemon, LurePokemon, Pokestop, Gym, ScannedLocation, Versions], safe=True)
     db.close()
 
 
