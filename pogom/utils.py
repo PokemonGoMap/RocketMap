@@ -154,6 +154,8 @@ def get_args():
     parser.add_argument('-ps', '--print-status', action='store_true',
                         help='Show a status screen instead of log messages. Can switch between status and logs by pressing enter.', default=False)
     parser.add_argument('-el', '--encrypt-lib', help='Path to encrypt lib to be used instead of the shipped ones')
+    parser.add_argument('-nj', '--nojump', help='Different route for searching within the hexagon. Straight lines so no jumping after last step.',
+                        action='store_true', default=False) #trying to control search.py generate_location_steps 
     parser.set_defaults(DEBUG=False)
 
     args = parser.parse_args()
