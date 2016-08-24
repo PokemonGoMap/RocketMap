@@ -18,24 +18,27 @@ def check_proxy(proxy_queue, timeout, proxies):
     proxy = proxy_queue.get_nowait()
 
     log.debug('Checking proxy: %s', proxy[1])
-    try:
 
-        proxy_response = requests.get(proxy_test_url, proxies={'http': proxy[1], 'https': proxy[1]}, timeout=timeout)
+    if proxy[1]:
+        try:
+            proxy_response = requests.get(proxy_test_url, proxies={'http': proxy[1], 'https': proxy[1]}, timeout=timeout)
 
-        if proxy_response.status_code == 200:
-            log.debug('Proxy %s is ok', proxy[1])
-            proxy_queue.task_done()
-            proxies.append(proxy[1])
-            return True
-        else:
+            if proxy_response.status_code == 200:
+                log.debug('Proxy %s is ok', proxy[1])
+                proxy_queue.task_done()
+                proxies.append(proxy[1])
+                return True
 
-            proxy_error = "Wrong status code - " + str(proxy_response.status_code)
+            else:
+                proxy_error = "Wrong status code - " + str(proxy_response.status_code)
 
-    except requests.ConnectTimeout:
-        proxy_error = "Connection timeout (" + str(timeout) + " second(s) ) via proxy " + proxy[1]
+        except requests.ConnectTimeout:
+            proxy_error = "Connection timeout (" + str(timeout) + " second(s) ) via proxy " + proxy[1]
 
-    except requests.ConnectionError:
-        proxy_error = "Failed to connect to proxy " + proxy[1]
+        except requests.ConnectionError:
+            proxy_error = "Failed to connect to proxy " + proxy[1]
+    else:
+            proxy_error = "Empty proxy server"
 
     log.error('%s', proxy_error)
     proxy_queue.task_done()
