@@ -300,12 +300,10 @@ def search_overseer_thread(args, method, new_location_queue, pause_bit, encrypti
 def get_hex_location_list(args, current_location):
     # if we are only scanning for pokestops/gyms, then increase step radius to visibility range
     if args.no_pokemon:
-        step_distance = 0.900
-    else:
-        step_distance = 0.070
+        args.step_distance = 900
 
     # update our list of coords
-    locations = list(generate_location_steps(current_location, args.step_limit, step_distance))
+    locations = list(generate_location_steps(current_location, args.step_limit, args.step.distance / 1000 ))
 
     # In hex "spawns only" mode, filter out scan locations with no history of pokemons
     if args.spawnpoints_only and not args.no_pokemon:
