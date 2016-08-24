@@ -37,6 +37,8 @@ def check_proxy(proxy_queue, timeout, proxies):
 
         except requests.ConnectionError:
             proxy_error = "Failed to connect to proxy " + proxy[1]
+        except Exception as e:
+            proxy_error = e
     else:
             proxy_error = "Empty proxy server"
 
@@ -66,7 +68,7 @@ def check_proxies(args):
 
     # This is painfull but we need to wait here untill proxy_queue is completed so we have a working list of proxies
     proxy_queue.join()
-    working_proxies = len(proxies)
+    working_proxies = len(proxies)   
     if working_proxies == 0:
         log.error('Proxy was configured but no working proxies was found! We are aborting!')
         sys.exit(1)
