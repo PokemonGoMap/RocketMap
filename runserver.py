@@ -60,8 +60,12 @@ def main():
     args = get_args()
 
     # Add file logging if enabled
-    if args.logfile:
-        filelog = logging.FileHandler(args.logfile)
+    if args.verbose and args.verbose != 'nofile':
+        filelog = logging.FileHandler(args.verbose)
+        filelog.setFormatter(logging.Formatter('%(asctime)s [%(threadName)16s][%(module)14s][%(levelname)8s] %(message)s'))
+        logging.getLogger('').addHandler(filelog)
+    if args.very_verbose and args.very_verbose != 'nofile':
+        filelog = logging.FileHandler(args.very_verbose)
         filelog.setFormatter(logging.Formatter('%(asctime)s [%(threadName)16s][%(module)14s][%(levelname)8s] %(message)s'))
         logging.getLogger('').addHandler(filelog)
 
@@ -70,7 +74,7 @@ def main():
     if encryption_lib_path is "":
         sys.exit(1)
 
-    if args.debug:
+    if args.verbose or args.very_verbose:
         log.setLevel(logging.DEBUG)
     else:
         log.setLevel(logging.INFO)
@@ -93,10 +97,15 @@ def main():
     config['parse_gyms'] = not args.no_gyms
 
     # Turn these back up if debugging
-    if args.debug:
-        logging.getLogger('requests').setLevel(logging.DEBUG)
+    if args.verbose or args.very_verbose:
         logging.getLogger('pgoapi').setLevel(logging.DEBUG)
+    if args.very_verbose:
+        logging.getLogger('peewee').setLevel(logging.DEBUG)
+        logging.getLogger('requests').setLevel(logging.DEBUG)
+        logging.getLogger('pgoapi.pgoapi').setLevel(logging.DEBUG)
+        logging.getLogger('pgoapi.rpc_api').setLevel(logging.DEBUG)
         logging.getLogger('rpc_api').setLevel(logging.DEBUG)
+        logging.getLogger('werkzeug').setLevel(logging.DEBUG)
 
     # use lat/lng directly if matches such a pattern
     prog = re.compile("^(\-?\d+\.\d+),?\s?(\-?\d+\.\d+)$")
