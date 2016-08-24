@@ -3,6 +3,10 @@
 
 import logging
 import requests
+import sys
+
+from queue import Queue
+from threading import Thread
 
 log = logging.getLogger(__name__)
 
@@ -37,3 +41,32 @@ def check_proxy(proxy_queue, timeout, proxies):
     proxy_queue.task_done()
 
     return False
+
+
+# Check all proxies and return a working list with proxies
+def check_proxies(args):
+
+    proxy_queue = Queue()
+
+    for proxy in enumerate(args.proxy):
+        proxy_queue.put(proxy)
+    total_proxies = proxy_queue.qsize()
+    log.info('Checking %d proxies...', total_proxies)
+
+    proxies = []
+    for i in range(0, proxy_queue.qsize()):
+        t = Thread(target=check_proxy,
+                   name='check_proxy',
+                   args=(proxy_queue, args.proxy_timeout, proxies))
+        t.daemon = True
+        t.start()
+
+    # This is painfull but we need to wait here untill proxy_queue is completed so we have a working list of proxies
+    proxy_queue.join()
+    working_proxies = len(proxies)
+    if working_proxies == 0:
+        log.error('Proxy was configured but no working proxies was found! We are aborting!')
+        sys.exit(1)
+    else:
+        log.info('Proxy check completed with %d working proxies of %d configured', working_proxies, total_proxies)
+        return proxies

@@ -41,7 +41,6 @@ from .fakePogoApi import FakePogoApi
 from .utils import now
 
 import terminalsize
-from .proxy import check_proxy
 
 log = logging.getLogger(__name__)
 
@@ -179,29 +178,6 @@ def search_overseer_thread(args, method, new_location_queue, pause_bit, encrypti
     search_items_queue = Queue()
     threadStatus = {}
 
-    # Check all proxies before use so we know witch are good.
-    proxies = False
-    if args.proxy:
-        proxy_queue = Queue()
-
-        for proxy in enumerate(args.proxy):
-            proxy_queue.put(proxy)
-
-        log.info('Checking %d proxies...', proxy_queue.qsize())
-
-        proxies = []
-        for i in range(0, proxy_queue.qsize()):
-            t = Thread(target=check_proxy,
-                       name='check_proxy',
-                       args=(proxy_queue, args.proxy_timeout, proxies))
-            t.daemon = True
-            t.start()
-
-        # This is painfull but we need to wait here untill proxy_queue is completed so we have a working list of proxies
-        proxy_queue.join()
-
-        log.info('Proxy check completed with %d working proxies', len(proxies))
-
     threadStatus['Overseer'] = {
         'message': 'Initializing',
         'type': 'Overseer',
@@ -223,10 +199,10 @@ def search_overseer_thread(args, method, new_location_queue, pause_bit, encrypti
         # Set proxy to account, using round rubin
         using_proxy = ''
         account['proxy'] = False
-        if proxies:
-            using_proxy = account['proxy'] = proxies[i % len(proxies)]
+        if args.proxy:
+            using_proxy = account['proxy'] = args.proxy[i % len(args.proxy)]
             if args.proxy_display.upper() != 'FULL':
-                using_proxy = i % len(proxies)
+                using_proxy = i % len(args.proxy)
 
         log.debug('Starting search worker thread %d for user %s', i, account['username'])
         workerId = 'Worker {:03}'.format(i)
