@@ -182,14 +182,25 @@ def search_overseer_thread(args, method, new_location_queue, pause_bit, encrypti
     # Check all proxies before use so we know witch are good.
     proxies = False
     if args.proxy:
+        proxy_queue = Queue()
+
+        for proxy in enumerate(args.proxy):
+            proxy_queue.put(proxy)
+
+        log.info('Checking %d proxies...', proxy_queue.qsize())
+
         proxies = []
-        for i, proxy in enumerate(args.proxy):
-            curr_proxy = check_proxy(proxy, args.proxy_timeout)
-            if curr_proxy:
-                proxies.append(curr_proxy)
-        if len(proxies) == 0:
-            log.error('Proxies was configured but it is not working.')
-            proxies = False
+        for i in range(0, proxy_queue.qsize()):
+            t = Thread(target=check_proxy,
+                       name='check_proxy',
+                       args=(proxy_queue, args.proxy_timeout, proxies))
+            t.daemon = True
+            t.start()
+
+        # This is painfull but we need to wait here untill proxy_queue is completed so we have a working list of proxies
+        proxy_queue.join()
+
+        log.info('Proxy check completed with %d working proxies', len(proxies))
 
     threadStatus['Overseer'] = {
         'message': 'Initializing',
