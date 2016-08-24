@@ -25,6 +25,7 @@ import random
 import time
 import geopy
 import geopy.distance
+import csv
 
 from operator import itemgetter
 from threading import Thread
@@ -171,10 +172,12 @@ def search_overseer_thread(args, method, new_location_queue, pause_bit, encrypti
     search_items_queue = Queue()
     threadStatus = {}
 
+    method_string = {'hex': 'Hex Grid', 'sps': 'Spawn Point', 'csv': 'Custom List'}
+
     threadStatus['Overseer'] = {
         'message': 'Initializing',
         'type': 'Overseer',
-        'method': 'Hex Grid' if method == 'hex' else 'Spawn Point'
+        'method': method_string[method]
     }
 
     if(args.print_status):
@@ -270,6 +273,10 @@ def search_overseer_thread(args, method, new_location_queue, pause_bit, encrypti
             # locations = [((lat, lng, alt), ts_appears, ts_leaves),...]
             if method == 'hex':
                 locations = get_hex_location_list(args, current_location)
+            elif method == 'csv':
+                with open(args.csv, 'rU') as csvfile:
+                    spawn_csv = csv.DictReader(csvfile)
+                    locations = [((float(row['lat']), float(row['lng']), 0), now() - 1, now() + 86400) for row in spawn_csv]
             else:
                 locations = get_sps_location_list(args, current_location, sps_scan_current)
                 sps_scan_current = False

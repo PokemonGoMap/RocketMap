@@ -180,6 +180,8 @@ def main():
         # check the sort of scan
         if args.spawnpoint_scanning:
             mode = 'sps'
+        elif args.csv is not None and os.path.isfile(args.csv):
+            mode = 'csv'
         else:
             mode = 'hex'
 
