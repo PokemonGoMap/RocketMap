@@ -59,6 +59,11 @@ if not hasattr(pgoapi, "__version__") or StrictVersion(pgoapi.__version__) < Str
 def main():
     args = get_args()
 
+    # Check for depreciated argumented
+    if args.debug:
+        log.warning('--debug is depreciated. Please use --verbose instead.  Enabling --verbose')
+        args.verbose = 'nofile'
+
     # Add file logging if enabled
     if args.verbose and args.verbose != 'nofile':
         filelog = logging.FileHandler(args.verbose)
@@ -236,8 +241,10 @@ def main():
             ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
             ssl_context.load_cert_chain(args.ssl_certificate, args.ssl_privatekey)
             log.info('Web server in SSL mode.')
-
-        app.run(threaded=True, use_reloader=False, debug=args.debug, host=args.host, port=args.port, ssl_context=ssl_context)
+        if args.verbose or args.very_verbose:
+            app.run(threaded=True, use_reloader=False, debug=True, host=args.host, port=args.port, ssl_context=ssl_context)
+        else:
+            app.run(threaded=True, use_reloader=False, debug=False, host=args.host, port=args.port, ssl_context=ssl_context)
 
 if __name__ == '__main__':
     main()
