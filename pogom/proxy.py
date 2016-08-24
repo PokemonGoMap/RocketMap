@@ -68,7 +68,7 @@ def check_proxies(args):
 
     # This is painfull but we need to wait here untill proxy_queue is completed so we have a working list of proxies
     proxy_queue.join()
-    working_proxies = len(proxies)   
+    working_proxies = len(proxies)
     if working_proxies == 0:
         log.error('Proxy was configured but no working proxies was found! We are aborting!')
         sys.exit(1)
