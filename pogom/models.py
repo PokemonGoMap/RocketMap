@@ -258,9 +258,10 @@ class Pokemon(BaseModel):
         filtered = []
         hex_locations = list(generate_location_steps(center, steps, 0.07))
         for hl in hex_locations:
-            for idx, sp in enumerate(s):
+            for sp in reversed(s):
                 if geopy.distance.distance(hl, (sp['lat'], sp['lng'])).meters <= 70:
-                    filtered.append(s.pop(idx))
+                    filtered.append(sp)
+                    s.remove(sp)
 
         # at this point, 'time' is DISAPPEARANCE time, we're going to morph it to APPEARANCE time
         for location in filtered:
