@@ -60,6 +60,8 @@ def get_args():
                         action='store_true', default=False)
     parser.add_argument('-st', '--step-limit', help='Steps', type=int,
                         default=12)
+    parser.add_argument('-std', '--step-distance', help='Distance between steps', type=int,
+                        default=70)
     parser.add_argument('-sd', '--scan-delay',
                         help='Time delay between requests in scan threads',
                         type=float, default=10)
