@@ -4,7 +4,7 @@
 import calendar
 import logging
 
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, render_template, request, send_from_directory
 from flask.json import JSONEncoder
 from flask_compress import Compress
 from datetime import datetime
@@ -33,6 +33,7 @@ class Pogom(Flask):
         self.route("/search_control", methods=['GET'])(self.get_search_control)
         self.route("/search_control", methods=['POST'])(self.post_search_control)
         self.route("/stats", methods=['GET'])(self.get_stats)
+        self.route("/sw.js", methods=['GET'])(self.static_from_root)  # Required for service worker notifications
 
     def set_search_control(self, control):
         self.search_control = control
@@ -232,6 +233,8 @@ class Pogom(Flask):
                                valid_input=self.get_valid_stat_input()
                                )
 
+    def static_from_root(self):
+        return send_from_directory(self.static_folder + '/js', request.path[1:])
 
 class CustomJSONEncoder(JSONEncoder):
 
