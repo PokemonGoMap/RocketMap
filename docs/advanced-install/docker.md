@@ -75,11 +75,11 @@ If you want to run pokemongo-map on a service that doesn't support arguments lik
 
 ```bash
   docker run -d -P \
-    -e "AUTH_SERVICE=ptc" \
-    -e "USERNAME=UserName" \
-    -e "PASSWORD=Password" \
-    -e "LOCATION=Seattle, WA" \
-    -e "STEP_LIMIT=5" \
-    -e "GMAPS_KEY=SUPERSECRET" \
+    -e "POKEMON_AUTH_SERVICE=ptc" \
+    -e "POKEMON_USERNAME=UserName" \
+    -e "POKEMON_PASSWORD=Password" \
+    -e "POKEMON_LOCATION=Seattle, WA" \
+    -e "POKEMON_STEP_LIMIT=5" \
+    -e "POKEMON_GMAPS_KEY=SUPERSECRET" \
     ashex/pokemongo-map
 ```
