@@ -56,8 +56,8 @@ def get_args():
                         help='Passwords, either single one for all accounts or one per account.')
     parser.add_argument('-l', '--location', type=parse_unicode,
                         help='Location, can be an address or coordinates')
-    parser.add_argument('-j', '--jitter', help='Apply random -9m to +9m jitter to location',
-                        action='store_true', default=False)
+    parser.add_argument('-j', '--jitter', help='[DEPRECATED] Apply random -9m to +9m jitter to location',
+                        action='store_true', default=True)
     parser.add_argument('-st', '--step-limit', help='Steps', type=int,
                         default=12)
     parser.add_argument('-sd', '--scan-delay',
@@ -164,6 +164,9 @@ def get_args():
     parser.set_defaults(DEBUG=False)
 
     args = parser.parse_args()
+
+    if args.jitter:
+        log.warn('--jitter is default and will be deprecated in a future release.')
 
     if args.only_server:
         if args.location is None:
