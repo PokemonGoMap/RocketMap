@@ -266,7 +266,7 @@ class Pokemon(BaseModel):
         # This loop is about as non-pythonic as you can get, I bet.
         # Oh well.
         filtered = []
-        hex_locations = list(generate_location_steps(center, steps, 0.07))
+        hex_locations = generate_location_steps(center, steps, 0.07)
         for hl in hex_locations:
             for idx, sp in enumerate(s):
                 if geopy.distance.distance(hl, (sp['lat'], sp['lng'])).meters <= 70:
