@@ -515,7 +515,7 @@ def search_worker_thread(args, account, search_items_queue, pause_bit, encryptio
                         log.info("Sleeping an additional %d seconds to stay under speed limit", speed_sleep)
                         time.sleep(speed_sleep)
 
-                        last_location = step_location
+                    last_location = step_location
 
                 status['message'] = 'Searching at {:6f},{:6f}'.format(step_location[0], step_location[1])
                 log.info(status['message'])
