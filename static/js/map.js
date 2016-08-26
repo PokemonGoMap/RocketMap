@@ -28,6 +28,7 @@ var rawDataIsLoading = false
 var locationMarker
 var searchMarker
 var storeZoom = true
+var scanPath
 
 var noLabelsStyle = [{
   featureType: 'poi',
@@ -1582,10 +1583,29 @@ function updateMap () {
     showInBoundsMarkers(mapData.pokestops)
     showInBoundsMarkers(mapData.scanned)
     showInBoundsMarkers(mapData.spawnpoints)
+//    drawScanPath(result.scanned);
     clearStaleMarkers()
     if ($('#stats').hasClass('visible')) {
       countMarkers()
     }
+  })
+}
+
+function drawScanPath (points) { // eslint-disable-line no-unused-vars
+  var scanPathPoints = []
+  $.each(points, function (idx, point) {
+    scanPathPoints.push({lat: point['latitude'], lng: point['longitude']})
+  })
+  if (scanPath) {
+    scanPath.setMap(null)
+  }
+  scanPath = new google.maps.Polyline({
+    path: scanPathPoints,
+    geodesic: true,
+    strokeColor: '#FF0000',
+    strokeOpacity: 1.0,
+    strokeWeight: 2,
+    map: map
   })
 }
 

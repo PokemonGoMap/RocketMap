@@ -425,6 +425,7 @@ class ScannedLocation(BaseModel):
                         (ScannedLocation.longitude >= swLng) &
                         (ScannedLocation.latitude <= neLat) &
                         (ScannedLocation.longitude <= neLng))
+                 .order_by(ScannedLocation.last_modified.asc())
                  .dicts())
 
         return list(query)
