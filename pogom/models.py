@@ -26,7 +26,7 @@ log = logging.getLogger(__name__)
 args = get_args()
 flaskDb = FlaskDB()
 
-db_schema_version = 5
+db_schema_version = 6
 
 
 class MyRetryDB(RetryOperationalError, PooledMySQLDatabase):
@@ -79,6 +79,8 @@ class Pokemon(BaseModel):
     latitude = DoubleField()
     longitude = DoubleField()
     disappear_time = DateTimeField(index=True)
+    may_extend = BooleanField()
+    created_on = DateTimeField(default=datetime.datetime.now)
 
     class Meta:
         indexes = ((('latitude', 'longitude'), False),)
@@ -408,11 +410,13 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue):
                 # time_till_hidden_ms was overflowing causing a negative integer.
                 # It was also returning a value above 3.6M ms.
                 if 0 < p['time_till_hidden_ms'] < 3600000:
+                    may_extend = False
                     d_t = datetime.utcfromtimestamp(
                         (p['last_modified_timestamp_ms'] +
                          p['time_till_hidden_ms']) / 1000.0)
                 else:
                     # Set a value of 15 minutes because currently its unknown but larger than 15.
+                    may_extend = True
                     d_t = datetime.utcfromtimestamp((p['last_modified_timestamp_ms'] + 900000) / 1000.0)
 
                 printPokemon(p['pokemon_data']['pokemon_id'], p['latitude'],
@@ -423,7 +427,8 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue):
                     'pokemon_id': p['pokemon_data']['pokemon_id'],
                     'latitude': p['latitude'],
                     'longitude': p['longitude'],
-                    'disappear_time': d_t
+                    'disappear_time': d_t,
+                    'may_extend': may_extend
                 }
 
                 if args.webhooks:
@@ -435,7 +440,8 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue):
                         'longitude': p['longitude'],
                         'disappear_time': calendar.timegm(d_t.timetuple()),
                         'last_modified_time': p['last_modified_timestamp_ms'],
-                        'time_until_hidden_ms': p['time_till_hidden_ms']
+                        'time_until_hidden_ms': p['time_till_hidden_ms'],
+                        'may_extend': may_extend
                     }))
 
         for f in cell.get('forts', []):
@@ -681,3 +687,9 @@ def database_migrate(db, old_ver):
                  .where(Pokemon.disappear_time >
                         (datetime.utcnow() - timedelta(hours=24))))
         query.execute()
+
+    if old_ver < 6:
+        migrate(
+            migrator.add_column('pokemon', 'may_extend', BooleanField()),
+            migrator.add_column('pokemon', 'created_on', DateTimeField(default=datetime.datetime.now))
+        )
