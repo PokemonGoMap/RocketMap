@@ -448,7 +448,7 @@ class GymMember(BaseModel):
 
 
 class GymPokemon(BaseModel):
-    pokemon_uid = CharField(primary_key=True)
+    pokemon_uid = CharField(primary_key=True, max_length=50)
     pokemon_id = IntegerField()
     cp = IntegerField()
     trainer_name = CharField()
@@ -468,14 +468,14 @@ class GymPokemon(BaseModel):
 
 
 class Trainer(BaseModel):
-    name = CharField(primary_key=True)
+    name = CharField(primary_key=True, max_length=50)
     team = IntegerField()
     level = IntegerField()
     last_seen = DateTimeField(default=datetime.utcnow)
 
 
 class GymDetails(BaseModel):
-    gym_id = CharField(primary_key=True)
+    gym_id = CharField(primary_key=True, max_length=50)
     name = CharField()
     description = CharField(null=True)
     url = CharField()
@@ -740,13 +740,16 @@ def parse_gyms(args, gym_responses, wh_update_queue):
     if len(trainers):
         bulk_upsert(Trainer, trainers)
 
-    # get rid of all the gym members, we're going to insert new records
-    if len(gym_details):
-        DeleteQuery(GymMember).where(GymMember.gym_id << gym_details.keys()).execute()
+    # This needs to be completed in a transaction, because we don't wany any other thread or process
+    # to mess with the GymMembers for the gyms we're updating while we're updating the bridge table.
+    with flaskDb.database.transaction():
+        # get rid of all the gym members, we're going to insert new records
+        if len(gym_details):
+            DeleteQuery(GymMember).where(GymMember.gym_id << gym_details.keys()).execute()
 
-    # insert new gym members
-    if len(gym_members):
-        bulk_upsert(GymMember, gym_members)
+        # insert new gym members
+        if len(gym_members):
+            bulk_upsert(GymMember, gym_members)
 
     log.info('Upserted %d gyms and %d gym members',
              len(gym_details),
