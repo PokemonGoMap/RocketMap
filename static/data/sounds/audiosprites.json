@@ -1,0 +1,14 @@
+{
+  "1": {
+    "id": "default",
+	"text": "{Default}",
+	"src": "audiosprite_default.min.json",
+	"type": "loose"
+  },
+  "2": {
+    "id": "cries",
+	"text": "{Pokemon Cries}",
+	"src": "audiosprite_cries.min.json",
+	"type": "sprite"
+  }
+}

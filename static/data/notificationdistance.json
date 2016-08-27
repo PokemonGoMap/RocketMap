@@ -1,0 +1,72 @@
+{
+  "1": {
+    "text": "{None}",
+    "type": "none",
+    "value": "0"
+  },
+  "2": {
+    "text": "{All}",
+    "type": "all",
+    "value": "0"
+  },
+  "3": {
+    "text": "{Only Nearby}",
+    "type": "less",
+    "value": "70"
+  },
+  "4": {
+    "text": "{Less than} 100 {Meters}",
+    "type": "less",
+    "value": "100"
+  },
+  "5": {
+    "text": "{Less than} 200 {Meters}",
+    "type": "less",
+    "value": "200"
+  },
+  "6": {
+    "text": "{Less than} 300 {Meters}",
+    "type": "less",
+    "value": "300"
+  },
+  "7": {
+    "text": "{Less than} 400 {Meters}",
+    "type": "less",
+    "value": "400"
+  },
+  "8": {
+    "text": "{Less than} 500 {Meters}",
+    "type": "less",
+    "value": "500"
+  },
+  "9": {
+    "text": "{Not Nearby}",
+    "type": "more",
+    "value": "70"
+  },
+  "10": {
+    "text": "{More than} 100 {Meters}",
+    "type": "more",
+    "value": "100"
+  },
+  "11": {
+    "text": "{More than} 200 {Meters}",
+    "type": "more",
+    "value": "200"
+  },
+  "12": {
+    "text": "{More than} 300 {Meters}",
+    "type": "more",
+    "value": "300"
+  },
+  "13": {
+    "text": "{More than} 400 {Meters}",
+    "type": "more",
+    "value": "400"
+  },
+  "14": {
+    "text": "{More than} 500 {Meters}",
+    "type": "more",
+    "value": "500"
+  }
+}

@@ -171,7 +171,7 @@
             </div>
           </div>
 
-          <h3>Notification Settings</h3>
+          <h3>Notification Pokémons</h3>
           <div>
             <div class="form-control">
               <label for="notify-pokemon">
@@ -189,15 +189,47 @@
                 </div>
               </label>
             </div>
-            <div class="form-control switch-container">
-              <h3>Notify with sound</h3>
+          </div>
+
+          <h3>Notification Settings</h3>
+          <div>
+            <div class="form-control switch-container" >
+              <h3>Notifications</h3>
               <div class="onoffswitch">
-                <input id="sound-switch" type="checkbox" name="sound-switch" class="onoffswitch-checkbox" checked>
-                <label class="onoffswitch-label" for="sound-switch">
+                <input id="notify-switch" type="checkbox" name="notify-switch" class="onoffswitch-checkbox" checked/>
+                <label class="onoffswitch-label" for="notify-switch">
                 <span class="switch-label" data-on="On" data-off="Off"></span>
                 <span class="switch-handle"></span>
                 </label>
               </div>
+            </div>
+            <div class="form-control switch-container">
+              <h3>Push Notifications</h3>
+              <select id="notify-notification"></select>
+            </div>
+            <div class="form-control switch-container">
+              <h3>Sound Notifications</h3>
+              <select id="notify-sound"></select>
+            </div>
+            <div class="form-control switch-container">
+              <h3>Sound Pack</h3>
+              <select id="notify-audiosprite"></select>
+            </div>
+            <div class="form-control switch-container">
+              <h3>Voice Notifications</h3>
+              <select id="notify-texttospeech"></select>
+            </div>
+            <div class="form-control">
+              <label for="notify-nearby">
+                <h3>Nearby Notifications</h3>
+                <div style="max-height:165px;overflow-y:auto">
+                  <select id="notify-nearby" multiple="multiple"></select>
+                </div>
+              </label>
+            </div>
+             <div class="form-control switch-container">
+              <h3>Nearby Distance</h3>
+              <select id="notify-nearbydistance"></select>
             </div>
           </div>
 
@@ -252,8 +284,10 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.0/jquery-ui.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/skel/3.0.1/skel.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/js/select2.min.js"></script>
+    <script src="https://code.createjs.com/soundjs-0.6.2.min.js"></script>
     <script src="{{ url_for('static', filename='dist/js/app.min.js').lstrip('/') }}"></script>
     <script src="{{ url_for('static', filename='js/vendor/classie.js').lstrip('/') }}"></script>
+    <script src="{{ url_for('static', filename='dist/js/push.custom.min.js').lstrip('/') }}"></script>
     <script>
       var centerLat = {{lat}};
       var centerLng = {{lng}};
