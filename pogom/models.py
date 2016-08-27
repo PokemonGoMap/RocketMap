@@ -505,16 +505,15 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue):
     for cell in cells:
         if config['parse_pokemon']:
             for p in cell.get('wild_pokemons', []):
-
-                time_till_hidden = p['time_till_hidden_ms']
-                # Correct misterious time_till_hidden value by removing extra bit in front of the Int32 that indicates this is a long spawn
-                # 2147483647 is the maximum value of an Int32 and can be read since this is read as a Int64
-                if time_till_hidden > 2147483647:
-                    time_till_hidden = time_till_hidden - 2147483647
-
-                d_t = datetime.utcfromtimestamp(
-                    (p['last_modified_timestamp_ms'] +
-                     time_till_hidden) / 1000.0)
+                # time_till_hidden_ms was overflowing causing a negative integer.
+                # It was also returning a value above 3.6M ms.
+                if 0 < p['time_till_hidden_ms'] < 3600000:
+                    d_t = datetime.utcfromtimestamp(
+                        (p['last_modified_timestamp_ms'] +
+                         p['time_till_hidden_ms']) / 1000.0)
+                else:
+                    # Set a value of 15 minutes because currently its unknown but larger than 15.
+                    d_t = datetime.utcfromtimestamp((p['last_modified_timestamp_ms'] + 900000) / 1000.0)
 
                 printPokemon(p['pokemon_data']['pokemon_id'], p['latitude'],
                              p['longitude'], d_t)
