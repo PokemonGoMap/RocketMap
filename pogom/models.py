@@ -510,11 +510,11 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue):
                 # Correct misterious time_till_hidden value by removing extra bit in front of the Int32 that indicates this is a long spawn
                 # 2147483647 is the maximum value of an Int32 and can be read since this is read as a Int64
                 if time_till_hidden > 2147483647:
-                     time_till_hidden = time_till_hidden - 2147483647
+                    time_till_hidden = time_till_hidden - 2147483647
 
                 d_t = datetime.utcfromtimestamp(
                     (p['last_modified_timestamp_ms'] +
-                    time_till_hidden) / 1000.0)
+                     time_till_hidden) / 1000.0)
 
                 printPokemon(p['pokemon_data']['pokemon_id'], p['latitude'],
                              p['longitude'], d_t)
