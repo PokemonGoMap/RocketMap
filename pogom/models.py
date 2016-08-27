@@ -3,11 +3,12 @@
 import logging
 import calendar
 import sys
+import gc
 import time
 import geopy
 from peewee import SqliteDatabase, InsertQuery, \
     IntegerField, CharField, DoubleField, BooleanField, \
-    DateTimeField, CompositeKey, fn
+    DateTimeField, fn, DeleteQuery, CompositeKey, FloatField
 from playhouse.flask_utils import FlaskDB
 from playhouse.pool import PooledMySQLDatabase
 from playhouse.shortcuts import RetryOperationalError
@@ -25,7 +26,7 @@ log = logging.getLogger(__name__)
 args = get_args()
 flaskDb = FlaskDB()
 
-db_schema_version = 5
+db_schema_version = 6
 
 
 class MyRetryDB(RetryOperationalError, PooledMySQLDatabase):
@@ -93,11 +94,14 @@ class Pokemon(BaseModel):
             query = (Pokemon
                      .select()
                      .where((Pokemon.disappear_time > datetime.utcnow()) &
-                            (Pokemon.latitude >= swLat) &
-                            (Pokemon.longitude >= swLng) &
-                            (Pokemon.latitude <= neLat) &
-                            (Pokemon.longitude <= neLng))
+                            (((Pokemon.latitude >= swLat) &
+                              (Pokemon.longitude >= swLng) &
+                              (Pokemon.latitude <= neLat) &
+                              (Pokemon.longitude <= neLng))))
                      .dicts())
+
+        # Performance: Disable the garbage collector prior to creating a (potentially) large dict with append()
+        gc.disable()
 
         pokemons = []
         for p in query:
@@ -108,6 +112,9 @@ class Pokemon(BaseModel):
                 p['latitude'], p['longitude'] = \
                     transform_from_wgs_to_gcj(p['latitude'], p['longitude'])
             pokemons.append(p)
+
+        # Re-enable the GC.
+        gc.enable()
 
         return pokemons
 
@@ -130,6 +137,9 @@ class Pokemon(BaseModel):
                             (Pokemon.longitude <= neLng))
                      .dicts())
 
+        # Performance: Disable the garbage collector prior to creating a (potentially) large dict with append()
+        gc.disable()
+
         pokemons = []
         for p in query:
             p['pokemon_name'] = get_pokemon_name(p['pokemon_id'])
@@ -139,6 +149,9 @@ class Pokemon(BaseModel):
                 p['latitude'], p['longitude'] = \
                     transform_from_wgs_to_gcj(p['latitude'], p['longitude'])
             pokemons.append(p)
+
+        # Re-enable the GC.
+        gc.enable()
 
         return pokemons
 
@@ -162,9 +175,14 @@ class Pokemon(BaseModel):
                          Pokemon.longitude,
                          pokemon_count_query.c.count)
                  .join(pokemon_count_query, on=(Pokemon.pokemon_id == pokemon_count_query.c.pokemon_id))
+                 .distinct()
                  .where(Pokemon.disappear_time == pokemon_count_query.c.lastappeared)
                  .dicts()
                  )
+
+        # Performance: Disable the garbage collector prior to creating a (potentially) large dict with append()
+        gc.disable()
+
         pokemons = []
         total = 0
         for p in query:
@@ -172,22 +190,32 @@ class Pokemon(BaseModel):
             pokemons.append(p)
             total += p['count']
 
+        # Re-enable the GC.
+        gc.enable()
+
         return {'pokemon': pokemons, 'total': total}
 
     @classmethod
-    def get_appearances(cls, pokemon_id, last_appearance):
+    def get_appearances(cls, pokemon_id, last_appearance, timediff):
+        '''
+        :param pokemon_id: id of pokemon that we need appearances for
+        :param last_appearance: time of last appearance of pokemon after which we are getting appearances
+        :param timediff: limiting period of the selection
+        :return: list of  pokemon  appearances over a selected period
+        '''
+        if timediff:
+            timediff = datetime.utcnow() - timediff
         query = (Pokemon
                  .select()
                  .where((Pokemon.pokemon_id == pokemon_id) &
-                        (Pokemon.disappear_time > datetime.utcfromtimestamp(last_appearance / 1000.0))
+                        (Pokemon.disappear_time > datetime.utcfromtimestamp(last_appearance / 1000.0)) &
+                        (Pokemon.disappear_time > timediff)
                         )
                  .order_by(Pokemon.disappear_time.asc())
                  .dicts()
                  )
-        appearances = []
-        for a in query:
-            appearances.append(a)
-        return appearances
+
+        return list(query)
 
     @classmethod
     def get_spawnpoints(cls, southBoundary, westBoundary, northBoundary, eastBoundary):
@@ -282,12 +310,18 @@ class Pokestop(BaseModel):
                             (Pokestop.longitude <= neLng))
                      .dicts())
 
+        # Performance: Disable the garbage collector prior to creating a (potentially) large dict with append()
+        gc.disable()
+
         pokestops = []
         for p in query:
             if args.china:
                 p['latitude'], p['longitude'] = \
                     transform_from_wgs_to_gcj(p['latitude'], p['longitude'])
             pokestops.append(p)
+
+        # Re-enable the GC.
+        gc.enable()
 
         return pokestops
 
@@ -306,6 +340,7 @@ class Gym(BaseModel):
     latitude = DoubleField()
     longitude = DoubleField()
     last_modified = DateTimeField(index=True)
+    last_scanned = DateTimeField(default=datetime.utcnow)
 
     class Meta:
         indexes = ((('latitude', 'longitude'), False),)
@@ -313,21 +348,61 @@ class Gym(BaseModel):
     @staticmethod
     def get_gyms(swLat, swLng, neLat, neLng):
         if swLat is None or swLng is None or neLat is None or neLng is None:
-            query = (Gym
-                     .select()
-                     .dicts())
+            results = (Gym
+                       .select()
+                       .dicts())
         else:
-            query = (Gym
-                     .select()
-                     .where((Gym.latitude >= swLat) &
-                            (Gym.longitude >= swLng) &
-                            (Gym.latitude <= neLat) &
-                            (Gym.longitude <= neLng))
-                     .dicts())
+            results = (Gym
+                       .select()
+                       .where((Gym.latitude >= swLat) &
+                              (Gym.longitude >= swLng) &
+                              (Gym.latitude <= neLat) &
+                              (Gym.longitude <= neLng))
+                       .dicts())
 
-        gyms = []
-        for g in query:
-            gyms.append(g)
+        # Performance: Disable the garbage collector prior to creating a (potentially) large dict with append()
+        gc.disable()
+
+        gyms = {}
+        gym_ids = []
+        for g in results:
+            g['name'] = None
+            g['pokemon'] = []
+            gyms[g['gym_id']] = g
+            gym_ids.append(g['gym_id'])
+
+        if len(gym_ids) > 0:
+            pokemon = (GymMember
+                       .select(
+                           GymMember.gym_id,
+                           GymPokemon.cp.alias('pokemon_cp'),
+                           GymPokemon.pokemon_id,
+                           Trainer.name.alias('trainer_name'),
+                           Trainer.level.alias('trainer_level'))
+                       .join(Gym, on=(GymMember.gym_id == Gym.gym_id))
+                       .join(GymPokemon, on=(GymMember.pokemon_uid == GymPokemon.pokemon_uid))
+                       .join(Trainer, on=(GymPokemon.trainer_name == Trainer.name))
+                       .where(GymMember.gym_id << gym_ids)
+                       .where(GymMember.last_scanned > Gym.last_modified)
+                       .order_by(GymMember.gym_id, GymPokemon.cp)
+                       .dicts())
+
+            for p in pokemon:
+                p['pokemon_name'] = get_pokemon_name(p['pokemon_id'])
+                gyms[p['gym_id']]['pokemon'].append(p)
+
+            details = (GymDetails
+                       .select(
+                           GymDetails.gym_id,
+                           GymDetails.name)
+                       .where(GymDetails.gym_id << gym_ids)
+                       .dicts())
+
+            for d in details:
+                gyms[d['gym_id']]['name'] = d['name']
+
+        # Re-enable the GC.
+        gc.enable()
 
         return gyms
 
@@ -352,11 +427,7 @@ class ScannedLocation(BaseModel):
                         (ScannedLocation.longitude <= neLng))
                  .dicts())
 
-        scans = []
-        for s in query:
-            scans.append(s)
-
-        return scans
+        return list(query)
 
 
 class Versions(flaskDb.Model):
@@ -365,6 +436,50 @@ class Versions(flaskDb.Model):
 
     class Meta:
         primary_key = False
+
+
+class GymMember(BaseModel):
+    gym_id = CharField(index=True)
+    pokemon_uid = CharField()
+    last_scanned = DateTimeField(default=datetime.utcnow)
+
+    class Meta:
+        primary_key = False
+
+
+class GymPokemon(BaseModel):
+    pokemon_uid = CharField(primary_key=True, max_length=50)
+    pokemon_id = IntegerField()
+    cp = IntegerField()
+    trainer_name = CharField()
+    num_upgrades = IntegerField(null=True)
+    move_1 = IntegerField(null=True)
+    move_2 = IntegerField(null=True)
+    height = FloatField(null=True)
+    weight = FloatField(null=True)
+    stamina = IntegerField(null=True)
+    stamina_max = IntegerField(null=True)
+    cp_multiplier = FloatField(null=True)
+    additional_cp_multiplier = FloatField(null=True)
+    iv_defense = IntegerField(null=True)
+    iv_stamina = IntegerField(null=True)
+    iv_attack = IntegerField(null=True)
+    last_seen = DateTimeField(default=datetime.utcnow)
+
+
+class Trainer(BaseModel):
+    name = CharField(primary_key=True, max_length=50)
+    team = IntegerField()
+    level = IntegerField()
+    last_seen = DateTimeField(default=datetime.utcnow)
+
+
+class GymDetails(BaseModel):
+    gym_id = CharField(primary_key=True, max_length=50)
+    name = CharField()
+    description = CharField(null=True)
+    url = CharField()
+    last_scanned = DateTimeField(default=datetime.utcnow)
 
 
 def hex_bounds(center, steps):
@@ -516,7 +631,129 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue):
         'last_modified': datetime.utcnow()
     }}))
 
-    return len(pokemons) + len(pokestops) + len(gyms)
+    return {
+        'count': len(pokemons) + len(pokestops) + len(gyms),
+        'gyms': gyms,
+    }
+
+
+def parse_gyms(args, gym_responses, wh_update_queue):
+    gym_details = {}
+    gym_members = {}
+    gym_pokemon = {}
+    trainers = {}
+
+    i = 0
+    for g in gym_responses.values():
+        gym_state = g['gym_state']
+        gym_id = gym_state['fort_data']['id']
+
+        gym_details[gym_id] = {
+            'gym_id': gym_id,
+            'name': g['name'],
+            'description': g.get('description'),
+            'url': g['urls'][0],
+        }
+
+        if args.webhooks:
+            webhook_data = {
+                'id': gym_id,
+                'latitude': gym_state['fort_data']['latitude'],
+                'longitude': gym_state['fort_data']['longitude'],
+                'team': gym_state['fort_data'].get('owned_by_team', 0),
+                'name': g['name'],
+                'description': g.get('description'),
+                'url': g['urls'][0],
+                'pokemon': [],
+            }
+
+        for member in gym_state.get('memberships', []):
+            gym_members[i] = {
+                'gym_id': gym_id,
+                'pokemon_uid': member['pokemon_data']['id'],
+            }
+
+            gym_pokemon[i] = {
+                'pokemon_uid': member['pokemon_data']['id'],
+                'pokemon_id': member['pokemon_data']['pokemon_id'],
+                'cp': member['pokemon_data']['cp'],
+                'trainer_name': member['trainer_public_profile']['name'],
+                'num_upgrades': member['pokemon_data'].get('num_upgrades', 0),
+                'move_1': member['pokemon_data'].get('move_1'),
+                'move_2': member['pokemon_data'].get('move_2'),
+                'height': member['pokemon_data'].get('height_m'),
+                'weight': member['pokemon_data'].get('weight_kg'),
+                'stamina': member['pokemon_data'].get('stamina'),
+                'stamina_max': member['pokemon_data'].get('stamina_max'),
+                'cp_multiplier': member['pokemon_data'].get('cp_multiplier'),
+                'additional_cp_multiplier': member['pokemon_data'].get('additional_cp_multiplier', 0),
+                'iv_defense': member['pokemon_data'].get('individual_defense', 0),
+                'iv_stamina': member['pokemon_data'].get('individual_stamina', 0),
+                'iv_attack': member['pokemon_data'].get('individual_attack', 0),
+                'last_seen': datetime.utcnow(),
+            }
+
+            trainers[i] = {
+                'name': member['trainer_public_profile']['name'],
+                'team': gym_state['fort_data']['owned_by_team'],
+                'level': member['trainer_public_profile']['level'],
+                'last_seen': datetime.utcnow(),
+            }
+
+            if args.webhooks:
+                webhook_data['pokemon'].append({
+                    'pokemon_uid': member['pokemon_data']['id'],
+                    'pokemon_id': member['pokemon_data']['pokemon_id'],
+                    'cp': member['pokemon_data']['cp'],
+                    'num_upgrades': member['pokemon_data'].get('num_upgrades', 0),
+                    'move_1': member['pokemon_data'].get('move_1'),
+                    'move_2': member['pokemon_data'].get('move_2'),
+                    'height': member['pokemon_data'].get('height_m'),
+                    'weight': member['pokemon_data'].get('weight_kg'),
+                    'stamina': member['pokemon_data'].get('stamina'),
+                    'stamina_max': member['pokemon_data'].get('stamina_max'),
+                    'cp_multiplier': member['pokemon_data'].get('cp_multiplier'),
+                    'additional_cp_multiplier': member['pokemon_data'].get('additional_cp_multiplier', 0),
+                    'iv_defense': member['pokemon_data'].get('individual_defense', 0),
+                    'iv_stamina': member['pokemon_data'].get('individual_stamina', 0),
+                    'iv_attack': member['pokemon_data'].get('individual_attack', 0),
+                    'trainer_name': member['trainer_public_profile']['name'],
+                    'trainer_level': member['trainer_public_profile']['level'],
+                })
+
+            i += 1
+        if args.webhooks:
+            wh_update_queue.put(('gym_details', webhook_data))
+
+    # All this database stuff is synchronous (not using the upsert queue) on purpose.
+    # Since the search workers load the GymDetails model from the database to determine if a gym
+    # needs rescanned, we need to be sure the GymDetails get fully committed to the database before moving on.
+    #
+    # We _could_ synchronously upsert GymDetails, then queue the other tables for
+    # upsert, but that would put that Gym's overall information in a weird non-atomic state.
+
+    # upsert all the models
+    if len(gym_details):
+        bulk_upsert(GymDetails, gym_details)
+    if len(gym_pokemon):
+        bulk_upsert(GymPokemon, gym_pokemon)
+    if len(trainers):
+        bulk_upsert(Trainer, trainers)
+
+    # This needs to be completed in a transaction, because we don't wany any other thread or process
+    # to mess with the GymMembers for the gyms we're updating while we're updating the bridge table.
+    with flaskDb.database.transaction():
+        # get rid of all the gym members, we're going to insert new records
+        if len(gym_details):
+            DeleteQuery(GymMember).where(GymMember.gym_id << gym_details.keys()).execute()
+
+        # insert new gym members
+        if len(gym_members):
+            bulk_upsert(GymMember, gym_members)
+
+    log.info('Upserted %d gyms and %d gym members',
+             len(gym_details),
+             len(gym_members))
 
 
 def db_updater(args, q):
@@ -590,13 +827,13 @@ def bulk_upsert(cls, data):
 def create_tables(db):
     db.connect()
     verify_database_schema(db)
-    db.create_tables([Pokemon, Pokestop, Gym, ScannedLocation], safe=True)
+    db.create_tables([Pokemon, Pokestop, Gym, ScannedLocation, GymDetails, GymMember, GymPokemon, Trainer], safe=True)
     db.close()
 
 
 def drop_tables(db):
     db.connect()
-    db.drop_tables([Pokemon, Pokestop, Gym, ScannedLocation, Versions], safe=True)
+    db.drop_tables([Pokemon, Pokestop, Gym, ScannedLocation, Versions, GymDetails, GymMember, GymPokemon, Trainer], safe=True)
     db.close()
 
 
@@ -664,3 +901,8 @@ def database_migrate(db, old_ver):
                  .where(Pokemon.disappear_time >
                         (datetime.utcnow() - timedelta(hours=24))))
         query.execute()
+
+    if old_ver < 6:
+        migrate(
+            migrator.add_column('gym', 'last_scanned', DateTimeField(null=True)),
+        )
