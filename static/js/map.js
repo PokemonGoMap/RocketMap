@@ -779,7 +779,7 @@ var StoreOptions = {
     type: StoreTypes.Boolean
   },
   'pokemonIcons': {
-    default: 'highres',
+    default: 'normal',
     type: StoreTypes.String
   },
   'iconSizeModifier': {
