@@ -279,7 +279,7 @@ class Pokemon(BaseModel):
             # todo: this DOES NOT ACCOUNT for pokemons that appear sooner and live longer, but you'll _always_ have at least 15 minutes, so it works well enough
             location['time'] = (location['time'] + 2700) % 3600
 
-        #remove dublicates because when a spawn falls into more than 1 hex location it is listed multiple times
+        # remove dublicates because when a spawn falls into more than 1 hex location it is listed multiple times
         noDupes = []
         [noDupes.append(i) for i in filtered if not noDupes.count(i)]
         return noDupes
