@@ -1270,20 +1270,36 @@ function addRangeCircle (marker, map, type, teamId) {
   var targetmap = null
   var circleCenter = new google.maps.LatLng(marker.position.lat(), marker.position.lng())
   var gymColors = ['#999999', '#0051CF', '#FF260E', '#FECC23'] // 'Uncontested', 'Mystic', 'Valor', 'Instinct']
-  var circleColor = '#cccccc'
   var teamColor = gymColors[0]
   if (teamId) teamColor = gymColors[teamId]
 
-  if (type === 'search') circleColor = '#333333'
-  if (type === 'pokemon') circleColor = '#C233F2'
-  if (type === 'pokestop') circleColor = '#3EB0FF'
-  if (type === 'gym') circleColor = teamColor
+  var range
+  var circleColor
+
+  switch (type) {
+    case 'search':
+      circleColor = '#333333'
+      range = 70
+      break
+    case 'pokemon':
+      circleColor = '#C233F2'
+      range = 70
+      break
+    case 'pokestop':
+      circleColor = '#3EB0FF'
+      range = 40
+      break
+    case 'gym':
+      circleColor = teamColor
+      range = 40
+      break
+  }
 
   if (map) targetmap = map
 
   var rangeCircleOpts = {
     map: targetmap,
-    radius: 40,    // 40 meters
+    radius: range, // meters
     strokeWeight: 1,
     strokeColor: circleColor,
     strokeOpacity: 0.9,
