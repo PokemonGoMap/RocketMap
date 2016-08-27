@@ -4,7 +4,9 @@
 *.db-*
 *.sass-cache
 *.orig
-config/config.ini
+*.json
+config/*
+!config/config.ini.example
 static/dist/
 node_modules/
 venv/
