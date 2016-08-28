@@ -65,6 +65,9 @@ def get_args():
     parser.add_argument('-sd', '--scan-delay',
                         help='Time delay between requests in scan threads',
                         type=float, default=10)
+    parser.add_argument('-rd', '--random-delay',
+                        help='Random time delay between 0 and RANDOM_DELAY seconds added to SCAN_DELAY after each step',
+                        type=int, default=0)
     parser.add_argument('-ld', '--login-delay',
                         help='Time delay between each login attempt',
                         type=float, default=5)
@@ -159,6 +162,9 @@ def get_args():
     parser.add_argument('-ps', '--print-status', action='store_true',
                         help='Show a status screen instead of log messages. Can switch between status and logs by pressing enter.', default=False)
     parser.add_argument('-el', '--encrypt-lib', help='Path to encrypt lib to be used instead of the shipped ones')
+    parser.add_argument('-sl', '--speed-limit',
+                        help='If next scan would cause the account to move above specified speed in kmph in a straight line, sleep until such time that it could reasonably move that distance',
+                        type=float, default=0)
     verbosity = parser.add_mutually_exclusive_group()
     verbosity.add_argument('-v', '--verbose', help='Show debug messages from PomemonGo-Map and pgoapi. Optionally specify file to log to.', nargs='?', const='nofile', default=False, metavar='filename.log')
     verbosity.add_argument('-vv', '--very-verbose', help='Like verbose, but show debug messages from all modules as well.  Optionally specify file to log to.', nargs='?', const='nofile', default=False, metavar='filename.log')
