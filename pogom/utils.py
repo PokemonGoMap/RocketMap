@@ -48,6 +48,8 @@ def get_args():
     # fuck PEP8
     configpath = os.path.join(os.path.dirname(__file__), '../config/config.ini')
     parser = configargparse.ArgParser(default_config_files=[configpath], auto_env_var_prefix='POGOMAP_')
+    parser.add_argument('-configfile', is_config_file=True,
+                        help='Config file path. e.g. "config/config.ini"')
     parser.add_argument('-a', '--auth-service', type=str.lower, action='append',
                         help='Auth Services, either one for all accounts or one per account: ptc or google. Defaults all to ptc.')
     parser.add_argument('-u', '--username', action='append',
