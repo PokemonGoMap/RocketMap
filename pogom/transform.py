@@ -130,4 +130,13 @@ def generate_location_steps(initial_loc, step_count, step_distance):
 
             ring -= 1
 
+    # This will pull the last few steps back to the front of the list
+    # so you get a "center nugget" at the beginning of the scan, instead
+    # of the entire nothern area before the scan spots 70m to the south.
+    if step_count >= 3:
+        if step_count == 3:
+            results = results[-2:] + results[:-2]
+        else:
+            results = results[-7:] + results[:-7]
+
     return results
