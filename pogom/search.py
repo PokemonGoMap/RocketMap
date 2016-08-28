@@ -31,7 +31,7 @@ from pgoapi.utilities import f2i
 from pgoapi import utilities as util
 from pgoapi.exceptions import AuthException
 
-from .models import parse_map, Pokemon, PoGoAccount, insert_accounts, deactivate_account, remove_accounts, use_account
+from .models import parse_map, Pokemon, PoGoAccount, deactivate_account, use_account, PoGoAccount
 
 log = logging.getLogger(__name__)
 
@@ -115,15 +115,11 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
 
     search_items_queue = Queue()
     parse_lock = Lock()
-    #Feed/remove accounts
-    remove_accounts()
-    insert_accounts()
 
     # Create a search_worker_thread per account
     log.info('Starting search worker threads')
-    
-    for i, account in enumerate(PoGoAccount.get_active_unused(args.num_accounts)):
-        log.debug('Starting search worker thread %d for user %s', i, account['Username'])
+    for i, account in enumerate(PoGoAccount.get_active_unused(args.num_accounts, True)):
+        log.info('Starting search worker thread %d for user %s', i, account['Username'])
         t = Thread(target=search_worker_thread,
                    name='search_worker_{}'.format(i),
                    args=(args, i, account, search_items_queue, parse_lock,
@@ -236,7 +232,6 @@ def search_worker_thread(args, count, account, search_items_queue, parse_lock, e
 
             # The forever loop for the searches
             while True:
-                use_account(account['Username'])
                 # Grab the next thing to search (when available)
                 step, step_location = search_items_queue.get()
 
@@ -256,7 +251,9 @@ def search_worker_thread(args, count, account, search_items_queue, parse_lock, e
                         # on this overall loop forever. Better to lose one cell
                         # than have the scanner, essentially, halt.
                         log.error('Search step %d went over max scan_retires; abandoning', step)
-                        break
+                        deactivate_account(account['Username'])
+                        account = PoGoAccount.get_active_unused(1, True)[0]
+                        raise Exception('Username Changed')
 
                     # Increase sleep delay between each failed scan
                     # By default scan_dela=5, scan_retries=5 so
@@ -283,8 +280,9 @@ def search_worker_thread(args, count, account, search_items_queue, parse_lock, e
                             search_items_queue.task_done()
                             break  # All done, get out of the request-retry loop
                         except KeyError:
-                            log.exception('Search step %s map parsing failed, retrying request in %g seconds. Username: %s', step, sleep_time, account['Username'])
+                            log.exception('Search step %s map parsing failed Due to %s, retrying request in %g seconds. Username: %s', step, sleep_time, account['Username'])
                             failed_total += 1
+                            
                     time.sleep(sleep_time)
 
                 # If there's any time left between the start time and the time when we should be kicking off the next
@@ -298,8 +296,6 @@ def search_worker_thread(args, count, account, search_items_queue, parse_lock, e
         # catch any process exceptions, log them, and continue the thread
         except Exception as e:
             log.exception('Exception in search_worker: %s. Username: %s', e, account['Username'])
-            deactivate_account(account['Username'])
-            
 
 def check_login(args, account, api, position):
 
@@ -319,7 +315,10 @@ def check_login(args, account, api, position):
             break
         except AuthException:
             if i >= args.login_retries:
+                deactivate_account(account['Username'])
+                account = PoGoAccount.get_active_unused(1, True)[0]
                 raise TooManyLoginAttempts('Exceeded login attempts')
+
             else:
                 i += 1
                 log.error('Failed to login to Pokemon Go with account %s. Trying again in %g seconds', account['Username'], args.login_delay)

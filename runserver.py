@@ -22,7 +22,7 @@ from pogom.app import Pogom
 from pogom.utils import get_args, insert_mock_data, get_encryption_lib_path
 
 from pogom.search import search_overseer_thread, fake_search_loop
-from pogom.models import init_database, create_tables, drop_tables, insert_accounts
+from pogom.models import init_database, create_tables, drop_tables, insert_accounts, remove_accounts, reset_account_use, PoGoAccount
 
 # Currently supported pgoapi
 pgoapi_version = "1.1.7"
@@ -138,6 +138,15 @@ if __name__ == '__main__':
     create_tables(db)
 
     app.set_current_location(position)
+
+    insert_accounts()
+    remove_accounts()
+    if not args.no_server:
+        log.info("seting all accounts to not in use")
+        reset_account_use()
+
+    num_active = str(len(PoGoAccount.get_active_unused(float("inf"), False)))
+    log.info("There are " + num_active + " active unused accounts")
 
 
     # Control the search status (running or not) across threads

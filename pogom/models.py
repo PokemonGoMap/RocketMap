@@ -23,7 +23,7 @@ log = logging.getLogger(__name__)
 args = get_args()
 flaskDb = FlaskDB()
 
-db_schema_version = 6
+db_schema_version = 5
 
 
 class MyRetryDB(RetryOperationalError, PooledMySQLDatabase):
@@ -316,23 +316,25 @@ class PoGoAccount(BaseModel):
     Username = CharField(primary_key=True)
     Password = CharField()
     Auth_service = CharField()
-    Active = BooleanField()
-    In_use = DateTimeField()
+    Active = BooleanField(default=True)
+    In_use = BooleanField(default=False)
       
 
     @staticmethod
-    def get_active_unused(count):
+    def get_active_unused(count, use):
         query = (PoGoAccount
                 .select()
                 .where((PoGoAccount.Active == True) &
-                      (PoGoAccount.In_use <= (datetime.utcnow() - timedelta(seconds=args.scan_delay))))
+                      (PoGoAccount.In_use == False))
                 .dicts())
                  
 
         accounts = []
-        
-        for i, a in enumerate(query):
-            accounts.append(a)
+        for i, account in enumerate(query):
+            accounts.append(account)
+            if use:
+                log.info("seting " + account['Username'] + " to in use.")
+                use_account(account['Username'])    
             if i == count-1:
                 break
 
@@ -349,17 +351,19 @@ class Versions(flaskDb.Model):
 
 def insert_accounts():
     for account in args.accounts:
-        log.info("Adding "+account['username']+" to the db.")
+        log.info("Provessing "+account['username'])
         try:
-            query = PoGoAccount.create(Username=account['username'],Password=account['password'],Auth_service=account['auth_service'],Active=True,In_use=datetime.utcnow() - timedelta(seconds=args.scan_delay))
+            query = PoGoAccount.create(Username=account['username'],Password=account['password'],Auth_service=account['auth_service'])
             query.execute()
         except:
             log.info(account['username']+" already exists reseting password and status")
-            query = PoGoAccount.update(Password=account['password'],Auth_service=account['auth_service'],Active=True,In_use=datetime.utcnow() - timedelta(seconds=args.scan_delay)).where(PoGoAccount.Username==account['username'])
+            query = PoGoAccount.update(Password=account['password'],Auth_service=account['auth_service'],Active=True).where(PoGoAccount.Username==account['username'])
             query.execute()
+        else:
+            log.info("added" +account['username'])
         
 def deactivate_account(faulty_account):
-    log.info("Deactivating "+faulty_account)
+    log.info("Deactivating " + faulty_account)
     query = PoGoAccount.update(Active = False,In_use=False).where(PoGoAccount.Username == faulty_account)
     query.execute()
                
@@ -372,12 +376,12 @@ def remove_accounts():
             query.execute()
 
 def use_account(account):
-    query = PoGoAccount.update(In_use=datetime.utcnow()).where(PoGoAccount.Username == account)
+    query = PoGoAccount.update(In_use=True).where(PoGoAccount.Username == account)
     query.execute()
 
-def replace_account(faulty_account):
-    deactivate_account(faulty_account)
-    return PoGoAccount.get_active_unused(1)
+def reset_account_use():
+    query = PoGoAccount.update(In_use=False)
+    query.execute()
     
 
 def parse_map(map_dict, step_location):
@@ -385,85 +389,82 @@ def parse_map(map_dict, step_location):
     pokestops = {}
     gyms = {}
     scanned = {}
-    try:
-        cells = map_dict['responses']['GET_MAP_OBJECTS']['map_cells']
-        
-        for cell in cells:
-            if config['parse_pokemon']:
-                for p in cell.get('wild_pokemons', []):
-                    # time_till_hidden_ms was overflowing causing a negative integer. It was also returning a value above 3.6M ms.
-                    if (0 < p['time_till_hidden_ms'] < 3600000):
-                        d_t = datetime.utcfromtimestamp(
-                            (p['last_modified_timestamp_ms'] +
-                             p['time_till_hidden_ms']) / 1000.0)
-                    else:
-                        # Set a value of 15 minutes because currently its unknown but larger than 15.
-                        d_t = datetime.utcfromtimestamp((p['last_modified_timestamp_ms'] + 900000) / 1000.0)
-                    printPokemon(p['pokemon_data']['pokemon_id'], p['latitude'],
-                                 p['longitude'], d_t)
-                    pokemons[p['encounter_id']] = {
-                        'encounter_id': b64encode(str(p['encounter_id'])),
-                        'spawnpoint_id': p['spawn_point_id'],
-                        'pokemon_id': p['pokemon_data']['pokemon_id'],
-                        'latitude': p['latitude'],
-                        'longitude': p['longitude'],
-                        'disappear_time': d_t
-                    }
+    cells = map_dict['responses']['GET_MAP_OBJECTS']['map_cells']
+    
+    for cell in cells:
+        if config['parse_pokemon']:
+            for p in cell.get('wild_pokemons', []):
+                # time_till_hidden_ms was overflowing causing a negative integer. It was also returning a value above 3.6M ms.
+                if (0 < p['time_till_hidden_ms'] < 3600000):
+                    d_t = datetime.utcfromtimestamp(
+                        (p['last_modified_timestamp_ms'] +
+                         p['time_till_hidden_ms']) / 1000.0)
+                else:
+                    # Set a value of 15 minutes because currently its unknown but larger than 15.
+                    d_t = datetime.utcfromtimestamp((p['last_modified_timestamp_ms'] + 900000) / 1000.0)
+                printPokemon(p['pokemon_data']['pokemon_id'], p['latitude'],
+                             p['longitude'], d_t)
+                pokemons[p['encounter_id']] = {
+                    'encounter_id': b64encode(str(p['encounter_id'])),
+                    'spawnpoint_id': p['spawn_point_id'],
+                    'pokemon_id': p['pokemon_data']['pokemon_id'],
+                    'latitude': p['latitude'],
+                    'longitude': p['longitude'],
+                    'disappear_time': d_t
+                }
 
+                webhook_data = {
+                    'encounter_id': b64encode(str(p['encounter_id'])),
+                    'spawnpoint_id': p['spawn_point_id'],
+                    'pokemon_id': p['pokemon_data']['pokemon_id'],
+                    'latitude': p['latitude'],
+                    'longitude': p['longitude'],
+                    'disappear_time': calendar.timegm(d_t.timetuple()),
+                    'last_modified_time': p['last_modified_timestamp_ms'],
+                    'time_until_hidden_ms': p['time_till_hidden_ms']
+                }
+
+                send_to_webhook('pokemon', webhook_data)
+
+        for f in cell.get('forts', []):
+            if config['parse_pokestops'] and f.get('type') == 1:  # Pokestops
+                if 'active_fort_modifier' in f:
+                    lure_expiration = datetime.utcfromtimestamp(
+                        f['last_modified_timestamp_ms'] / 1000.0) + timedelta(minutes=30)
+                    active_fort_modifier = f['active_fort_modifier']
                     webhook_data = {
-                        'encounter_id': b64encode(str(p['encounter_id'])),
-                        'spawnpoint_id': p['spawn_point_id'],
-                        'pokemon_id': p['pokemon_data']['pokemon_id'],
-                        'latitude': p['latitude'],
-                        'longitude': p['longitude'],
-                        'disappear_time': calendar.timegm(d_t.timetuple()),
-                        'last_modified_time': p['last_modified_timestamp_ms'],
-                        'time_until_hidden_ms': p['time_till_hidden_ms']
-                    }
-
-                    send_to_webhook('pokemon', webhook_data)
-
-            for f in cell.get('forts', []):
-                if config['parse_pokestops'] and f.get('type') == 1:  # Pokestops
-                    if 'active_fort_modifier' in f:
-                        lure_expiration = datetime.utcfromtimestamp(
-                            f['last_modified_timestamp_ms'] / 1000.0) + timedelta(minutes=30)
-                        active_fort_modifier = f['active_fort_modifier']
-                        webhook_data = {
-                            'latitude': f['latitude'],
-                            'longitude': f['longitude'],
-                            'last_modified_time': f['last_modified_timestamp_ms'],
-                            'active_fort_modifier': active_fort_modifier
-                        }
-                        send_to_webhook('pokestop', webhook_data)
-                    else:
-                        lure_expiration, active_fort_modifier = None, None
-
-                    pokestops[f['id']] = {
-                        'pokestop_id': f['id'],
-                        'enabled': f['enabled'],
                         'latitude': f['latitude'],
                         'longitude': f['longitude'],
-                        'last_modified': datetime.utcfromtimestamp(
-                            f['last_modified_timestamp_ms'] / 1000.0),
-                        'lure_expiration': lure_expiration,
-                        'active_fort_modifier': active_fort_modifier,
+                        'last_modified_time': f['last_modified_timestamp_ms'],
+                        'active_fort_modifier': active_fort_modifier
                     }
+                    send_to_webhook('pokestop', webhook_data)
+                else:
+                    lure_expiration, active_fort_modifier = None, None
 
-                elif config['parse_gyms'] and f.get('type') is None:  # Currently, there are only stops and gyms
-                    gyms[f['id']] = {
-                        'gym_id': f['id'],
-                        'team_id': f.get('owned_by_team', 0),
-                        'guard_pokemon_id': f.get('guard_pokemon_id', 0),
-                        'gym_points': f.get('gym_points', 0),
-                        'enabled': f['enabled'],
-                        'latitude': f['latitude'],
-                        'longitude': f['longitude'],
-                        'last_modified': datetime.utcfromtimestamp(
-                            f['last_modified_timestamp_ms'] / 1000.0),
-                    }
-    except:
-        log.error("Map cell info missing.")
+                pokestops[f['id']] = {
+                    'pokestop_id': f['id'],
+                    'enabled': f['enabled'],
+                    'latitude': f['latitude'],
+                    'longitude': f['longitude'],
+                    'last_modified': datetime.utcfromtimestamp(
+                        f['last_modified_timestamp_ms'] / 1000.0),
+                    'lure_expiration': lure_expiration,
+                    'active_fort_modifier': active_fort_modifier,
+                }
+
+            elif config['parse_gyms'] and f.get('type') is None:  # Currently, there are only stops and gyms
+                gyms[f['id']] = {
+                    'gym_id': f['id'],
+                    'team_id': f.get('owned_by_team', 0),
+                    'guard_pokemon_id': f.get('guard_pokemon_id', 0),
+                    'gym_points': f.get('gym_points', 0),
+                    'enabled': f['enabled'],
+                    'latitude': f['latitude'],
+                    'longitude': f['longitude'],
+                    'last_modified': datetime.utcfromtimestamp(
+                        f['last_modified_timestamp_ms'] / 1000.0),
+                }
 
     pokemons_upserted = 0
     pokestops_upserted = 0
@@ -617,6 +618,4 @@ def database_migrate(db, old_ver):
                         (datetime.utcnow() - timedelta(hours=24))))
         query.execute()
 
-    if old_ver < 6:
-        db.create([PoGoAccount])
         
