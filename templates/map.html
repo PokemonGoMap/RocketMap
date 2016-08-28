@@ -2,7 +2,7 @@
 <html lang="{{lang}}">
   <head>
     <meta charset="utf-8">
-    <title>Pokémon Go Map</title>
+    <title>PokéMaps.no</title>
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
@@ -37,7 +37,8 @@
       <!-- Header -->
       <header id="header">
         <a href="#nav"><span class="label">Options</span></a>
-        <h1><a href="#">Pokémon Go Map</a></h1>
+        <h1><a href="#">PokéMaps.no</a></h1>
+        <a href="https://www.facebook.com/Pokemaps.no/" target='_blank'>Facebook</a>	
         <a href="#stats" id="statsToggle" class="statsNav" style="float: right;"><span class="label">Stats</span></a>
       </header>
       <!-- NAV -->
@@ -262,10 +263,11 @@
       <nav id="stats">
         <div class="switch-container">
           <div class="switch-container">
+            <div><center></center><a href="stats">Full Stats</a></center></div>
             <center><h1 id="stats-pkmn-label">Loading...</h1></center>
           </div>
           <div id="pokemonList" style="color: black;"></div>
-          <div><a href="stats">Full Stats</a></div>
+
           <div class="switch-container">
             <center><h1 id="stats-gym-label"></h1></center>
           </div>
@@ -295,5 +297,15 @@
     <script src="{{ url_for('static', filename='dist/js/map.min.js').lstrip('/') }}"></script>
     <script src="{{ url_for('static', filename='dist/js/stats.min.js').lstrip('/') }}"></script>
     <script defer src="https://maps.googleapis.com/maps/api/js?key={{ gmaps_key }}&amp;callback=initMap&amp;libraries=places,geometry"></script>
+ 	<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-82102251-1', 'auto');
+  ga('send', 'pageview');
+
+	</script>
   </body>
 </html>
