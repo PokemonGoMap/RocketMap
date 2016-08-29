@@ -262,8 +262,7 @@ class Pokemon(BaseModel):
 
         s = list(query.dicts())
 
-        # From testing the average radius multiplier for a circle to approximate the hex is 120m
-        step_distance = steps * 120
+        # The distance between scan circles of radius 70 in a hex is 121.2436
         # Compare spawnpoint list to a circle with radius steps * 120
         # Uses the direct geopy distance between the center and the spawnpoint.
         filtered = []
