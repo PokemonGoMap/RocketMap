@@ -189,7 +189,12 @@ def search_overseer_thread(args, method, new_location_queue, pause_bit, encrypti
     log.info('Starting search worker threads')
     # Randomize order of account login
     args.accounts.sort(key=lambda x: random.random())
+    accounts_queue = Queue()
     for i, account in enumerate(args.accounts):
+        if i >= args.max_accounts and args.max_accounts > 0:
+            accounts_queue.put(account)
+            continue
+
         log.debug('Starting search worker thread %d for user %s', i, account['username'])
         workerId = 'Worker {:03}'.format(i)
         threadStatus[workerId] = {
@@ -206,7 +211,7 @@ def search_overseer_thread(args, method, new_location_queue, pause_bit, encrypti
                    name='search-worker-{}'.format(i),
                    args=(args, account, search_items_queue, pause_bit,
                          encryption_lib_path, threadStatus[workerId],
-                         db_updates_queue, wh_queue))
+                         db_updates_queue, wh_queue, accounts_queue))
         t.daemon = True
         t.start()
 
@@ -412,10 +417,11 @@ def get_sps_location_list(args, current_location, sps_scan_current):
     return retset
 
 
-def search_worker_thread(args, account, search_items_queue, pause_bit, encryption_lib_path, status, dbq, whq):
+def search_worker_thread(args, account, search_items_queue, pause_bit, encryption_lib_path, status, dbq, whq, aq):
     R = 6378.1
     first_run = True
     last_scan_time = int(round(time.time() * 1000))
+    account_stop_time = int(round(time.time() * 1000)) + args.account_use_duration * 60000
 
     stagger_thread(args, account)
 
@@ -498,20 +504,13 @@ def search_worker_thread(args, account, search_items_queue, pause_bit, encryptio
                     last_location = step_location
                     first_run = False
                 elif speed_limit > 0:
-                    lat1 = math.radians(last_location[0])
-                    lon1 = math.radians(last_location[1])
-                    lat2 = math.radians(step_location[0])
-                    lon2 = math.radians(step_location[1])
-                    dlon = lon2 - lon1
-                    dlat = lat2 - lat1
-                    a = math.sin(dlat / 2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2)**2
-                    c2 = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-                    distance = R * c2 * 1000.0
-
+                    distance = geopy.distance.distance(last_location, step_location).meters
                     time_elapsed = int(round(time.time() * 1000.0)) - last_scan_time
                     speed = distance / (time_elapsed / 1000.0)
                     if speed > speed_limit:
                         speed_sleep = int(math.ceil(((1000.0 * distance / speed_limit) - time_elapsed) / 1000.0))
+                        speed_sleep = args.max_speed_limit_sleep if speed_sleep > args.max_speed_limit_sleep and args.max_speed_limit_sleep > 0 else speed_sleep
+                        status['message'] = 'Sleeping an additional {} seconds to stay under speed limit'.format(speed_sleep)
                         log.info("Sleeping an additional %d seconds to stay under speed limit", speed_sleep)
                         time.sleep(speed_sleep)
 
@@ -524,7 +523,16 @@ def search_worker_thread(args, account, search_items_queue, pause_bit, encryptio
                 api.set_position(*step_location)
 
                 # Ok, let's get started -- check our login status
-                check_login(args, account, api, step_location)
+                # and check if new account should be used
+                if args.account_use_duration > 0 and int(round(time.time() * 1000)) > account_stop_time:
+                    account_stop_time = int(round(time.time() * 1000)) + args.account_use_duration * 60000
+                    aq.put(account)
+                    account = aq.get()
+                    status['user'] = account['username']
+                    status['message'] = 'Swapping out account'
+                    check_login(args, account, api, step_location, True)
+                else:
+                    check_login(args, account, api, step_location, False)
 
                 # Make the actual request (finally!)
                 response_dict = map_request(api, step_location, args.jitter)
@@ -561,10 +569,10 @@ def search_worker_thread(args, account, search_items_queue, pause_bit, encryptio
             time.sleep(args.scan_delay)
 
 
-def check_login(args, account, api, position):
+def check_login(args, account, api, position, new_account):
 
     # Logged in? Enough time left? Cool!
-    if api._auth_provider and api._auth_provider._ticket_expire:
+    if api._auth_provider and api._auth_provider._ticket_expire and new_account == False:
         remaining_time = api._auth_provider._ticket_expire / 1000 - time.time()
         if remaining_time > 60:
             log.debug('Credentials remain valid for another %f seconds', remaining_time)

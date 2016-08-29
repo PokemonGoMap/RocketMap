@@ -54,6 +54,12 @@ def get_args():
                         help='Usernames, one per account.')
     parser.add_argument('-p', '--password', action='append',
                         help='Passwords, either single one for all accounts or one per account.')
+    parser.add_argument('-ma', '--max-accounts',
+                        help='Maximum number of accounts to use',
+                        type=int, default=0)
+    parser.add_argument('-aud', '--account-use-duration',
+                        help='How long in minutes to use the account before swapping in a new one',
+                        type=int, default=0)
     parser.add_argument('-l', '--location', type=parse_unicode,
                         help='Location, can be an address or coordinates')
     parser.add_argument('-j', '--jitter', help='Apply random -9m to +9m jitter to location',
@@ -160,6 +166,9 @@ def get_args():
     parser.add_argument('-el', '--encrypt-lib', help='Path to encrypt lib to be used instead of the shipped ones')
     parser.add_argument('-sl', '--speed-limit',
                         help='If next scan would cause the account to move above specified speed in kmph in a straight line, sleep until such time that it could reasonably move that distance',
+                        type=float, default=0)
+    parser.add_argument('-msls', '--max-speed-limit-sleep',
+                        help='Maximum time in seconds to sleep when trying to stay under the speed limit',
                         type=float, default=0)
     verbosity = parser.add_mutually_exclusive_group()
     verbosity.add_argument('-v', '--verbose', help='Show debug messages from PomemonGo-Map and pgoapi. Optionally specify file to log to.', nargs='?', const='nofile', default=False, metavar='filename.log')
