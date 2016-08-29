@@ -3,10 +3,8 @@
 
 import sys
 import configargparse
-import uuid
 import os
 import json
-from datetime import datetime, timedelta
 import logging
 import shutil
 import platform
@@ -47,10 +45,9 @@ def memoize(function):
 def get_args():
     # fuck PEP8
     configpath = os.path.join(os.path.dirname(__file__), '../config/config.ini')
-    parser = configargparse.ArgParser(default_config_files=[configpath])
+    parser = configargparse.ArgParser(default_config_files=[configpath], auto_env_var_prefix='POGOMAP_')
     parser.add_argument('-a', '--auth-service', type=str.lower, action='append',
-                        help='Auth Services, either one for all accounts or one per account. \
-                        ptc or google. Defaults all to ptc.')
+                        help='Auth Services, either one for all accounts or one per account: ptc or google. Defaults all to ptc.')
     parser.add_argument('-u', '--username', action='append',
                         help='Usernames, one per account.')
     parser.add_argument('-p', '--password', action='append',
@@ -73,6 +70,9 @@ def get_args():
     parser.add_argument('-mf', '--max-failures',
                         help='Maximum number of failures to parse locations before an account will go into a two hour sleep',
                         type=int, default=5)
+    parser.add_argument('-msl', '--min-seconds-left',
+                        help='Time that must be left on a spawn before considering it too late and skipping it. eg. 600 would skip anything with < 10 minutes remaining. Default 0.',
+                        type=int, default=0)
     parser.add_argument('-dc', '--display-in-console',
                         help='Display Found Pokemon in Console',
                         action='store_true', default=False)
@@ -87,7 +87,6 @@ def get_args():
     parser.add_argument('-c', '--china',
                         help='Coordinates transformer for China',
                         action='store_true')
-    parser.add_argument('-d', '--debug', help='Debug Mode', action='store_true')
     parser.add_argument('-m', '--mock', type=str,
                         help='Mock mode - point to a fpgo endpoint instead of using the real PogoApi, ec: http://127.0.0.1:9090',
                         default='')
@@ -145,6 +144,8 @@ def get_args():
                         type=int, default=1)
     parser.add_argument('-wh', '--webhook', help='Define URL(s) to POST webhook information to',
                         nargs='*', default=False, dest='webhooks')
+    parser.add_argument('-gi', '--gym-info', help='Get all details about gyms (causes an additional API hit for every gym)',
+                        action='store_true', default=False)
     parser.add_argument('--webhook-updates-only', help='Only send updates (pokémon & lured pokéstops)',
                         action='store_true', default=False)
     parser.add_argument('--wh-threads', help='Number of webhook threads; increase if the webhook queue falls behind',
@@ -154,6 +155,10 @@ def get_args():
     parser.add_argument('-ps', '--print-status', action='store_true',
                         help='Show a status screen instead of log messages. Can switch between status and logs by pressing enter.', default=False)
     parser.add_argument('-el', '--encrypt-lib', help='Path to encrypt lib to be used instead of the shipped ones')
+    verbosity = parser.add_mutually_exclusive_group()
+    verbosity.add_argument('-v', '--verbose', help='Show debug messages from PomemonGo-Map and pgoapi. Optionally specify file to log to.', nargs='?', const='nofile', default=False, metavar='filename.log')
+    verbosity.add_argument('-vv', '--very-verbose', help='Like verbose, but show debug messages from all modules as well.  Optionally specify file to log to.', nargs='?', const='nofile', default=False, metavar='filename.log')
+    verbosity.add_argument('-d', '--debug', help='Depreciated, use -v or -vv instead.', action='store_true')
     parser.set_defaults(DEBUG=False)
 
     args = parser.parse_args()
@@ -216,55 +221,6 @@ def get_args():
             args.accounts.append({'username': username, 'password': args.password[i], 'auth_service': args.auth_service[i]})
 
     return args
-
-
-def insert_mock_data(position):
-    num_pokemon = 6
-    num_pokestop = 6
-    num_gym = 6
-
-    log.info('Creating fake: %d pokemon, %d pokestops, %d gyms',
-             num_pokemon, num_pokestop, num_gym)
-
-    from .models import Pokemon, Pokestop, Gym
-    from .search import generate_location_steps
-
-    latitude, longitude = float(position[0]), float(position[1])
-
-    locations = [l for l in generate_location_steps((latitude, longitude), num_pokemon, 0.07)]
-    disappear_time = datetime.now() + timedelta(hours=1)
-
-    detect_time = datetime.now()
-
-    for i in range(1, num_pokemon):
-        Pokemon.create(encounter_id=uuid.uuid4(),
-                       spawnpoint_id='sp{}'.format(i),
-                       pokemon_id=(i + 1) % 150,
-                       latitude=locations[i][0],
-                       longitude=locations[i][1],
-                       disappear_time=disappear_time,
-                       detect_time=detect_time)
-
-    for i in range(1, num_pokestop):
-        Pokestop.create(pokestop_id=uuid.uuid4(),
-                        enabled=True,
-                        latitude=locations[i + num_pokemon][0],
-                        longitude=locations[i + num_pokemon][1],
-                        last_modified=datetime.now(),
-                        # Every other pokestop be lured
-                        lure_expiration=disappear_time if (i % 2 == 0) else None,
-                        )
-
-    for i in range(1, num_gym):
-        Gym.create(gym_id=uuid.uuid4(),
-                   team_id=i % 3,
-                   guard_pokemon_id=(i + 1) % 150,
-                   latitude=locations[i + num_pokemon + num_pokestop][0],
-                   longitude=locations[i + num_pokemon + num_pokestop][1],
-                   last_modified=datetime.now(),
-                   enabled=True,
-                   gym_points=1000
-                   )
 
 
 def now():
