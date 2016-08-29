@@ -70,6 +70,8 @@ class BaseModel(flaskDb.Model):
         return results
 
 
+
+
 class Pokemon(BaseModel):
     # We are base64 encoding the ids delivered by the api
     # because they are too big for sqlite to handle
@@ -79,32 +81,64 @@ class Pokemon(BaseModel):
     latitude = DoubleField()
     longitude = DoubleField()
     disappear_time = DateTimeField(index=True)
+    
+    cacheActiveTimestamp = -1
+    cacheActiveQuery = None
+
+    cacheLifetime = 15 #in seconds
 
     class Meta:
         indexes = ((('latitude', 'longitude'), False),)
 
     @staticmethod
-    def get_active(swLat, swLng, neLat, neLng):
+    def get_active(swLat, swLng, neLat, neLng, pkmn_ids=None):
+#        if swLat is None or swLng is None or neLat is None or neLng is None:
+#            query = (Pokemon
+#                     .select()
+#                     .where(Pokemon.disappear_time > datetime.utcnow())
+#                     .dicts())
+#        else:
+#            query = (Pokemon
+#                     .select()
+#                     .where((Pokemon.disappear_time > datetime.utcnow()) &
+#                            (((Pokemon.latitude >= swLat) &
+#                              (Pokemon.longitude >= swLng) &
+#                              (Pokemon.latitude <= neLat) &
+#                              (Pokemon.longitude <= neLng))))
+#                     .dicts())
+        boundariesOn = True
         if swLat is None or swLng is None or neLat is None or neLng is None:
-            query = (Pokemon
+            boundariesOn = False
+        
+        now = time.mktime( datetime.utcnow().timetuple() )
+        if( Pokemon.cacheActiveTimestamp + Pokemon.cacheLifetime < now ) or ( Pokemon.cacheActiveQuery is None ):
+            Pokemon.cacheActiveTimestamp = now
+            log.info('Refreshing Pokemon cache..')
+            Pokemon.cacheActiveQuery = (Pokemon
                      .select()
                      .where(Pokemon.disappear_time > datetime.utcnow())
                      .dicts())
-        else:
-            query = (Pokemon
-                     .select()
-                     .where((Pokemon.disappear_time > datetime.utcnow()) &
-                            (((Pokemon.latitude >= swLat) &
-                              (Pokemon.longitude >= swLng) &
-                              (Pokemon.latitude <= neLat) &
-                              (Pokemon.longitude <= neLng))))
-                     .dicts())
+            log.info('Cached {} Pokemon'.format( len( Pokemon.cacheActiveQuery )) )
 
         # Performance: Disable the garbage collector prior to creating a (potentially) large dict with append()
         gc.disable()
+        
+        if boundariesOn:
+            swLatFloat = float(swLat)
+            swLngFloat = float(swLng)
+            neLatFloat = float(neLat)
+            neLngFloat = float(neLng)
 
         pokemons = []
-        for p in query:
+        for p in Pokemon.cacheActiveQuery:
+            if boundariesOn:
+                latitude = float(p['latitude'])
+                longitude = float(p['longitude'])
+                if( (latitude < swLatFloat) | (longitude < swLngFloat) | (latitude > neLatFloat) | (longitude > neLngFloat) ):
+                    continue
+            if pkmn_ids:
+                if( not p['pokemon_id'] in pkmn_ids ):
+                    continue
             p['pokemon_name'] = get_pokemon_name(p['pokemon_id'])
             p['pokemon_rarity'] = get_pokemon_rarity(p['pokemon_id'])
             p['pokemon_types'] = get_pokemon_types(p['pokemon_id'])
@@ -115,43 +149,8 @@ class Pokemon(BaseModel):
 
         # Re-enable the GC.
         gc.enable()
-
-        return pokemons
-
-    @staticmethod
-    def get_active_by_id(ids, swLat, swLng, neLat, neLng):
-        if swLat is None or swLng is None or neLat is None or neLng is None:
-            query = (Pokemon
-                     .select()
-                     .where((Pokemon.pokemon_id << ids) &
-                            (Pokemon.disappear_time > datetime.utcnow()))
-                     .dicts())
-        else:
-            query = (Pokemon
-                     .select()
-                     .where((Pokemon.pokemon_id << ids) &
-                            (Pokemon.disappear_time > datetime.utcnow()) &
-                            (Pokemon.latitude >= swLat) &
-                            (Pokemon.longitude >= swLng) &
-                            (Pokemon.latitude <= neLat) &
-                            (Pokemon.longitude <= neLng))
-                     .dicts())
-
-        # Performance: Disable the garbage collector prior to creating a (potentially) large dict with append()
-        gc.disable()
-
-        pokemons = []
-        for p in query:
-            p['pokemon_name'] = get_pokemon_name(p['pokemon_id'])
-            p['pokemon_rarity'] = get_pokemon_rarity(p['pokemon_id'])
-            p['pokemon_types'] = get_pokemon_types(p['pokemon_id'])
-            if args.china:
-                p['latitude'], p['longitude'] = \
-                    transform_from_wgs_to_gcj(p['latitude'], p['longitude'])
-            pokemons.append(p)
-
-        # Re-enable the GC.
-        gc.enable()
+        
+        log.debug('delivered {} Pokemon'.format( len( pokemons ) ) )
 
         return pokemons
 
