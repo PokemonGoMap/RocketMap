@@ -5,7 +5,8 @@
 *.sass-cache
 *.orig
 *.json
-config/config.ini
+config/*
+!config/config.ini.example
 static/dist/
 node_modules/
 venv/
