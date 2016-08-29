@@ -557,7 +557,7 @@ def clean_db_loop(args):
             # Remove active modifier from expired lured pokestops
             query = (Pokestop
                      .update(lure_expiration=None)
-                     .where((Pokestop.lure_expiration < datetime.utcnow())))
+                     .where(Pokestop.lure_expiration < datetime.utcnow()))
             query.execute()
 
             # If desired, clear old pokemon spawns
