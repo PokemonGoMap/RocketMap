@@ -1283,7 +1283,7 @@ function setupPokemonMarker (item, skipNotification, isBounceDisabled) {
     disableAutoPan: true
   })
 
-  var now = new Date();
+  var now = new Date()
   if ((notifiedPokemon.indexOf(item['pokemon_id']) > -1 && (item.disappear_time >= now)) || (notifiedRarity.indexOf(item['pokemon_rarity']) > -1 && (item.disappear_time >= now))) {
     if (!skipNotification) {
       if (Store.get('playSound')) {
