@@ -431,6 +431,9 @@ def search_worker_thread(args, account, search_items_queue, pause_bit, encryptio
             status['noitems'] = 0
             status['skip'] = 0
 
+            # only sleep when consecutive_fails reaches max_failures, overall fails for stat purposes
+            consecutive_fails = 0
+
             # Create the API instance this will use
             if args.mock != '':
                 api = FakePogoApi(args.mock)
@@ -446,7 +449,7 @@ def search_worker_thread(args, account, search_items_queue, pause_bit, encryptio
             while True:
 
                 # If this account has been messing up too hard, let it rest
-                if status['fail'] >= args.max_failures:
+                if consecutive_fails >= args.max_failures:
                     end_sleep = now() + (3600 * 2)
                     long_sleep_started = time.strftime('%H:%M:%S')
                     while now() < end_sleep:
@@ -506,6 +509,7 @@ def search_worker_thread(args, account, search_items_queue, pause_bit, encryptio
                 # G'damnit, nothing back. Mark it up, sleep, carry on
                 if not response_dict:
                     status['fail'] += 1
+                    consecutive_fails += 1
                     status['message'] = 'Invalid response at {:6f},{:6f}, abandoning location'.format(step_location[0], step_location[1])
                     log.error(status['message'])
                     time.sleep(args.scan_delay)
@@ -516,11 +520,13 @@ def search_worker_thread(args, account, search_items_queue, pause_bit, encryptio
                     parsed = parse_map(args, response_dict, step_location, dbq, whq)
                     search_items_queue.task_done()
                     status[('success' if parsed['count'] > 0 else 'noitems')] += 1
+                    consecutive_fails = 0
                     status['message'] = 'Search at {:6f},{:6f} completed with {} finds'.format(step_location[0], step_location[1], parsed['count'])
                     log.debug(status['message'])
                 except KeyError:
                     parsed = False
                     status['fail'] += 1
+                    consecutive_fails += 1
                     status['message'] = 'Map parse failed at {:6f},{:6f}, abandoning location. {} may be banned.'.format(step_location[0], step_location[1], account['username'])
                     log.exception(status['message'])
 
