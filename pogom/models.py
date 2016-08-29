@@ -283,14 +283,13 @@ class Pokemon(BaseModel):
         s = list(query.dicts())
 
         # Filter to spawns which actually fall in the hex locations
-        # This loop is about as non-pythonic as you can get, I bet.
-        # Oh well.
+        # Don't remove spawns from s when inside a hex location yet to avoid skipping spawns inside the for loop
         filtered = []
         hex_locations = generate_location_steps(center, steps, 0.07)
         for hl in hex_locations:
-            for idx, sp in enumerate(s):
+            for sp in s:
                 if geopy.distance.distance(hl, (sp['lat'], sp['lng'])).meters <= 70:
-                    filtered.append(s.pop(idx))
+                    filtered.append(sp)
 
         # at this point, 'time' is DISAPPEARANCE time, we're going to morph it to APPEARANCE time
         for location in filtered:
@@ -300,7 +299,10 @@ class Pokemon(BaseModel):
             # todo: this DOES NOT ACCOUNT for pokemons that appear sooner and live longer, but you'll _always_ have at least 15 minutes, so it works well enough
             location['time'] = cls.get_spawn_time(location['time'])
 
-        return filtered
+        # remove dublicates because when a spawn falls into more than 1 hex location it is listed multiple times
+        noDupes = []
+        [noDupes.append(i) for i in filtered if not noDupes.count(i)]
+        return noDupes
 
 
 class Pokestop(BaseModel):
