@@ -477,7 +477,7 @@ class Trainer(BaseModel):
 class GymDetails(BaseModel):
     gym_id = CharField(primary_key=True, max_length=50)
     name = CharField()
-    description = TextField(default="")
+    description = TextField(null=True, default="")
     url = CharField()
     last_scanned = DateTimeField(default=datetime.utcnow)
 
