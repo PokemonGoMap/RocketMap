@@ -268,6 +268,7 @@ class Pokemon(BaseModel):
         # Compare spawnpoint list to a circle with radius steps * 120
         # Uses the direct geopy distance between the center and the spawnpoint.
         filtered = []
+
         for idx, sp in enumerate(s):
             if geopy.distance.distance(center, (sp['lat'], sp['lng'])).meters <= step_distance:
                 filtered.append(s[idx])
@@ -425,6 +426,7 @@ class ScannedLocation(BaseModel):
                         (ScannedLocation.longitude >= swLng) &
                         (ScannedLocation.latitude <= neLat) &
                         (ScannedLocation.longitude <= neLng))
+                 .order_by(ScannedLocation.last_modified.asc())
                  .dicts())
 
         return list(query)
