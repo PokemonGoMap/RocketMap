@@ -418,7 +418,6 @@ def get_sps_location_list(args, current_location, sps_scan_current):
 
 
 def search_worker_thread(args, account, search_items_queue, pause_bit, encryption_lib_path, status, dbq, whq, aq):
-    R = 6378.1
     first_run = True
     last_scan_time = int(round(time.time() * 1000))
     account_stop_time = int(round(time.time() * 1000)) + args.account_use_duration * 60000
@@ -572,7 +571,7 @@ def search_worker_thread(args, account, search_items_queue, pause_bit, encryptio
 def check_login(args, account, api, position, new_account):
 
     # Logged in? Enough time left? Cool!
-    if api._auth_provider and api._auth_provider._ticket_expire and new_account == False:
+    if api._auth_provider and api._auth_provider._ticket_expire and new_account is False:
         remaining_time = api._auth_provider._ticket_expire / 1000 - time.time()
         if remaining_time > 60:
             log.debug('Credentials remain valid for another %f seconds', remaining_time)
