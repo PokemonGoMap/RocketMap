@@ -14,12 +14,12 @@ Amazon ECS is essentially managed docker allowed you to run multi-container envi
 
 In the AWS ECS console create a Task Definition with the JSON below. You will need to set the following values:
 
-* `POKEMON_USERNAME` - username for pokemongo
-* `POKEMON_PASSWORD` - password for pokemongo
-* `POKEMON_AUTH_SERVICE` - Define if you are using google or ptc auth
-* `POKEMON_LOCATION` - Location to search
-* `POKEMON_DB_USER` - Database user for MariaDB
-* `POKEMON_DB_PASS` - Database password for MariaDB
+* `POGOMAP_USERNAME` - username for pokemongo
+* `POGOMAP_PASSWORD` - password for pokemongo
+* `POGOMAP_AUTH_SERVICE` - Define if you are using google or ptc auth
+* `POGOMAP_LOCATION` - Location to search
+* `POGOMAP_DB_USER` - Database user for MariaDB
+* `POGOMAP_DB_PASS` - Database password for MariaDB
 
 ```json
 {
@@ -48,51 +48,51 @@ In the AWS ECS console create a Task Definition with the JSON below. You will ne
             "dockerSecurityOptions": null,
             "environment": [
                 {
-                    "name": "POKEMON_DB_TYPE",
+                    "name": "POGOMAP_DB_TYPE",
                     "value": "mysql"
                 },
                 {
-                    "name": "POKEMON_LOCATION",
+                    "name": "POGOMAP_LOCATION",
                     "value": "Seattle, WA"
                 },
                 {
-                    "name": "POKEMON_DB_HOST",
+                    "name": "POGOMAP_DB_HOST",
                     "value": "database"
                 },
                 {
-                    "name": "POKEMON_NUM_THREADS",
+                    "name": "POGOMAP_NUM_THREADS",
                     "value": "1"
                 },
                 {
-                    "name": "POKEMON_DB_NAME",
+                    "name": "POGOMAP_DB_NAME",
                     "value": "pogom"
                 },
                 {
-                    "name": "POKEMON_PASSWORD",
+                    "name": "POGOMAP_PASSWORD",
                     "value": "MyPassword"
                 },
                 {
-                    "name": "POKEMON_GMAPS_KEY",
+                    "name": "POGOMAP_GMAPS_KEY",
                     "value": "SUPERSECRET"
                 },
                 {
-                    "name": "POKEMON_AUTH_SERVICE",
+                    "name": "POGOMAP_AUTH_SERVICE",
                     "value": "ptc"
                 },
                 {
-                    "name": "POKEMON_DB_PASS",
+                    "name": "POGOMAP_DB_PASS",
                     "value": "somedbpassword"
                 },
                 {
-                    "name": "POKEMON_DB_USER",
+                    "name": "POGOMAP_DB_USER",
                     "value": "pogom"
                 },
                 {
-                    "name": "POKEMON_STEP_LIMIT",
+                    "name": "POGOMAP_STEP_LIMIT",
                     "value": "10"
                 },
                 {
-                    "name": "POKEMON_USERNAME",
+                    "name": "POGOMAP_USERNAME",
                     "value": "MyUser"
                 }
             ],
@@ -101,7 +101,7 @@ In the AWS ECS console create a Task Definition with the JSON below. You will ne
             ],
             "workingDirectory": null,
             "readonlyRootFilesystem": null,
-            "image": "ashex/pokemongo-map",
+            "image": "pokemap/pokemongo-map",
             "command": null,
             "user": null,
             "dockerLabels": null,
@@ -160,6 +160,6 @@ In the AWS ECS console create a Task Definition with the JSON below. You will ne
 ```
 
 
-If you would like to add workers you can easily do so by adding another container with the additional variable `POKEMON_NO_SERVER` set to `true`. You have to let one of the pokemongo-map containers start first to create the database, an easy way to control this is to create a link from the worker to the primary one as it will delay the start.
+If you would like to add workers you can easily do so by adding another container with the additional variable `POGOMAP_NO_SERVER` set to `true`. You have to let one of the pokemongo-map containers start first to create the database, an easy way to control this is to create a link from the worker to the primary one as it will delay the start.
 
 Once the Task is running you'll be able to access the app via the Instances IP on port 80.
