@@ -11,7 +11,7 @@ fuck = raw_input("Would yous till like to massage the devs that example.py no wo
 if "needful" in fuck.lower():
     print("poon bang lure pls")
 elif fuck.lower() == "india":
-   print("bang lure?")
+    print("bang lure?")
 elif fuck.lower() != "no":
     print("you have been banned lol")
 else:
