@@ -957,9 +957,6 @@ function createSearchMarker () {
     zIndex: google.maps.Marker.MAX_ZINDEX + 1
   })
 
-  if (!searchMarker.rangeCircle && isRangeActive(map)) {
-    searchMarker.rangeCircle = addRangeCircle(searchMarker, map, 'search')
-  }
   var oldLocation = null
   google.maps.event.addListener(searchMarker, 'dragstart', function () {
     oldLocation = searchMarker.getPosition()
@@ -970,9 +967,6 @@ function createSearchMarker () {
     changeSearchLocation(newLocation.lat(), newLocation.lng())
       .done(function () {
         oldLocation = null
-        if (searchMarker.rangeCircle && Store.get('showRanges')) {
-          searchMarker.rangeCircle.setCenter(newLocation)
-        }
       })
       .fail(function () {
         if (oldLocation) {
@@ -1248,10 +1242,6 @@ function addRangeCircle (marker, map, type, teamId) {
 
   // handle each type of marker and be explicit about the range circle attributes
   switch (type) {
-    case 'search':
-      circleColor = '#333333'
-      range = 70
-      break
     case 'pokemon':
       circleColor = '#C233F2'
       range = 40 // pokemon appear at 40m and then you can move away. still have to be 40m close to see it though, so ignore the further disappear distance
@@ -1946,7 +1936,6 @@ function changeLocation (lat, lng) {
   changeSearchLocation(lat, lng).done(function () {
     map.setCenter(loc)
     searchMarker.setPosition(loc)
-    if (searchMarker.rangeCircle) searchMarker.rangeCircle.setCenter(loc)
   })
 }
 
