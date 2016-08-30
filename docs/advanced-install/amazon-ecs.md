@@ -60,10 +60,6 @@ In the AWS ECS console create a Task Definition with the JSON below. You will ne
                     "value": "database"
                 },
                 {
-                    "name": "POGOMAP_NUM_THREADS",
-                    "value": "1"
-                },
-                {
                     "name": "POGOMAP_DB_NAME",
                     "value": "pogom"
                 },
@@ -86,10 +82,6 @@ In the AWS ECS console create a Task Definition with the JSON below. You will ne
                 {
                     "name": "POGOMAP_DB_USER",
                     "value": "pogom"
-                },
-                {
-                    "name": "POGOMAP_STEP_LIMIT",
-                    "value": "10"
                 },
                 {
                     "name": "POGOMAP_USERNAME",
