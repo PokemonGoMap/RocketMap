@@ -35,7 +35,7 @@ docker run -d --name pogomap -p 5000:5000 \
     -st 5
 ```
 
-If you would like to see what the server's output (console logs) you can run 
+If you would like to see what are the server's outputs (console logs), you can run:
 
 ```
 docker logs -f pogomap
@@ -71,7 +71,7 @@ docker run -d --name ngrok --link pogomap \
     ngrok http pogomap:5000
 ```
 
-After the container is launched, we need to discover what domain you've been assigned. The following command can be used to obtain the domain:
+After the ngrok container is launched, we need to discover what domain you've been assigned. The following command can be used to obtain the domain:
 
 ```
 docker run --rm --link ngrok \
@@ -90,7 +90,7 @@ Open that URL in your browser and you're ready to rock!
 
 ## Updating Versions
 
-In order to update your docker images, you should stop/remove all the current running containers (refer to Stopping the server), pull the latest docker image version, and restart everything. To pull the latest image, use the following command:
+In order to update your PokemonGo-Map docker image, you should stop/remove all the current running containers (refer to Stopping the server), pull the latest docker image version, and restart everything. To pull the latest image, use the following command:
 
 ```
 docker pull pokemap/pokemongo-map
@@ -145,7 +145,7 @@ The launched MySQL server will have a single user called 'root' and its password
 docker run -it --net=pogonw --rm mysql sh -c 'exec mysql -hdb -P3306 -uroot -pyourpassword'
 ```
 
-In the above, -h indicates the host name, which is the 'db' container, -p is 3306 which is the MySQL default port, -u is the default root user and -p was the password we provided. This will put you in the MySQL command line interface:
+In the above, `-h` indicates the host name, which is the 'db' container, `-p` is 3306 which is the MySQL default port, `-u` is the default root user and `-p` was the password we provided. This will put you in the MySQL command line interface:
 
 ```
 mysql: [Warning] Using a password on the command line interface can be insecure.
@@ -225,9 +225,9 @@ docker run -d --name pogomap2 --net=pogonw \
     -ns
 ```
 
-The difference here being: we are launching with the -ns flag, which means that this container will only run the searcher and not the webserver (front-end), because we can use the webserver from the first container. That also means we can get rid of the -p 5000:5000, as we dont need to expose that port anymore. 
+The difference here being: we are launching with the `-ns` flag, which means that this container will only run the searcher and not the webserver (front-end), because we can use the webserver from the first container. That also means we can get rid of `-p 5000:5000`, as we dont need to bind that port anymore. 
 
-If for some reason you would like this container to launch the webserver as well, simply remove the -ns flag and add back the -p, with a different pairing as 5000 will be already taken in the host, such as -p 5001:5000.
+If for some reason you would like this container to launch the webserver as well, simply remove the `-ns` flag and add back the `-p`, with a different pairing as 5000 will be already taken in the host, such as -p 5001:5000.
 
 ### External Access
 
@@ -282,5 +282,3 @@ docker run -d --name pogomap --net=pogonw -p 5000:5000 \
     --wh-threads 3 \
     --webhook-updates-only
 ```
-
-
