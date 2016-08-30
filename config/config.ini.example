@@ -1,3 +1,4 @@
+# DO NOT USE NOTEPAD TO EDIT CONFIG FILES!! USE NOTEPAD ++ INSTEAD.
 # Authentication settings
 #auth-service:          # ptc (default) or google
 #username:
@@ -18,6 +19,7 @@
 #no-pokestops:          # disables pokestop scanning (default false)
 #scan-delay:            # default 10
 #step-limit:            # default 12
+#gym-info:              # enables detailed gym info collection (default false)
 #min-seconds-left:      # time that must be left on a spawn before considering it too late and skipping it (default 0)
 
 # Misc

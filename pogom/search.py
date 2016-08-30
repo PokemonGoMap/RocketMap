@@ -35,7 +35,7 @@ from pgoapi.utilities import f2i
 from pgoapi import utilities as util
 from pgoapi.exceptions import AuthException
 
-from .models import parse_map, Pokemon, hex_bounds
+from .models import parse_map, Pokemon, hex_bounds, GymDetails, parse_gyms
 from .transform import generate_location_steps
 from .fakePogoApi import FakePogoApi
 from .utils import now
@@ -63,6 +63,11 @@ def cur_sec():
 
 # Thread to handle user input
 def switch_status_printer(display_enabled, current_page):
+    # Get a reference to the root logger
+    mainlog = logging.getLogger()
+    # Disable logging of the first handler - the stream handler, and disable it's output
+    mainlog.handlers[0].setLevel(logging.CRITICAL)
+
     while True:
         # Wait for the user to press a key
         command = raw_input()
@@ -70,10 +75,12 @@ def switch_status_printer(display_enabled, current_page):
         if command == '':
             # Switch between logging and display.
             if display_enabled[0]:
-                logging.disable(logging.NOTSET)
+                # Disable display, enable on screen logging
+                mainlog.handlers[0].setLevel(logging.DEBUG)
                 display_enabled[0] = False
             else:
-                logging.disable(logging.ERROR)
+                # Enable display, disable on screen logging (except for critical messages)
+                mainlog.handlers[0].setLevel(logging.CRITICAL)
                 display_enabled[0] = True
         elif command.isdigit():
                 current_page[0] = int(command)
@@ -83,7 +90,6 @@ def switch_status_printer(display_enabled, current_page):
 def status_printer(threadStatus, search_items_queue, db_updates_queue, wh_queue):
     display_enabled = [True]
     current_page = [1]
-    logging.disable(logging.ERROR)
 
     # Start another thread to get user input
     t = Thread(target=switch_status_printer,
@@ -305,7 +311,7 @@ def get_hex_location_list(args, current_location):
         step_distance = 0.070
 
     # update our list of coords
-    locations = list(generate_location_steps(current_location, args.step_limit, step_distance))
+    locations = generate_location_steps(current_location, args.step_limit, step_distance)
 
     # In hex "spawns only" mode, filter out scan locations with no history of pokemons
     if args.spawnpoints_only and not args.no_pokemon:
@@ -507,15 +513,67 @@ def search_worker_thread(args, account, search_items_queue, pause_bit, encryptio
 
                 # Got the response, parse it out, send todo's to db/wh queues
                 try:
-                    findCount = parse_map(args, response_dict, step_location, dbq, whq)
+                    parsed = parse_map(args, response_dict, step_location, dbq, whq)
                     search_items_queue.task_done()
-                    status[('success' if findCount > 0 else 'noitems')] += 1
-                    status['message'] = 'Search at {:6f},{:6f} completed with {} finds'.format(step_location[0], step_location[1], findCount)
+                    status[('success' if parsed['count'] > 0 else 'noitems')] += 1
+                    status['message'] = 'Search at {:6f},{:6f} completed with {} finds'.format(step_location[0], step_location[1], parsed['count'])
                     log.debug(status['message'])
                 except KeyError:
+                    parsed = False
                     status['fail'] += 1
                     status['message'] = 'Map parse failed at {:6f},{:6f}, abandoning location. {} may be banned.'.format(step_location[0], step_location[1], account['username'])
                     log.exception(status['message'])
+
+                # Get detailed information about gyms
+                if args.gym_info and parsed:
+                    # build up a list of gyms to update
+                    gyms_to_update = {}
+                    for gym in parsed['gyms'].values():
+                        # Can only get gym details within 1km of our position
+                        distance = calc_distance(step_location, [gym['latitude'], gym['longitude']])
+                        if distance < 1:
+                            # check if we already have details on this gym (if not, get them)
+                            try:
+                                record = GymDetails.get(gym_id=gym['gym_id'])
+                            except GymDetails.DoesNotExist as e:
+                                gyms_to_update[gym['gym_id']] = gym
+                                continue
+
+                            # if we have a record of this gym already, check if the gym has been updated since our last update
+                            if record.last_scanned < gym['last_modified']:
+                                gyms_to_update[gym['gym_id']] = gym
+                                continue
+                            else:
+                                log.debug('Skipping update of gym @ %f/%f, up to date', gym['latitude'], gym['longitude'])
+                                continue
+                        else:
+                            log.debug('Skipping update of gym @ %f/%f, too far away from our location at %f/%f (%fkm)', gym['latitude'], gym['longitude'], step_location[0], step_location[1], distance)
+
+                    if len(gyms_to_update):
+                        gym_responses = {}
+                        current_gym = 1
+                        status['message'] = 'Updating {} gyms for location {},{}...'.format(len(gyms_to_update), step_location[0], step_location[1])
+                        log.debug(status['message'])
+
+                        for gym in gyms_to_update.values():
+                            status['message'] = 'Getting details for gym {} of {} for location {},{}...'.format(current_gym, len(gyms_to_update), step_location[0], step_location[1])
+                            time.sleep(random.random() + 2)
+                            response = gym_request(api, step_location, gym)
+
+                            # make sure the gym was in range. (sometimes the API gets cranky about gyms that are ALMOST 1km away)
+                            if response['responses']['GET_GYM_DETAILS']['result'] == 2:
+                                log.warning('Gym @ %f/%f is out of range (%dkm), skipping', gym['latitude'], gym['longitude'], distance)
+                            else:
+                                gym_responses[gym['gym_id']] = response['responses']['GET_GYM_DETAILS']
+
+                            # increment which gym we're on (for status messages)
+                            current_gym += 1
+
+                        status['message'] = 'Processing details of {} gyms for location {},{}...'.format(len(gyms_to_update), step_location[0], step_location[1])
+                        log.debug(status['message'])
+
+                        if gym_responses:
+                            parse_gyms(args, gym_responses, whq)
 
                 # Always delay the desired amount after "scan" completion
                 status['message'] += ', sleeping {}s until {}'.format(args.scan_delay, time.strftime('%H:%M:%S', time.localtime(time.time() + args.scan_delay)))
@@ -579,6 +637,39 @@ def map_request(api, position, jitter=False):
     except Exception as e:
         log.warning('Exception while downloading map: %s', e)
         return False
+
+
+def gym_request(api, position, gym):
+    try:
+        log.debug('Getting details for gym @ %f/%f (%fkm away)', gym['latitude'], gym['longitude'], calc_distance(position, [gym['latitude'], gym['longitude']]))
+        x = api.get_gym_details(gym_id=gym['gym_id'],
+                                player_latitude=f2i(position[0]),
+                                player_longitude=f2i(position[1]),
+                                gym_latitude=gym['latitude'],
+                                gym_longitude=gym['longitude'])
+
+        # print pretty(x)
+        return x
+
+    except Exception as e:
+        log.warning('Exception while downloading gym details: %s', e)
+        return False
+
+
+def calc_distance(pos1, pos2):
+    R = 6378.1  # km radius of the earth
+
+    dLat = math.radians(pos1[0] - pos2[0])
+    dLon = math.radians(pos1[1] - pos2[1])
+
+    a = math.sin(dLat / 2) * math.sin(dLat / 2) + \
+        math.cos(math.radians(pos1[0])) * math.cos(math.radians(pos2[0])) * \
+        math.sin(dLon / 2) * math.sin(dLon / 2)
+
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    d = R * c
+
+    return d
 
 
 # Delay each thread start time so that logins only occur ~1s

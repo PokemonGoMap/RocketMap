@@ -3,10 +3,8 @@
 
 import sys
 import configargparse
-import uuid
 import os
 import json
-from datetime import datetime, timedelta
 import logging
 import shutil
 import platform
@@ -126,7 +124,7 @@ def get_args():
                         help='Disables PokeStops from the map (including parsing them into local db)',
                         action='store_true', default=False)
     parser.add_argument('-ss', '--spawnpoint-scanning',
-                        help='Use spawnpoint scanning (instead of hex grid)', nargs='?', const='nofile', default=False)
+                        help='Use spawnpoint scanning (instead of hex grid). Scans in a circle based on step_limit when on DB', nargs='?', const='nofile', default=False)
     parser.add_argument('--dump-spawnpoints', help='dump the spawnpoints from the db to json (only for use with -ss)',
                         action='store_true', default=False)
     parser.add_argument('-pd', '--purge-data',
@@ -146,6 +144,8 @@ def get_args():
                         type=int, default=1)
     parser.add_argument('-wh', '--webhook', help='Define URL(s) to POST webhook information to',
                         nargs='*', default=False, dest='webhooks')
+    parser.add_argument('-gi', '--gym-info', help='Get all details about gyms (causes an additional API hit for every gym)',
+                        action='store_true', default=False)
     parser.add_argument('--webhook-updates-only', help='Only send updates (pokémon & lured pokéstops)',
                         action='store_true', default=False)
     parser.add_argument('--wh-threads', help='Number of webhook threads; increase if the webhook queue falls behind',
@@ -221,55 +221,6 @@ def get_args():
             args.accounts.append({'username': username, 'password': args.password[i], 'auth_service': args.auth_service[i]})
 
     return args
-
-
-def insert_mock_data(position):
-    num_pokemon = 6
-    num_pokestop = 6
-    num_gym = 6
-
-    log.info('Creating fake: %d pokemon, %d pokestops, %d gyms',
-             num_pokemon, num_pokestop, num_gym)
-
-    from .models import Pokemon, Pokestop, Gym
-    from .search import generate_location_steps
-
-    latitude, longitude = float(position[0]), float(position[1])
-
-    locations = [l for l in generate_location_steps((latitude, longitude), num_pokemon, 0.07)]
-    disappear_time = datetime.now() + timedelta(hours=1)
-
-    detect_time = datetime.now()
-
-    for i in range(1, num_pokemon):
-        Pokemon.create(encounter_id=uuid.uuid4(),
-                       spawnpoint_id='sp{}'.format(i),
-                       pokemon_id=(i + 1) % 150,
-                       latitude=locations[i][0],
-                       longitude=locations[i][1],
-                       disappear_time=disappear_time,
-                       detect_time=detect_time)
-
-    for i in range(1, num_pokestop):
-        Pokestop.create(pokestop_id=uuid.uuid4(),
-                        enabled=True,
-                        latitude=locations[i + num_pokemon][0],
-                        longitude=locations[i + num_pokemon][1],
-                        last_modified=datetime.now(),
-                        # Every other pokestop be lured
-                        lure_expiration=disappear_time if (i % 2 == 0) else None,
-                        )
-
-    for i in range(1, num_gym):
-        Gym.create(gym_id=uuid.uuid4(),
-                   team_id=i % 3,
-                   guard_pokemon_id=(i + 1) % 150,
-                   latitude=locations[i + num_pokemon + num_pokestop][0],
-                   longitude=locations[i + num_pokemon + num_pokestop][1],
-                   last_modified=datetime.now(),
-                   enabled=True,
-                   gym_points=1000
-                   )
 
 
 def now():
