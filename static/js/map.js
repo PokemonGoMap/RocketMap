@@ -1246,6 +1246,7 @@ function addRangeCircle (marker, map, type, teamId) {
   var range
   var circleColor
 
+  // handle each type of marker and be explicit about the range circle attributes
   switch (type) {
     case 'search':
       circleColor = '#333333'
@@ -1253,7 +1254,7 @@ function addRangeCircle (marker, map, type, teamId) {
       break
     case 'pokemon':
       circleColor = '#C233F2'
-      range = 70
+      range = 40 // pokemon appear at 40m and then you can move away. still have to be 40m close to see it though, so ignore the further disappear distance
       break
     case 'pokestop':
       circleColor = '#3EB0FF'
