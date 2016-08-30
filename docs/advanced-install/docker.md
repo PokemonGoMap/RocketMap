@@ -194,7 +194,7 @@ docker run -d --name pogomap --net=pogonw -p 5000:5000 \
     --db-port 3306 \
     --db-name pogodb \
     --db-user root \
-    --db-pass pogomap 
+    --db-pass yourpassword 
 ```
 
 Just like before, in order to check the server's logs we can use 
@@ -221,7 +221,7 @@ docker run -d --name pogomap2 --net=pogonw \
     --db-port 3306 \
     --db-name pogodb \
     --db-user root \
-    --db-pass pogomap 
+    --db-pass yourpassword 
     -ns
 ```
 
@@ -277,7 +277,7 @@ docker run -d --name pogomap --net=pogonw -p 5000:5000 \
     --db-port 3306 \
     --db-name pogodb \
     --db-user root \
-    --db-pass pogomap \
+    --db-pass yourpassword \
     -wh 'http://hook:4000' \ 
     --wh-threads 3 \
     --webhook-updates-only
