@@ -76,7 +76,7 @@ Linux/OSX:
 
 .. code-block:: bash
 
-  sudo pip install -r requirements.txt --force-reinstall --user
+  sudo -H pip install -r requirements.txt --force-reinstall --user
 
 ``git`` Version Extra Steps
 ===========================
