@@ -468,7 +468,7 @@ def search_worker_thread(args, account, search_items_queue, pause_bit, encryptio
                 # If the number of empty responses is too high, let it sleep.
                 if status['noitems'] % args.max_empty == 0 and status['noitems'] != 0:
                     status['is_sleeping'] = True
-                    end_sleep = now() + (60 * 10) # Wait 10 minutes
+                    end_sleep = now() + (60 * 10) #  Wait 10 minutes
                     long_sleep_started = time.strftime('%H:%M:%S')
                     while now() < end_sleep:
                         status['message'] = 'Worker {} returned empty on more than {} scans; Sleeping for 10 minutes as of {}'.format(account['username'], args.max_empty, long_sleep_started)
