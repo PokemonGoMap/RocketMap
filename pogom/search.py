@@ -206,11 +206,12 @@ def search_overseer_thread(args, method, new_location_queue, pause_bit, encrypti
             'user': account['username']
         }
 
+        proxy = args.proxy[i % len(args.proxy)] if args.proxy is not None else None
         t = Thread(target=search_worker_thread,
                    name='search-worker-{}'.format(i),
                    args=(args, account, search_items_queue, pause_bit,
                          encryption_lib_path, threadStatus[workerId],
-                         db_updates_queue, wh_queue))
+                         db_updates_queue, wh_queue, proxy))
         t.daemon = True
         t.start()
 
@@ -416,7 +417,8 @@ def get_sps_location_list(args, current_location, sps_scan_current):
     return retset
 
 
-def search_worker_thread(args, account, search_items_queue, pause_bit, encryption_lib_path, status, dbq, whq):
+def search_worker_thread(args, account, search_items_queue, pause_bit, encryption_lib_path, status, dbq, whq, proxy):
+    log.info("Proxy: {}".format(proxy))
 
     stagger_thread(args, account)
 
@@ -437,8 +439,8 @@ def search_worker_thread(args, account, search_items_queue, pause_bit, encryptio
             else:
                 api = PGoApi()
 
-            if args.proxy:
-                api.set_proxy({'http': args.proxy, 'https': args.proxy})
+            if proxy:
+                api.set_proxy({'http': proxy, 'https': proxy})
 
             api.activate_signature(encryption_lib_path)
 
@@ -498,7 +500,7 @@ def search_worker_thread(args, account, search_items_queue, pause_bit, encryptio
                 api.set_position(*step_location)
 
                 # Ok, let's get started -- check our login status
-                check_login(args, account, api, step_location)
+                check_login(args, account, api, step_location, proxy)
 
                 # Make the actual request (finally!)
                 response_dict = map_request(api, step_location, args.jitter)
@@ -586,7 +588,7 @@ def search_worker_thread(args, account, search_items_queue, pause_bit, encryptio
             time.sleep(args.scan_delay)
 
 
-def check_login(args, account, api, position):
+def check_login(args, account, api, position, proxy):
 
     # Logged in? Enough time left? Cool!
     if api._auth_provider and api._auth_provider._ticket_expire:
@@ -600,8 +602,8 @@ def check_login(args, account, api, position):
     api.set_position(position[0], position[1], position[2])
     while i < args.login_retries:
         try:
-            if args.proxy:
-                api.set_authentication(provider=account['auth_service'], username=account['username'], password=account['password'], proxy_config={'http': args.proxy, 'https': args.proxy})
+            if proxy:
+                api.set_authentication(provider=account['auth_service'], username=account['username'], password=account['password'], proxy_config={'http': proxy, 'https': proxy})
             else:
                 api.set_authentication(provider=account['auth_service'], username=account['username'], password=account['password'])
             break
