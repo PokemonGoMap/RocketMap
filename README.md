@@ -40,6 +40,8 @@ For instructions on how to setup and run the tool, please refer to the project [
 
 There is an [Android port](https://github.com/omkarmoghe/Pokemap) in the works. All Android related prs and issues please refer to this [repo](https://github.com/omkarmoghe/Pokemap).
 
+You can also use [PokiiMap](http://pokiimap.readthedocs.io/en/latest/livemap.html#private-server) as a client to display data from a PokemonGo-Map server. Get it [here](http://pokiimap.readthedocs.io/en/latest/download.html)
+
 ## iOS Version
 
 There is an [iOS port](https://github.com/istornz/iPokeGo) in the works. All iOS related prs and issues please refer to this [repo](https://github.com/istornz/iPokeGo).
