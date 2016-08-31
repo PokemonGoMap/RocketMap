@@ -125,7 +125,7 @@ def status_printer(threadStatus, search_items_queue, db_updates_queue, wh_queue)
                     sleeping_total += 1
 
             # Print the queue length
-            status_text.append('Queues: {} search items, {} db updates, {} webhook.  Total skipped items: {}  Total sleeping workers: {}/{}'.format(search_items_queue.qsize(), db_updates_queue.qsize(), wh_queue.qsize(), skip_total, sleeping_total, len(threadStatus - 1)))
+            status_text.append('Queues: {} search items, {} db updates, {} webhook.  Total skipped items: {}  Total sleeping workers: {}/{}'.format(search_items_queue.qsize(), db_updates_queue.qsize(), wh_queue.qsize(), skip_total, sleeping_total, len(threadStatus) - 1))
 
             # Print status of overseer
             status_text.append('{} Overseer: {}'.format(threadStatus['Overseer']['method'], threadStatus['Overseer']['message']))
