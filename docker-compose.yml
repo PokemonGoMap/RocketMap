@@ -1,0 +1,21 @@
+version: "2"
+
+services:
+  web:
+    image: ashex/pokemongo-map:latest
+    ports:
+      - "5000:5000"
+    environment:
+      - POKEMON_AUTH_SERVICE=ptc
+      - POKEMON_USERNAME=UserName
+      - POKEMON_PASSWORD=Password
+      - POKEMON_LOCATION=Chicago, IL
+      - POKEMON_STEP_LIMIT=5 
+      - POKEMON_GMAPS_KEY=SuperSecret 
+    container_name: docker-pogomap
+  ngrok:
+    image: 'wernight/ngrok'
+    command: ngrok http docker-pogomap:5000 -log stdout -log-level debug
+    depends_on:
+      - web
+    container_name: docker-ngrok

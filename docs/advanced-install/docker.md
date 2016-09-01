@@ -68,6 +68,20 @@ docker pull pokemap/pokemongo-map
 ```
 
 Then redo the steps from "First Install" and you'll be on the latest version!
+## Running with docker-compose
+
+Run:
+```
+docker-compose up -d
+```
+
+Once the service is up, use ``docker-compose logs`` to look for ngrok.io URL.
+It should looks something similar with the following.
+
+```
+docker-ngrok | t=2016-08-20T22:00:28+0000 lvl=dbug msg="decoded response" obj=csess id=ee13fdb15b4d clientid=b651117cf5b47b82c2e5f1b20c50cc75 sid=9 resp="&{ClientId:d6ca9f48fcab817a5093614c0faf5179 URL:http://d73667dd.ngrok.io Proto:http Opts:map[Hostname:d73667dd.ngrok.io Auth: Subdomain:] Error: Extra:map[Token:0a4757aeb26f58c4350c178d0edeea2a698abf535f55b93d08314db1a9388ca2]}" err=nil
+```
+
 
 ## Running on docker cloud 
 
