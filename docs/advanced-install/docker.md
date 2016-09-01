@@ -143,41 +143,14 @@ docker run --name db --net=pogonw -v /path/to/mysql/:/var/lib/mysql -e MYSQL_ROO
 The launched MySQL server will have a single user called `root` and its password will be `yourpassword`. However, there is no database/schema that we can use as the server will be empty on the first run, so we've gotta create one for PokemonGo-Map. This will be done by executing a MySQL command in the server. In order to connect to the server, execute this command:
 
 ```
-docker run -it --net=pogonw --rm mysql sh -c 'exec mysql -hdb -P3306 -uroot -pyourpassword'
+docker exec -i db mysql -pyourpassword -e 'CREATE DATABASE pogodb'
 ```
 
-In the above, `-h` indicates the host name, which is the `db` container. `-p` indicates the port which `3306` is the MySQL default, `-u` is the `root` user and `-p` was the password we created previously. This will put you in the MySQL command line interface:
+That will do the trick. If you want to make sure the database was created, execute the following command and check if `pogodb` is listed:
 
 ```
-mysql: [Warning] Using a password on the command line interface can be insecure.
-Welcome to the MySQL monitor.  Commands end with ; or \g.
-Your MySQL connection id is 243
-Server version: 5.6.32 MySQL Community Server (GPL)
-
-Copyright (c) 2000, 2016, Oracle and/or its affiliates. All rights reserved.
-
-Oracle is a registered trademark of Oracle Corporation and/or its
-affiliates. Other names may be trademarks of their respective
-owners.
-
-Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
-
-mysql>
+docker exec -i db mysql -pyourpassword -e 'SHOW DATABASES'
 ```
-
-Now we need to create a database in the server, execute:
-
-```
-CREATE DATABASE pogodb;
-```
-
-Which should output:
-
-```
-Query OK, 1 row affected (0.01 sec)
-```
-
-Once you get that done, simply type `quit` and press enter to exit the MySQL CLI.
 
 ### Relaunching the database
 
