@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="{{lang}}">
+  <head>
+    <meta charset="utf-8">
+    <title>Pokémon Go Map -- Beehive Generator</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+    <link rel="stylesheet" href="{{ url_for('static', filename='dist/css/poly.min.css').lstrip('/') }}">
+    <script src="{{ url_for('static', filename='js/vendor/modernizr.custom.js').lstrip('/') }}"></script>
+  </head>
+  <body>
+    <div id="info">
+        <h1>PokemonGo-Map Coverage</h1>
+        <p>Draw polygons to define pokemon scan areas, and place markers to setup Gym/Pokesop scanner locations. <br/><br/>Copy the "simple config" so you can <a href="#" id="import">restore your map</a>. The "App Config" goes into config.ini.</p>
+        <p></p>
+        <p>Simple Config:<p>
+        <code id="polylist"></code>
+        <p>App Config:</p>
+        <code id="coordlist"></code>
+    </div>
+    <div id="map"></div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-polyfill/6.9.1/polyfill.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+    <script>
+      var centerLat = {{lat}};
+      var centerLng = {{lng}};
+    </script>
+    <!-- for quicker development, flip the comments on these two lines -->
+    <script src="{{ url_for('static', filename='dist/js/poly.min.js').lstrip('/') }}"></script>
+    <!--<script src="static/js/poly.js"></script>-->
+    <script src="https://maps.googleapis.com/maps/api/js?key={{ gmaps_key }}&amp;callback=initMap&amp;libraries=places,geometry,drawing"></script>
+  </body>
+</html>

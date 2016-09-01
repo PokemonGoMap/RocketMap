@@ -33,6 +33,16 @@ class Pogom(Flask):
         self.route("/search_control", methods=['GET'])(self.get_search_control)
         self.route("/search_control", methods=['POST'])(self.post_search_control)
         self.route("/stats", methods=['GET'])(self.get_stats)
+        self.route("/poly", methods=['GET'])(self.poly)
+
+    # /poly
+    def poly(self):
+        return render_template('poly.html',
+                               lat=self.current_location[0],
+                               lng=self.current_location[1],
+                               gmaps_key=config['GMAPS_KEY'],
+                               lang=config['LOCALE']
+                               )
 
     def set_search_control(self, control):
         self.search_control = control

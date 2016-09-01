@@ -1,0 +1,42 @@
+/* Poly */
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+#info, #map {
+  position: absolute;
+  display: block;
+}
+
+#info {
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 300px;
+  padding: 10px;
+  box-sizing: border-box;
+  overflow-y: scroll;
+}
+
+#map {
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 300px;
+}
+
+textarea {
+  width: 98%;
+}
+
+code {
+  background-color: #eee;
+  display: block;
+  padding: 4px 7px;
+  font-size: 11px;
+  font-family: monospace;
+}

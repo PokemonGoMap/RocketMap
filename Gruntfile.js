@@ -11,7 +11,8 @@ module.exports = function(grunt) {
         files: {
           'static/dist/css/app.built.css': 'static/sass/main.scss',
           'static/dist/css/mobile.built.css': 'static/sass/mobile.scss',
-          'static/dist/css/statistics.built.css': 'static/css/statistics.css'
+          'static/dist/css/statistics.built.css': 'static/css/statistics.css',
+          'static/dist/css/poly.built.css': 'static/sass/poly.scss'
         }
       }
     },
@@ -29,7 +30,8 @@ module.exports = function(grunt) {
           'static/dist/js/map.built.js': 'static/js/map.js',
           'static/dist/js/mobile.built.js': 'static/js/mobile.js',
           'static/dist/js/stats.built.js': 'static/js/stats.js',
-          'static/dist/js/statistics.built.js': 'static/js/statistics.js'
+          'static/dist/js/statistics.built.js': 'static/js/statistics.js',
+          'static/dist/js/poly.built.js': 'static/js/poly.js'
         }
       }
     },
@@ -47,7 +49,8 @@ module.exports = function(grunt) {
           'static/dist/js/map.min.js': 'static/dist/js/map.built.js',
           'static/dist/js/mobile.min.js': 'static/dist/js/mobile.built.js',
           'static/dist/js/stats.min.js': 'static/dist/js/stats.built.js',
-          'static/dist/js/statistics.min.js': 'static/dist/js/statistics.built.js'
+          'static/dist/js/statistics.min.js': 'static/dist/js/statistics.built.js',
+          'static/dist/js/poly.min.js': 'static/dist/js/poly.built.js'
         }
       }
     },
@@ -102,7 +105,8 @@ module.exports = function(grunt) {
         files: {
           'static/dist/css/app.min.css': 'static/dist/css/app.built.css',
           'static/dist/css/mobile.min.css': 'static/dist/css/mobile.built.css',
-          'static/dist/css/statistics.min.css': 'static/dist/css/statistics.built.css'
+          'static/dist/css/statistics.min.css': 'static/dist/css/statistics.built.css',
+          'static/dist/css/poly.min.css': 'static/dist/css/poly.built.css'
         }
       }
     }
