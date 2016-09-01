@@ -15,11 +15,12 @@ log = logging.getLogger(__name__)
 def check_proxy(proxy_queue, timeout, proxies):
 
     proxy_test_url = 'https://sso.pokemon.com/'
-    proxy = proxy_queue.get_nowait()
+    proxy = proxy_queue.get()
 
-    log.debug('Checking proxy: %s', proxy[1])
+    if proxy and proxy[1]:
 
-    if proxy[1]:
+        log.debug('Checking proxy: %s', proxy[1])
+
         try:
             proxy_response = requests.get(proxy_test_url, proxies={'http': proxy[1], 'https': proxy[1]}, timeout=timeout)
 
@@ -37,12 +38,14 @@ def check_proxy(proxy_queue, timeout, proxies):
 
         except requests.ConnectionError:
             proxy_error = "Failed to connect to proxy " + proxy[1]
+
         except Exception as e:
             proxy_error = e
+
     else:
             proxy_error = "Empty proxy server"
 
-    log.error('%s', proxy_error)
+    log.warning('%s', proxy_error)
     proxy_queue.task_done()
 
     return False
@@ -52,14 +55,15 @@ def check_proxy(proxy_queue, timeout, proxies):
 def check_proxies(args):
 
     proxy_queue = Queue()
+    total_proxies = len(args.proxy)
 
-    for proxy in enumerate(args.proxy):
-        proxy_queue.put(proxy)
-    total_proxies = proxy_queue.qsize()
     log.info('Checking %d proxies...', total_proxies)
 
     proxies = []
-    for i in range(0, proxy_queue.qsize()):
+
+    for proxy in enumerate(args.proxy):
+        proxy_queue.put(proxy)
+
         t = Thread(target=check_proxy,
                    name='check_proxy',
                    args=(proxy_queue, args.proxy_timeout, proxies))
@@ -68,7 +72,9 @@ def check_proxies(args):
 
     # This is painfull but we need to wait here untill proxy_queue is completed so we have a working list of proxies
     proxy_queue.join()
+
     working_proxies = len(proxies)
+
     if working_proxies == 0:
         log.error('Proxy was configured but no working proxies was found! We are aborting!')
         sys.exit(1)
