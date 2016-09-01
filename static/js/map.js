@@ -1464,6 +1464,8 @@ function setupSpawnpointMarker (item) {
     position: circleCenter
   })
 
+  mapData.infoWindows[item['spawnpoint_id']] = marker.infoWindow;
+
   addListeners(marker)
 
   return marker
