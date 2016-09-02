@@ -30,6 +30,7 @@ from datetime import datetime
 from operator import itemgetter
 from threading import Thread
 from queue import Queue, Empty
+from collections import deque
 
 from pgoapi import PGoApi
 from pgoapi.utilities import f2i
@@ -423,7 +424,23 @@ def get_sps_location_list(args, current_location, sps_scan_current):
 
     log.info('Total of %d spawns to track', len(locations))
 
-    locations.sort(key=itemgetter('time'))
+    if args.sp_compression > 0:
+        log.info('Compressing spawnpoints...')
+        locations.sort(key=itemgetter('time'), reverse=True)
+        locations_deque = deque(locations)
+        iterations = len(locations) if args.aggressive_compress else 1
+        for i in range(iterations):
+            compressed = compress_spawnpoints(locations_deque, args.sp_compression,
+                    len(locations))
+            if compressed is not None:
+                # We've found a new best optimization, use it
+                locations = compressed
+            locations_deque.rotate(1)
+        locations.reverse() # put them back in ascending order
+    else:
+        locations.sort(key=itemgetter('time'))
+
+    log.info('Total of %d locations to scan', len(locations))
 
     if args.verbose or args.very_verbose:
         for i in locations:
@@ -473,6 +490,42 @@ def get_sps_location_list(args, current_location, sps_scan_current):
         retset.append(((location['lat'], location['lng'], 40.32), location['appears'], location['leaves']))
 
     return retset
+
+
+# gets the diference between two times past the hour (in a range from -1800 to 1800)
+def timeDif(a, b):
+    dif = a - b
+    if (dif < -1800):
+        dif += 3600
+    if (dif > 1800):
+        dif -= 3600
+    return dif
+
+
+def compress_spawnpoints(spawns, threshold, early_cutoff):
+    compressed = []
+    spawns = deque(spawns)  # duplicate so we can modify it
+    while len(spawns) != 0:
+        spawn = spawns.popleft()
+        compressed.append(spawn)
+        if len(compressed) >= early_cutoff:
+            return None  # List grew too big, no longer optimal
+        # log.debug('Processing spawn %r', spawn)
+
+        # Remove any other spawns that fall within range of this one
+        redundant = []
+        for sp_to_check in spawns:
+            if timeDif(spawn['time'], sp_to_check['time']) > threshold:
+                break  # We're already outside the time, no sense continuing
+            dist = geopy.distance.distance((spawn['lat'], spawn['lng']), (sp_to_check['lat'], sp_to_check['lng'])).meters
+            if dist < 70:
+                log.debug('Removing spawn %d m away: %r', dist, sp_to_check)
+                redundant.append(sp_to_check)
+
+        for x in redundant:
+            spawns.remove(x)
+
+    return compressed
 
 
 def search_worker_thread(args, account, search_items_queue, pause_bit, encryption_lib_path, status, dbq, whq):
