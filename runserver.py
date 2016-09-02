@@ -188,12 +188,11 @@ def main():
     # WH Updates
     wh_updates_queue = Queue()
 
-    # Thread to process webhook updates
-    for i in range(args.wh_threads):
-        log.debug('Starting wh-updater worker thread %d', i)
-        t = Thread(target=wh_updater, name='wh-updater-{}'.format(i), args=(args, wh_updates_queue))
-        t.daemon = True
-        t.start()
+    # Thread to oversee webhook updates
+    log.debug('Starting wh-overseer worker thread')
+    t = Thread(target=wh_overseer, name='wh-overseer', args=(args, wh_updates_queue))
+    t.daemon = True
+    t.start()
 
     if not args.only_server:
         # Gather the pokemons!
