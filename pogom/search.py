@@ -27,7 +27,7 @@ import geopy
 import geopy.distance
 
 from operator import itemgetter
-from threading import Thread
+from threading import Thread, Event
 from queue import Queue, Empty
 
 from pgoapi import PGoApi
@@ -174,6 +174,10 @@ def search_overseer_thread(args, method, new_location_queue, pause_bit, encrypti
 
     log.info('Search overseer starting')
 
+    # Shuffle account order
+    acc_list = list(args.accounts)
+    random.shuffle(acc_list)
+    worker_reserve = Queue()
     search_items_queue = Queue()
     threadStatus = {}
 
@@ -191,9 +195,31 @@ def search_overseer_thread(args, method, new_location_queue, pause_bit, encrypti
         t.daemon = True
         t.start()
 
-    # Create a search_worker_thread per account
+    num_workers = len(args.accounts)
+    reserve_acc = swap_rate = 0
+    if args.acc_reserve > 0:
+        if args.acc_reserve > 1:  # Specific number of reserves
+            reserve_acc = int(args.acc_reserve)
+        else:  # Proportional reserve
+            reserve_acc = int(math.floor(num_workers * args.acc_reserve))
+
+        if reserve_acc >= num_workers:
+            log.warning('Too many accounts on reserve. Disabling reserve accounts!')
+            reserve_acc = 0
+        else:
+            if reserve_acc < num_workers / 2:
+                log.warning("It's recommended to have more reserve accounts than workers (acc-reserve >= 0.5)")
+
+            num_workers -= reserve_acc
+            # rational: each account should be active for approximately 60 minutes before being swapped out
+            # so calculate the number of scans we can make in this time, and use this as a swap_rate
+            swap_rate = 1 / float((60 * 60) / args.scan_delay)
+
+    log.info('%d workers will be created with %d accounts on reserve. Swap rate: %g', num_workers, reserve_acc, swap_rate)
+
+    # Create search_worker_threads
     log.info('Starting search worker threads')
-    for i, account in enumerate(args.accounts):
+    for i, account in enumerate(acc_list):
         log.debug('Starting search worker thread %d for user %s', i, account['username'])
         workerId = 'Worker {:03}'.format(i)
         threadStatus[workerId] = {
@@ -205,14 +231,19 @@ def search_overseer_thread(args, method, new_location_queue, pause_bit, encrypti
             'skip': 0,
             'user': account['username']
         }
+        worker_sleeper = Event()
+        worker_reserve.put(worker_sleeper)
 
         t = Thread(target=search_worker_thread,
                    name='search-worker-{}'.format(i),
-                   args=(args, account, search_items_queue, pause_bit,
+                   args=(args, account, worker_reserve, swap_rate, i, worker_sleeper, search_items_queue, pause_bit,
                          encryption_lib_path, threadStatus[workerId],
                          db_updates_queue, wh_queue))
         t.daemon = True
         t.start()
+
+    for i in range(num_workers):
+        worker_reserve.get().set()
 
     '''
     For hex scanning, we can generate the full list of scan points well
@@ -416,11 +447,27 @@ def get_sps_location_list(args, current_location, sps_scan_current):
     return retset
 
 
-def search_worker_thread(args, account, search_items_queue, pause_bit, encryption_lib_path, status, dbq, whq):
+def search_worker_thread(args, account, worker_reserve, swap_rate, worker_num, worker_sleeper, search_items_queue, pause_bit, encryption_lib_path, status, dbq, whq):
 
-    stagger_thread(args, account)
+    def sleep_worker(delay=0):
+        if delay:
+            time.sleep(delay)
+
+        worker_sleeper.clear()
+        log.info(worker_reserve.qsize())
+        worker_reserve.put(worker_sleeper)
+        toWake = worker_reserve.get()
+        toWake.set()  # wake our replacement
+        log.info('Worker going to sleep')
+        worker_sleeper.wait()  # wait to be woken
+        log.info('Worker waking up')
+
+    stagger_thread(args, worker_num)
 
     log.debug('Search worker thread starting')
+
+    status['message'] = 'On reserve'
+    worker_sleeper.wait()
 
     # The forever loop for the thread
     while True:
@@ -447,14 +494,11 @@ def search_worker_thread(args, account, search_items_queue, pause_bit, encryptio
 
                 # If this account has been messing up too hard, let it rest
                 if status['fail'] >= args.max_failures:
-                    end_sleep = now() + (3600 * 2)
                     long_sleep_started = time.strftime('%H:%M:%S')
-                    while now() < end_sleep:
-                        status['message'] = 'Worker {} failed more than {} scans; possibly banned account. Sleeping for 2 hour sleep as of {}'.format(account['username'], args.max_failures, long_sleep_started)
-                        log.error(status['message'])
-                        time.sleep(300)
+                    status['message'] = 'Worker {} failed more than {} scans; possibly banned account. Sleeping for 2 hour sleep as of {}'.format(account['username'], args.max_failures, long_sleep_started)
+                    log.error(status['message'])
+                    sleep_worker(60 * 60 * 2)
                     break  # exit this loop to have the API recreated
-
                 while pause_bit.is_set():
                     status['message'] = 'Scanning paused'
                     time.sleep(2)
@@ -579,6 +623,10 @@ def search_worker_thread(args, account, search_items_queue, pause_bit, encryptio
                 status['message'] += ', sleeping {}s until {}'.format(args.scan_delay, time.strftime('%H:%M:%S', time.localtime(time.time() + args.scan_delay)))
                 time.sleep(args.scan_delay)
 
+                if swap_rate and random.random() < swap_rate:
+                    status['message'] = 'On reserve'
+                    sleep_worker()
+
         # catch any process exceptions, log them, and continue the thread
         except Exception as e:
             status['message'] = 'Exception in search_worker: {}'.format(e)
@@ -673,10 +721,10 @@ def calc_distance(pos1, pos2):
 
 
 # Delay each thread start time so that logins only occur ~1s
-def stagger_thread(args, account):
-    if args.accounts.index(account) == 0:
+def stagger_thread(args, worker_num):
+    if worker_num == 0:
         return  # No need to delay the first one
-    delay = args.accounts.index(account) + ((random.random() - .5) / 2)
+    delay = worker_num + ((random.random() - .5) / 2)
     log.debug('Delaying thread startup for %.2f seconds', delay)
     time.sleep(delay)
 

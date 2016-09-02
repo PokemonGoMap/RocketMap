@@ -52,6 +52,9 @@ def get_args():
                         help='Usernames, one per account.')
     parser.add_argument('-p', '--password', action='append',
                         help='Passwords, either single one for all accounts or one per account.')
+    parser.add_argument('--acc-reserve', type=float, default=0, help='The number (or percent) of accounts \
+                        to keep in reserve. Reserved accounts are regularily rotated in to reduce \
+                        account stress. Defaults to 0 (off)')
     parser.add_argument('-l', '--location', type=parse_unicode,
                         help='Location, can be an address or coordinates')
     parser.add_argument('-j', '--jitter', help='Apply random -9m to +9m jitter to location',
