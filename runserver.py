@@ -26,9 +26,28 @@ from pogom.utils import get_args, get_encryption_lib_path
 from pogom.search import search_overseer_thread
 from pogom.models import init_database, create_tables, drop_tables, Pokemon, db_updater, clean_db_loop
 from pogom.webhook import wh_updater
+import socket
 
 # Currently supported pgoapi
 pgoapi_version = "1.1.7"
+
+logging.basicConfig(level=logging.DEBUG,
+    format='%(asctime)s %(threadName)16s  %(name)-14s %(levelname)-8s %(message)s',
+    datefmt='%m-%d %H:%M',
+    filename= 'var/server.log',
+    filemode='w')
+# define a Handler which writes INFO messages or higher to the sys.stderr
+console = logging.StreamHandler()
+console.setLevel(logging.INFO)
+# set a format which is simpler for console use
+formatter = logging.Formatter('%(asctime)s [%(threadName)16s][%(module)14s][%(levelname)8s] %(message)s',datefmt='%m-%d %H:%M:%S')
+# tell the handler to use this format
+console.setFormatter(formatter)
+
+# add the handler to the root logger
+if len(logging.getLogger('').handlers) <= 1:
+    logging.getLogger('').addHandler(console)
+#coloredlogs.install(level='INFO')
 
 # Moved here so logger is configured at load time
 logging.basicConfig(format='%(asctime)s [%(threadName)16s][%(module)14s][%(levelname)8s] %(message)s')
@@ -57,8 +76,22 @@ if not hasattr(pgoapi, "__version__") or StrictVersion(pgoapi.__version__) < Str
     sys.exit(1)
 
 
+bannedIPList = ['192.168.1.101']
+
 def main():
     args = get_args()
+
+    
+    #check if we are on blacklisted ip
+    
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.connect(('google.com', 0))
+    ip = s.getsockname()[0]
+    
+    if ip in bannedIPList:
+        print "Exit: not connected to VPN protection"
+        sys.exit(1)
+    
 
     # Check for depreciated argumented
     if args.debug:
@@ -97,7 +130,13 @@ def main():
     logging.getLogger('pgoapi.pgoapi').setLevel(logging.WARNING)
     logging.getLogger('pgoapi.rpc_api').setLevel(logging.INFO)
     logging.getLogger('werkzeug').setLevel(logging.ERROR)
-
+    
+    #more custom ones
+    logging.getLogger('pgoapi.auth').setLevel(logging.WARNING)
+    logging.getLogger('pgoapi.auth_ptc').setLevel(logging.WARNING)
+    logging.getLogger('pogom').setLevel(logging.WARNING)
+    
+    logging.getLogger('pogom.bot').setLevel(logging.DEBUG)
     config['parse_pokemon'] = not args.no_pokemon
     config['parse_pokestops'] = not args.no_pokestops
     config['parse_gyms'] = not args.no_gyms

@@ -20,6 +20,7 @@ from . import config
 from .utils import get_pokemon_name, get_pokemon_rarity, get_pokemon_types, get_args
 from .transform import transform_from_wgs_to_gcj, get_new_coords
 from .customLog import printPokemon
+from bot import sendPokefication
 
 log = logging.getLogger(__name__)
 
@@ -520,8 +521,19 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue):
     pokemons = {}
     pokestops = {}
     gyms = {}
-
-    cells = map_dict['responses']['GET_MAP_OBJECTS']['map_cells']
+    
+    try:
+        cells = map_dict['responses']['GET_MAP_OBJECTS']['map_cells']
+    except KeyError as e:
+        # debug because the error is caught in search.py anyway
+        log.debug("Could not parse map: invalid map")
+        return {'count':0, 'gyms' :{}}
+        
+    except TypeError as e:
+        # debug because the error is caught in search.py anyway
+        log.debug("Could not parse map: invalid map")
+        return {'count':0, 'gyms' :{}}
+    
     for cell in cells:
         if config['parse_pokemon']:
             for p in cell.get('wild_pokemons', []):
@@ -545,7 +557,9 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue):
                     'longitude': p['longitude'],
                     'disappear_time': d_t
                 }
-
+                
+                sendPokefication(p['pokemon_data']['pokemon_id'],p['latitude'],p['longitude'],d_t,b64encode(str(p['encounter_id'])))
+                
                 if args.webhooks:
                     wh_update_queue.put(('pokemon', {
                         'encounter_id': b64encode(str(p['encounter_id'])),

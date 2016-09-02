@@ -1,0 +1,4 @@
+[telegram]
+token=<TOKEN>
+[pymongo]
+uri=<pymongo-URI>
