@@ -17,8 +17,7 @@ from playhouse.shortcuts import RetryOperationalError
 from playhouse.migrate import migrate, MySQLMigrator, SqliteMigrator
 from datetime import datetime, timedelta
 from base64 import b64encode
-from cachetools import TTLCache
-from cachetools import cached
+from cache import cache
 
 from . import config
 from .utils import get_pokemon_name, get_pokemon_rarity, get_pokemon_types, get_args, i8ln
@@ -29,7 +28,6 @@ log = logging.getLogger(__name__)
 
 args = get_args()
 flaskDb = FlaskDB()
-cache = TTLCache(maxsize=100, ttl=60 * 5)
 
 db_schema_version = 10
 
@@ -190,7 +188,7 @@ class Pokemon(BaseModel):
         return pokemons
 
     @classmethod
-    @cached(cache)
+    @cache.cache('get_seen', expire=60 * 5)
     def get_seen(cls, timediff):
         if timediff:
             timediff = datetime.utcnow() - timediff

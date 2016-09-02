@@ -12,6 +12,7 @@ from s2sphere import LatLng
 from pogom.utils import get_args, get_pokemon_data, get_pokemon_rarity
 from datetime import timedelta
 from collections import OrderedDict
+from cache import cache
 
 from . import config
 from .models import Pokemon, Gym, Pokestop, ScannedLocation, PokemonRarity, MainWorker, WorkerStatus
@@ -356,6 +357,7 @@ class Pogom(Flask):
                                )
 
     @staticmethod
+    @cache.cache('all_pokemon')
     def get_all_pokemon():
         pokemon = {}
         for x in xrange(1, 151):
@@ -369,6 +371,7 @@ class Pogom(Flask):
         for duration in self.get_valid_stat_input(duration_arg)["duration"]["items"].values():
             if duration["selected"] == "SELECTED":
                 PokemonRarity.update_rarities(duration["value"])
+                cache.invalidate(self.get_all_pokemon, 'all_pokemon')
                 break
         return "Done"
 

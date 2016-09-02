@@ -12,6 +12,7 @@ node_modules/
 venv/
 core
 src/
+cache/
 _build
 _build_html
 beehive.*
