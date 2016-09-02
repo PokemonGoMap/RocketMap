@@ -129,7 +129,7 @@ def get_args():
                          compressed. Compression reduces redundant scans. Specify 0 to disable compression. Defaults \
                          to 120 (2 minutes)", type=int, default=120)
     parser.add_argument('--aggressive-compress', help='Spend extra time compressing the spawnpoints to find a better compression',
-                         action='store_true', default=False)
+                        action='store_true', default=False)
     parser.add_argument('--dump-spawnpoints', help='dump the spawnpoints from the db to json (only for use with -ss)',
                         action='store_true', default=False)
     parser.add_argument('-pd', '--purge-data',

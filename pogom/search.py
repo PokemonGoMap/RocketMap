@@ -430,13 +430,12 @@ def get_sps_location_list(args, current_location, sps_scan_current):
         locations_deque = deque(locations)
         iterations = len(locations) if args.aggressive_compress else 1
         for i in range(iterations):
-            compressed = compress_spawnpoints(locations_deque, args.sp_compression,
-                    len(locations))
+            compressed = compress_spawnpoints(locations_deque, args.sp_compression, len(locations))
             if compressed is not None:
                 # We've found a new best optimization, use it
                 locations = compressed
             locations_deque.rotate(1)
-        locations.reverse() # put them back in ascending order
+        locations.reverse()  # put them back in ascending order
     else:
         locations.sort(key=itemgetter('time'))
 
