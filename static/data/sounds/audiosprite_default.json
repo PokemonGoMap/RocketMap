@@ -1,0 +1,10 @@
+[
+  {
+    "id": "default",
+	"src": "default.mp3"
+  },
+  {
+    "id": "default-nearby",
+	"src": "default-nearby.mp3"
+  }
+]
