@@ -25,7 +25,7 @@ from pogom.utils import get_args, get_encryption_lib_path
 
 from pogom.search import search_overseer_thread
 from pogom.models import init_database, create_tables, drop_tables, Pokemon, db_updater, clean_db_loop
-from pogom.webhook import wh_updater
+from pogom.webhook import wh_overseer
 
 # Currently supported pgoapi
 pgoapi_version = "1.1.7"
