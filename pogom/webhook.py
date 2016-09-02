@@ -3,10 +3,9 @@
 
 import logging
 import requests
-import calendar
 import time
 from .utils import get_args
-from threading import Thread, Event
+from threading import Thread
 from queue import Queue
 from datetime import datetime, timedelta
 
@@ -32,6 +31,7 @@ def send_to_webhook(message_type, message):
             log.debug('Response timeout on webhook endpoint %s', w)
         except requests.exceptions.RequestException as e:
             log.debug(e)
+
 
 def wh_overseer(args, whq):
     wh_unique_queue = Queue()
@@ -65,6 +65,7 @@ def wh_overseer(args, whq):
 
         except Exception as e:
             log.exception('Exception in wh_overseer: %s', e)
+
 
 def wh_updater(args, q):
     # The forever loop
