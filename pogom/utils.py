@@ -15,6 +15,7 @@ from . import config
 
 log = logging.getLogger(__name__)
 
+
 def parse_unicode(bytestring):
     decoded_string = bytestring.decode(sys.getfilesystemencoding())
     return decoded_string
@@ -183,23 +184,22 @@ def get_args():
         num_passwords = 0
 
         if (args.username is None):
-            
             errors.append('Missing `username` either as -u/--username or in config')
         else:
             num_usernames = len(args.username)
 
         if (args.location is None):
             errors.append('Missing `location` either as -l/--location or in config')
-        
+
         if num_usernames == 1 and args.username[0].startswith('file:'):
             accountsFile = args.username[0][5:]
-        
+
         if accountsFile:
             try:
-                with open(accountsFile,"r") as myfile:
+                with open(accountsFile, "r") as myfile:
                     accountFileLines = myfile.readlines()
-            except Exception as  e:
-                errors.append("Error reading accountFileLines from file: {}".format(e))
+            except Exception as e:
+                errors.append("Error reading credentials from file: {}".format(e))
 
         if not accountsFile:
             if (args.password is None):
@@ -220,7 +220,6 @@ def get_args():
                 errors.append('The number of provided passwords ({}) must match the username count ({})'.format(num_passwords, num_usernames))
             if num_auths > 1 and num_usernames != num_auths:
                 errors.append('The number of provided auth ({}) must match the username count ({})'.format(num_auths, num_usernames))
-
 
         if len(errors) > 0:
             parser.print_usage()
