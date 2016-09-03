@@ -32,8 +32,7 @@ class Pogom(Flask):
         self.route("/mobile", methods=['GET'])(self.list_pokemon)
         self.route("/search_control", methods=['GET'])(self.get_search_control)
         self.route("/search_control", methods=['POST'])(self.post_search_control)
-        self.route("/stats", methods=['GET'])(self.get_stats)
-
+    
     def set_search_control(self, control):
         self.search_control = control
 
@@ -230,8 +229,6 @@ class Pogom(Flask):
                                gmaps_key=config['GMAPS_KEY'],
                                valid_input=self.get_valid_stat_input()
                                )
-
-
 class CustomJSONEncoder(JSONEncoder):
 
     def default(self, obj):
