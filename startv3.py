@@ -52,12 +52,21 @@ with open(places_fname, "r") as ins:
 
 x = 0
 try:
+    hostname = None
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("gmail.com",80))
+        hostname = s.getsockname()[0]
+        s.close()
+    except Exception as e:
+        hostname = "unknown_host%s" % ( str(id(e)) )
+    
     for place in places:
         #print place
         #print accounts[x]
         
         account = accounts[x]
-        status_name = "worker%d@%s" % ( x, socket.gethostname() )
+        status_name = "worker%d@%s" % ( x, hostname )
         #exe = "start cmd /k python runserverv2.py -ns -a %s -u %s -p %s -ss %s" % (auth, login, pw, fname)
         execute = "python runserver.py -ns -a %s -u %s -p %s -ss spawns_%d.json -l \"%s,%s\" -st %s -sd %s --dump-spawnpoints -sn %s" % \
                     (account["auth"], account["login"], account["pw"], x, place["lat"], place["lng"], place["steps"], place["delay"], status_name)
