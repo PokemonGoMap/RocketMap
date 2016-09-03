@@ -44,6 +44,8 @@ def memoize(function):
 @memoize
 def get_args():
     # fuck PEP8
+    accountsFile = None
+    accountFileLines = None
     configpath = os.path.join(os.path.dirname(__file__), '../config/config.ini')
     parser = configargparse.ArgParser(default_config_files=[configpath], auto_env_var_prefix='POGOMAP_')
     parser.add_argument('-a', '--auth-service', type=str.lower, action='append',
@@ -189,10 +191,21 @@ def get_args():
         if (args.location is None):
             errors.append('Missing `location` either as -l/--location or in config')
 
-        if (args.password is None):
-            errors.append('Missing `password` either as -p/--password or in config')
-        else:
-            num_passwords = len(args.password)
+        if num_usernames == 1 and args.username[0].startswith('file:'):
+            accountsFile = args.username[0][5:]
+
+        if accountsFile:
+            try:
+                with open(accountsFile, "r") as myfile:
+                    accountFileLines = myfile.readlines()
+            except Exception as e:
+                errors.append("Error reading credentials from file: {}".format(e))
+
+        if not accountsFile:
+            if (args.password is None):
+                errors.append('Missing `password` either as -p/--password or in config')
+            else:
+                num_passwords = len(args.password)
 
         if (args.step_limit is None):
             errors.append('Missing `step_limit` either as -st/--step-limit or in config')
@@ -213,18 +226,25 @@ def get_args():
             print(sys.argv[0] + ": errors: \n - " + "\n - ".join(errors))
             sys.exit(1)
 
-        # Fill the pass/auth if set to a single value
-        if num_passwords == 1:
-            args.password = [args.password[0]] * num_usernames
-        if num_auths == 1:
-            args.auth_service = [args.auth_service[0]] * num_usernames
+        if not accountsFile:
+            # Fill the pass/auth if set to a single value
+            if num_passwords == 1:
+                args.password = [args.password[0]] * num_usernames
+            if num_auths == 1:
+                args.auth_service = [args.auth_service[0]] * num_usernames
 
         # Make our accounts list
         args.accounts = []
 
-        # Make the accounts list
-        for i, username in enumerate(args.username):
-            args.accounts.append({'username': username, 'password': args.password[i], 'auth_service': args.auth_service[i]})
+        if accountsFile:
+            credentials = [x.strip().split(',') for x in accountFileLines]
+            for item in credentials:
+                args.accounts.append({'username': item[1], 'password': item[2], 'auth_service': item[0]})
+
+        else:
+            # Make the accounts list
+            for i, username in enumerate(args.username):
+                args.accounts.append({'username': username, 'password': args.password[i], 'auth_service': args.auth_service[i]})
 
     return args
 
