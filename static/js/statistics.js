@@ -131,7 +131,7 @@ function processSeen (seen) {
 
   for (i = seen.pokemon.length - 1; i >= 0; i--) {
     var item = seen.pokemon[i]
-    var percentage = (item['count'] / total * 100).toFixed(2)
+    var percentage = (item['count'] / total * 100).toFixed(4)
     var lastSeen = new Date(item['disappear_time'])
     lastSeen = lastSeen.getHours() + ':' +
     ('0' + lastSeen.getMinutes()).slice(-2) + ':' +
@@ -458,3 +458,9 @@ function updateDetails () {
 if (location.href.match(/overlay_[0-9]+/g)) {
   showOverlay(location.href.replace(/^.*overlay_([0-9]+).*$/, '$1'))
 }
+
+$('#nav select')
+  .select2({
+    minimumResultsForSearch: Infinity
+  })
+  .on('change', updateMap)

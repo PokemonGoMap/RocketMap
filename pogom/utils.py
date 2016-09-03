@@ -130,7 +130,9 @@ def get_args():
     parser.add_argument('-pd', '--purge-data',
                         help='Clear pokemon from database this many hours after they disappear \
                         (0 to disable)', type=int, default=0)
-    parser.add_argument('-px', '--proxy', help='Proxy url (e.g. socks5://127.0.0.1:9050)')
+    parser.add_argument('-px', '--proxy', help='Proxy url (e.g. socks5://127.0.0.1:9050)', action='append')
+    parser.add_argument('-pxt', '--proxy-timeout', help='Timeout settings for proxy checker in seconds ', type=int, default=5)
+    parser.add_argument('-pxd', '--proxy-display', help='Display info on which proxy beeing used (index or full) To be used with -ps', type=str, default='index')
     parser.add_argument('--db-type', help='Type of database to be used (default: sqlite)',
                         default='sqlite')
     parser.add_argument('--db-name', help='Name of the database to be used')
@@ -154,6 +156,10 @@ def get_args():
     parser.add_argument('--ssl-privatekey', help='Path to SSL private key file')
     parser.add_argument('-ps', '--print-status', action='store_true',
                         help='Show a status screen instead of log messages. Can switch between status and logs by pressing enter.', default=False)
+    parser.add_argument('-sn', '--status-name', default=None,
+                        help='Enable status page database update using STATUS_NAME as main worker name')
+    parser.add_argument('-spp', '--status-page-password', default=None,
+                        help='Set the status page password')
     parser.add_argument('-el', '--encrypt-lib', help='Path to encrypt lib to be used instead of the shipped ones')
     verbosity = parser.add_mutually_exclusive_group()
     verbosity.add_argument('-v', '--verbose', help='Show debug messages from PomemonGo-Map and pgoapi. Optionally specify file to log to.', nargs='?', const='nofile', default=False, metavar='filename.log')
