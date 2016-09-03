@@ -3,10 +3,8 @@
 
 import sys
 import configargparse
-import uuid
 import os
 import json
-from datetime import datetime, timedelta
 import logging
 import shutil
 import platform
@@ -126,13 +124,15 @@ def get_args():
                         help='Disables PokeStops from the map (including parsing them into local db)',
                         action='store_true', default=False)
     parser.add_argument('-ss', '--spawnpoint-scanning',
-                        help='Use spawnpoint scanning (instead of hex grid)', nargs='?', const='nofile', default=False)
+                        help='Use spawnpoint scanning (instead of hex grid). Scans in a circle based on step_limit when on DB', nargs='?', const='nofile', default=False)
     parser.add_argument('--dump-spawnpoints', help='dump the spawnpoints from the db to json (only for use with -ss)',
                         action='store_true', default=False)
     parser.add_argument('-pd', '--purge-data',
                         help='Clear pokemon from database this many hours after they disappear \
                         (0 to disable)', type=int, default=0)
-    parser.add_argument('-px', '--proxy', help='Proxy url (e.g. socks5://127.0.0.1:9050)')
+    parser.add_argument('-px', '--proxy', help='Proxy url (e.g. socks5://127.0.0.1:9050)', action='append')
+    parser.add_argument('-pxt', '--proxy-timeout', help='Timeout settings for proxy checker in seconds ', type=int, default=5)
+    parser.add_argument('-pxd', '--proxy-display', help='Display info on which proxy beeing used (index or full) To be used with -ps', type=str, default='index')
     parser.add_argument('--db-type', help='Type of database to be used (default: sqlite)',
                         default='sqlite')
     parser.add_argument('--db-name', help='Name of the database to be used')
@@ -156,6 +156,10 @@ def get_args():
     parser.add_argument('--ssl-privatekey', help='Path to SSL private key file')
     parser.add_argument('-ps', '--print-status', action='store_true',
                         help='Show a status screen instead of log messages. Can switch between status and logs by pressing enter.', default=False)
+    parser.add_argument('-sn', '--status-name', default=None,
+                        help='Enable status page database update using STATUS_NAME as main worker name')
+    parser.add_argument('-spp', '--status-page-password', default=None,
+                        help='Set the status page password')
     parser.add_argument('-el', '--encrypt-lib', help='Path to encrypt lib to be used instead of the shipped ones')
     verbosity = parser.add_mutually_exclusive_group()
     verbosity.add_argument('-v', '--verbose', help='Show debug messages from PomemonGo-Map and pgoapi. Optionally specify file to log to.', nargs='?', const='nofile', default=False, metavar='filename.log')
@@ -223,55 +227,6 @@ def get_args():
             args.accounts.append({'username': username, 'password': args.password[i], 'auth_service': args.auth_service[i]})
 
     return args
-
-
-def insert_mock_data(position):
-    num_pokemon = 6
-    num_pokestop = 6
-    num_gym = 6
-
-    log.info('Creating fake: %d pokemon, %d pokestops, %d gyms',
-             num_pokemon, num_pokestop, num_gym)
-
-    from .models import Pokemon, Pokestop, Gym
-    from .search import generate_location_steps
-
-    latitude, longitude = float(position[0]), float(position[1])
-
-    locations = [l for l in generate_location_steps((latitude, longitude), num_pokemon, 0.07)]
-    disappear_time = datetime.now() + timedelta(hours=1)
-
-    detect_time = datetime.now()
-
-    for i in range(1, num_pokemon):
-        Pokemon.create(encounter_id=uuid.uuid4(),
-                       spawnpoint_id='sp{}'.format(i),
-                       pokemon_id=(i + 1) % 150,
-                       latitude=locations[i][0],
-                       longitude=locations[i][1],
-                       disappear_time=disappear_time,
-                       detect_time=detect_time)
-
-    for i in range(1, num_pokestop):
-        Pokestop.create(pokestop_id=uuid.uuid4(),
-                        enabled=True,
-                        latitude=locations[i + num_pokemon][0],
-                        longitude=locations[i + num_pokemon][1],
-                        last_modified=datetime.now(),
-                        # Every other pokestop be lured
-                        lure_expiration=disappear_time if (i % 2 == 0) else None,
-                        )
-
-    for i in range(1, num_gym):
-        Gym.create(gym_id=uuid.uuid4(),
-                   team_id=i % 3,
-                   guard_pokemon_id=(i + 1) % 150,
-                   latitude=locations[i + num_pokemon + num_pokestop][0],
-                   longitude=locations[i + num_pokemon + num_pokestop][1],
-                   last_modified=datetime.now(),
-                   enabled=True,
-                   gym_points=1000
-                   )
 
 
 def now():
