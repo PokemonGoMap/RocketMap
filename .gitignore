@@ -8,6 +8,9 @@
 *.csv
 config/*
 !config/config.ini.example
+!config/config.ini
+!config/acc.csv.example
+!config/places.csv.example
 static/dist/
 node_modules/
 venv/
