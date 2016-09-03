@@ -1,4 +1,5 @@
 #!/usr/bin/python
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 import logging
 import calendar
@@ -17,7 +18,7 @@ from datetime import datetime, timedelta
 from base64 import b64encode
 
 from . import config
-from .utils import get_pokemon_name, get_pokemon_rarity, get_pokemon_types, get_args
+from .utils import get_pokemon_name, get_pokemon_rarity, get_pokemon_types, get_args, generate_session
 from .transform import transform_from_wgs_to_gcj, get_new_coords
 from .customLog import printPokemon
 
@@ -446,7 +447,6 @@ class ScannedLocation(BaseModel):
                         (ScannedLocation.longitude >= swLng) &
                         (ScannedLocation.latitude <= neLat) &
                         (ScannedLocation.longitude <= neLng))
-                 .order_by(ScannedLocation.last_modified.asc())
                  .dicts())
 
         return list(query)
@@ -537,6 +537,160 @@ class GymDetails(BaseModel):
     last_scanned = DateTimeField(default=datetime.utcnow)
 
 
+class PoGoAccount(BaseModel):
+    username = CharField(primary_key=True)
+    password = CharField()
+    auth_service = CharField()
+    active = BooleanField(default=True)
+    in_use = BooleanField(default=False)
+    session = CharField(index=True, default=generate_session())
+    time_deactivated = DateTimeField(default=datetime.utcnow())
+    last_scan_time = DateTimeField(default=datetime.utcnow())
+    proxy = CharField(default='')
+
+    @staticmethod
+    def update_proxy(username, new_proxy):
+        query = (PoGoAccount
+                 .update(proxy=new_proxy)
+                 .where(PoGoAccount.username == username))
+        query.execute()
+
+    @staticmethod
+    def get_num_accounts():
+        query = (PoGoAccount
+                 .select()
+                 .count())
+        return query
+
+    @staticmethod
+    def get_active_unused(count, use):
+        accounts = []
+        query = {}
+        while len(query) == 0:
+            query = (PoGoAccount
+                     .select()
+                     .where((PoGoAccount.active == 1) &
+                            (PoGoAccount.in_use == 0))
+                     .dicts())
+
+            if len(query) == 0:
+                if PoGoAccount.get_num_accounts() == 0:
+                    log.info("there are no accounts, please add accounts using -u/--username and -p/--password or in config")
+                else:
+                    log.info("no available accounts, please add more")
+                time.sleep(180)
+
+        for i, account in enumerate(query):
+            accounts.append(account)
+            if use:
+                accounts[i].update({'session': generate_session()})
+                use_account(account['username'], account['session'])
+            if i == count - 1:
+                break
+
+        return accounts
+
+    @staticmethod
+    def valid_session(username, current_session):
+        query = (PoGoAccount
+                 .select()
+                 .where(PoGoAccount.username == username)
+                 .dicts())
+        for account in query:
+            if not account['in_use']:  # If the account is not set to in_use recreate the session
+                log.info('usage was reset refreshing session')
+                query = (PoGoAccount
+                         .update(in_use=True, session=current_session)
+                         .where(PoGoAccount.username == username)
+                         .execute())
+            return account['session'] == current_session
+
+    @staticmethod
+    def valid_session(username, current_session):
+        query = (PoGoAccount
+                 .select()
+                 .where(PoGoAccount.username == username)
+                 .dicts())
+        for account in query:
+            if not account['in_use']:  # If the account is not set to in_use recreate the session
+                log.info('usage was reset refreshing session')
+                query = (PoGoAccount
+                         .update(in_use=True, session=current_session)
+                         .where(PoGoAccount.username == username))
+                query.execute()
+            return account['session'] == current_session
+
+
+def insert_accounts():
+    for account in args.accounts:
+        log.info("Checking " + account['username'])
+        try:
+            query = (PoGoAccount
+                     .create(username=account['username'], password=account['password'], auth_service=account['auth_service']))
+            query.execute()
+            log.info("Added " + account['username'])
+        except:
+            done = False
+            while not done:
+                try:
+                    log.info(account['username'] + " already exists reseting password and status")
+                    query = (PoGoAccount
+                             .update(password=account['password'], auth_service=account['auth_service'], active=True)
+                             .where(PoGoAccount.username == account['username']))
+                    query.execute()
+                    done = True
+                except:
+                    log.info("Issue updating accounts, trying again")
+
+
+def deactivate_account(faulty_account):
+    log.info("Deactivating " + faulty_account)
+    query = (PoGoAccount
+             .update(active = False, in_use=False, time_deactivated=datetime.utcnow())
+             .where(PoGoAccount.username == faulty_account))
+    query.execute()
+
+
+def update_use_account(username):
+    query = (PoGoAccount
+             .update(in_use = True, last_scan_time=datetime.utcnow())
+             .where(PoGoAccount.username == username))
+    query.execute()
+
+	
+def remove_accounts():
+    if args.remove_user is not None:
+        for user in args.remove_user:
+            log.info('Removing {} from the db'.format(user))
+            query = (PoGoAccount
+                     .delete()
+                     .where(PoGoAccount.username == user))
+            query.execute()
+
+
+def use_account(username, new_session):
+    log.info('setting {} to in use'.format(username))
+    query = (PoGoAccount
+             .update(in_use=True, session=new_session)
+             .where(PoGoAccount.username == username))
+    query.execute()
+
+
+def reset_account_use(username):
+    if username == '*':
+        query = (PoGoAccount
+                 .update(in_use=False, session=generate_session())
+                 .execute()
+                 )
+    else:
+        log.info('setting {} back to available'.format(username))
+        query = (PoGoAccount
+                 .update(in_use=False, session=generate_session())
+                 .where(PoGoAccount.username == username)
+                 .execute()
+                 )
+
+
 def hex_bounds(center, steps):
     # Make a box that is (70m * step_limit * 2) + 70m away from the center point
     # Rationale is that you need to travel
@@ -621,7 +775,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue):
                     'active_fort_modifier': active_fort_modifier
                 }
 
-                # Send all pokéstops to webhooks
+                # Send all pokestops to webhooks
                 if args.webhooks and not args.webhook_updates_only:
                     # Explicitly set 'webhook_data', in case we want to change the information pushed to webhooks,
                     # similar to above and previous commits.
@@ -867,6 +1021,47 @@ def clean_db_loop(args):
                      .where(Pokestop.lure_expiration < datetime.utcnow()))
             query.execute()
 
+            # Reactivate account after two hour sleep
+            query = (PoGoAccount
+                     .update(active=True)
+                     .where((PoGoAccount.time_deactivated < (datetime.utcnow() - timedelta(minutes=120))) &
+                            (PoGoAccount.active == 0)))
+            query.execute()
+
+            # Reset usage on idle accounts
+            query = (PoGoAccount
+                     .update(in_use=False)
+                     .where((PoGoAccount.last_scan_time < (datetime.utcnow() - timedelta(minutes=3))) &
+                            (PoGoAccount.active == 1)))
+            query.execute()
+
+            # Remove active modifier from expired lured pokestops
+            query = (Pokestop
+                     .update(lure_expiration=None)
+                     .where(Pokestop.lure_expiration < datetime.utcnow()))
+            query.execute()
+
+            # Reactivate account after two hour sleep
+            query = (PoGoAccount
+                     .update(active=True)
+                     .where((PoGoAccount.time_deactivated < (datetime.utcnow() - timedelta(minutes=120))) &
+                            (PoGoAccount.active == 0)))
+            query.execute()
+            
+            # Reset usage on idle accounts
+            query = (PoGoAccount
+                     .update(in_use=False)
+                     .where((PoGoAccount.last_scan_time < (datetime.utcnow() - timedelta(minutes=3))) &
+                            (PoGoAccount.active == 1)))
+            query.execute()
+
+            # Reset usage on idle accounts
+            query = (PoGoAccount
+                     .update(in_use=False)
+                     .where((PoGoAccount.last_scan_time < (datetime.utcnow() - timedelta(minutes=3))) &
+                            (PoGoAccount.active == 1)))
+            query.execute()
+
             # If desired, clear old pokemon spawns
             if args.purge_data > 0:
                 query = (Pokemon
@@ -875,9 +1070,9 @@ def clean_db_loop(args):
                                 (datetime.utcnow() - timedelta(hours=args.purge_data)))))
 
             log.info('Regular database cleaning complete')
-            time.sleep(60)
         except Exception as e:
             log.exception('Exception in clean_db_loop: %s', e)
+        time.sleep(60)
 
 
 def bulk_upsert(cls, data):
@@ -899,13 +1094,13 @@ def bulk_upsert(cls, data):
 def create_tables(db):
     db.connect()
     verify_database_schema(db)
-    db.create_tables([Pokemon, Pokestop, Gym, ScannedLocation, GymDetails, GymMember, GymPokemon, Trainer, MainWorker, WorkerStatus], safe=True)
+    db.create_tables([Pokemon, Pokestop, Gym, ScannedLocation, GymDetails, GymMember, GymPokemon, Trainer, MainWorker, WorkerStatus, PoGoAccount], safe=True)
     db.close()
 
 
 def drop_tables(db):
     db.connect()
-    db.drop_tables([Pokemon, Pokestop, Gym, ScannedLocation, Versions, GymDetails, GymMember, GymPokemon, Trainer, MainWorker, WorkerStatus, Versions], safe=True)
+    db.drop_tables([Pokemon, Pokestop, Gym, ScannedLocation, Versions, GymDetails, GymMember, GymPokemon, Trainer, MainWorker, WorkerStatus, Versions, PoGoAccount], safe=True)
     db.close()
 
 

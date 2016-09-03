@@ -34,9 +34,9 @@ from queue import Queue, Empty
 from pgoapi import PGoApi
 from pgoapi.utilities import f2i
 from pgoapi import utilities as util
-from pgoapi.exceptions import AuthException
+from pgoapi.exceptions import AuthException, NotLoggedInException
 
-from .models import parse_map, Pokemon, hex_bounds, GymDetails, parse_gyms, MainWorker, WorkerStatus
+from .models import parse_map, Pokemon, hex_bounds, GymDetails, parse_gyms, MainWorker, WorkerStatus, PoGoAccount, deactivate_account, update_use_account
 from .transform import generate_location_steps
 from .fakePogoApi import FakePogoApi
 from .utils import now
@@ -239,20 +239,23 @@ def search_overseer_thread(args, method, new_location_queue, pause_bit, encrypti
         t.daemon = True
         t.start()
 
-    # Create a search_worker_thread per account
     log.info('Starting search worker threads')
-    for i, account in enumerate(args.accounts):
+    # Get the required number of accounts and start a serach worker thread for each account
+    for count in range(args.num_accounts):
+        account = PoGoAccount.get_active_unused(1, True)[0]
 
         # Set proxy to account, using round rubin
         using_proxy = ''
-        account['proxy'] = False
-        if args.proxy:
-            using_proxy = account['proxy'] = args.proxy[i % len(args.proxy)]
-            if args.proxy_display.upper() != 'FULL':
-                using_proxy = i % len(args.proxy)
+        account['proxy'] = ''
 
-        log.debug('Starting search worker thread %d for user %s', i, account['username'])
-        workerId = 'Worker {:03}'.format(i)
+        if args.proxy:
+            using_proxy = account['proxy'] = args.proxy[count % len(args.proxy)]
+            if args.proxy_display.upper() != 'FULL':
+                using_proxy = count % len(args.proxy)
+        PoGoAccount.update_proxy(account['username'], account['proxy'])
+
+        log.debug('Starting search worker thread %d for user %s', count, account['username'])
+        workerId = 'Worker {:03}'.format(count)
 
         threadStatus[workerId] = {
             'type': 'Worker',
@@ -266,10 +269,10 @@ def search_overseer_thread(args, method, new_location_queue, pause_bit, encrypti
         }
 
         t = Thread(target=search_worker_thread,
-                   name='search-worker-{}'.format(i),
+                   name='search-worker-{}'.format(count),
                    args=(args, account, search_items_queue, pause_bit,
                          encryption_lib_path, threadStatus[workerId],
-                         db_updates_queue, wh_queue))
+                         db_updates_queue, wh_queue, count))
         t.daemon = True
         t.start()
 
@@ -370,7 +373,7 @@ def get_hex_location_list(args, current_location):
         step_distance = 0.070
 
     # update our list of coords
-    locations = generate_location_steps(current_location, args.step_limit, step_distance)
+    locations = list(generate_location_steps(current_location, args.step_limit, step_distance))
 
     # In hex "spawns only" mode, filter out scan locations with no history of pokemons
     if args.spawnpoints_only and not args.no_pokemon:
@@ -475,9 +478,9 @@ def get_sps_location_list(args, current_location, sps_scan_current):
     return retset
 
 
-def search_worker_thread(args, account, search_items_queue, pause_bit, encryption_lib_path, status, dbq, whq):
+def search_worker_thread(args, account, search_items_queue, pause_bit, encryption_lib_path, status, dbq, whq, count):
 
-    stagger_thread(args, account)
+    stagger_thread(args, count)
 
     log.debug('Search worker thread starting')
 
@@ -504,16 +507,21 @@ def search_worker_thread(args, account, search_items_queue, pause_bit, encryptio
 
             # The forever loop for the searches
             while True:
+                # Checks if the account is used by someone else
+                if not PoGoAccount.valid_session(account['username'], account['session']):
+                    log.info(account['username'] + " has been used in a new thread.")
+                    account = PoGoAccount.get_active_unused(1, True)[0]
+                    using_proxy = account['proxy']
+                    break
 
                 # If this account has been messing up too hard, let it rest
                 if status['fail'] >= args.max_failures:
-                    end_sleep = now() + (3600 * 2)
-                    long_sleep_started = time.strftime('%H:%M:%S')
-                    while now() < end_sleep:
-                        status['message'] = 'Worker {} failed more than {} scans; possibly banned account. Sleeping for 2 hour sleep as of {}'.format(account['username'], args.max_failures, long_sleep_started)
-                        log.error(status['message'])
-                        time.sleep(300)
-                    break  # exit this loop to have the API recreated
+                    status['message'] = 'Worker {} failed more than {} scans; possibly banned account.'.format(account['username'], args.max_failures)
+                    log.error(status['message'])
+                    deactivate_account(account['username'])
+                    account = PoGoAccount.get_active_unused(1, True)[0]
+                    using_proxy = account['proxy']
+                    break
 
                 while pause_bit.is_set():
                     status['message'] = 'Scanning paused'
@@ -563,10 +571,29 @@ def search_worker_thread(args, account, search_items_queue, pause_bit, encryptio
                 # Make the actual request (finally!)
                 response_dict = map_request(api, step_location, args.jitter)
 
+                # update last scan time
+                update_use_account(account['username'])
+
                 # G'damnit, nothing back. Mark it up, sleep, carry on
                 if not response_dict:
                     status['fail'] += 1
                     status['message'] = 'Invalid response at {:6f},{:6f}, abandoning location'.format(step_location[0], step_location[1])
+                    log.error(status['message'])
+                    time.sleep(args.scan_delay)
+                    continue
+
+                # Checks if map_request had returned a not loged in exception
+                if isinstance(response_dict, NotLoggedInException):
+                    status['fail'] += 1
+                    status['message'] = 'Scann at {:6f},{:6f}, failed, possibly invalid login or inactive account'.format(step_location[0], step_location[1])
+                    log.error(status['message'])
+                    time.sleep(args.scan_delay)
+                    continue
+
+                # Checks if pogo api is recieving map objects
+                if len(response_dict['responses']['GET_MAP_OBJECTS']) == 0:
+                    status['fail'] += 1
+                    status['message'] = 'No map objects found at {:6f},{:6f}, possibly banned account'.format(step_location[0], step_location[1])
                     log.error(status['message'])
                     time.sleep(args.scan_delay)
                     continue
@@ -582,6 +609,10 @@ def search_worker_thread(args, account, search_items_queue, pause_bit, encryptio
                     parsed = False
                     status['fail'] += 1
                     status['message'] = 'Map parse failed at {:6f},{:6f}, abandoning location. {} may be banned.'.format(step_location[0], step_location[1], account['username'])
+                    log.exception(status['message'])
+                except TypeError:
+                    status['fail'] += 1
+                    status['message'] = 'Map parse failed at {:6f},{:6f}, abandoning location. {} may be invalid login.'.format(step_location[0], step_location[1], account['username'])
                     log.exception(status['message'])
 
                 # Get detailed information about gyms
@@ -733,10 +764,10 @@ def calc_distance(pos1, pos2):
 
 
 # Delay each thread start time so that logins only occur ~1s
-def stagger_thread(args, account):
-    if args.accounts.index(account) == 0:
+def stagger_thread(args, count):
+    if args.num_accounts == 1:
         return  # No need to delay the first one
-    delay = args.accounts.index(account) + ((random.random() - .5) / 2)
+    delay = count + ((random.random() - .5) / 2)
     log.debug('Delaying thread startup for %.2f seconds', delay)
     time.sleep(delay)
 

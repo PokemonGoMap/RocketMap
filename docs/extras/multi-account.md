@@ -1,11 +1,15 @@
-# Using Multiple Accounts
+# Adding Accounts
 
-PokemonGo-Map supports using multiple accounts to run a worker with multiple threads.
-
+PokemonGo-Map stores your accounts for use in its database. 
+Before you start you will need to load the database with your accounts.
 
 ## Using Command Line Arguments:
 
-To use multiple accounts when running from the command line, you must specify multiple -u and -p values.
+To add an account use the -u -p and -a when you launch runserver.py
+
+Example: `python runserver.py -u thunderfox01 -p abracadabra` 
+
+To add multiple accounts when running from the command line, you must specify multiple -u and -p values.
 
 Example: `python runserver.py -u thunderfox01 -u thunderfox02 -p thunderfox01 -p thunderfox02`
 
@@ -46,3 +50,9 @@ auth-service: [ptc, ptc, google]
 username: [thunderfox01, thunderfox02, thunderfox03@gmail.com]
 password: [password01, password02, password03]
 ```
+## Using multiple accounts
+
+PokemonGo-Map supports using multiple accounts to run a worker with multiple threads.
+to specify the number of accounts use the -na flag
+
+Example: `python runserver.py -na 3`
