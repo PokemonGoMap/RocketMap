@@ -59,8 +59,8 @@ try:
         account = accounts[x]
         status_name = "worker%d@%s" % ( x, socket.gethostname() )
         #exe = "start cmd /k python runserverv2.py -ns -a %s -u %s -p %s -ss %s" % (auth, login, pw, fname)
-        execute = "python runserver.py -ns -a %s -u %s -p %s -ss spawns_%d.json -l \"%s,%s\" -st %s -sd %s --dump-spawnpoints -sn %s" % \
-                    (account["auth"], account["login"], account["pw"], x, place["lat"], place["lng"], place["steps"], place["delay"], status_name)
+        execute = "python runserver.py -ns -a %s -u %s -p %s -l \"%s,%s\" -st %s -sd %s -sn %s" % \
+                    (account["auth"], account["login"], account["pw"], place["lat"], place["lng"], place["steps"], place["delay"], status_name)
         
         print("executing '%s' for Location '%s'" % (execute, place["description"]))
         if windows:
