@@ -471,10 +471,10 @@ def start_worker(wh_queue, db_updates_queue, encryption_lib_path, pause_bit, sea
         }
 
         t = Thread(target=search_worker_thread,
-                       name='search-worker-{}'.format(worker_index),
-                       args=(args, account_queue, account_failures, search_items_queue, pause_bit,
-                             encryption_lib_path, threadStatus[workerId],
-                             db_updates_queue, wh_queue))
+                   name='search-worker-{}'.format(worker_index),
+                   args=(args, account_queue, account_failures, search_items_queue, pause_bit,
+                         encryption_lib_path, threadStatus[workerId],
+                         db_updates_queue, wh_queue))
 
         t.daemon = True
         t.start()
