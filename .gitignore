@@ -16,3 +16,10 @@ _build
 _build_html
 beehive.*
 *.csv
+*.bat
+*.sh
+*.log
+!docs/make.bat
+!Tools/Easy-Setup/easy-setup.sh
+!contrib/supervisord/gen-workers.sh
+!contrib/supervisord/install-reinstall.sh
