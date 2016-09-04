@@ -115,12 +115,18 @@ def status_printer(threadStatus, search_items_queue, db_updates_queue, wh_queue)
 
             # Calculate total skipped items
             skip_total = 0
+
+            # Count the amount of workers paused because of empty responses
+            sleeping_total = 0
+
             for item in threadStatus:
                 if 'skip' in threadStatus[item]:
                     skip_total += threadStatus[item]['skip']
+                if 'is_sleeping' in threadStatus[item] and threadStatus[item]['is_sleeping']:
+                    sleeping_total += 1
 
             # Print the queue length
-            status_text.append('Queues: {} search items, {} db updates, {} webhook.  Total skipped items: {}'.format(search_items_queue.qsize(), db_updates_queue.qsize(), wh_queue.qsize(), skip_total))
+            status_text.append('Queues: {} search items, {} db updates, {} webhook.  Total skipped items: {}  Total sleeping workers: {}/{}'.format(search_items_queue.qsize(), db_updates_queue.qsize(), wh_queue.qsize(), skip_total, sleeping_total, len(threadStatus) - 1))
 
             # Print status of overseer
             status_text.append('{} Overseer: {}'.format(threadStatus['Overseer']['method'], threadStatus['Overseer']['message']))
@@ -481,14 +487,17 @@ def search_worker_thread(args, account, search_items_queue, pause_bit, encryptio
 
     log.debug('Search worker thread starting')
 
+    # This must be outside the loop so it doesn't get restarted when the worker wake up
+    status['noitems'] = 0
+
     # The forever loop for the thread
     while True:
         try:
             # New lease of life right here
             status['fail'] = 0
             status['success'] = 0
-            status['noitems'] = 0
             status['skip'] = 0
+            status['is_sleeping'] = False
 
             # Create the API instance this will use
             if args.mock != '':
@@ -507,12 +516,25 @@ def search_worker_thread(args, account, search_items_queue, pause_bit, encryptio
 
                 # If this account has been messing up too hard, let it rest
                 if status['fail'] >= args.max_failures:
+                    status['is_sleeping'] = True
                     end_sleep = now() + (3600 * 2)
                     long_sleep_started = time.strftime('%H:%M:%S')
                     while now() < end_sleep:
                         status['message'] = 'Worker {} failed more than {} scans; possibly banned account. Sleeping for 2 hour sleep as of {}'.format(account['username'], args.max_failures, long_sleep_started)
                         log.error(status['message'])
                         time.sleep(300)
+                    break  # exit this loop to have the API recreated
+
+                # If the number of empty responses is too high, let it sleep.
+                if status['noitems'] % args.max_empty == 0 and status['noitems'] != 0:
+                    status['is_sleeping'] = True
+                    end_sleep = now() + (60 * 10)  # Wait 10 minutes
+                    long_sleep_started = time.strftime('%H:%M:%S')
+                    while now() < end_sleep:
+                        status['message'] = 'Worker {} returned empty on more than {} scans; Sleeping for 10 minutes as of {}'.format(account['username'], args.max_empty, long_sleep_started)
+                        log.error(status['message'])
+                        time.sleep(60)
+                    status['noitems'] += 1
                     break  # exit this loop to have the API recreated
 
                 while pause_bit.is_set():
