@@ -259,7 +259,6 @@ def worker_status_db_thread(threads_status, name, db_updates_queue):
 
 # The main search loop that keeps an eye on the over all process
 def search_overseer_thread(args, method, new_location_queue, pause_bit, encryption_lib_path, db_updates_queue, wh_queue):
-
     log.info('Search overseer starting')
 
     search_items_queue = Queue()
@@ -308,38 +307,13 @@ def search_overseer_thread(args, method, new_location_queue, pause_bit, encrypti
 
     # Create specified number of search_worker_thread
     log.info('Starting search worker threads')
+
+    if args.optimize_workers:
+        overseerTime = 0
+
     for i in range(0, args.workers):
-        log.debug('Starting search worker thread %d', i)
+        start_worker(wh_queue, db_updates_queue, encryption_lib_path, pause_bit, search_items_queue, account_failures, account_queue, threadStatus, args, i)
 
-        # Set proxy for each worker, using round robin
-        proxy_display = 'No'
-        proxy_url = False
-
-        if args.proxy:
-            proxy_display = proxy_url = args.proxy[i % len(args.proxy)]
-            if args.proxy_display.upper() != 'FULL':
-                proxy_display = i % len(args.proxy)
-
-        workerId = 'Worker {:03}'.format(i)
-        threadStatus[workerId] = {
-            'type': 'Worker',
-            'message': 'Creating thread...',
-            'success': 0,
-            'fail': 0,
-            'noitems': 0,
-            'skip': 0,
-            'user': '',
-            'proxy_display': proxy_display,
-            'proxy_url': proxy_url,
-        }
-
-        t = Thread(target=search_worker_thread,
-                   name='search-worker-{}'.format(i),
-                   args=(args, account_queue, account_failures, search_items_queue, pause_bit,
-                         encryption_lib_path, threadStatus[workerId],
-                         db_updates_queue, wh_queue))
-        t.daemon = True
-        t.start()
 
     '''
     For hex scanning, we can generate the full list of scan points well
@@ -421,13 +395,89 @@ def search_overseer_thread(args, method, new_location_queue, pause_bit, encrypti
             # If times are specified, print the time of the next queue item, and how many seconds ahead/behind realtime
             if nextitem[2]:
                 threadStatus['Overseer']['message'] += ' @ {}'.format(time.strftime('%H:%M:%S', time.localtime(nextitem[2])))
+
                 if nextitem[2] > now():
                     threadStatus['Overseer']['message'] += ' ({}s ahead)'.format(nextitem[2] - now())
+
+                    if args.optimize_workers:
+                        if nextitem[2] - now() >= args.scan_delay * 2:
+                            if CCoverseerTime > 0: overseerTime = 0
+                            overseerTime -= 1
+                        else: overseerTime = 0
                 else:
                     threadStatus['Overseer']['message'] += ' ({}s behind)'.format(now() - nextitem[2])
 
+                    if args.optimize_workers:
+                        if now() - nextitem[2] >= args.scan_delay * 2:
+                            if overseerTime < 0: overseerTime = 0
+                            overseerTime += (now() - nextitem[2]) / (args.scan_delay * 2)
+                        elif now() - nextitem[2] <= args.scan_delay: overseerTime -= 1
+                        else: overseerTime = 0
+
+                if args.optimize_workers:
+                    if overseerTime >= 60 and account_queue.qsize() > 0:
+                        log.debug('Adding a worker!')
+                        overseerTime = 0
+                        args.workers += 1
+                        start_worker(wh_queue, db_updates_queue, encryption_lib_path, pause_bit, search_items_queue, account_failures, account_queue, threadStatus, args, args.workers - 1)
+                    elif overseerTime >= 60 and account_queue.qsize() == 0:
+                        log.warning('You are lacking accounts to create additional workers!')
+                        overseerTime = 0
+                    elif overseerTime <= 0 - (args.scan_delay * 2) and args.workers > 1:
+                        log.debug('Removing a worker')
+                        overseerTime = 0
+                        args.workers -= 1
+                        stop_worker(threadStatus, args.workers)
+
         # Now we just give a little pause here
         time.sleep(1)
+
+
+def start_worker(wh_queue, db_updates_queue, encryption_lib_path, pause_bit, search_items_queue, account_failures, account_queue, threadStatus, args, worker_index):
+    log.debug('Starting search worker thread %d', worker_index)
+
+    # Set proxy for each worker, using round robin
+    proxy_display = 'No'
+    proxy_url = False
+
+    if args.proxy:
+            proxy_display = proxy_url = args.proxy[worker_index % len(args.proxy)]
+            if args.proxy_display.upper() != 'FULL':
+                proxy_display = worker_index % len(args.proxy)
+
+    workerId = 'Worker {:03}'.format(worker_index)
+
+    try:
+        if threadStatus[workerId]['stop'] == 1:
+            threadStatus[workerId]['stop'] = 0
+
+    except KeyError:
+        threadStatus[workerId] = {
+            'type': 'Worker',
+            'message': 'Creating thread...',
+            'success': 0,
+            'fail': 0,
+            'noitems': 0,
+            'skip': 0,
+            'user': '',
+            'proxy_display': proxy_display,
+            'proxy_url': proxy_url,
+            'stop': 0,
+        }
+
+        t = Thread(target=search_worker_thread,
+                       name='search-worker-{}'.format(worker_index),
+                       args=(args, account_queue, account_failures, search_items_queue, pause_bit,
+                             encryption_lib_path, threadStatus[workerId],
+                             db_updates_queue, wh_queue))
+
+        t.daemon = True
+        t.start()
+
+
+def stop_worker(threadStatus, worker_index):
+    workerId = 'Worker {:03}'.format(worker_index)
+    threadStatus[workerId]['stop'] = 1
 
 
 def get_hex_location_list(args, current_location):
@@ -544,12 +594,23 @@ def get_sps_location_list(args, current_location, sps_scan_current):
 
 
 def search_worker_thread(args, account_queue, account_failures, search_items_queue, pause_bit, encryption_lib_path, status, dbq, whq):
-
     log.debug('Search worker thread starting')
 
     # The outer forever loop restarts only when the inner one is intentionally exited - which should only be done when the worker is failing too often, and probably banned.
     # This reinitializes the API and grabs a new account from the queue.
     while True:
+        if status['stop'] == 1:
+            account_queue.put(account)
+            status['message'] = 'Idle...'
+            status['user'] = ''
+            status['fail'] = 0
+            status['success'] = 0
+            status['noitems'] = 0
+            status['skip'] = 0
+
+            while status['stop'] == 1:
+                time.sleep(1)
+
         try:
             status['starttime'] = now()
 
@@ -583,6 +644,9 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
 
             # The forever loop for the searches
             while True:
+                if status['stop'] == 1:
+                    break
+                else: status['message'] = 'Running...'
 
                 # If this account has been messing up too hard, let it rest
                 if status['fail'] >= args.max_failures:
