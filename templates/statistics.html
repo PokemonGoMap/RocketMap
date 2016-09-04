@@ -38,42 +38,43 @@
     <script src="{{ url_for('static', filename='dist/js/map.min.js').lstrip('/') }}"></script>
 </head>
 <body>
-        <!-- Header -->
-        <header id="header">
-            <a href="#nav">Options</a>
-            <h1><a href="..">Pokémon Go Map</a></h1>
-        </header>
-        <nav id="nav">
-          <div class="ui-accordion-content">
-            {% for name, item in valid_input.items() %}
-                <div class="form-control switch-container">
-                  <h3>{{item.display}}</h3>
-                  <select id="{{name}}" name="{{name}}" class="input">
-                      {% for value, entry in item["items"].items() %}
-                          <option value="{{value}}" {{entry.selected}}>{{entry.display}}</option>
-                      {% endfor %}
-                  </select>
-                </div>
-            {% endfor %}
-          </div>
-        </nav>
-        <div class="totals">
-            <h3 id="seen_header"></h3>
-            <h1 id="seen_total"></h1>
-        </div>
-        <div id="loading"><img src="{{ url_for('static', filename='images/loading.gif').lstrip('/') }}" alt="Loading"/></div>
-        <div class="container" id="seen_container">
-        </div>
-        <div id="location_details" class="overlay">
-            <div class="close" onclick="closeOverlay();"><img src="{{ url_for('static', filename='images/close.png').lstrip('/') }}" alt="Close" /></div>
-            <div class="location_header"><h3 id="location_header"></h3></div>
-            <div class="content">
-                <div id="times_list" style="display: none;"></div>
-                <div id="location_map">
-                    <script src="https://maps.googleapis.com/maps/api/js?key={{ gmaps_key }}&amp;libraries=visualization"></script>
-                </div>
+    <!-- Header -->
+    <header id="header">
+        <a href="#nav">Options</a>
+        <h1><a href="..">Pokémon Go Map - Dortmund</a></h1>
+        <a href="/help" style="float: right;"><span class="label">Help</span></a>
+    </header>
+    <nav id="nav">
+      <div class="ui-accordion-content">
+        {% for name, item in valid_input.items() %}
+            <div class="form-control switch-container">
+              <h3>{{item.display}}</h3>
+              <select id="{{name}}" name="{{name}}" class="input">
+                  {% for value, entry in item["items"].items() %}
+                      <option value="{{value}}" {{entry.selected}}>{{entry.display}}</option>
+                  {% endfor %}
+              </select>
+            </div>
+        {% endfor %}
+      </div>
+    </nav>
+    <div class="totals">
+        <h3 id="seen_header"></h3>
+        <h1 id="seen_total"></h1>
+    </div>
+    <div id="loading"><img src="{{ url_for('static', filename='images/loading.gif').lstrip('/') }}" alt="Loading"/></div>
+    <div class="container" id="seen_container">
+    </div>
+    <div id="location_details" class="overlay">
+        <div class="close" onclick="closeOverlay();"><img src="{{ url_for('static', filename='images/close.png').lstrip('/') }}" alt="Close" /></div>
+        <div class="location_header"><h3 id="location_header"></h3></div>
+        <div class="content">
+            <div id="times_list" style="display: none;"></div>
+            <div id="location_map">
+                <script src="https://maps.googleapis.com/maps/api/js?key={{ gmaps_key }}&amp;libraries=visualization"></script>
             </div>
         </div>
+    </div>
     <script src="{{ url_for('static', filename='dist/js/app.min.js').lstrip('/') }}"></script>
     <script src="{{ url_for('static', filename='dist/js/statistics.min.js').lstrip('/') }}"></script>
     <script src="{{ url_for('static', filename='dist/js/tracking.min.js').lstrip('/') }}"></script>

@@ -12,7 +12,8 @@ module.exports = function(grunt) {
           'static/dist/css/app.built.css': 'static/sass/main.scss',
           'static/dist/css/mobile.built.css': 'static/sass/mobile.scss',
           'static/dist/css/statistics.built.css': 'static/css/statistics.css',
-          'static/dist/css/status.built.css': 'static/sass/status.scss'
+          'static/dist/css/status.built.css': 'static/sass/status.scss',
+          'static/dist/css/help.built.css': 'static/sass/help.scss'
         }
       }
     },
@@ -108,7 +109,8 @@ module.exports = function(grunt) {
           'static/dist/css/app.min.css': 'static/dist/css/app.built.css',
           'static/dist/css/mobile.min.css': 'static/dist/css/mobile.built.css',
           'static/dist/css/statistics.min.css': 'static/dist/css/statistics.built.css',
-          'static/dist/css/status.min.css': 'static/dist/css/status.built.css'
+          'static/dist/css/status.min.css': 'static/dist/css/status.built.css',
+          'static/dist/css/help.min.css': 'static/dist/css/help.built.css'
         }
       }
     }

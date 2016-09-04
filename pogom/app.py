@@ -35,6 +35,7 @@ class Pogom(Flask):
         self.route("/stats", methods=['GET'])(self.get_stats)
         self.route("/status", methods=['GET'])(self.get_status)
         self.route("/status", methods=['POST'])(self.post_status)
+        self.route("/help", methods=['GET'])(self.get_help)
 
     def set_search_control(self, control):
         self.search_control = control
@@ -262,6 +263,10 @@ class Pogom(Flask):
         else:
             d['login'] = 'failed'
         return jsonify(d)
+        
+        
+    def get_help(self):
+        return render_template('help.html')
 
 
 class CustomJSONEncoder(JSONEncoder):

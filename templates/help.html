@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Pokemon Go Map - Hilfe</title>
+
+        <!-- Fav- & Apple-Touch-Icons -->
+        <!-- Favicon -->
+        <link rel="shortcut icon" href="{{ url_for('static', filename='appicons/favicon.ico').lstrip('/') }}" type="image/x-icon">
+        <!-- non-retina iPhone pre iOS 7 -->
+        <link rel="apple-touch-icon" href="{{ url_for('static', filename='appicons/114x114.png').lstrip('/') }}" sizes="57x57">
+        <!-- non-retina iPad pre iOS 7 -->
+        <link rel="apple-touch-icon" href="{{ url_for('static', filename='appicons/144x144.png').lstrip('/') }}" sizes="72x72">
+        <!-- non-retina iPad iOS 7 -->
+        <link rel="apple-touch-icon" href="{{ url_for('static', filename='appicons/152x152.png').lstrip('/') }}" sizes="76x76">
+        <!-- retina iPhone pre iOS 7 -->
+        <link rel="apple-touch-icon" href="{{ url_for('static', filename='appicons/114x114.png').lstrip('/') }}" sizes="114x114">
+        <!-- retina iPhone iOS 7 -->
+        <link rel="apple-touch-icon" href="{{ url_for('static', filename='appicons/120x120.png').lstrip('/') }}" sizes="120x120">
+        <!-- retina iPad pre iOS 7 -->
+        <link rel="apple-touch-icon" href="{{ url_for('static', filename='appicons/144x144.png').lstrip('/') }}" sizes="144x144">
+        <!-- retina iPad iOS 7 -->
+        <link rel="apple-touch-icon" href="{{ url_for('static', filename='appicons/152x152.png').lstrip('/') }}" sizes="152x152">
+        <!-- retina iPhone 6 iOS 7 -->
+        <link rel="apple-touch-icon" href="{{ url_for('static', filename='appicons/180x180.png').lstrip('/') }}" sizes="180x180">
+
+
+        <link rel="stylesheet" href="{{ url_for('static', filename='dist/css/app.min.css').lstrip('/') }}">
+        <link rel="stylesheet" href="{{ url_for('static', filename='dist/css/help.min.css').lstrip('/') }}">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/skel/3.0.1/skel.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.0/jquery-ui.min.js"></script>
+    </head>
+    <body>
+    <!-- Header -->
+    <header id="header">
+        <a href="#nav">Options</a>
+        <h1><a href="..">Pokémon Go Map - Dortmund</a></h1>
+    </header>
+    <nav id="nav">
+      <div class="ui-accordion-content">
+            <div class="form-control switch-container">
+              nothing to see here
+            </div>
+      </div>
+    </nav>
+    <div class="spacing"></div>
+    <div class="help_container" id="help_container">
+        <div class="help_form">
+            <ul>
+                <li>
+                    <p class="header">Wieso funktioniert die Seite nicht?</p>
+                    <p>Wenn du keine Pokémon siehst, oder die Map weiß ist, versuche den Verlauf&Cache deines Browsers zu löschen.</p>
+                    <p>Funktioniert dies nicht, probiere einen neuen Browser oder update deinen jetzigen!</p>
+                </li>
+                <li>
+                    <p class="header">Warum hast du diese Map gemacht?</p>
+                    <p>Weil ich wollte und ich es konnte :D</p>
+                </li>
+                <li>
+                    <p class="header">"Bist du ein PC-Typ oder sowas?"</p>
+                    <p>Jo, ich studiere Informatik and der FH</p>
+                </li>
+                <li>
+                    <p class="header">Gibt es eine Möglichkeit, wie ich schneller News erhalte?</p>
+                    <p>Schreibt mich an!</p>
+                    <p>Telegram: @japumk</p>
+                    <div>
+                        <span style="vertical-align: middle;">WhatsApp: </span>
+                        <img src="http://138.201.55.36:80/images/number.png" alt="ERR: Image not found." style="vertical-align: middle;" />
+                    </div>
+                </li>
+                <li>
+                    <p class="header">Gibt es eine Möglichkeit, wie ich dich unterstützen kann?</p>
+                    <p>Ja da geht so einiges, wenn es dich interessiert, schreib mich bitte an</p>
+                </li>
+                <li>
+                    <p class="header">Warum sucht die Karte nicht bei mir Zuhause?</p>
+                    <p>Die Karte arbeitet auf festgelegten Bereichen und es zurzeit nicht ohne Hilfe möglich diesen Bereich auszuweiten.</p>
+                    <p>Bisher werden aber große Teile Dortmunds, darunter die wichtigsten Gebiete wie Phönixsee aufgezeichnet.</p>
+                </li>
+                <li>
+                    <p class="header">Die Website meldet "Fehler: Verbindung fehlgeschlagen"</p>
+                    <p>Dann ist die Website zurzeit offline oder du hast sie falsch abgeschrieben</p>
+                </li>
+                <li>
+                    <p class="header">Ist dir gerade langweilig, es ist 1 Uhr morgens und dir fallen keine neuen Fragen ein?</p>
+                    <p>Jap das stimmt, hier ist eine YouTube Playlist, die richtig gut ist:</p>
+                    <a href="https://www.youtube.com/playlist?list=PL5AZJ4fMfrhPkxjJMxa7OZZxRK-frkIX7">https://www.youtube.com/playlist?list=PL5AZJ4fMfrhPkxjJMxa7OZZxRK-frkIX7</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='dist/js/app.min.js').lstrip('/') }}"></script>
+    </body>
+</html>
