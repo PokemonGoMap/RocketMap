@@ -17,6 +17,8 @@ parser.add_argument("--auth", help="Auth method (ptc or google)", default="ptc")
 parser.add_argument("-v", "--verbose", help="Print lat/lng to stdout for debugging", action='store_true', default=False)
 parser.add_argument("--windows", help="Generate a bat file for Windows", action='store_true', default=False)
 parser.add_argument("--installdir", help="Installation directory (only used for Windows)", type=str, default="C:\\PokemonGo-Map")
+parser.add_argument("-man", "--manual", help="Enable using manual locations", action='store_true', default=False)
+parser.add_argument("-cl", "--coordinates_location", default="../../loc.csv", help="input file containing coordinates csv")
 
 preamble = "#!/usr/bin/env bash"
 server_template = "nohup python runserver.py -os -l '{lat}, {lon}' &\n" #this is the output template for linux
@@ -62,63 +64,69 @@ os.chmod(args.output, 0o755)
 output_fh.write(preamble + "\n")
 output_fh.write(server_template.format(lat=args.lat, lon=args.lon))
 
-print("Generating raw coordinates to {}".format(args.output_raw))
-coords_fh = file(args.output_raw, 'wb')
+if args.manual:
+    loc_fh = open(args.coordinates_location)
+    loc_fields = [line.split(",") for line in loc_fh]
+    locations = [LatLon.LatLon(LatLon.Latitude(line[0].strip()), LatLon.Longitude(line[1].strip())) for line in loc_fields]
+    total_workers = len(locations)
+else:
 
-w_worker = (2 * steps - 1) * r_hex #convert the step limit of the worker into the r radius of the hexagon in meters?
-d = 2.0 * w_worker / 1000.0 #convert that into a diameter and convert to gps scale
-d_s = d
+    print("Generating raw coordinates to {}".format(args.output_raw))
+    coords_fh = file(args.output_raw, 'wb')
 
-brng_s = 0.0
-brng = 0.0
-mod = math.degrees(math.atan(1.732 / (6 * (steps - 1) + 3)))
+    w_worker = (2 * steps - 1) * r_hex #convert the step limit of the worker into the r radius of the hexagon in meters?
+    d = 2.0 * w_worker / 1000.0 #convert that into a diameter and convert to gps scale
+    d_s = d
 
-total_workers = (((rings * (rings - 1)) *3) + 1) # this mathamtically calculates the total number of workers
+    brng_s = 0.0
+    brng = 0.0
+    mod = math.degrees(math.atan(1.732 / (6 * (steps - 1) + 3)))
 
-locations = [LatLon.LatLon(LatLon.Latitude(0), LatLon.Longitude(0))] * total_workers #this initialises the list
-locations[0] = LatLon.LatLon(LatLon.Latitude(args.lat), LatLon.Longitude(args.lon)) #set the latlon for worker 0 from cli args
+    total_workers = (((rings * (rings - 1)) *3) + 1) # this mathamtically calculates the total number of workers
 
-
-turns = 0               # number of turns made in this ring (0 to 6)
-turn_steps = 0          # number of cells required to complete one turn of the ring
-turn_steps_so_far = 0   # current cell number in this side of the current ring
+    locations = [LatLon.LatLon(LatLon.Latitude(0), LatLon.Longitude(0))] * total_workers #this initialises the list
+    locations[0] = LatLon.LatLon(LatLon.Latitude(args.lat), LatLon.Longitude(args.lon)) #set the latlon for worker 0 from cli args
 
 
-for i in range(1, total_workers):
-    if turns == 6 or turn_steps == 0:
-        # we have completed a ring (or are starting the very first ring)
-        turns = 0
-        turn_steps += 1
-        turn_steps_so_far = 0
+    turns = 0               # number of turns made in this ring (0 to 6)
+    turn_steps = 0          # number of cells required to complete one turn of the ring
+    turn_steps_so_far = 0   # current cell number in this side of the current ring
 
-    if turn_steps_so_far == 0:
-        brng = brng_s
-        loc = locations[0]
-        d = turn_steps * d
-    else:
-        loc = locations[0]
-        C = math.radians(60.0)#inside angle of a regular hexagon
-        a = d_s / R * 2.0 * math.pi #in radians get the arclength of the unit circle covered by d_s
-        b = turn_steps_so_far * d_s / turn_steps / R * 2.0 * math.pi #percentage of a
-         #the first spherical law of cosines gives us the length of side c from known angle C
-        c = math.acos(math.cos(a) * math.cos(b) + math.sin(a) * math.sin(b) * math.cos(C))
-         #turnsteps here represents ring number because yay coincidence always the same. multiply by derived arclength and convert to meters
-        d = turn_steps * c * R / 2.0 / math.pi
-        #from the first spherical law of cosines we get the angle A from the side lengths a b c
-        A = math.acos((math.cos(b) - math.cos(a) * math.cos(c)) / (math.sin(c) * math.sin(a))) 
-        brng = 60 * turns + math.degrees(A)
+    for i in range(1, total_workers):
+        if turns == 6 or turn_steps == 0:
+            # we have completed a ring (or are starting the very first ring)
+            turns = 0
+            turn_steps += 1
+            turn_steps_so_far = 0
 
-    loc = loc.offset(brng + mod, d)
-    locations[i] = loc
-    d = d_s
+        if turn_steps_so_far == 0:
+            brng = brng_s
+            loc = locations[0]
+            d = turn_steps * d
+        else:
+            loc = locations[0]
+            C = math.radians(60.0)#inside angle of a regular hexagon
+            a = d_s / R * 2.0 * math.pi #in radians get the arclength of the unit circle covered by d_s
+            b = turn_steps_so_far * d_s / turn_steps / R * 2.0 * math.pi #percentage of a
+             #the first spherical law of cosines gives us the length of side c from known angle C
+            c = math.acos(math.cos(a) * math.cos(b) + math.sin(a) * math.sin(b) * math.cos(C))
+             #turnsteps here represents ring number because yay coincidence always the same. multiply by derived arclength and convert to meters
+            d = turn_steps * c * R / 2.0 / math.pi
+            #from the first spherical law of cosines we get the angle A from the side lengths a b c
+            A = math.acos((math.cos(b) - math.cos(a) * math.cos(c)) / (math.sin(c) * math.sin(a))) 
+            brng = 60 * turns + math.degrees(A)
 
-    turn_steps_so_far += 1
-    if turn_steps_so_far >= turn_steps:
-        # make a turn
-        brng_s += 60.0
-        brng = brng_s
-        turns += 1
-        turn_steps_so_far = 0
+        loc = loc.offset(brng + mod, d)
+        locations[i] = loc
+        d = d_s
+
+        turn_steps_so_far += 1
+        if turn_steps_so_far >= turn_steps:
+            # make a turn
+            brng_s += 60.0
+            brng = brng_s
+            turns += 1
+            turn_steps_so_far = 0
 
 #if threading is desired (-t flag) cycle through all accounts and merge them into an array (do this anyway because otherwise we need an if statement below)
 
@@ -138,6 +146,7 @@ location_and_auth = [(i, j) for i, j in itertools.izip(locations, accountStack)]
 for i, (location, auth) in enumerate(location_and_auth):
     threadname = "Movable{}".format(i)
     output_fh.write(worker_template.format(lat=location.lat, lon=location.lon, steps=args.steps, auth=auth, threadname=threadname))
-    coords_fh.write(str(location.lat) + ", " + str(location.lon) + "\n")
+    if not args.manual:
+        coords_fh.write(str(location.lat) + ", " + str(location.lon) + "\n")
     if args.verbose:
         print("{}, {}".format(location.lat, location.lon))

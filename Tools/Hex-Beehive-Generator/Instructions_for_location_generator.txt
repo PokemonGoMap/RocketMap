@@ -12,34 +12,54 @@ Experimental Windows support!  Use the --windows flag
 
 An example (Linux):
     python location_generator.py -lat -33.9 -lon 151.1 -st 5 -lp 3 --accounts /home/pika/accounts.csv
+
 An example (Windows):
     python location_generator.py -lat -33.9 -lon 151.1 -st 5 -lp 3 --accounts C:\Documents\accounts.csv --windows --installdir="C:\Downloads\PokemonGo-Map"
 
+examples (Manual locations):
+	
+python location_generator.py -st 3 -lp 8 --accounts C:\Users\dano7\Downloads\accounts.csv --windows --installdir=" C:\Git\PokemonGo-Map" -man
 
-usage: location_generator.py [-h] -lat LAT -lon LON [-st STEPS] [-lp LEAPS]
-                             [-o OUTPUT] [--accounts ACCOUNTS] [--auth AUTH]
+python location_generator.py -lat -31.4519729369 -lon 152.898706714 -st 3 -lp 8 --accounts C:\Users\dano7\Downloads\accounts.csv --windows --installdir=" C:\Git\PokemonGo-Map"
 
-  -lat LAT, --lat LAT   latitude
+python location_generator.py -st 3 -lp 8 --accounts C:\Users\dano7\Downloads\accounts.csv --windows --installdir=" C:\Git\PokemonGo-Map" -man -cl C:\Git\PokemonGo-Map\loc.csv 
 
-  -lon LON, --lon LON   longitude
 
-  -st STEPS, --steps STEPS
-                        steps
+usage: location_generator.py [-h] -lat LAT -lon LON [-st STEPS] [-lp LEAPS] [-o OUTPUT] [--accounts ACCOUNTS] [--auth AUTH] [-man USE MANUAL LOC] [-cl CORDINATES LOCATION]
+
+  -lat LAT, --lat LAT   
+latitude
+
+  -lon LON, --lon LON   
+longitude
+
+  -st STEPS, --steps STEPS	
+steps
 
   -lp LEAPS, --leaps LEAPS
-                        like 'steps' but for workers instead of scans
+like 'steps' but for workers instead of scans
 
   -o OUTPUT, --output OUTPUT
-                        output file for the script
+output file for the script
 
-  --accounts ACCOUNTS   List of your accounts, in csv [username],[password]
-                        format
 
-  --auth AUTH           Auth method (ptc or google)
+  --accounts ACCOUNTS   
+List of your accounts, in csv [username],[password] format
 
-  -v, --verbose         Print lat/lng to stdout for debugging
+  --auth AUTH           
+Auth method (ptc or google)
 
-  --windows             Generate a bat file for Windows
+  -v, --verbose         
+Print lat/lng to stdout for debugging
+
+  --windows             
+Generate a bat file for Windows
 
   --installdir INSTALLDIR
-                        Installation directory (only used for Windows)
+Installation directory (only used for Windows)
+
+  -man, --manual 
+Enable using manual locations
+
+  -cl", --coordinates_location
+Set the input file location, in csv [lat],[lon] format
