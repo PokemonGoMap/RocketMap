@@ -21,5 +21,6 @@ beehive.*
 *.log
 !docs/make.bat
 !Tools/Easy-Setup/easy-setup.sh
+!Tools/Easy-Setup/setup.bat
 !contrib/supervisord/gen-workers.sh
 !contrib/supervisord/install-reinstall.sh
