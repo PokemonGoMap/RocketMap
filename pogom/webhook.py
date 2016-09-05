@@ -35,7 +35,7 @@ def send_to_webhook(message_type, message):
 
 def wh_overseer(args, whq):
     wh_unique_queue = Queue()
-    unique_pokemon = {}
+    unique_items = {}
     cleanup_time = int(round(time.time() * 1000)) + 300000
 
     for i in range(args.wh_threads):
@@ -43,6 +43,7 @@ def wh_overseer(args, whq):
         t = Thread(target=wh_updater, name='wh-updater-{}'.format(i), args=(args, wh_unique_queue))
         t.daemon = True
         t.start()
+    log.info('master thread started')
 
     # The forever loop
     while True:
@@ -52,16 +53,28 @@ def wh_overseer(args, whq):
                 whtype, message = whq.get()
                 if whtype == 'pokemon':
                     pokemon_key = (message['encounter_id'], message['spawnpoint_id'])
-                    if pokemon_key not in unique_pokemon:
-                        unique_pokemon[pokemon_key] = message['disappear_time']
+                    if pokemon_key not in unique_items:
+                        unique_items[pokemon_key] = message['disappear_time']
+                        wh_unique_queue.put((whtype, message))
+                elif whtype == 'pokestop':
+                    pokestop_key = (message['pokestop_id'], message['last_modified_time'])
+                    if pokestop_key not in unique_items:
+                        unique_items[pokestop_key] = message['last_modified_time']
+                        wh_unique_queue.put((whtype, message))
+                elif whtype == 'gym':
+                    gym_key = (message['gym_id'], message['last_modified'])
+                    if gym_key not in unique_items:
+                        unique_items[gym_key] = message['last_modified']
                         wh_unique_queue.put((whtype, message))
                 else:
                     wh_unique_queue.put((whtype, message))
 
+                whq.task_done()
+
                 # delete expired keys every 5 minutes with 1 minute grace period
                 if int(round(time.time() * 1000)) > cleanup_time:
                     cleanup_time = int(round(time.time() * 1000)) + 300000
-                    unique_pokemon = {k: v for k, v in unique_pokemon.iteritems() if time.gmtime(v) > (datetime.utcnow() - timedelta(minutes=1)).timetuple()}
+                    unique_items = {k: v for k, v in unique_items.iteritems() if time.gmtime(v) > (datetime.utcnow() - timedelta(minutes=1)).timetuple()}
 
         except Exception as e:
             log.exception('Exception in wh_overseer: %s', e)
