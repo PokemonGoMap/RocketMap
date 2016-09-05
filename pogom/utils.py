@@ -54,12 +54,6 @@ def get_args():
                         help='Usernames, one per account.')
     parser.add_argument('-p', '--password', action='append',
                         help='Passwords, either single one for all accounts or one per account.')
-    parser.add_argument('-ma', '--max-accounts',
-                        help='Maximum number of accounts to use',
-                        type=int, default=0)
-    parser.add_argument('-aud', '--account-use-duration',
-                        help='How long in minutes to use the account before swapping in a new one',
-                        type=int, default=0)
     parser.add_argument('-l', '--location', type=parse_unicode,
                         help='Location, can be an address or coordinates')
     parser.add_argument('-j', '--jitter', help='Apply random -9m to +9m jitter to location',

@@ -189,12 +189,7 @@ def search_overseer_thread(args, method, new_location_queue, pause_bit, encrypti
     log.info('Starting search worker threads')
     # Randomize order of account login
     args.accounts.sort(key=lambda x: random.random())
-    accounts_queue = Queue()
     for i, account in enumerate(args.accounts):
-        if i >= args.max_accounts and args.max_accounts > 0:
-            accounts_queue.put(account)
-            continue
-
         log.debug('Starting search worker thread %d for user %s', i, account['username'])
         workerId = 'Worker {:03}'.format(i)
         threadStatus[workerId] = {
@@ -211,7 +206,7 @@ def search_overseer_thread(args, method, new_location_queue, pause_bit, encrypti
                    name='search-worker-{}'.format(i),
                    args=(args, account, search_items_queue, pause_bit,
                          encryption_lib_path, threadStatus[workerId],
-                         db_updates_queue, wh_queue, accounts_queue))
+                         db_updates_queue, wh_queue))
         t.daemon = True
         t.start()
 
@@ -417,10 +412,9 @@ def get_sps_location_list(args, current_location, sps_scan_current):
     return retset
 
 
-def search_worker_thread(args, account, search_items_queue, pause_bit, encryption_lib_path, status, dbq, whq, aq):
+def search_worker_thread(args, account, search_items_queue, pause_bit, encryption_lib_path, status, dbq, whq):
     first_run = True
     last_scan_time = int(round(time.time() * 1000))
-    account_stop_time = int(round(time.time() * 1000)) + args.account_use_duration * 60000
 
     stagger_thread(args, account)
 
@@ -522,16 +516,7 @@ def search_worker_thread(args, account, search_items_queue, pause_bit, encryptio
                 api.set_position(*step_location)
 
                 # Ok, let's get started -- check our login status
-                # and check if new account should be used
-                if args.account_use_duration > 0 and int(round(time.time() * 1000)) > account_stop_time:
-                    account_stop_time = int(round(time.time() * 1000)) + args.account_use_duration * 60000
-                    aq.put(account)
-                    account = aq.get()
-                    status['user'] = account['username']
-                    status['message'] = 'Swapping out account'
-                    check_login(args, account, api, step_location, True)
-                else:
-                    check_login(args, account, api, step_location, False)
+                check_login(args, account, api, step_location, False)
 
                 # Make the actual request (finally!)
                 response_dict = map_request(api, step_location, args.jitter)
@@ -568,10 +553,10 @@ def search_worker_thread(args, account, search_items_queue, pause_bit, encryptio
             time.sleep(args.scan_delay)
 
 
-def check_login(args, account, api, position, new_account):
+def check_login(args, account, api, position):
 
     # Logged in? Enough time left? Cool!
-    if api._auth_provider and api._auth_provider._ticket_expire and new_account is False:
+    if api._auth_provider and api._auth_provider._ticket_expire:
         remaining_time = api._auth_provider._ticket_expire / 1000 - time.time()
         if remaining_time > 60:
             log.debug('Credentials remain valid for another %f seconds', remaining_time)
