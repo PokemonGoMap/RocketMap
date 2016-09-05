@@ -160,6 +160,8 @@ def get_args():
                         action='store_true', default=False)
     parser.add_argument('--wh-threads', help='Number of webhook threads; increase if the webhook queue falls behind',
                         type=int, default=1)
+    parser.add_argument('--webhook-server-path', default=None,
+                        help='Set path for recieving webhooks')
     parser.add_argument('--ssl-certificate', help='Path to SSL certificate file')
     parser.add_argument('--ssl-privatekey', help='Path to SSL private key file')
     parser.add_argument('-ps', '--print-status', action='store_true',

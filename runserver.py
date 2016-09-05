@@ -235,6 +235,7 @@ def main():
 
     app.set_search_control(pause_bit)
     app.set_location_queue(new_location_queue)
+    app.set_db_queue(db_updates_queue)
 
     config['ROOT_PATH'] = app.root_path
     config['GMAPS_KEY'] = args.gmaps_key
