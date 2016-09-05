@@ -696,12 +696,12 @@ def add_webhook(wh_type, wh_message, db_queue):
     if wh_type == 'pokemon':
         pokemons = {}
         pokemons[1] = {
-           'encounter_id': b64decode(wh_message['encounter_id']),
-           'spawnpoint_id': wh_message['spawnpoint_id'],
-           'pokemon_id': wh_message['pokemon_id'],
-           'latitude': wh_message['latitude'],
-           'longitude': wh_message['longitude'],
-           'disappear_time': datetime.utcfromtimestamp(wh_message['disappear_time'])
+            'encounter_id': b64decode(wh_message['encounter_id']),
+            'spawnpoint_id': wh_message['spawnpoint_id'],
+            'pokemon_id': wh_message['pokemon_id'],
+            'latitude': wh_message['latitude'],
+            'longitude': wh_message['longitude'],
+            'disappear_time': datetime.utcfromtimestamp(wh_message['disappear_time'])
         }
         db_queue.put((Pokemon, pokemons))
     elif wh_type == 'pokestop':
@@ -732,6 +732,7 @@ def add_webhook(wh_type, wh_message, db_queue):
             'last_modified': datetime.utcfromtimestamp(wh_message['last_modified']),
         }
         db_queue.put((Gym, gyms))
+
 
 def parse_gyms(args, gym_responses, wh_update_queue):
     gym_details = {}
