@@ -614,6 +614,7 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
             status['success'] = 0
             status['noitems'] = 0
             status['skip'] = 0
+            status['starttime'] = 0
 
             while status['stop'] == 1:
                 time.sleep(1)
