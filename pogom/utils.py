@@ -233,7 +233,7 @@ def get_args():
         if (args.step_limit is None):
             errors.append('Missing `step_limit` either as -st/--step-limit or in config')
 
-        if len(args.auth_service) is None:
+        if len(args.auth_service) == 0:
             args.auth_service = ['ptc']
         else:
             num_auths = len(args.auth_service)
