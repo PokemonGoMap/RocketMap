@@ -3,10 +3,8 @@
 
 import sys
 import configargparse
-import uuid
 import os
 import json
-from datetime import datetime, timedelta
 import logging
 import shutil
 import platform
@@ -48,12 +46,20 @@ def get_args():
     # fuck PEP8
     configpath = os.path.join(os.path.dirname(__file__), '../config/config.ini')
     parser = configargparse.ArgParser(default_config_files=[configpath], auto_env_var_prefix='POGOMAP_')
-    parser.add_argument('-a', '--auth-service', type=str.lower, action='append',
+    parser.add_argument('-a', '--auth-service', type=str.lower, action='append', default=[],
                         help='Auth Services, either one for all accounts or one per account: ptc or google. Defaults all to ptc.')
-    parser.add_argument('-u', '--username', action='append',
+    parser.add_argument('-u', '--username', action='append', default=[],
                         help='Usernames, one per account.')
-    parser.add_argument('-p', '--password', action='append',
+    parser.add_argument('-p', '--password', action='append', default=[],
                         help='Passwords, either single one for all accounts or one per account.')
+    parser.add_argument('-w', '--workers', type=int,
+                        help='Number of search worker threads to start. Defaults to the number of accounts specified.')
+    parser.add_argument('-asi', '--account-search-interval', type=int, default=0,
+                        help='Seconds for accounts to search before switching to a new account. 0 to disable.')
+    parser.add_argument('-ari', '--account-rest-interval', type=int, default=7200,
+                        help='Seconds for accounts to rest when they fail or are switched out')
+    parser.add_argument('-ac', '--accountcsv',
+                        help='Load accounts from CSV file containing "auth_service,username,passwd" lines')
     parser.add_argument('-l', '--location', type=parse_unicode,
                         help='Location, can be an address or coordinates')
     parser.add_argument('-j', '--jitter', help='Apply random -9m to +9m jitter to location',
@@ -129,13 +135,15 @@ def get_args():
                         help='Disables PokeStops from the map (including parsing them into local db)',
                         action='store_true', default=False)
     parser.add_argument('-ss', '--spawnpoint-scanning',
-                        help='Use spawnpoint scanning (instead of hex grid)', nargs='?', const='nofile', default=False)
+                        help='Use spawnpoint scanning (instead of hex grid). Scans in a circle based on step_limit when on DB', nargs='?', const='nofile', default=False)
     parser.add_argument('--dump-spawnpoints', help='dump the spawnpoints from the db to json (only for use with -ss)',
                         action='store_true', default=False)
     parser.add_argument('-pd', '--purge-data',
                         help='Clear pokemon from database this many hours after they disappear \
                         (0 to disable)', type=int, default=0)
-    parser.add_argument('-px', '--proxy', help='Proxy url (e.g. socks5://127.0.0.1:9050)')
+    parser.add_argument('-px', '--proxy', help='Proxy url (e.g. socks5://127.0.0.1:9050)', action='append')
+    parser.add_argument('-pxt', '--proxy-timeout', help='Timeout settings for proxy checker in seconds ', type=int, default=5)
+    parser.add_argument('-pxd', '--proxy-display', help='Display info on which proxy beeing used (index or full) To be used with -ps', type=str, default='index')
     parser.add_argument('--db-type', help='Type of database to be used (default: sqlite)',
                         default='sqlite')
     parser.add_argument('--db-name', help='Name of the database to be used')
@@ -149,6 +157,8 @@ def get_args():
                         type=int, default=1)
     parser.add_argument('-wh', '--webhook', help='Define URL(s) to POST webhook information to',
                         nargs='*', default=False, dest='webhooks')
+    parser.add_argument('-gi', '--gym-info', help='Get all details about gyms (causes an additional API hit for every gym)',
+                        action='store_true', default=False)
     parser.add_argument('--webhook-updates-only', help='Only send updates (pokémon & lured pokéstops)',
                         action='store_true', default=False)
     parser.add_argument('--wh-threads', help='Number of webhook threads; increase if the webhook queue falls behind',
@@ -157,6 +167,10 @@ def get_args():
     parser.add_argument('--ssl-privatekey', help='Path to SSL private key file')
     parser.add_argument('-ps', '--print-status', action='store_true',
                         help='Show a status screen instead of log messages. Can switch between status and logs by pressing enter.', default=False)
+    parser.add_argument('-sn', '--status-name', default=None,
+                        help='Enable status page database update using STATUS_NAME as main worker name')
+    parser.add_argument('-spp', '--status-page-password', default=None,
+                        help='Set the status page password')
     parser.add_argument('-el', '--encrypt-lib', help='Path to encrypt lib to be used instead of the shipped ones')
     parser.add_argument('-sl', '--speed-limit',
                         help='If next scan would cause the account to move above specified speed in kmph in a straight line, sleep until such time that it could reasonably move that distance',
@@ -178,29 +192,57 @@ def get_args():
             print(sys.argv[0] + ": error: arguments -l/--location is required")
             sys.exit(1)
     else:
+        # If using a CSV file, add the data into the username,password and auth_service arguments.
+        # CSV file should have lines like "ptc,username,password".  Additional fields after that are ignored.
+        if(args.accountcsv is not None):
+            with open(args.accountcsv, 'r') as f:
+                for num, line in enumerate(f, 1):
+
+                    # Ignore blank lines and comment lines
+                    if len(line.strip()) == 0 or line.startswith('#'):
+                        continue
+
+                    # Split into fields
+                    fields = line.split(",")
+
+                    # Make sure it has at least 3 fields
+                    if(len(fields) < 3):
+                        print(sys.argv[0] + ": Error parsing CSV file on line " + str(num) + ". Lines must be in the format '<method>,<username>,<password>'. Additional fields after those are ignored.")
+                        sys.exit(1)
+
+                    # Make sure none of the fields are blank
+                    if(len(fields[0]) == 0 or len(fields[1]) == 0 or len(fields[2]) == 0):
+                        print(sys.argv[0] + ": Error parsing CSV file on line " + str(num) + ". Lines must be in the format '<method>,<username>,<password>'. Additional fields after those are ignored.")
+                        sys.exit(1)
+
+                    # Add the account to the list
+                    args.auth_service.append(fields[0].strip())
+                    args.username.append(fields[1].strip())
+                    args.password.append(fields[2].strip())
+
         errors = []
 
         num_auths = 1
         num_usernames = 0
         num_passwords = 0
 
-        if (args.username is None):
-            errors.append('Missing `username` either as -u/--username or in config')
+        if (len(args.username) == 0):
+            errors.append('Missing `username` either as -u/--username, csv file using -ac, or in config')
         else:
             num_usernames = len(args.username)
 
         if (args.location is None):
             errors.append('Missing `location` either as -l/--location or in config')
 
-        if (args.password is None):
-            errors.append('Missing `password` either as -p/--password or in config')
+        if (len(args.password) == 0):
+            errors.append('Missing `password` either as -p/--password, csv file, or in config')
         else:
             num_passwords = len(args.password)
 
         if (args.step_limit is None):
             errors.append('Missing `step_limit` either as -st/--step-limit or in config')
 
-        if args.auth_service is None:
+        if len(args.auth_service) is None:
             args.auth_service = ['ptc']
         else:
             num_auths = len(args.auth_service)
@@ -229,56 +271,21 @@ def get_args():
         for i, username in enumerate(args.username):
             args.accounts.append({'username': username, 'password': args.password[i], 'auth_service': args.auth_service[i]})
 
+        # Make max workers equal number of accounts if unspecified, and disable account switching
+        if (args.workers is None):
+            args.workers = len(args.accounts)
+            args.account_search_interval = None
+
+        # Disable search interval if 0 specified
+        if args.account_search_interval == 0:
+            args.account_search_interval = None
+
+        # Make sure we don't have an empty account list after adding command line and CSV accounts
+        if len(args.accounts) == 0:
+            print(sys.argv[0] + ": Error: no accounts specified. Use -a, -u, and -p or --accountcsv to add accounts")
+            sys.exit(1)
+
     return args
-
-
-def insert_mock_data(position):
-    num_pokemon = 6
-    num_pokestop = 6
-    num_gym = 6
-
-    log.info('Creating fake: %d pokemon, %d pokestops, %d gyms',
-             num_pokemon, num_pokestop, num_gym)
-
-    from .models import Pokemon, Pokestop, Gym
-    from .search import generate_location_steps
-
-    latitude, longitude = float(position[0]), float(position[1])
-
-    locations = [l for l in generate_location_steps((latitude, longitude), num_pokemon, 0.07)]
-    disappear_time = datetime.now() + timedelta(hours=1)
-
-    detect_time = datetime.now()
-
-    for i in range(1, num_pokemon):
-        Pokemon.create(encounter_id=uuid.uuid4(),
-                       spawnpoint_id='sp{}'.format(i),
-                       pokemon_id=(i + 1) % 150,
-                       latitude=locations[i][0],
-                       longitude=locations[i][1],
-                       disappear_time=disappear_time,
-                       detect_time=detect_time)
-
-    for i in range(1, num_pokestop):
-        Pokestop.create(pokestop_id=uuid.uuid4(),
-                        enabled=True,
-                        latitude=locations[i + num_pokemon][0],
-                        longitude=locations[i + num_pokemon][1],
-                        last_modified=datetime.now(),
-                        # Every other pokestop be lured
-                        lure_expiration=disappear_time if (i % 2 == 0) else None,
-                        )
-
-    for i in range(1, num_gym):
-        Gym.create(gym_id=uuid.uuid4(),
-                   team_id=i % 3,
-                   guard_pokemon_id=(i + 1) % 150,
-                   latitude=locations[i + num_pokemon + num_pokestop][0],
-                   longitude=locations[i + num_pokemon + num_pokestop][1],
-                   last_modified=datetime.now(),
-                   enabled=True,
-                   gym_points=1000
-                   )
 
 
 def now():
