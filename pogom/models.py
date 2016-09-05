@@ -691,22 +691,25 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue):
         'gyms': gyms,
     }
 
+
 def add_webhook(wh_type, wh_message, db_queue):
-    if wh_type=='pokemon':
-        pokemons = { 1: {
-		   'encounter_id': b64decode(wh_message['encounter_id']),
-		   'spawnpoint_id': wh_message['spawnpoint_id'],
-		   'pokemon_id': wh_message['pokemon_id'],
-		   'latitude': wh_message['latitude'],
-		   'longitude': wh_message['longitude'],
-		   'disappear_time': datetime.utcfromtimestamp(wh_message['disappear_time'])
-		} }
+    if wh_type == 'pokemon':
+        pokemons = {}
+        pokemons[1] = {
+           'encounter_id': b64decode(wh_message['encounter_id']),
+           'spawnpoint_id': wh_message['spawnpoint_id'],
+           'pokemon_id': wh_message['pokemon_id'],
+           'latitude': wh_message['latitude'],
+           'longitude': wh_message['longitude'],
+           'disappear_time': datetime.utcfromtimestamp(wh_message['disappear_time'])
+        }
         db_queue.put((Pokemon, pokemons))
-    elif wh_type=='pokestop':
+    elif wh_type == 'pokestop':
         l_e = None
         if wh_message['lure_expiration'] is not None:
             l_e = datetime.utcfromtimestamp(wh_message['lure_expiration'])
-        pokestops = { 1: {
+        pokestops = {}
+        pokestops[1] = {
             'pokestop_id': b64decode(wh_message['pokestop_id']),
             'enabled': wh_message['enabled'],
             'latitude': wh_message['latitude'],
@@ -714,11 +717,12 @@ def add_webhook(wh_type, wh_message, db_queue):
             'last_modified': datetime.utcfromtimestamp(wh_message['last_modified']),
             'lure_expiration': l_e,
             'active_fort_modifier': wh_message["active_fort_modifier"]
-        } }
+        }
         db_queue.put((Pokestop, pokestops))
-    elif wh_type=='gym':
-        gyms = { 1: {
-		    'gym_id': b64decode(wh_message['gym_id']),
+    elif wh_type == 'gym':
+        gyms = {}
+        gyms[1] = {
+            'gym_id': b64decode(wh_message['gym_id']),
             'team_id': wh_message['team_id'],
             'guard_pokemon_id': wh_message['guard_pokemon_id'],
             'gym_points': wh_message['gym_points'],
@@ -726,7 +730,7 @@ def add_webhook(wh_type, wh_message, db_queue):
             'latitude': wh_message['latitude'],
             'longitude': wh_message['longitude'],
             'last_modified': datetime.utcfromtimestamp(wh_message['last_modified']),
-        } }
+        }
         db_queue.put((Gym, gyms))
 
 def parse_gyms(args, gym_responses, wh_update_queue):

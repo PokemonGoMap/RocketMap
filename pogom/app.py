@@ -37,7 +37,7 @@ class Pogom(Flask):
         self.route("/status", methods=['GET'])(self.get_status)
         self.route("/status", methods=['POST'])(self.post_status)
         if args.webhook_server_path is not None:
-            self.route("/"+args.webhook_server_path, methods=['POST'])(self.receive_webhook)
+            self.route("/" + args.webhook_server_path, methods=['POST'])(self.receive_webhook)
 
     def set_search_control(self, control):
         self.search_control = control
@@ -272,7 +272,7 @@ class Pogom(Flask):
 
     def receive_webhook(self):
         d = request.json
-        add_webhook(d['type'],d['message'], self.db_queue)
+        add_webhook(d['type'], d['message'], self.db_queue)
         return ""
 
 
