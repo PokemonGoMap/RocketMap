@@ -46,9 +46,11 @@ class Pogom(Flask):
         self.current_location = location
 
     def get_search_control(self):
+        self.search_control.clear()
         return jsonify({'status': not self.search_control.is_set()})
 
     def post_search_control(self):
+        self.search_control.clear()
         args = get_args()
         if not args.search_control:
             return 'Search control is disabled', 403
@@ -64,6 +66,7 @@ class Pogom(Flask):
         return self.get_search_control()
 
     def fullmap(self):
+        self.search_control.clear()
         args = get_args()
         fixed_display = "none" if args.fixed_location else "inline"
         search_display = "inline" if args.search_control else "none"
@@ -78,6 +81,7 @@ class Pogom(Flask):
                                )
 
     def raw_data(self):
+        self.search_control.clear()
         d = {}
         swLat = request.args.get('swLat')
         swLng = request.args.get('swLng')
@@ -131,6 +135,7 @@ class Pogom(Flask):
         return jsonify(d)
 
     def loc(self):
+        self.search_control.clear()
         d = {}
         d['lat'] = self.current_location[0]
         d['lng'] = self.current_location[1]
@@ -138,6 +143,7 @@ class Pogom(Flask):
         return jsonify(d)
 
     def next_loc(self):
+        self.search_control.clear()
         args = get_args()
         if args.fixed_location:
             return 'Location changes are turned off', 403
@@ -160,6 +166,7 @@ class Pogom(Flask):
             return self.loc()
 
     def list_pokemon(self):
+        self.search_control.clear()
         # todo: check if client is android/iOS/Desktop for geolink, currently
         # only supports android
         pokemon_list = []
@@ -236,6 +243,7 @@ class Pogom(Flask):
         return valid_input
 
     def get_stats(self):
+        self.search_control.clear()
         return render_template('statistics.html',
                                lat=self.current_location[0],
                                lng=self.current_location[1],
@@ -244,6 +252,7 @@ class Pogom(Flask):
                                )
 
     def get_status(self):
+        self.search_control.clear()
         args = get_args()
         if args.status_page_password is None:
             abort(404)
@@ -251,6 +260,7 @@ class Pogom(Flask):
         return render_template('status.html')
 
     def post_status(self):
+        self.search_control.clear()
         args = get_args()
         d = {}
         if args.status_page_password is None:
