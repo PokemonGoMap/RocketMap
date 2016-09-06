@@ -168,6 +168,7 @@ def main():
     pause_bit.clear()
     if(args.on_demand)
         pause_bit.set()
+        search_control = False
 
     # Setup the location tracking queue and push the first location on
     new_location_queue = Queue()
