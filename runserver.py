@@ -166,7 +166,7 @@ def main():
     # Control the search status (running or not) across threads
     pause_bit = Event()
     pause_bit.clear()
-    if args.on_demand:
+    if args.on_demand_timeout > 0:
         pause_bit.set()
 
     heartbeat = [now()]
