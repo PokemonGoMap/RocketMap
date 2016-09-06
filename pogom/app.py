@@ -68,7 +68,7 @@ class Pogom(Flask):
         return self.get_search_control()
 
     def fullmap(self):
-        self.heartbeat = now()
+        self.heartbeat[0] = now()
         self.search_control.clear()
         args = get_args()
         fixed_display = "none" if args.fixed_location else "inline"
@@ -84,7 +84,7 @@ class Pogom(Flask):
                                )
 
     def raw_data(self):
-        self.heartbeat = now()
+        self.heartbeat[0] = now()
         self.search_control.clear()
         d = {}
         swLat = request.args.get('swLat')
