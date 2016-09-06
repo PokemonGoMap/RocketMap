@@ -166,9 +166,9 @@ def main():
     # Control the search status (running or not) across threads
     pause_bit = Event()
     pause_bit.clear()
-    if args.on_demand:
-        pause_bit.set()
+    if args.on_demand and search_control:
         search_control = False
+        pause_bit.set()
 
     # Setup the location tracking queue and push the first location on
     new_location_queue = Queue()
