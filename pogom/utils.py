@@ -177,7 +177,10 @@ def get_args():
     parser.set_defaults(DEBUG=False)
 
     args = parser.parse_args()
-
+    
+    if args.on_demand:
+        args.search_control = False
+    
     if args.only_server:
         if args.location is None:
             parser.print_usage()
