@@ -21,6 +21,7 @@ log = logging.getLogger(__name__)
 compress = Compress()
 heartbeat = now()
 
+
 class Pogom(Flask):
     def __init__(self, import_name, **kwargs):
         super(Pogom, self).__init__(import_name, **kwargs)
