@@ -1,0 +1,3 @@
+[submodule "app/iv"]
+	path = app/iv
+	url = https://github.com/goatslacker/pokemon-go-iv-calculator
