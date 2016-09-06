@@ -169,7 +169,7 @@ def main():
     if args.on_demand:
         pause_bit.set()
 
-    heartbeat = now()
+    heartbeat = [now()]
 
     # Setup the location tracking queue and push the first location on
     new_location_queue = Queue()
