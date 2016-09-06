@@ -40,7 +40,6 @@ from .models import parse_map, Pokemon, hex_bounds, GymDetails, parse_gyms, Main
 from .transform import generate_location_steps
 from .fakePogoApi import FakePogoApi
 from .utils import now
-from .app import heartbeat
 
 import terminalsize
 
@@ -259,7 +258,7 @@ def worker_status_db_thread(threads_status, name, db_updates_queue):
 
 
 # The main search loop that keeps an eye on the over all process
-def search_overseer_thread(args, method, new_location_queue, pause_bit, encryption_lib_path, db_updates_queue, wh_queue):
+def search_overseer_thread(args, method, new_location_queue, pause_bit, heartb, encryption_lib_path, db_updates_queue, wh_queue):
 
     log.info('Search overseer starting')
 
@@ -365,9 +364,11 @@ def search_overseer_thread(args, method, new_location_queue, pause_bit, encrypti
 
     # The real work starts here but will halt on pause_bit.set()
     while True:
-        if (now() - args.on_demand_timeout) > heartbeat:
-            log.info('Pausing due to inactivity...')
+
+        if (now() - args.on_demand_timeout) > heartb:
             pause_bit.set()
+            log.info("Searching paused due to inactivity...")
+
         # paused; clear queue if needed, otherwise sleep and loop
         while pause_bit.is_set():
             if not search_items_queue.empty():
