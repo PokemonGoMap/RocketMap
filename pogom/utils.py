@@ -170,6 +170,7 @@ def get_args():
                         help='Set the status page password')
     parser.add_argument('-el', '--encrypt-lib', help='Path to encrypt lib to be used instead of the shipped ones')
     parser.add_argument('-od', '--on-demand', help='Pause searching while web UI is not in use', action='store_true', default=False)
+    parser.add_argument('-odt', '--on-demand_timeout', help='Timeout(in seconds) before pausing searching when there is no activity', type=int, default=900)
     verbosity = parser.add_mutually_exclusive_group()
     verbosity.add_argument('-v', '--verbose', help='Show debug messages from PomemonGo-Map and pgoapi. Optionally specify file to log to.', nargs='?', const='nofile', default=False, metavar='filename.log')
     verbosity.add_argument('-vv', '--very-verbose', help='Like verbose, but show debug messages from all modules as well.  Optionally specify file to log to.', nargs='?', const='nofile', default=False, metavar='filename.log')
@@ -177,10 +178,8 @@ def get_args():
     parser.set_defaults(DEBUG=False)
 
     args = parser.parse_args()
-    
     if args.on_demand:
         args.search_control = False
-    
     if args.only_server:
         if args.location is None:
             parser.print_usage()
