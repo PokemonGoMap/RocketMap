@@ -365,7 +365,7 @@ def search_overseer_thread(args, method, new_location_queue, pause_bit, heartb, 
     # The real work starts here but will halt on pause_bit.set()
     while True:
 
-        if (now() - args.on_demand_timeout) > heartb:
+        if (now() - args.on_demand_timeout) > heartb[0]:
             pause_bit.set()
             log.info("Searching paused due to inactivity...")
 
