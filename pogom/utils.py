@@ -205,7 +205,7 @@ def get_args():
                     if num_fields == 3:
                         csv_input = '<ptc/gmail>,<username>,<password>'
 
-                    if num_fields != prev_num_fields :
+                    if num_fields != prev_num_fields:
                         if prev_num_fields == 1:
                             prev_csv_input = '<username>'
                         if prev_num_fields == 2:
@@ -214,8 +214,6 @@ def get_args():
                             prev_csv_input = '<ptc/gmail>,<username>,<password>'
                         print(sys.argv[0] + ": Error parsing CSV file on line " + str(num) + ". Your file started with the following input, '" + prev_csv_input + "' but now you gave us '" + csv_input + "'.")
                         sys.exit(1)
-
-
 
                     field_error = ''
                     line = line.strip()
