@@ -217,7 +217,7 @@ def get_args():
 
 
 
-                    field_error =  ''
+                    field_error = ''
                     line = line.strip()
 
                     # Ignore blank lines and comment lines
@@ -270,7 +270,7 @@ def get_args():
 
                     # If something is wrong display error.
                     if field_error != '':
-			type_error = 'empty!'
+                        type_error = 'empty!'
                         if field_error == 'method':
                             type_error = 'not ptc or gmail instead we got \'' + fields[0] + '\'!'
                         print(sys.argv[0] + ": Error parsing CSV file on line " + str(num) + ". We found " + str(num_fields) + " fields, so your input should have looked like '" + csv_input + "'\nBut you gave us '" + line + "', your " + field_error + " was " + type_error)
