@@ -204,7 +204,7 @@ def get_args():
                     csv_input.append('<ptc/gmail>,<username>,<password>')
 
                     # If the number of fields is differend this is not a CSV
-                    if num_fields != line.count(',') + 1: 
+                    if num_fields != line.count(',') + 1:
                         print(sys.argv[0] + ": Error parsing CSV file on line " + str(num) + ". Your file started with the following input, '" + csv_input[num_fields] + "' but now you gave us '" + csv_input[line.count(',') + 1] + "'.")
                         sys.exit(1)
 
