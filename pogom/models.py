@@ -696,7 +696,7 @@ def add_webhook(wh_type, wh_message, db_queue):
     if wh_type == 'pokemon':
         pokemons = {}
         pokemons[1] = {
-            'encounter_id': b64decode(wh_message['encounter_id']),
+            'encounter_id': wh_message['encounter_id'],
             'spawnpoint_id': wh_message['spawnpoint_id'],
             'pokemon_id': wh_message['pokemon_id'],
             'latitude': wh_message['latitude'],
