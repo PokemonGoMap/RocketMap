@@ -183,33 +183,71 @@ def get_args():
             print(sys.argv[0] + ": error: arguments -l/--location is required")
             sys.exit(1)
     else:
-        # If using a CSV file, add the data into the username,password and auth_service arguments.
-        # CSV file should have lines like "ptc,username,password".  Additional fields after that are ignored.
+        # If using a CSV file, add the data where needed into the username,password and auth_service arguments.
+        # CSV file should have lines like "ptc,username,password", "username,password" or "username".
         if args.accountcsv is not None:
             with open(args.accountcsv, 'r') as f:
                 for num, line in enumerate(f, 1):
 
+		    fields = []
+
+		    num_fields = line.count(',') + 1
+		    field_error = False
+		    line = line.strip()
+
                     # Ignore blank lines and comment lines
-                    if len(line.strip()) == 0 or line.startswith('#'):
+                    if len(line) == 0 or line.startswith('#'):
                         continue
 
-                    # Split into fields
-                    fields = line.split(",")
+                    # If number of fields is more than 1 split the line into fields and strip them
+		    if num_fields > 1:
+		        fields = line.split(",")
+			fields = map(str.strip, fields)
 
-                    # Make sure it has at least 3 fields
-                    if len(fields) < 3:
-                        print(sys.argv[0] + ": Error parsing CSV file on line " + str(num) + ". Lines must be in the format '<method>,<username>,<password>'. Additional fields after those are ignored.")
-                        sys.exit(1)
+		    # If the number of fields is one then assume this is "username". As requested..
+		    if num_fields == 1:
+			#Empty lines are already ignored.
+			args.username.append(line)
 
-                    # Make sure none of the fields are blank
-                    if len(fields[0]) == 0 or len(fields[1]) == 0 or len(fields[2]) == 0:
-                        print(sys.argv[0] + ": Error parsing CSV file on line " + str(num) + ". Lines must be in the format '<method>,<username>,<password>'. Additional fields after those are ignored.")
-                        sys.exit(1)
+		    # If the number of fields is two then assume this is "username,password". As requested..
+		    if num_fields == 2:
+			# If field length is not longer then 0 something is wrong!
+			if len(fields[0]) > 0:
+			    args.username.append(fields[0])
+			else:
+			    field_error = True
 
-                    # Add the account to the list
-                    args.auth_service.append(fields[0].strip())
-                    args.username.append(fields[1].strip())
-                    args.password.append(fields[2].strip())
+                        # If field length is not longer then 0 something is wrong!
+			if len(fields[1]) > 0:
+			    args.password.append(fields[1])
+			else:
+			    field_error = True
+
+		    # If the number of fields is three then assume this is "ptc,username,password". As requested..
+		    if num_fields == 3:
+                        # If field length is not longer then 0 something is wrong!
+			if len(fields[0]) > 0:
+                            args.auth_service.append(fields[0])
+			else:
+			    field_error = True
+
+                        # If field length is not longer then 0 something is wrong!
+			if len(fields[1]) > 0:
+                            args.username.append(fields[1])
+			else:
+			    field_error = True
+
+                        # If field length is not longer then 0 something is wrong!
+			if len(fields[2]) > 0:
+                            args.password.append(fields[2])
+			else:
+			    field_error = True
+
+			# If something is wrong display error.
+			if field_error:
+                            print(sys.argv[0] + ": Error parsing CSV file on line " + str(num) + ". Lines must be in the format '<method>,<username>,<password>', '<username>,<password>', '<username>'.")
+                            sys.exit(1)
+
 
         errors = []
 
