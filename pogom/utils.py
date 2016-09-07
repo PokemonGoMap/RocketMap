@@ -186,13 +186,38 @@ def get_args():
         # If using a CSV file, add the data where needed into the username,password and auth_service arguments.
         # CSV file should have lines like "ptc,username,password", "username,password" or "username".
         if args.accountcsv is not None:
+            num_fields = -1
             with open(args.accountcsv, 'r') as f:
                 for num, line in enumerate(f, 1):
 
                     fields = []
+                    if num_fields < 0:
+                        prev_num_fields = line.count(',') + 1
+                    else:
+                        prev_num_fields = num_fields
 
                     num_fields = line.count(',') + 1
-                    field_error = False
+
+                    if num_fields == 1:
+                        csv_input = '<username>'
+                    if num_fields == 2:
+                        csv_input = '<username>,<password>'
+                    if num_fields == 3:
+                        csv_input = '<ptc/gmail>,<username>,<password>'
+
+                    if num_fields != prev_num_fields :
+                        if prev_num_fields == 1:
+                            prev_csv_input = '<username>'
+                        if prev_num_fields == 2:
+                            prev_csv_input = '<username>,<password>'
+                        if prev_num_fields == 3:
+                            prev_csv_input = '<ptc/gmail>,<username>,<password>'
+                        print(sys.argv[0] + ": Error parsing CSV file on line " + str(num) + ". Your file started with the following input, '" + prev_csv_input + "' but now you gave us '" + csv_input + "'.")
+                        sys.exit(1)
+
+
+
+                    field_error =  ''
                     line = line.strip()
 
                     # Ignore blank lines and comment lines
@@ -215,13 +240,13 @@ def get_args():
                         if len(fields[0]) > 0:
                             args.username.append(fields[0])
                         else:
-                            field_error = True
+                            field_error = 'username'
 
                         # If field length is not longer then 0 something is wrong!
                         if len(fields[1]) > 0:
                             args.password.append(fields[1])
                         else:
-                            field_error = True
+                            field_error = 'password'
 
                     # If the number of fields is three then assume this is "ptc,username,password". As requested..
                     if num_fields == 3:
@@ -229,24 +254,27 @@ def get_args():
                         if fields[0].lower() == 'ptc' or fields[0].lower() == 'gmail':
                             args.auth_service.append(fields[0])
                         else:
-                            field_error = True
+                            field_error = 'method'
 
                         # If field length is not longer then 0 something is wrong!
                         if len(fields[1]) > 0:
                             args.username.append(fields[1])
                         else:
-                            field_error = True
+                            field_error = 'username'
 
                         # If field length is not longer then 0 something is wrong!
                         if len(fields[2]) > 0:
                             args.password.append(fields[2])
                         else:
-                            field_error = True
+                            field_error = 'password'
 
-                        # If something is wrong display error.
-                        if field_error:
-                            print(sys.argv[0] + ": Error parsing CSV file on line " + str(num) + ". Lines must be in the format '<ptc/gmail>,<username>,<password>', '<username>,<password>', '<username>'.")
-                            sys.exit(1)
+                    # If something is wrong display error.
+                    if field_error != '':
+			type_error = 'empty!'
+                        if field_error == 'method':
+                            type_error = 'not ptc or gmail instead we got \'' + fields[0] + '\'!'
+                        print(sys.argv[0] + ": Error parsing CSV file on line " + str(num) + ". We found " + str(num_fields) + " fields, so your input should have looked like '" + csv_input + "'\nBut you gave us '" + line + "', your " + field_error + " was " + type_error)
+                        sys.exit(1)
 
         errors = []
 
