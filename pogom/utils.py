@@ -206,7 +206,7 @@ def get_args():
 
                     # If the number of fields is one then assume this is "username". As requested..
                     if num_fields == 1:
-                        #Empty lines are already ignored.
+                        # Empty lines are already ignored.
                         args.username.append(line)
 
                     # If the number of fields is two then assume this is "username,password". As requested..
@@ -247,7 +247,6 @@ def get_args():
                         if field_error:
                             print(sys.argv[0] + ": Error parsing CSV file on line " + str(num) + ". Lines must be in the format '<method>,<username>,<password>', '<username>,<password>', '<username>'.")
                             sys.exit(1)
-
 
         errors = []
 
