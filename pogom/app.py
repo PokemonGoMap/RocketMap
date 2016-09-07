@@ -54,7 +54,7 @@ class Pogom(Flask):
 
     def post_search_control(self):
         args = get_args()
-        if not args.search_control or args.on_demand:
+        if not args.search_control or args.on_demand_timeout > 0:
             return 'Search control is disabled', 403
         action = request.args.get('action', 'none')
         if action == 'on':
@@ -72,7 +72,7 @@ class Pogom(Flask):
         self.search_control.clear()
         args = get_args()
         fixed_display = "none" if args.fixed_location else "inline"
-        search_display = "inline" if args.search_control and not args.on_demand else "none"
+        search_display = "inline" if args.search_control and args.on_demand_timeout == 0 else "none"
 
         return render_template('map.html',
                                lat=self.current_location[0],
