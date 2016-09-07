@@ -186,33 +186,26 @@ def get_args():
         # If using a CSV file, add the data where needed into the username,password and auth_service arguments.
         # CSV file should have lines like "ptc,username,password", "username,password" or "username".
         if args.accountcsv is not None:
+            # Giving num_fields something it would usually not get
             num_fields = -1
             with open(args.accountcsv, 'r') as f:
                 for num, line in enumerate(f, 1):
 
                     fields = []
+
+                    # First time around populate num_fields with current field count.
                     if num_fields < 0:
-                        prev_num_fields = line.count(',') + 1
-                    else:
-                        prev_num_fields = num_fields
+                        num_fields = line.count(',') + 1
 
-                    num_fields = line.count(',') + 1
+                    csv_input = []
+                    csv_input.append('')
+                    csv_input.append('<username>')
+                    csv_input.append('<username>,<password>')
+                    csv_input.append('<ptc/gmail>,<username>,<password>')
 
-                    if num_fields == 1:
-                        csv_input = '<username>'
-                    if num_fields == 2:
-                        csv_input = '<username>,<password>'
-                    if num_fields == 3:
-                        csv_input = '<ptc/gmail>,<username>,<password>'
-
-                    if num_fields != prev_num_fields:
-                        if prev_num_fields == 1:
-                            prev_csv_input = '<username>'
-                        if prev_num_fields == 2:
-                            prev_csv_input = '<username>,<password>'
-                        if prev_num_fields == 3:
-                            prev_csv_input = '<ptc/gmail>,<username>,<password>'
-                        print(sys.argv[0] + ": Error parsing CSV file on line " + str(num) + ". Your file started with the following input, '" + prev_csv_input + "' but now you gave us '" + csv_input + "'.")
+                    # If the number of fields is differend this is not a CSV
+                    if num_fields != line.count(',') + 1: 
+                        print(sys.argv[0] + ": Error parsing CSV file on line " + str(num) + ". Your file started with the following input, '" + csv_input[num_fields] + "' but now you gave us '" + csv_input[line.count(',') + 1] + "'.")
                         sys.exit(1)
 
                     field_error = ''
@@ -271,7 +264,7 @@ def get_args():
                         type_error = 'empty!'
                         if field_error == 'method':
                             type_error = 'not ptc or gmail instead we got \'' + fields[0] + '\'!'
-                        print(sys.argv[0] + ": Error parsing CSV file on line " + str(num) + ". We found " + str(num_fields) + " fields, so your input should have looked like '" + csv_input + "'\nBut you gave us '" + line + "', your " + field_error + " was " + type_error)
+                        print(sys.argv[0] + ": Error parsing CSV file on line " + str(num) + ". We found " + str(num_fields) + " fields, so your input should have looked like '" + csv_input[num_fields] + "'\nBut you gave us '" + line + "', your " + field_error + " was " + type_error)
                         sys.exit(1)
 
         errors = []
