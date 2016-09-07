@@ -189,62 +189,62 @@ def get_args():
             with open(args.accountcsv, 'r') as f:
                 for num, line in enumerate(f, 1):
 
-		    fields = []
+                    fields = []
 
-		    num_fields = line.count(',') + 1
-		    field_error = False
-		    line = line.strip()
+                    num_fields = line.count(',') + 1
+                    field_error = False
+                    line = line.strip()
 
                     # Ignore blank lines and comment lines
                     if len(line) == 0 or line.startswith('#'):
                         continue
 
                     # If number of fields is more than 1 split the line into fields and strip them
-		    if num_fields > 1:
-		        fields = line.split(",")
-			fields = map(str.strip, fields)
+                    if num_fields > 1:
+                        fields = line.split(",")
+                        fields = map(str.strip, fields)
 
-		    # If the number of fields is one then assume this is "username". As requested..
-		    if num_fields == 1:
-			#Empty lines are already ignored.
-			args.username.append(line)
+                    # If the number of fields is one then assume this is "username". As requested..
+                    if num_fields == 1:
+                        #Empty lines are already ignored.
+                        args.username.append(line)
 
-		    # If the number of fields is two then assume this is "username,password". As requested..
-		    if num_fields == 2:
-			# If field length is not longer then 0 something is wrong!
-			if len(fields[0]) > 0:
-			    args.username.append(fields[0])
-			else:
-			    field_error = True
+                    # If the number of fields is two then assume this is "username,password". As requested..
+                    if num_fields == 2:
+                        # If field length is not longer then 0 something is wrong!
+                        if len(fields[0]) > 0:
+                            args.username.append(fields[0])
+                        else:
+                            field_error = True
 
                         # If field length is not longer then 0 something is wrong!
-			if len(fields[1]) > 0:
-			    args.password.append(fields[1])
-			else:
-			    field_error = True
+                        if len(fields[1]) > 0:
+                            args.password.append(fields[1])
+                        else:
+                            field_error = True
 
-		    # If the number of fields is three then assume this is "ptc,username,password". As requested..
-		    if num_fields == 3:
+                    # If the number of fields is three then assume this is "ptc,username,password". As requested..
+                    if num_fields == 3:
                         # If field length is not longer then 0 something is wrong!
-			if len(fields[0]) > 0:
+                        if len(fields[0]) > 0:
                             args.auth_service.append(fields[0])
-			else:
-			    field_error = True
+                        else:
+                            field_error = True
 
                         # If field length is not longer then 0 something is wrong!
-			if len(fields[1]) > 0:
+                        if len(fields[1]) > 0:
                             args.username.append(fields[1])
-			else:
-			    field_error = True
+                        else:
+                            field_error = True
 
                         # If field length is not longer then 0 something is wrong!
-			if len(fields[2]) > 0:
+                        if len(fields[2]) > 0:
                             args.password.append(fields[2])
-			else:
-			    field_error = True
+                        else:
+                            field_error = True
 
-			# If something is wrong display error.
-			if field_error:
+                        # If something is wrong display error.
+                        if field_error:
                             print(sys.argv[0] + ": Error parsing CSV file on line " + str(num) + ". Lines must be in the format '<method>,<username>,<password>', '<username>,<password>', '<username>'.")
                             sys.exit(1)
 
