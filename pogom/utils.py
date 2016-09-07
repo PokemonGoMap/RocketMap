@@ -225,8 +225,8 @@ def get_args():
 
                     # If the number of fields is three then assume this is "ptc,username,password". As requested..
                     if num_fields == 3:
-                        # If field length is not longer then 0 something is wrong!
-                        if len(fields[0]) > 0:
+                        # If field 0 is not ptc or gmail something is wrong!
+                        if fields[0].lower() == 'ptc' or fields[0].lower() == 'gmail':
                             args.auth_service.append(fields[0])
                         else:
                             field_error = True
@@ -245,7 +245,7 @@ def get_args():
 
                         # If something is wrong display error.
                         if field_error:
-                            print(sys.argv[0] + ": Error parsing CSV file on line " + str(num) + ". Lines must be in the format '<method>,<username>,<password>', '<username>,<password>', '<username>'.")
+                            print(sys.argv[0] + ": Error parsing CSV file on line " + str(num) + ". Lines must be in the format '<ptc/gmail>,<username>,<password>', '<username>,<password>', '<username>'.")
                             sys.exit(1)
 
         errors = []
