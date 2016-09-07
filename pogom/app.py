@@ -69,9 +69,9 @@ class Pogom(Flask):
 
     def fullmap(self):
         self.heartbeat[0] = now()
+        args = get_args()
         if args.on_demand_timeout > 0:
             self.search_control.clear()
-        args = get_args()
         fixed_display = "none" if args.fixed_location else "inline"
         search_display = "inline" if args.search_control and args.on_demand_timeout == 0 else "none"
 
@@ -86,6 +86,7 @@ class Pogom(Flask):
 
     def raw_data(self):
         self.heartbeat[0] = now()
+        args = get_args()
         if args.on_demand_timeout > 0:
             self.search_control.clear()
         d = {}
