@@ -633,7 +633,11 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                     search_items_queue.task_done()
                     status['skip'] += 1
                     # it is slightly silly to put this in status['message'] since it'll be overwritten very shortly after. Oh well.
-                    status['message'] = 'Too late for location {:6f},{:6f}; skipping'.format(step_location[0], step_location[1])
+                    seconds_behind = now() - appears
+                    if seconds_behind > 10:
+                        status['message'] = 'Searching at {:6f},{:6f}. [Seconds behind: {:.0f}]'.format(step_location[0], step_location[1], seconds_behind)
+                    else:
+                        status['message'] = 'Searching at {:6f},{:6f}. [ON TIME]'.format(step_location[0], step_location[1])
                     log.info(status['message'])
                     # No sleep here; we've not done anything worth sleeping for. Plus we clearly need to catch up!
                     continue
@@ -665,7 +669,11 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                     search_items_queue.task_done()
                     status[('success' if parsed['count'] > 0 else 'noitems')] += 1
                     consecutive_fails = 0
-                    status['message'] = 'Search at {:6f},{:6f} completed with {} finds'.format(step_location[0], step_location[1], parsed['count'])
+                    seconds_behind = now() - appears
+                    if seconds_behind > 10:
+                        status['message'] = 'Search at {:6f},{:6f} completed with {} finds. [Seconds behind: {:.0f}]'.format(step_location[0], step_location[1], parsed['count'], seconds_behind)
+                    else:
+                        status['message'] = 'Search at {:6f},{:6f} completed with {} finds. [ON TIME]'.format(step_location[0], step_location[1], parsed['count'])
                     log.debug(status['message'])
                 except KeyError:
                     parsed = False
