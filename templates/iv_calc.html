@@ -2,7 +2,7 @@
 <html lang="en">
     <head>
         <meta charset="UTF-8">
-        <title>PoGo Map - Menü</title>
+        <title>PoGo Map - Hilfe</title>
 
         <!-- Fav- & Apple-Touch-Icons -->
         <!-- Favicon -->
@@ -26,31 +26,37 @@
 
 
         <link rel="stylesheet" href="{{ url_for('static', filename='dist/css/app.min.css').lstrip('/') }}">
-        <link rel="stylesheet" href="{{ url_for('static', filename='dist/css/menu.min.css').lstrip('/') }}">
+        <link rel="stylesheet" href="{{ url_for('static', filename='dist/css/help.min.css').lstrip('/') }}">
         <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/skel/3.0.1/skel.min.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.0/jquery-ui.min.js"></script>
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1">
+    <link rel="stylesheet" href="{{ url_for('static', filename='dist/iv_calc/css/lotus.min.css').lstrip('/') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='dist/iv_calc/css/react-select.min.css').lstrip('/') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='dist/iv_calc/css/main.min.css').lstrip('/') }}">
     </head>
     <body>
-    <!-- Header -->
-    <header id="header">
-        <a href="#nav">Options</a>
-        <h1><a href="..">PoGo Map - Dortmund</a></h1>
-        <a href="/help" style="float: right;"><span class="label">Help</span></a>
-        <a href="/menu" style="float: right;"><span class="label">Menu</span></a>
-    </header>
-    <nav id="nav">
-        nothing to see here
-    </nav>
-    <div class="spacing"></div>
-    <div class="help_container" id="help_container">
-        <div class="help_form">
-            <br/><br/>
-            <a href="/iv_calc">IV Ausrechner, Movesets, weitere Infos und Pokédex..!</a>
-            <br/><hr/><br/>
-            <a href="http://138.201.55.36/stikked/">hinterlasse ein Kommentar!</a>
+        <!-- Header -->
+        <header id="header">
+            <a href="#nav">Options</a>
+            <h1><a href="..">PoGo Map - Dortmund</a></h1>
+            <a href="/help" style="float: right;"><span class="label">Help</span></a>
+            <a href="/menu" style="float: right;"><span class="label">Menu</span></a>
+        </header>
+        <nav id="nav">
+          <div class="ui-accordion-content">
+                <div class="form-control switch-container">
+                  nothing to see here
+                </div>
+          </div>
+        </nav>
+        <div class="spacing"></div>
+        <div class="help_container" id="help_container">
+        
+            <div id="app"></div>
+            <canvas id="capturedPhoto" width="750" height="1334" style="position: absolute; left: -1000em"></canvas>
         </div>
-    </div>
-    <script src="{{ url_for('static', filename='dist/js/app.min.js').lstrip('/') }}"></script>
-    </body>
+  </body>
+  </div>
+  <script src="{{ url_for('static', filename='dist/iv_calc/js/build.min.js').lstrip('/') }}"></script>
 </html>

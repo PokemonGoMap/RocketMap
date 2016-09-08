@@ -276,7 +276,7 @@ class Pogom(Flask):
         
         
     def get_iv_calc(self):
-        return render_template('iv_calc/static/index.html')
+        return render_template('iv_calc.html')
 
 
 class CustomJSONEncoder(JSONEncoder):
