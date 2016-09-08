@@ -4,6 +4,9 @@ var monthArray = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep',
 /* Main stats page */
 var rawDataIsLoading = false
 var totalPokemon = 151
+var msPerMinute = 60000
+var spawnTimeMinutes = 15
+var spawnTimeMs = msPerMinute * spawnTimeMinutes
 
 function loadRawData () {
   return $.ajax({
@@ -15,7 +18,7 @@ function loadRawData () {
       'gyms': false,
       'scanned': false,
       'seen': true,
-      'duration': document.getElementById('duration').options[document.getElementById('duration').selectedIndex].value
+      'duration': $('#duration').val()
     },
     dataType: 'json',
     beforeSend: function () {
@@ -89,7 +92,8 @@ function addElement (pokemonId, name) {
   }).appendTo('#seen_' + pokemonId + '_details')
 
   jQuery('<a/>', {
-    href: 'javascript:showOverlay(' + pokemonId + ');',
+    href: 'javascript:void(0);',
+    onclick: 'javascript:showOverlay(' + pokemonId + ');',
     text: 'All Locations'
   }).appendTo('#seen_' + pokemonId + '_details')
 }
@@ -130,7 +134,7 @@ function processSeen (seen) {
 
   for (i = seen.pokemon.length - 1; i >= 0; i--) {
     var item = seen.pokemon[i]
-    var percentage = (item['count'] / total * 100).toFixed(2)
+    var percentage = (item['count'] / total * 100).toFixed(4)
     var lastSeen = new Date(item['disappear_time'])
     lastSeen = lastSeen.getHours() + ':' +
     ('0' + lastSeen.getMinutes()).slice(-2) + ':' +
@@ -185,6 +189,7 @@ updateMap()
 
 /* Overlay */
 var detailsLoading = false
+var appearancesTimesLoading = false
 var detailInterval = null
 var lastappearance = 1
 var pokemonid = 0
@@ -207,7 +212,8 @@ function loadDetails () {
       'scanned': false,
       'appearances': true,
       'pokemonid': pokemonid,
-      'last': lastappearance
+      'last': lastappearance,
+      'duration': $('#duration').val()
     },
     dataType: 'json',
     beforeSend: function () {
@@ -223,10 +229,40 @@ function loadDetails () {
   })
 }
 
+function loadAppearancesTimes (pokemonId, spawnpointId) {
+  return $.ajax({
+    url: 'raw_data',
+    type: 'GET',
+    data: {
+      'pokemon': false,
+      'pokestops': false,
+      'gyms': false,
+      'scanned': false,
+      'appearances': false,
+      'appearancesDetails': true,
+      'pokemonid': pokemonId,
+      'spawnpoint_id': spawnpointId,
+      'duration': $('#duration').val()
+    },
+    dataType: 'json',
+    beforeSend: function () {
+      if (appearancesTimesLoading) {
+        return false
+      } else {
+        appearancesTimesLoading = true
+      }
+    },
+    complete: function () {
+      appearancesTimesLoading = false
+    }
+  })
+}
+
 function showTimes (marker) {
-  var uuid = marker.position.lat().toFixed(7) + '_' + marker.position.lng().toFixed(7)
-  $('#times_list').html(appearanceTab(mapData.appearances[uuid]))
-  $('#times_list').show()
+  appearanceTab(mapData.appearances[marker.spawnpointId]).then(function (value) {
+    $('#times_list').html(value)
+    $('#times_list').show()
+  })
 }
 
 function closeTimes () {
@@ -265,12 +301,14 @@ function initMap () {
     fullscreenControl: false,
     streetViewControl: false,
     mapTypeControl: true,
+    clickableIcons: false,
     mapTypeControlOptions: {
       style: google.maps.MapTypeControlStyle.DROPDOWN_MENU,
       position: google.maps.ControlPosition.RIGHT_TOP,
       mapTypeIds: [
         google.maps.MapTypeId.ROADMAP,
         google.maps.MapTypeId.SATELLITE,
+        google.maps.MapTypeId.HYBRID,
         'nolabels_style',
         'dark_style',
         'style_light2',
@@ -370,27 +408,16 @@ function closeOverlay () { // eslint-disable-line no-unused-vars
 }
 
 function processAppearance (i, item) {
-  var saw = new Date(item['disappear_time'])
-  saw = saw.getHours() + ':' +
-  ('0' + saw.getMinutes()).slice(-2) + ':' +
-  ('0' + saw.getSeconds()).slice(-2) + ' ' +
-  saw.getDate() + ' ' +
-  monthArray[saw.getMonth()] + ' ' +
-  saw.getFullYear()
-  var uuid = item['latitude'].toFixed(7) + '_' + item['longitude'].toFixed(7)
-  if (!((uuid) in mapData.appearances)) {
+  var spawnpointId = item['spawnpoint_id']
+  if (!((spawnpointId) in mapData.appearances)) {
     if (item['marker']) {
       item['marker'].setMap(null)
     }
-    item['count'] = 1
-    item['times'] = [saw]
-    item['uuid'] = uuid
     item['marker'] = setupPokemonMarker(item, true)
-
-    mapData.appearances[item['uuid']] = item
+    item['marker'].spawnpointId = spawnpointId
+    mapData.appearances[spawnpointId] = item
   } else {
-    mapData.appearances[uuid].count++
-    mapData.appearances[uuid].times.push(saw)
+    mapData.appearances[spawnpointId].count += item['count']
   }
 
   heatmapPoints.push(new google.maps.LatLng(item['latitude'], item['longitude']))
@@ -403,6 +430,7 @@ function redrawAppearances (appearances) {
     if (!item['hidden']) {
       var newMarker = setupPokemonMarker(item, true)
       item['marker'].setMap(null)
+      newMarker.spawnpointId = item['spawnpoint_id']
       appearances[key].marker = newMarker
     }
   })
@@ -410,12 +438,18 @@ function redrawAppearances (appearances) {
 
 function appearanceTab (item) {
   var times = ''
-
-  $.each(item['times'], function (key, value) {
-    times = '<div class="row' + (key % 2) + '">' + value + '</div>' + times
-  })
-
-  return `<div>
+  return loadAppearancesTimes(item['pokemon_id'], item['spawnpoint_id']).then(function (result) {
+    $.each(result.appearancesTimes, function (key, value) {
+      var saw = new Date(value - spawnTimeMs)
+      saw = saw.getHours() + ':' +
+          ('0' + saw.getMinutes()).slice(-2) + ':' +
+          ('0' + saw.getSeconds()).slice(-2) + ' ' +
+          saw.getDate() + ' ' +
+          monthArray[saw.getMonth()] + ' ' +
+          saw.getFullYear()
+      times = '<div class="row' + (key % 2) + '">' + saw + '</div>' + times
+    })
+    return `<div>
                 <a href="javascript:closeTimes();">Close this tab</a>
             </div>
             <div class="row1">
@@ -431,6 +465,7 @@ function appearanceTab (item) {
             <div>
                 ${times}
             </div>`
+  })
 }
 
 function updateDetails () {
@@ -455,3 +490,9 @@ function updateDetails () {
 if (location.href.match(/overlay_[0-9]+/g)) {
   showOverlay(location.href.replace(/^.*overlay_([0-9]+).*$/, '$1'))
 }
+
+$('#nav select')
+  .select2({
+    minimumResultsForSearch: Infinity
+  })
+  .on('change', updateMap)

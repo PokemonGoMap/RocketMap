@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 import os
@@ -20,10 +20,13 @@ from flask_cache_bust import init_cache_busting
 
 from pogom import config
 from pogom.app import Pogom
-from pogom.utils import get_args, insert_mock_data, get_encryption_lib_path
+from pogom.utils import get_args, get_encryption_lib_path
 
-from pogom.search import search_overseer_thread, search_overseer_thread_ss, fake_search_loop
-from pogom.models import init_database, create_tables, drop_tables, Pokemon
+from pogom.search import search_overseer_thread
+from pogom.models import init_database, create_tables, drop_tables, Pokemon, db_updater, clean_db_loop
+from pogom.webhook import wh_updater
+
+from pogom.proxy import check_proxies
 
 # Currently supported pgoapi
 pgoapi_version = "1.1.7"
@@ -54,15 +57,31 @@ if not hasattr(pgoapi, "__version__") or StrictVersion(pgoapi.__version__) < Str
     log.critical("It seems `pgoapi` is not up-to-date. You must run pip install -r requirements.txt again")
     sys.exit(1)
 
-if __name__ == '__main__':
+
+def main():
+    args = get_args()
+
+    # Check for depreciated argumented
+    if args.debug:
+        log.warning('--debug is depreciated. Please use --verbose instead.  Enabling --verbose')
+        args.verbose = 'nofile'
+
+    # Add file logging if enabled
+    if args.verbose and args.verbose != 'nofile':
+        filelog = logging.FileHandler(args.verbose)
+        filelog.setFormatter(logging.Formatter('%(asctime)s [%(threadName)16s][%(module)14s][%(levelname)8s] %(message)s'))
+        logging.getLogger('').addHandler(filelog)
+    if args.very_verbose and args.very_verbose != 'nofile':
+        filelog = logging.FileHandler(args.very_verbose)
+        filelog.setFormatter(logging.Formatter('%(asctime)s [%(threadName)16s][%(module)14s][%(levelname)8s] %(message)s'))
+        logging.getLogger('').addHandler(filelog)
+
     # Check if we have the proper encryption library file and get its path
-    encryption_lib_path = get_encryption_lib_path()
+    encryption_lib_path = get_encryption_lib_path(args)
     if encryption_lib_path is "":
         sys.exit(1)
 
-    args = get_args()
-
-    if args.debug:
+    if args.verbose or args.very_verbose:
         log.setLevel(logging.DEBUG)
     else:
         log.setLevel(logging.INFO)
@@ -85,10 +104,15 @@ if __name__ == '__main__':
     config['parse_gyms'] = not args.no_gyms
 
     # Turn these back up if debugging
-    if args.debug:
-        logging.getLogger('requests').setLevel(logging.DEBUG)
+    if args.verbose or args.very_verbose:
         logging.getLogger('pgoapi').setLevel(logging.DEBUG)
+    if args.very_verbose:
+        logging.getLogger('peewee').setLevel(logging.DEBUG)
+        logging.getLogger('requests').setLevel(logging.DEBUG)
+        logging.getLogger('pgoapi.pgoapi').setLevel(logging.DEBUG)
+        logging.getLogger('pgoapi.rpc_api').setLevel(logging.DEBUG)
         logging.getLogger('rpc_api').setLevel(logging.DEBUG)
+        logging.getLogger('werkzeug').setLevel(logging.DEBUG)
 
     # use lat/lng directly if matches such a pattern
     prog = re.compile("^(\-?\d+\.\d+),?\s?(\-?\d+\.\d+)$")
@@ -147,31 +171,60 @@ if __name__ == '__main__':
     new_location_queue = Queue()
     new_location_queue.put(position)
 
-    if not args.only_server:
-        # Gather the pokemons!
-        if not args.mock:
-            # check the sort of scan
-            if not args.spawnpoint_scanning:
-                log.debug('Starting a real search thread')
-                search_thread = Thread(target=search_overseer_thread, args=(args, new_location_queue, pause_bit, encryption_lib_path))
-            # using -ss
-            else:
-                if args.dump_spawnpoints:
-                    with open(args.spawnpoint_scanning, 'w+') as file:
-                        log.info('exporting spawns')
-                        spawns = Pokemon.get_spawnpoints_in_hex(position, args.step_limit)
-                        file.write(json.dumps(spawns))
-                        file.close()
-                        log.info('Finished exporting spawns')
-                # start the scan sceduler
-                search_thread = Thread(target=search_overseer_thread_ss, args=(args, new_location_queue, pause_bit, encryption_lib_path))
-        else:
-            log.debug('Starting a fake search thread')
-            insert_mock_data(position)
-            search_thread = Thread(target=fake_search_loop)
+    # DB Updates
+    db_updates_queue = Queue()
 
+    # Thread(s) to process database updates
+    for i in range(args.db_threads):
+        log.debug('Starting db-updater worker thread %d', i)
+        t = Thread(target=db_updater, name='db-updater-{}'.format(i), args=(args, db_updates_queue))
+        t.daemon = True
+        t.start()
+
+    # db clearner; really only need one ever
+    t = Thread(target=clean_db_loop, name='db-cleaner', args=(args,))
+    t.daemon = True
+    t.start()
+
+    # WH Updates
+    wh_updates_queue = Queue()
+
+    # Thread to process webhook updates
+    for i in range(args.wh_threads):
+        log.debug('Starting wh-updater worker thread %d', i)
+        t = Thread(target=wh_updater, name='wh-updater-{}'.format(i), args=(args, wh_updates_queue))
+        t.daemon = True
+        t.start()
+
+    if not args.only_server:
+
+        # Check all proxies before continue so we know they are good
+        if args.proxy:
+
+            # Overwrite old args.proxy with new working list
+            args.proxy = check_proxies(args)
+
+        # Gather the pokemons!
+
+        # check the sort of scan
+        if args.spawnpoint_scanning:
+            mode = 'sps'
+        else:
+            mode = 'hex'
+
+        # attempt to dump the spawn points (do this before starting threads of endure the woe)
+        if args.spawnpoint_scanning and args.spawnpoint_scanning != 'nofile' and args.dump_spawnpoints:
+            with open(args.spawnpoint_scanning, 'w+') as file:
+                log.info('Saving spawn points to %s', args.spawnpoint_scanning)
+                spawns = Pokemon.get_spawnpoints_in_hex(position, args.step_limit)
+                file.write(json.dumps(spawns))
+                log.info('Finished exporting spawn points')
+
+        argset = (args, mode, new_location_queue, pause_bit, encryption_lib_path, db_updates_queue, wh_updates_queue)
+
+        log.debug('Starting a %s search thread', mode)
+        search_thread = Thread(target=search_overseer_thread, name='search-overseer', args=argset)
         search_thread.daemon = True
-        search_thread.name = 'search_thread'
         search_thread.start()
 
     if args.cors:
@@ -197,5 +250,10 @@ if __name__ == '__main__':
             ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
             ssl_context.load_cert_chain(args.ssl_certificate, args.ssl_privatekey)
             log.info('Web server in SSL mode.')
+        if args.verbose or args.very_verbose:
+            app.run(threaded=True, use_reloader=False, debug=True, host=args.host, port=args.port, ssl_context=ssl_context)
+        else:
+            app.run(threaded=True, use_reloader=False, debug=False, host=args.host, port=args.port, ssl_context=ssl_context)
 
-        app.run(threaded=True, use_reloader=False, debug=args.debug, host=args.host, port=args.port, ssl_context=ssl_context)
+if __name__ == '__main__':
+    main()

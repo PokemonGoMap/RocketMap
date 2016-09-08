@@ -8,7 +8,7 @@
 
 ## I. Prerequisites
 1. Have already ran/operated the PokemonGo-Map using the default database setup.
-2. Have the "develop" build of PokemonGo-Map. [Available here.](https://github.com/AHAAAAAAA/PokemonGo-Map/archive/develop.zip)
+2. Have the "develop" build of PokemonGo-Map. [Available here.](https://github.com/PokemonGoMap/PokemonGo-Map/archive/develop.zip)
 3. Downloaded [MariaDB](https://downloads.mariadb.org/)
 
 ## II. Installing MariaDB
@@ -33,6 +33,9 @@
 
    ```
    CREATE DATABASE pokemongomapdb;
+   CREATE USER 'pogomapuser'@'localhost' IDENTIFIED BY 'password';
+   GRANT ALL PRIVILEGES ON pokemongomapdb . * TO 'pogomapuser'@'localhost';
+   exit
    ```
    You can change `pokemongomapdb` to whatever you want the name of the database to be.
 5. If the database creation was successful it will tell you "Query OK, 1 row affected". If it doesn't echo that back at you then you either received an error message, or it just created a blank line. I've detailed how to fix common errors, and the blank line below.
@@ -59,8 +62,8 @@
         - Change the "db-type" to "mysql"
         - Change "db-host" to "127.0.0.1"
         - Change "db-name:" to "pokemongomapdb"
-        - Change "db-user:" to "root"
-        - Change "db-pass" to the password you chose in step 5a of section II, or leave it blank if you chose to roll with no password.
+        - Change "db-user:" to "pogomapuser"
+        - Change "db-pass" to the password you chose in section III step 4, or leave it blank if you chose to roll with no password.
     - **Search Settings:** You only need to change this if you want to only run one location, or wish to disable gyms/pokemon/pokestops for all locations, or to have a universal thread count, scan delay, or step limit. I chose to not edit anything in the new config.ini.
     - **Misc:** This only has one setting and that's the google maps api key. If you don't have one, or don't know what that is please see [this](GoogleMaps.md) wiki page for the PokemonGo-Map project.
         - Change "gmaps-key:" to contain your google maps API key.
@@ -111,7 +114,12 @@ I'd also like to specifically credit Znuff2471 on discord for their great assist
 2. Login to your MySQL DB
    - mysql -p
    - Enter your password if you set one
-3. Create the DB `CREATE DATABASE pokemongomapdb;`
+3. Create the DB
+
+ - CREATE DATABASE pokemongomapdb;
+ - CREATE USER 'pogomapuser'@'localhost' IDENTIFIED BY 'password';
+ - GRANT ALL PRIVILEGES ON pokemongomapdb . * TO 'pogomapuser'@'localhost';
+
 4. Quit the MySQL command line tool `quit`
 5. Edit the `config/config.ini` file
 
@@ -120,7 +128,7 @@ I'd also like to specifically credit Znuff2471 on discord for their great assist
    db-type: mysql          # sqlite (default) or mysql
    db-host: 127.0.0.1      # required for mysql
    db-name: pokemongomapdb # required for mysql
-   db-user: YourUser       # required for mysql
+   db-user: pogomapuser    # required for mysql
    db-pass: YourPW         # required for mysql
    ```
 
@@ -130,7 +138,7 @@ Note: These are preliminary until better Docker support in the official containe
 Note: These commands require git to be installed
 
 ```
-docker build -t pokemap https://github.com/AHAAAAAAA/PokemonGo-Map.git:develop
+docker build -t pokemap https://github.com/PokemonGoMap/PokemonGo-Map.git:develop
 docker run --name pokesql -e MYSQL_ROOT_PASSWORD=some-string -e MYSQL_DATABASE pokemap -d mysql:5.6
 ```
 
