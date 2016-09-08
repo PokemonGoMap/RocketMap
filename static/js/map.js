@@ -636,7 +636,8 @@ var mapData = {
   pokestops: {},
   lurePokemons: {},
   scanned: {},
-  spawnpoints: {}
+  spawnpoints: {},
+  infoWindows: {}
 }
 var gymTypes = ['Uncontested', 'Mystic', 'Valor', 'Instinct']
 var audio = new Audio('static/sounds/ding.mp3')
@@ -1384,6 +1385,9 @@ function setupPokemonMarker (item, skipNotification, isBounceDisabled) {
     disableAutoPan: true
   })
 
+  // Store info window.
+  mapData.infoWindows[item['encounter_id']] = marker.infoWindow;
+
   if (notifiedPokemon.indexOf(item['pokemon_id']) > -1 || notifiedRarity.indexOf(item['pokemon_rarity']) > -1) {
     if (!skipNotification) {
       if (Store.get('playSound')) {
@@ -1419,6 +1423,9 @@ function setupGymMarker (item) {
     disableAutoPan: true
   })
 
+  // Store info window.
+  mapData.infoWindows[item['gym_id']] = marker.infoWindow;
+
   addListeners(marker)
   return marker
 }
@@ -1449,6 +1456,9 @@ function setupPokestopMarker (item) {
     content: pokestopLabel(item['lure_expiration'], item['latitude'], item['longitude']),
     disableAutoPan: true
   })
+
+  // Store info window.
+  mapData.infoWindows[item['pokestop_id']] = marker.infoWindow;
 
   addListeners(marker)
   return marker
@@ -1563,6 +1573,8 @@ function setupSpawnpointMarker (item) {
     position: circleCenter
   })
 
+  mapData.infoWindows[item['spawnpoint_id']] = marker.infoWindow;
+
   addListeners(marker)
 
   return marker
@@ -1576,8 +1588,17 @@ function clearSelection () {
   }
 }
 
+function clearInfoWindows() {
+  $.each(mapData.infoWindows, function(key, value) {
+    value.close();
+  });
+};
+
 function addListeners (marker) {
   marker.addListener('click', function () {
+    if (isCompactDevice()) {
+      clearInfoWindows();
+    }
     marker.infoWindow.open(map, marker)
     clearSelection()
     updateLabelDiffTime()
@@ -1589,6 +1610,9 @@ function addListeners (marker) {
   })
 
   marker.addListener('mouseover', function () {
+    if (isCompactDevice()) {
+      clearInfoWindows();
+    }
     marker.infoWindow.open(map, marker)
     clearSelection()
     updateLabelDiffTime()
@@ -2056,6 +2080,10 @@ function i8ln (word) {
     // Word doesn't exist in dictionary return it as is
     return word
   }
+}
+
+function isCompactDevice() {
+  return ($(window).width() < 768);
 }
 
 function isTouchDevice () {
