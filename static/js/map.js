@@ -639,7 +639,9 @@ var mapData = {
   spawnpoints: {}
 }
 var gymTypes = ['Uncontested', 'Mystic', 'Valor', 'Instinct']
-var audio = new Audio('static/sounds/ding.mp3')
+
+var sounds = { 'default': new Audio('static/sounds/ding.mp3') }
+
 var pokemonSprites = {
   normal: {
     columns: 12,
@@ -850,6 +852,18 @@ function notifyAboutPokemon (id) { // eslint-disable-line no-unused-vars
   $selectPokemonNotify.val(
     $selectPokemonNotify.val().concat(id)
   ).trigger('change')
+}
+
+function playPokemonSound (id) {
+  if (!(id in sounds)) {
+    sounds[id] = new Audio('static/sounds/' + id + '.mp3')
+  }
+  // play sound if loaded
+  try {
+    sounds[id].play()
+  } catch (e) {
+    sounds['default'].play()
+  }
 }
 
 function removePokemonMarker (encounterId) { // eslint-disable-line no-unused-vars
@@ -1387,7 +1401,7 @@ function setupPokemonMarker (item, skipNotification, isBounceDisabled) {
   if (notifiedPokemon.indexOf(item['pokemon_id']) > -1 || notifiedRarity.indexOf(item['pokemon_rarity']) > -1) {
     if (!skipNotification) {
       if (Store.get('playSound')) {
-        audio.play()
+        playPokemonSound(item['pokemon_id'])
       }
       sendNotification('A wild ' + item['pokemon_name'] + ' appeared!', 'Click to load map', 'static/icons/' + item['pokemon_id'] + '.png', item['latitude'], item['longitude'])
     }
