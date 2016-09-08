@@ -670,6 +670,8 @@ var pokemonSprites = {
   }
 }
 
+var scanRadius = 70 // metres
+
 //
 // LocalStorage helpers
 //
@@ -762,6 +764,10 @@ var StoreOptions = {
     type: StoreTypes.Boolean
   },
   'playSound': {
+    default: false,
+    type: StoreTypes.Boolean
+  },
+  'notifNear': {
     default: false,
     type: StoreTypes.Boolean
   },
@@ -1065,6 +1071,7 @@ function initSidebar () {
   $('#spawnpoints-switch').prop('checked', Store.get('showSpawnpoints'))
   $('#ranges-switch').prop('checked', Store.get('showRanges'))
   $('#sound-switch').prop('checked', Store.get('playSound'))
+  $('#near-switch').prop('checked', Store.get('notifNear'))
   var searchBox = new google.maps.places.SearchBox(document.getElementById('next-location'))
   $('#next-location').css('background-color', $('#geoloc-switch').prop('checked') ? '#e0e0e0' : '#ffffff')
 
@@ -1384,16 +1391,34 @@ function setupPokemonMarker (item, skipNotification, isBounceDisabled) {
     disableAutoPan: true
   })
 
-  if (notifiedPokemon.indexOf(item['pokemon_id']) > -1 || notifiedRarity.indexOf(item['pokemon_rarity']) > -1) {
+  var notificationTitle
+  var notificationMessage
+
+  if (!skipNotification && Store.get('notifNear')) {
+    var distance = google.maps.geometry.spherical.computeDistanceBetween(
+      new google.maps.LatLng(item['latitude'], item['longitude']),
+      locationMarker.getPosition()
+    )
+    if (distance <= scanRadius) {
+      notificationTitle = 'A wild ' + item['pokemon_name'] + ' is right here!'
+      notificationMessage = 'Only ' + Math.round(distance) + ' meters away'
+    }
+  }
+
+  if (!notificationTitle && (notifiedPokemon.indexOf(item['pokemon_id']) > -1 || notifiedRarity.indexOf(item['pokemon_rarity']) > -1)) {
     if (!skipNotification) {
-      if (Store.get('playSound')) {
-        audio.play()
-      }
-      sendNotification('A wild ' + item['pokemon_name'] + ' appeared!', 'Click to load map', 'static/icons/' + item['pokemon_id'] + '.png', item['latitude'], item['longitude'])
+      notificationTitle = 'A wild ' + item['pokemon_name'] + ' appeared!'
+      notificationMessage = 'Click to load map'
     }
     if (marker.animationDisabled !== true) {
       marker.setAnimation(google.maps.Animation.BOUNCE)
     }
+  }
+  if (notificationTitle) {
+    if (Store.get('playSound')) {
+      audio.play()
+    }
+    sendNotification(notificationTitle, notificationMessage, 'static/icons/' + item['pokemon_id'] + '.png', item['latitude'], item['longitude'])
   }
 
   addListeners(marker)
@@ -1474,7 +1499,7 @@ function setupScannedMarker (item) {
     map: map,
     clickable: false,
     center: circleCenter,
-    radius: 70, // metres
+    radius: scanRadius,
     fillColor: getColorByDate(item['last_modified']),
     fillOpacity: 0.1,
     strokeWeight: 1,
@@ -2358,6 +2383,10 @@ $(function () {
 
   $('#sound-switch').change(function () {
     Store.set('playSound', this.checked)
+  })
+
+  $('#near-switch').change(function () {
+    Store.set('notifNear', this.checked)
   })
 
   $('#geoloc-switch').change(function () {
