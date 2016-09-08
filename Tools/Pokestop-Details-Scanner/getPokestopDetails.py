@@ -38,26 +38,25 @@ parser.add_argument('--db-type',
                     help='Type of database to be used (default: mysql)', default='mysql', required=True)
 parser.add_argument('-D', '--db', 
                     help='Database filename', default='pogom.db')
-                    
 parser.add_argument('--db-name', help='Name of the database to be used')
 parser.add_argument('--db-user', help='Username for the database')
 parser.add_argument('--db-pass', help='Password for the database')
 parser.add_argument('--db-host', help='IP or hostname for the database', default='127.0.0.1')
 parser.add_argument('--db-port', help='Port for the database', type=int, default=3306)
 args = parser.parse_args()
-    
+
 position = util.get_pos_by_name(args.location)
 if not position:
     print('Location invalid.')
     quit()
-        
+
 if args.db_type == 'mysql':
     if not args.db_user or not args.db_pass or not args.db_name:
         print("Needed parameters for MySQL: --db-user, --db-pass, --db-name.")
         quit()
     print('Connecting to MySQL database on {}:{}'.format(args.db_host, args.db_port))
     db = MySQLDatabase(args.db_name, user=args.db_user, password=args.db_pass, host=args.db_host, port=args.db_port)
- 
+
 elif args.db_type == 'sqlite':
     if not args.db:
         print("You need to specify an SQLite file with -D / --db.")
@@ -66,6 +65,7 @@ elif args.db_type == 'sqlite':
 else:
     print("Unsupported database type.")
     quit()    
+
 
 def run_scan(db, args, position):
 
@@ -82,22 +82,22 @@ def run_scan(db, args, position):
                 .order_by(Pokestop.latitude, Pokestop.longitude)
                 .desc()
                 )
-                
+
     api = PGoApi()
     api.set_position(*position)
-    
+
     if args.proxy:
         print("Using proxy {}".format(args.proxy))
         api.set_proxy({'http': args.proxy, 'https': args.proxy}) 
-    
+
     print("Logging in with user {}".format(args.username))
     if not api.login(args.auth_service, args.username, args.password, app_simulation = True):
         return
-        
+
     #test command
     api.get_player()
     time.sleep(0.2)
-    
+
 
     for stop in pokestops:
         lat = stop.latitude
@@ -113,17 +113,16 @@ def run_scan(db, args, position):
         if not stopinfo['responses']:
             print("Got no information, continuing...")
             continue
-            
+
         image = stopinfo['responses']['FORT_DETAILS']['image_urls'][0]
         name = stopinfo['responses']['FORT_DETAILS']['name']
         desc = stopinfo['responses']['FORT_DETAILS'].get('description', '')
 
         qry = PokestopDetails.insert(pokestop_id=stop.pokestop_id, name=name, image_url=image, description=desc).upsert(upsert=True)
         qry.execute()
-        
+
         time.sleep(1)
-        
-        
+
 
 #peewee stuff
 class PokestopDetails(Model):
@@ -133,7 +132,8 @@ class PokestopDetails(Model):
     image_url = TextField(null=True, default="")
     class Meta:
         database = db
-        
+
+
 class Pokestop(Model):
     pokestop_id = CharField(primary_key=True, max_length=50)
     enabled = BooleanField()
@@ -146,6 +146,7 @@ class Pokestop(Model):
     class Meta:
         indexes = ((('latitude', 'longitude'), False),)
         database = db
-        
-        
+
+
 run_scan(db, args, position)
+
