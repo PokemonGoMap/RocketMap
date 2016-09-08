@@ -1237,7 +1237,7 @@ function pokestopLabel (item) {
     var expireDate = new Date(item.expireTime)
 
     str = `
-      <div>
+      <div style="text-align: center;">
         <b>Lured Pokéstop</b>
         ${pkstpinfo}
       </div>
@@ -1253,7 +1253,7 @@ function pokestopLabel (item) {
       </div>`
   } else {
     str = `
-      <div>
+      <div style="text-align: center;">
         <b>Pokéstop</b>
         ${pkstpinfo}
       </div>
