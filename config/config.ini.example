@@ -30,7 +30,7 @@
 #proxy-display:         # Used with -ps, full = display complete proxy address. Index = displays just the index for that proxy (default index)
 #webhook:               # webhook URL (including http://)
 #webhook-updates-only:  # only send updates to webhooks, (excludes gyms & non-lured pokéstops)
-#secret-key:            # Adds a key for the secure exchange via webhook
+#webhook-secret-key:    # Adds a key for the secure exchange via webhook
 
 # Webserver settings
 #host:                  # address to listen on (default 127.0.0.1)

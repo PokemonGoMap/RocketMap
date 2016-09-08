@@ -10,7 +10,7 @@ log = logging.getLogger(__name__)
 
 def send_to_webhook(message_type, message):
     args = get_args()
-    headers = {'SecureKey': args.webhook_key}
+    headers = {'WebhookSecureKey': args.webhook_secret_key}
     if not args.webhooks:
         # what are you even doing here...
         return
