@@ -10,6 +10,7 @@ log = logging.getLogger(__name__)
 
 def send_to_webhook(message_type, message):
     args = get_args()
+    headers = {'WebhookKey': args.webhook_api_key}
 
     if not args.webhooks:
         # what are you even doing here...
@@ -22,7 +23,7 @@ def send_to_webhook(message_type, message):
 
     for w in args.webhooks:
         try:
-            requests.post(w, json=data, timeout=(None, 1))
+            requests.post(w, json=data, timeout=(None, 1), headers=headers)
         except requests.exceptions.ReadTimeout:
             log.debug('Response timeout on webhook endpoint %s', w)
         except requests.exceptions.RequestException as e:
