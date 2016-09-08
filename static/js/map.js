@@ -869,7 +869,7 @@ function getStats (spawnpointId) { // eslint-disable-line no-unused-vars
     async: true,
     success: function (data) {
       $.each(data.spawn_history, function (count, id) {
-        $('ul[name=' + spawnpointId + ']').append('<li style="float: left; width: 33% list-style: none; height: 36px; margin-right: 5px; "><span><img src="static/icons/' + id['pokemon_id'] + '.png"></span><span style="font-weight: bold; vertical-align: middle;">' + id['count'] + '</span></span>')
+        $('ul[name=' + spawnpointId + ']').append('<li style="float: left; width: 33% list-style: none; height: 36px; margin-right: 5px; "><span><img src="static/icons/' + id['pokemon_id'] + '.png"></span><span style="font-weight: bold;">' + id['count'] + '</span></span>')
       })
     },
     error: function (jqXHR, status, error) {
@@ -1274,25 +1274,6 @@ function pokestopLabel (expireTime, latitude, longitude) {
   return str
 }
 
-function pokespawnLabel (spawnpointId, latitude, longitude) {
-  var str
-
-  str = `
-    <div>
-      <b>Spawn Point</b>
-    </div>
-    <div>
-      Location: ${latitude.toFixed(6)}, ${longitude.toFixed(7)}
-    </div>
-    <div>
-      <a href="javascript:getStats('${spawnpointId}')">Stats</a>&nbsp;&nbsp;
-              <ul class="statsHolder " name="${spawnpointId}" style="max-width: 240px; list-style: none"></ul>
-
-    </div>`
-
-  return str
-}
-
 function formatSpawnTime (seconds) {
   // the addition and modulo are required here because the db stores when a spawn disappears
   // the subtraction to get the appearance time will knock seconds under 0 if the spawn happens in the previous hour
@@ -1313,6 +1294,13 @@ function spawnpointLabel (item) {
         May appear as early as ${formatSpawnTime(item.time - 1800)}
       </div>`
   }
+
+  str += `
+      <div>
+      <a href="javascript:getStats('${item.spawnpoint_id}')">Stats</a>&nbsp;&nbsp;
+              <ul class="statsHolder " name="${item.spawnpoint_id}" style="max-width: 240px; list-style: none"></ul>
+
+    </div>`
   return str
 }
 
@@ -1601,12 +1589,6 @@ function setupSpawnpointMarker (item) {
 
   addListeners(marker)
 
-  marker.infoWindow = new google.maps.InfoWindow({
-    content: pokespawnLabel(item.spawnpoint_id, item.latitude, item.longitude),
-    disableAutoPan: true
-  })
-
-  addListeners(marker)
   return marker
 }
 
