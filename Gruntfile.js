@@ -14,7 +14,10 @@ module.exports = function(grunt) {
           'static/dist/css/statistics.built.css': 'static/css/statistics.css',
           'static/dist/css/status.built.css': 'static/sass/status.scss',
           'static/dist/css/help.built.css': 'static/sass/help.scss',
-          'static/dist/css/menu.built.css': 'static/sass/menu.scss'
+          'static/dist/css/menu.built.css': 'static/sass/menu.scss',
+          'static/dist/iv_calc/css/main.built.css': 'static/sass/iv_calc/main.scss',
+          'static/dist/iv_calc/css/lotus.built.css': 'static/sass/iv_calc/lotus.scss',
+          'static/dist/iv_calc/css/react-select.built.css': 'static/sass/iv_calc/react-select.scss'
         }
       }
     },
@@ -34,7 +37,8 @@ module.exports = function(grunt) {
           'static/dist/js/stats.built.js': 'static/js/stats.js',
           'static/dist/js/statistics.built.js': 'static/js/statistics.js',
           'static/dist/js/tracking.built.js': 'static/js/tracking.js',
-          'static/dist/js/status.built.js': 'static/js/status.js'
+          'static/dist/js/status.built.js': 'static/js/status.js',
+          'static/dist/iv_calc/js/build.built.js': 'static/iv_calc/js/build.js'
         }
       }
     },
@@ -54,7 +58,8 @@ module.exports = function(grunt) {
           'static/dist/js/stats.min.js': 'static/dist/js/stats.built.js',
           'static/dist/js/statistics.min.js': 'static/dist/js/statistics.built.js',
           'static/dist/js/tracking.min.js': 'static/dist/js/tracking.built.js',
-          'static/dist/js/status.min.js': 'static/dist/js/status.built.js'
+          'static/dist/js/status.min.js': 'static/dist/js/status.built.js',
+          'static/dist/iv_calc/js/build.min.js': 'static/dist/iv_calc/js/build.built.js'
         }
       }
     },
@@ -112,7 +117,10 @@ module.exports = function(grunt) {
           'static/dist/css/statistics.min.css': 'static/dist/css/statistics.built.css',
           'static/dist/css/status.min.css': 'static/dist/css/status.built.css',
           'static/dist/css/help.min.css': 'static/dist/css/help.built.css',
-          'static/dist/css/menu.min.css': 'static/dist/css/menu.built.css'
+          'static/dist/css/menu.min.css': 'static/dist/css/menu.built.css',
+          'static/dist/iv_calc/css/main.min.css': 'static/dist/iv_calc/css/main.built.css',
+          'static/dist/iv_calc/css/lotus.min.css': 'static/dist/iv_calc/css/lotus.built.css',
+          'static/dist/iv_calc/css/react-select.min.css': 'static/dist/iv_calc/css/react-select.built.css'
         }
       }
     }
