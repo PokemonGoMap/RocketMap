@@ -28,7 +28,7 @@ var rawDataIsLoading = false
 var locationMarker
 var rangeMarkers = ['pokemon', 'pokestop', 'gym']
 var searchMarker
-var storeZoom = true
+var storeZoom = false
 var scanPath
 
 var noLabelsStyle = [{
@@ -797,7 +797,7 @@ var StoreOptions = {
     type: StoreTypes.String
   },
   'zoomLevel': {
-    default: 16,
+    default: 15,
     type: StoreTypes.Number
   }
 }
@@ -1890,8 +1890,8 @@ function myLocationButton (map, marker) {
   locationButton.style.backgroundColor = '#fff'
   locationButton.style.border = 'none'
   locationButton.style.outline = 'none'
-  locationButton.style.width = '28px'
-  locationButton.style.height = '28px'
+  locationButton.style.width = '14px'
+  locationButton.style.height = '14px'
   locationButton.style.borderRadius = '2px'
   locationButton.style.boxShadow = '0 1px 4px rgba(0,0,0,0.3)'
   locationButton.style.cursor = 'pointer'
@@ -1921,15 +1921,19 @@ function myLocationButton (map, marker) {
 
 function centerMapOnLocation () {
   var currentLocation = document.getElementById('current-location')
-  var imgX = '0'
-  var animationInterval = setInterval(function () {
-    if (imgX === '-18') {
-      imgX = '0'
-    } else {
-      imgX = '-18'
-    }
-    currentLocation.style.backgroundPosition = imgX + 'px 0'
-  }, 500)
+  if (currentLocation == null){
+      console.log('currentLocation is null')
+  } else {
+      var imgX = '0'
+      var animationInterval = setInterval(function () {
+        if (imgX === '-18') {
+          imgX = '0'
+        } else {
+          imgX = '-18'
+        }
+        currentLocation.style.backgroundPosition = imgX + 'px 0'
+      }, 500)
+  }
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(function (position) {
 		changeLocation(position.coords.latitude, position.coords.longitude)
