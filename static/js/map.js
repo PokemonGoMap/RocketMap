@@ -1222,35 +1222,46 @@ function gymLabel (teamName, teamId, gymPoints, latitude, longitude, lastScanned
   return str
 }
 
-function pokestopLabel (expireTime, latitude, longitude) {
+function pokestopLabel (item) {
   var str
-  if (expireTime) {
-    var expireDate = new Date(expireTime)
+  var pkstpinfo = ''
+  
+  if (typeof item.name !== 'undefined' && item.name !== null) {
+    pkstpinfo += '<br><b>'+item.name+'</b>'
+    if (typeof item.image_url !== 'undefined' && item.image_url !== null) {
+        pkstpinfo += '<br><img width=100 height=100 src="'+item.image_url+'"/>'
+    }
+  }
+  
+  if (item.expireTime) {
+    var expireDate = new Date(item.expireTime)
 
     str = `
       <div>
         <b>Lured Pokéstop</b>
+        ${pkstpinfo}
       </div>
       <div>
         Lure expires at ${pad(expireDate.getHours())}:${pad(expireDate.getMinutes())}:${pad(expireDate.getSeconds())}
-        <span class='label-countdown' disappears-at='${expireTime}'>(00m00s)</span>
+        <span class='label-countdown' disappears-at='${item.expireTime}'>(00m00s)</span>
       </div>
       <div>
-        Location: ${latitude.toFixed(6)}, ${longitude.toFixed(7)}
+        Location: ${item.latitude.toFixed(6)}, ${item.longitude.toFixed(7)}
       </div>
       <div>
-        <a href='javascript:void(0);' onclick='javascript:openMapDirections(${latitude},${longitude});' title='View in Maps'>Get directions</a>
+        <a href='javascript:void(0);' onclick='javascript:openMapDirections(${item.latitude},${item.longitude});' title='View in Maps'>Get directions</a>
       </div>`
   } else {
     str = `
       <div>
         <b>Pokéstop</b>
+        ${pkstpinfo}
       </div>
       <div>
-        Location: ${latitude.toFixed(6)}, ${longitude.toFixed(7)}
+        Location: ${item.latitude.toFixed(6)}, ${item.longitude.toFixed(7)}
       </div>
       <div>
-        <a href='javascript:void(0);' onclick='javascript:openMapDirections(${latitude},${longitude});' title='View in Maps'>Get directions</a>
+        <a href='javascript:void(0);' onclick='javascript:openMapDirections(${item.latitude},${item.longitude});' title='View in Maps'>Get directions</a>
       </div>`
   }
 
@@ -1446,7 +1457,7 @@ function setupPokestopMarker (item) {
   }
 
   marker.infoWindow = new google.maps.InfoWindow({
-    content: pokestopLabel(item['lure_expiration'], item['latitude'], item['longitude']),
+    content: pokestopLabel(item),
     disableAutoPan: true
   })
 

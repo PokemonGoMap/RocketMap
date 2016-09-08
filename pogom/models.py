@@ -9,7 +9,7 @@ import time
 import geopy
 from peewee import SqliteDatabase, InsertQuery, \
     IntegerField, CharField, DoubleField, BooleanField, \
-    DateTimeField, fn, DeleteQuery, CompositeKey, FloatField, SQL, TextField
+    DateTimeField, fn, DeleteQuery, CompositeKey, FloatField, SQL, TextField, JOIN
 from playhouse.flask_utils import FlaskDB
 from playhouse.pool import PooledMySQLDatabase
 from playhouse.shortcuts import RetryOperationalError
@@ -343,12 +343,17 @@ class Pokestop(BaseModel):
     @staticmethod
     def get_stops(swLat, swLng, neLat, neLng):
         if swLat is None or swLng is None or neLat is None or neLng is None:
+            #somehow can't get the select to show the joined table columns without specifying them
             query = (Pokestop
-                     .select()
+                     .select(Pokestop.pokestop_id, Pokestop.enabled, Pokestop.latitude, Pokestop.longitude, Pokestop.last_modified, Pokestop.lure_expiration,
+                             Pokestop.active_fort_modifier, PokestopDetails.name, PokestopDetails.description, PokestopDetails.image_url)
+                     .join(PokestopDetails,JOIN.LEFT_OUTER,on=(PokestopDetails.pokestop_id == Pokestop.pokestop_id))
                      .dicts())
         else:
             query = (Pokestop
-                     .select()
+                     .select(Pokestop.pokestop_id,Pokestop.enabled, Pokestop.latitude, Pokestop.longitude, Pokestop.last_modified, Pokestop.lure_expiration, 
+                             Pokestop.active_fort_modifier, PokestopDetails.name, PokestopDetails.description, PokestopDetails.image_url)
+                     .join(PokestopDetails,JOIN.LEFT_OUTER,on=(PokestopDetails.pokestop_id == Pokestop.pokestop_id))
                      .where((Pokestop.latitude >= swLat) &
                             (Pokestop.longitude >= swLng) &
                             (Pokestop.latitude <= neLat) &
@@ -560,6 +565,11 @@ class GymDetails(BaseModel):
     url = CharField()
     last_scanned = DateTimeField(default=datetime.utcnow)
 
+class PokestopDetails(BaseModel):
+    pokestop_id = CharField(primary_key=True, index=True, max_length=50)
+    name = CharField(max_length=100)
+    description = TextField(null=True, default="")
+    image_url = TextField(null=True, default="")
 
 def hex_bounds(center, steps):
     # Make a box that is (70m * step_limit * 2) + 70m away from the center point
