@@ -574,7 +574,7 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                             record = PokestopDetails.get(pokestop_id=pokestop['pokestop_id'])
 
                             if args.pokestop_info_expire and args.pokestop_info_expire > 0:
-                                if (datetime.utcnow() + timedelta(minutes = args.pokestop_info_expire)) > record.last_scanned:
+                                if (datetime.utcnow() + timedelta(minutes=args.pokestop_info_expire)) > record.last_scanned:
                                     pokestops_to_update[pokestop['pokestop_id']] = pokestop
                                     continue
                         except PokestopDetails.DoesNotExist as e:
