@@ -7,5 +7,5 @@ config = {
     'ROOT_PATH': '',
     'DATA_DIR': 'static/dist/data',
     'GMAPS_KEY': None,
-    'SPAWNPOINTS_ONLY': False
+    'SCHEDULER': ''
 }
