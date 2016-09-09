@@ -25,7 +25,7 @@ import time
 import geopy
 import geopy.distance
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from threading import Thread
 from queue import Queue, Empty
 
@@ -34,7 +34,7 @@ from pgoapi.utilities import f2i
 from pgoapi import utilities as util
 from pgoapi.exceptions import AuthException
 
-from .models import parse_map, GymDetails, parse_gyms, MainWorker, WorkerStatus
+from .models import parse_map, GymDetails, parse_gyms, MainWorker, WorkerStatus, PokestopDetails, parse_pokestops
 from .fakePogoApi import FakePogoApi
 from .utils import now
 import schedulers
@@ -564,6 +564,48 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                         if gym_responses:
                             parse_gyms(args, gym_responses, whq)
 
+                # seems like there issnt a range limit on scanning pokestops
+                if args.pokestop_info and parsed:
+                    # build up a list of gyms to update
+                    pokestops_to_update = {}
+                    for pokestop in parsed['pokestops'].values():
+                        # check if we already have details on this pokestop (if not, get them)
+                        try:
+                            record = PokestopDetails.get(pokestop_id=pokestop['pokestop_id'])
+
+                            if args.pokestop_info_expire and args.pokestop_info_expire > 0:
+                                if (datetime.utcnow() + timedelta(minutes = args.pokestop_info_expire)) > record.last_scanned:
+                                    pokestops_to_update[pokestop['pokestop_id']] = pokestop
+                                    continue
+                        except PokestopDetails.DoesNotExist as e:
+                            pokestops_to_update[pokestop['pokestop_id']] = pokestop
+                            continue
+
+                        log.debug('Skipping update of pokestop @ %f/%f, up to date', pokestop['latitude'], pokestop['longitude'])
+                        continue
+
+                    if len(pokestops_to_update):
+                        pokestop_responses = {}
+                        current_pokestop = 1
+                        status['message'] = 'Updating {} pokestops for location {},{}...'.format(len(pokestops_to_update), step_location[0], step_location[1])
+                        log.debug(status['message'])
+
+                        for pokestop in pokestops_to_update.values():
+                            status['message'] = 'Getting details for pokestop {} of {} for location {},{}...'.format(current_pokestop, len(pokestops_to_update), step_location[0], step_location[1])
+                            time.sleep(random.random() + 2)
+                            response = pokestop_request(api, step_location, pokestop)
+
+                            pokestop_responses[pokestop['pokestop_id']] = response['responses']['FORT_DETAILS']
+
+                            # increment which pokestop we're on (for status messages)
+                            current_pokestop += 1
+
+                        status['message'] = 'Processing details of {} pokestop for location {},{}...'.format(len(pokestops_to_update), step_location[0], step_location[1])
+                        log.debug(status['message'])
+
+                        if pokestop_responses:
+                            parse_pokestops(args, pokestop_responses)
+
                 # Record the time and place the worker left off at
                 status['last_scan_time'] = now()
                 status['location'] = step_location
@@ -647,6 +689,20 @@ def gym_request(api, position, gym):
 
     except Exception as e:
         log.warning('Exception while downloading gym details: %s', e)
+        return False
+
+
+def pokestop_request(api, position, pokestop):
+    try:
+        log.debug('Getting details for pokestop @ %f/%f (%fkm away)', pokestop['latitude'], pokestop['longitude'], calc_distance(position, [pokestop['latitude'], pokestop['longitude']]))
+        x = api.fort_details(fort_id=pokestop['pokestop_id'],
+                             latitude=pokestop['latitude'],
+                             longitude=pokestop['longitude'])
+
+        return x
+
+    except Exception as e:
+        log.warning('Exception while downloading pokestop details: %s', e)
         return False
 
 
