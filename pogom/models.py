@@ -9,7 +9,7 @@ import time
 import geopy
 from peewee import SqliteDatabase, InsertQuery, \
     IntegerField, CharField, DoubleField, BooleanField, \
-    DateTimeField, fn, DeleteQuery, CompositeKey, FloatField, SQL, TextField
+    DateTimeField, fn, DeleteQuery, CompositeKey, FloatField, SQL, TextField, JOIN
 from playhouse.flask_utils import FlaskDB
 from playhouse.pool import PooledMySQLDatabase
 from playhouse.shortcuts import RetryOperationalError
@@ -27,7 +27,7 @@ log = logging.getLogger(__name__)
 args = get_args()
 flaskDb = FlaskDB()
 
-db_schema_version = 7
+db_schema_version = 8
 
 
 class MyRetryDB(RetryOperationalError, PooledMySQLDatabase):
@@ -343,12 +343,17 @@ class Pokestop(BaseModel):
     @staticmethod
     def get_stops(swLat, swLng, neLat, neLng):
         if swLat is None or swLng is None or neLat is None or neLng is None:
+            # somehow can't get the select to show the joined table columns without specifying them
             query = (Pokestop
-                     .select()
+                     .select(Pokestop.pokestop_id, Pokestop.enabled, Pokestop.latitude, Pokestop.longitude, Pokestop.last_modified, Pokestop.lure_expiration,
+                             Pokestop.active_fort_modifier, PokestopDetails.name, PokestopDetails.description, PokestopDetails.image_url)
+                     .join(PokestopDetails, JOIN.LEFT_OUTER, on=(PokestopDetails.pokestop_id == Pokestop.pokestop_id))
                      .dicts())
         else:
             query = (Pokestop
-                     .select()
+                     .select(Pokestop.pokestop_id, Pokestop.enabled, Pokestop.latitude, Pokestop.longitude, Pokestop.last_modified, Pokestop.lure_expiration,
+                             Pokestop.active_fort_modifier, PokestopDetails.name, PokestopDetails.description, PokestopDetails.image_url)
+                     .join(PokestopDetails, JOIN.LEFT_OUTER, on=(PokestopDetails.pokestop_id == Pokestop.pokestop_id))
                      .where((Pokestop.latitude >= swLat) &
                             (Pokestop.longitude >= swLng) &
                             (Pokestop.latitude <= neLat) &
@@ -559,6 +564,13 @@ class GymDetails(BaseModel):
     description = TextField(null=True, default="")
     url = CharField()
     last_scanned = DateTimeField(default=datetime.utcnow)
+
+
+class PokestopDetails(BaseModel):
+    pokestop_id = CharField(primary_key=True, index=True, max_length=50)
+    name = CharField(max_length=100)
+    description = TextField(null=True, default="")
+    image_url = TextField(null=True, default="")
 
 
 def hex_bounds(center, steps):
@@ -923,13 +935,13 @@ def bulk_upsert(cls, data):
 def create_tables(db):
     db.connect()
     verify_database_schema(db)
-    db.create_tables([Pokemon, Pokestop, Gym, ScannedLocation, GymDetails, GymMember, GymPokemon, Trainer, MainWorker, WorkerStatus], safe=True)
+    db.create_tables([Pokemon, Pokestop, PokestopDetails, Gym, ScannedLocation, GymDetails, GymMember, GymPokemon, Trainer, MainWorker, WorkerStatus], safe=True)
     db.close()
 
 
 def drop_tables(db):
     db.connect()
-    db.drop_tables([Pokemon, Pokestop, Gym, ScannedLocation, Versions, GymDetails, GymMember, GymPokemon, Trainer, MainWorker, WorkerStatus, Versions], safe=True)
+    db.drop_tables([Pokemon, Pokestop, PokestopDetails, Gym, ScannedLocation, Versions, GymDetails, GymMember, GymPokemon, Trainer, MainWorker, WorkerStatus, Versions], safe=True)
     db.close()
 
 
@@ -1008,3 +1020,6 @@ def database_migrate(db, old_ver):
             migrator.drop_column('gymdetails', 'description'),
             migrator.add_column('gymdetails', 'description', TextField(null=True, default=""))
         )
+
+    if old_ver < 8:
+        db.create_tables([PokestopDetails], safe=True)
