@@ -571,6 +571,26 @@ def hex_bounds(center, steps):
     w = get_new_coords(center, sp_dist, 270)[1]
     return (n, e, s, w)
 
+def nearby_pokemon_analysis(step_loc, nearby_poke, pokemons):
+    # get the eid-bits for the nearby poke
+    # box A = get bounds for 200m in each direction
+    # box B = get bounds for  70m in each direction
+    # query = get spawnpoints (and their encounter bits) which are:
+        # inside box A
+        # not inside box B
+        # currently active
+    # loop throuh the query results
+        # if the eid-bits for the current hour & day for that point do not match the eid-bits of the nearby_poke
+            # remove the point from the list
+    # if left with no points
+        # do nothing, quit now
+    # if left with exactly one point
+        # add it to pokemons because we know the spawnpoint ID, the pokemon, the lat, the lng, and the expiration time
+    # if left with more than 1 point
+        # scan one at a time to narrow it down? or quit? maybe it depends on rarity?
+    # return pokemons list
+    return pokemons
+
 
 # todo: this probably shouldn't _really_ be in "models" anymore, but w/e
 def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue):
@@ -581,6 +601,8 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue):
     cells = map_dict['responses']['GET_MAP_OBJECTS']['map_cells']
     for cell in cells:
         if config['parse_pokemon']:
+            for p in cell.get('nearby_pokemons', []):
+                pokemons = nearby_pokemon_analysis(step_location,p,pokemons)
             for p in cell.get('wild_pokemons', []):
                 # time_till_hidden_ms was overflowing causing a negative integer.
                 # It was also returning a value above 3.6M ms.
