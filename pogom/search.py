@@ -258,7 +258,7 @@ def worker_status_db_thread(threads_status, name, db_updates_queue):
 
 
 # The main search loop that keeps an eye on the over all process
-def search_overseer_thread(args, method, new_location_queue, pause_bit, encryption_lib_path, db_updates_queue, wh_queue):
+def search_overseer_thread(args, method, new_location_queue, pause_bit, heartb, encryption_lib_path, db_updates_queue, wh_queue):
 
     log.info('Search overseer starting')
 
@@ -364,6 +364,10 @@ def search_overseer_thread(args, method, new_location_queue, pause_bit, encrypti
 
     # The real work starts here but will halt on pause_bit.set()
     while True:
+
+        if args.on_demand_timeout > 0 and (now() - args.on_demand_timeout) > heartb[0]:
+            pause_bit.set()
+            log.info("Searching paused due to inactivity...")
 
         # paused; clear queue if needed, otherwise sleep and loop
         while pause_bit.is_set():
