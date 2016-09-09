@@ -650,7 +650,7 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                     first_run = False
                 elif speed_limit > 0:
                     distance = geopy.distance.distance(last_location, step_location).meters
-                    time_elapsed = int(round(time.time() * 1000.0)) - last_scan_time
+                    time_elapsed = 0.001 if int(round(time.time() * 1000.0)) - last_scan_time == 0 else int(round(time.time() * 1000.0)) - last_scan_time
                     speed = distance / (time_elapsed / 1000.0)
                     if speed > speed_limit:
                         speed_sleep = int(math.ceil(((1000.0 * distance / speed_limit) - time_elapsed) / 1000.0))
