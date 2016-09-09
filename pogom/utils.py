@@ -174,7 +174,7 @@ def get_args():
     verbosity = parser.add_mutually_exclusive_group()
     verbosity.add_argument('-v', '--verbose', help='Show debug messages from PomemonGo-Map and pgoapi. Optionally specify file to log to.', nargs='?', const='nofile', default=False, metavar='filename.log')
     verbosity.add_argument('-vv', '--very-verbose', help='Like verbose, but show debug messages from all modules as well.  Optionally specify file to log to.', nargs='?', const='nofile', default=False, metavar='filename.log')
-    verbosity.add_argument('-d', '--debug', help='Depreciated, use -v or -vv instead.', action='store_true')
+    verbosity.add_argument('-d', '--debug', help='Deprecated, use -v or -vv instead.', action='store_true')
     parser.set_defaults(DEBUG=False)
 
     args = parser.parse_args()
@@ -278,12 +278,25 @@ def get_args():
             print(sys.argv[0] + ": Error: no accounts specified. Use -a, -u, and -p or --accountcsv to add accounts")
             sys.exit(1)
 
+        # Decide which scanning mode to use
+        if args.spawnpoint_scanning:
+            args.scheduler = 'SpawnScan'
+        elif args.spawnpoints_only:
+            args.scheduler = 'HexSearchSpawnpoint'
+        else:
+            args.scheduler = 'HexSearch'
+
     return args
 
 
 def now():
     # The fact that you need this helper...
     return int(time.time())
+
+
+# gets the current time past the hour
+def cur_sec():
+    return (60 * time.gmtime().tm_min) + time.gmtime().tm_sec
 
 
 def i8ln(word):
