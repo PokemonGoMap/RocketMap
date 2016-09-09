@@ -198,11 +198,8 @@ def main():
 
     if not args.only_server:
 
-        # Check all proxies before continue so we know they are good
-        if args.proxy:
-
-            # Overwrite old args.proxy with new working list
-            args.proxy = check_proxies(args)
+        # Processing proxies if set (load from file, check and overwrite old args.proxy with new working list)
+        args.proxy = check_proxies(args)
 
         # Gather the pokemons!
 

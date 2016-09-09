@@ -28,6 +28,7 @@
 #proxy:                 # Proxy URL e.g. socks5://127.0.0.1:9050 or a list of proxies e.g. [socks5://127.0.0.1:9050,socks5://127.0.0.1:9050]
 #proxy-timeout:         # Timeout before proceeding with next proxy while checking if the proxy works, (default 5)
 #proxy-display:         # Used with -ps, full = display complete proxy address. Index = displays just the index for that proxy (default index)
+#proxyfile:             # Load proxy list from text file (one proxy per line), overrides -px/--proxy
 #webhook:               # webhook URL (including http://)
 #webhook-updates-only:  # only send updates to webhooks, (excludes gyms & non-lured pokéstops)
 
