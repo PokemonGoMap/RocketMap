@@ -951,7 +951,7 @@ function initMap () { // eslint-disable-line no-unused-vars
   $('#scan-here').on('click', function () {
     var loc = map.getCenter()
     changeLocation(loc.lat(), loc.lng())
- 
+
     if (!$('#search-switch').checked) {
       $('#search-switch').prop('checked', true)
       searchControl('on')
