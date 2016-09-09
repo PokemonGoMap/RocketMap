@@ -433,7 +433,7 @@ function pokestopLabel (item) {
   if (typeof item.name !== 'undefined' && item.name !== null) {
     pkstpinfo += '<br><b>' + item.name + '</b>'
     if (typeof item.image_url !== 'undefined' && item.image_url !== null) {
-      pkstpinfo += '<br><img width=100 height=100 src="' + item.image_url + '"/>'
+      pkstpinfo += '<br><img width=100 height=100 src="//' + item.image_url + '"/>'
    }
   }
 
@@ -443,6 +443,7 @@ function pokestopLabel (item) {
     str = `
       <div style="text-align: center;">
         <b>Lured Pokéstop</b>
+        ${pkstpinfo}
       </div>
       <div>
         Lure expires at ${pad(expireDate.getHours())}:${pad(expireDate.getMinutes())}:${pad(expireDate.getSeconds())}
@@ -458,6 +459,7 @@ function pokestopLabel (item) {
     str = `
       <div style="text-align: center;">
         <b>Pokéstop</b>
+        ${pkstpinfo}
       </div>
       <div>
         Location: ${item.latitude.toFixed(6)}, ${item.longitude.toFixed(7)}

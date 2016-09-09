@@ -855,11 +855,12 @@ def parse_pokestops(args, pokestop_responses):
 
     for p in pokestop_responses.values():
         p_id = p['fort_id']
+        p_img = p['image_urls'][0].replace('http://','').replace('https://', '')
         pokestop_infos[p_id] = {
             'pokestop_id': p_id,
             'name': p['name'],
             'description': p.get('description'),
-            'image_url': p['image_urls'][0],
+            'image_url': p_img,
             'last_scanned': datetime.utcnow()
         }
 
