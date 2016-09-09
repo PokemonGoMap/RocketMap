@@ -433,8 +433,8 @@ function pokestopLabel (item) {
   if (typeof item.name !== 'undefined' && item.name !== null) {
     pkstpinfo += '<br><b>' + item.name + '</b>'
     if (typeof item.image_url !== 'undefined' && item.image_url !== null) {
-       pkstpinfo += '<br><img width=100 height=100 src="//' + item.image_url + '"/>'
-   }
+      pkstpinfo += '<br><img width=100 height=100 src="//' + item.image_url + '"/>'
+    }
   }
 
   if (item.expireTime) {
