@@ -26,7 +26,7 @@ cd PokemonGo-Map/Tools/Hex-Beehive-Generator/
 
 Now generate coordinates with `location_generator.py`:
 
-***NOTE:*** Carefully read [these instructions](https://github.com/PokemonGoMap/PokemonGo-Map/blob/develop/docs/extras/beehive.md) for the proper arguments.
+***NOTE:*** Carefully read [these instructions](https://github.com/PokemonGoMap/PokemonGo-Map/blob/develop/Tools/Hex-Beehive-Generator/Instructions_for_location_generator.txt) for the proper arguments.
 
 ```
 python location_generator.py -st stepsize -lp ringsize -lat yourstartinglathere -lon yourstartinglonghere
@@ -46,4 +46,4 @@ Run the .bat/.sh file to start the workers.
 
 ## Troubleshooting
 
-If your instances start but then immediately stop, take each line from the beehive file and run them one at a time manually. This will stop the window from automatically closing so that you can see what the actual error is.
+If your instances start but then immediately stop, take each line and run the part after /MIN starting with the python path. This will stop the window from automatically closing so that you can see what the actual error is.
