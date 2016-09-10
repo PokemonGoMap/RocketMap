@@ -74,10 +74,10 @@ class BaseScheduler(object):
     # Note: This function is called repeatedly while scanning is paused!
     def scanning_paused(self):
         self.empty_queues()
-    
+
     def getsize(self):
         return self.size
-    
+
     # Function to empty all queues in the queues list
     def empty_queues(self):
         for queue in self.queues:
