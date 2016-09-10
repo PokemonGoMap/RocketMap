@@ -37,7 +37,6 @@ from pgoapi.exceptions import AuthException
 from .models import parse_map, GymDetails, parse_gyms, MainWorker, WorkerStatus
 from .fakePogoApi import FakePogoApi
 from .utils import now
-from .transform import get_speed_sleep
 from . import config
 import schedulers
 
@@ -364,7 +363,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
 
         # Look for scheduler change
         if config['SCHEDULER'] != threadStatus['Overseer']['scheduler']:
-            log.info('Switching current scheduler to %s', config['SCHEDULER'])
+            log.info('Switching current scheduler to: %s', config['SCHEDULER'])
             threadStatus['Overseer']['scheduler'] = config['SCHEDULER']
             scheduler = schedulers.SchedulerFactory.get_scheduler(config['SCHEDULER'], [search_items_queue], threadStatus, args)
             scheduler.location_changed(current_location)
@@ -682,6 +681,22 @@ def calc_distance(pos1, pos2):
     d = R * c
 
     return d
+
+
+def get_speed_sleep(speed_limit, start_location, end_location, start_time, end_time):
+    if speed_limit > 0:
+        speed_limit = speed_limit * 1000.0 / 3600.0  # convert to mps to avoid divide by zero errors
+        distance = geopy.distance.distance(start_location, end_location).meters
+        time_elapsed = 0.001 if end_time - start_time == 0 else end_time - start_time
+        speed = distance / time_elapsed
+    else:
+        return 0
+
+    if speed > speed_limit:
+        speed_sleep = int(math.ceil((distance / speed_limit) - time_elapsed))
+        return speed_sleep
+
+    return 0
 
 
 # Delay each thread start time so that logins only occur ~1s

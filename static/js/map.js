@@ -285,6 +285,7 @@ function initSidebar () {
   setInterval(updateSearchStatus, 5000)
 
   updateSpawnpointsOnlyStatus()
+  setInterval(updateSpawnpointsOnlyStatus, 5000)
 
   searchBox.addListener('places_changed', function () {
     var places = searchBox.getPlaces()

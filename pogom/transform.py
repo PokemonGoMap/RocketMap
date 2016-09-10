@@ -54,22 +54,3 @@ def get_new_coords(init_loc, distance, bearing):
     origin = geopy.Point(init_loc[0], init_loc[1])
     destination = geopy.distance.distance(kilometers=distance).destination(origin, bearing)
     return (destination.latitude, destination.longitude)
-
-
-def get_speed_sleep(speed_limit, start_location, end_location, start_time, end_time):
-    if speed_limit > 0:
-        speed_limit = speed_limit * 1000.0 / 3600.0  # convert to mps to avoid divide by zero errors
-        distance = geopy.distance.distance(start_location, end_location).meters
-        time_elapsed = end_time - start_time
-        if time_elapsed > 0:
-            speed = distance / time_elapsed
-        else:
-            speed = 9999999.9  # time_elapsed == 0 means instant teleport - speed is "near" infinite...
-    else:
-        return 0
-
-    if speed > speed_limit:
-        speed_sleep = int(math.ceil((distance / speed_limit) - time_elapsed))
-        return speed_sleep
-
-    return 0
