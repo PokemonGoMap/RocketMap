@@ -57,6 +57,7 @@ class BaseScheduler(object):
         self.status = status
         self.args = args
         self.scan_location = False
+        self.size = 0
 
     # schedule function fills the queues with data
     def schedule(self):
@@ -73,7 +74,10 @@ class BaseScheduler(object):
     # Note: This function is called repeatedly while scanning is paused!
     def scanning_paused(self):
         self.empty_queues()
-
+    
+    def getsize(self):
+        return self.size
+    
     # Function to empty all queues in the queues list
     def empty_queues(self):
         for queue in self.queues:
@@ -232,7 +236,7 @@ class HexSearchSpawnpoint(HexSearch):
 
         # Remove items with no spawnpoints in range
         locations = [coords for coords in locations if self._any_spawnpoints_in_range(coords[1], spawnpoints)]
-
+        self.size = len(self.locations)
         return locations
 
 
@@ -347,6 +351,7 @@ class SpawnScan(BaseScheduler):
             log.debug("Added location {}".format(location))
 
         # Clear the locations list so it gets regenerated next cycle
+        self.size = len(self.locations)
         self.locations = None
 
 
