@@ -156,6 +156,10 @@ def get_args():
                         nargs='*', default=False, dest='webhooks')
     parser.add_argument('-gi', '--gym-info', help='Get all details about gyms (causes an additional API hit for every gym)',
                         action='store_true', default=False)
+    parser.add_argument('-pi', '--pokestop-info', help='Get all details about pokestops (name, image, description) (causes an additional API hit for every gym)',
+                        action='store_true', default=False)
+    parser.add_argument('-pie', '--pokestop-info-expire', help='Expiry time for pokestop infos. Will request new info if we see that stop after that time. (in minutes, 0=disabled))',
+                        type=int, default=0)
     parser.add_argument('--webhook-updates-only', help='Only send updates (pokémon & lured pokéstops)',
                         action='store_true', default=False)
     parser.add_argument('--wh-threads', help='Number of webhook threads; increase if the webhook queue falls behind',
