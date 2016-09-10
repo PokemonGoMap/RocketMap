@@ -869,7 +869,7 @@ function getStats (spawnpointId) { // eslint-disable-line no-unused-vars
     async: true,
     success: function (data) {
       $.each(data.spawn_history, function (count, id) {
-        $('ul[name=' + spawnpointId + ']').append('<li style="float: left; width: 33% list-style: none; height: 36px; margin-right: 5px; "><span><img src="static/icons/' + id['pokemon_id'] + '.png"></span><span style="font-weight: bold;">' + id['count'] + '</span></span>')
+        $('ul[name=' + spawnpointId + ']').append('<li style="float: left; list-style: none; height: 36px; margin-right: 5px;"><i class="pokemon-sprite n' + id.pokemon_id + '"></i><span style="font-weight: bold;">' + id.count + '</span></li>')
       })
     },
     error: function (jqXHR, status, error) {
