@@ -255,6 +255,16 @@ function updateSearchStatus () {
   })
 }
 
+var stepLimitURI = 'step_limit'
+function changeStepLimit (value) {
+  $.post(stepLimitURI + '?limit=' + encodeURIComponent(value))
+}
+function updateStepLimit () {
+  $.getJSON(stepLimitURI).then(function (data) {
+    $('#step-limit').prop('value', data.limit)
+  })
+}
+
 var searchModeURI = 'search_mode'
 function searchModeSet (mode) {
   $.post(searchModeURI + '?mode=' + encodeURIComponent(mode))
@@ -284,6 +294,9 @@ function initSidebar () {
 
   updateSearchStatus()
   setInterval(updateSearchStatus, 5000)
+
+  updateStepLimit()
+  setInterval(updateStepLimit, 5000)
 
   updateSearchMode()
   setInterval(updateSearchMode, 5000)
@@ -1555,6 +1568,10 @@ $(function () {
 
   $('#search-switch').change(function () {
     searchControl(this.checked ? 'on' : 'off')
+  })
+
+  $('#step-limit').change(function () {
+    changeStepLimit(this.value)
   })
 
   $('#search-mode').change(function () {

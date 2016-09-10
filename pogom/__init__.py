@@ -7,5 +7,6 @@ config = {
     'ROOT_PATH': '',
     'DATA_DIR': 'static/dist/data',
     'GMAPS_KEY': None,
+    'STEP_LIMIT': 12,
     'SCHEDULER': ''
 }
