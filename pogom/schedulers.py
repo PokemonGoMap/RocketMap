@@ -217,6 +217,7 @@ class HexSearch(BaseScheduler):
             log.debug("Added location {}".format(location))
         self.size = len(self.locations)
 
+
 # Spawn Only Hex Search works like Hex Search, but skips locations that have no known spawnpoints
 class HexSearchSpawnpoint(HexSearch):
 
