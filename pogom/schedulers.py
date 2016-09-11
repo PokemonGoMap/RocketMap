@@ -57,7 +57,7 @@ class BaseScheduler(object):
         self.status = status
         self.args = args
         self.scan_location = False
-        self.size = 0
+        self.size = None
 
     # schedule function fills the queues with data
     def schedule(self):
@@ -215,7 +215,7 @@ class HexSearch(BaseScheduler):
             # FUTURE IMPROVEMENT - For now, queues is assumed to have a single queue.
             self.queues[0].put(location)
             log.debug("Added location {}".format(location))
-
+        self.size = len(self.locations)
 
 # Spawn Only Hex Search works like Hex Search, but skips locations that have no known spawnpoints
 class HexSearchSpawnpoint(HexSearch):
@@ -236,7 +236,6 @@ class HexSearchSpawnpoint(HexSearch):
 
         # Remove items with no spawnpoints in range
         locations = [coords for coords in locations if self._any_spawnpoints_in_range(coords[1], spawnpoints)]
-        self.size = len(self.locations)
         return locations
 
 
