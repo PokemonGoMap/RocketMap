@@ -268,20 +268,15 @@ function initSidebar () {
   $('#spawnpoints-switch').prop('checked', Store.get('showSpawnpoints'))
   $('#ranges-switch').prop('checked', Store.get('showRanges'))
   $('#sound-switch').prop('checked', Store.get('playSound'))
-  var searchBox = new google.maps.places.SearchBox(document.getElementById('next-location'))
+  var searchBox = new google.maps.places.Autocomplete(document.getElementById('next-location'))
   $('#next-location').css('background-color', $('#geoloc-switch').prop('checked') ? '#e0e0e0' : '#ffffff')
 
   updateSearchStatus()
   setInterval(updateSearchStatus, 5000)
 
-  searchBox.addListener('places_changed', function () {
-    var places = searchBox.getPlaces()
-
-    if (places.length === 0) {
-      return
-    }
-
-    var loc = places[0].geometry.location
+  searchBox.addListener('place_changed', function () {
+    var place = searchBox.getPlace()
+    var loc = place.geometry.location
     changeLocation(loc.lat(), loc.lng())
   })
 
