@@ -27,3 +27,4 @@ protobuf_to_dict==0.1.0
 simplejson
 geojson
 pymongo==3.3.0
+cachetools==1.1.6
