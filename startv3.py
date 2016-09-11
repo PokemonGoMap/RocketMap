@@ -6,8 +6,8 @@ import socket
 acc_fname = "config/acc.csv"
 places_fname = "config/places.csv"
 
-acc_regex = "([^;]+);([^;]+);([^;]+);([^;]+)"
-places_regex = "([^;]+);([^;]+);([^;]+);([^;]+);([^;]+)"
+acc_regex = "([^;]+);([^;]+);([^;]+);(.*)"
+places_regex = "([^;]+);([^;]+);([^;]+);([^;]+);(.*)"
 
 accounts = []
 places = []
