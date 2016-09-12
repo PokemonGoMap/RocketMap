@@ -198,6 +198,12 @@ def get_args():
                     # First time around populate num_fields with current field count.
                     if num_fields < 0:
                         num_fields = line.count(',') + 1
+                        if num_fields > 3:
+                           num_fields = 3
+
+                    next_num_fields = line.count(',') + 1
+                    if next_num_fields > 3:
+                       next_num_fields = 3
 
                     csv_input = []
                     csv_input.append('')
@@ -206,8 +212,8 @@ def get_args():
                     csv_input.append('<ptc/gmail>,<username>,<password>')
 
                     # If the number of fields is differend this is not a CSV
-                    if num_fields != line.count(',') + 1:
-                        print(sys.argv[0] + ": Error parsing CSV file on line " + str(num) + ". Your file started with the following input, '" + csv_input[num_fields] + "' but now you gave us '" + csv_input[line.count(',') + 1] + "'.")
+                    if num_fields != next_num_fields:
+                        print(sys.argv[0] + ": Error parsing CSV file on line " + str(num) + ". Your file started with the following input, '" + csv_input[num_fields] + "' but now you gave us '" + csv_input[next_num_fields] + "'.")
                         sys.exit(1)
 
                     field_error = ''
@@ -266,7 +272,11 @@ def get_args():
                         type_error = 'empty!'
                         if field_error == 'method':
                             type_error = 'not ptc or gmail instead we got \'' + fields[0] + '\'!'
-                        print(sys.argv[0] + ": Error parsing CSV file on line " + str(num) + ". We found " + str(num_fields) + " fields, so your input should have looked like '" + csv_input[num_fields] + "'\nBut you gave us '" + line + "', your " + field_error + " was " + type_error)
+
+                        if line.count(',') > 3:
+                            line = fields[0] + ',' + fields[1] + ',' + fields[2]
+
+                        print(sys.argv[0] + ": Error parsing CSV file on line " + str(num) + ". We found " + str(line.count(',') + 1) + " fields, so your input should have looked like '" + csv_input[num_fields] + "'\nBut you gave us '" + line + "', your " + field_error + " was " + type_error)
                         sys.exit(1)
 
         errors = []
