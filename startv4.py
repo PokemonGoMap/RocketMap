@@ -6,8 +6,8 @@ import socket
 acc_fname = "config/acc.csv"
 places_fname = "config/places.csv"
 
-acc_regex = "([a-zA-Z0-9@.]+);([a-zA-Z0-9]+);([a-zA-Z0-9]+);(.*)"
-places_regex = "([0-9.]+);([0-9.]+);([0-9]+);([0-9]+);(.*)"
+acc_regex = "([^;]+);([^;]+);([^;]+);(.*)"
+places_regex = "([^;]+);([^;]+);([^;]+);([^;]+);(.*)"
 
 accounts = []
 places = []
@@ -34,50 +34,42 @@ with open(acc_fname, "r") as ins:
         if not account["suspended"].startswith("X"):
             accounts.append(account)
 
-with open(places_fname, "r") as ins:
-    firstline = True
-    for line in ins:
-        if firstline:
-            firstline = False
-            continue
-        
-        place = {}
-        m = re.search(places_regex, line)
-        place["lat"] = m.group(1)
-        place["lng"] = m.group(2)
-        place["steps"] = m.group(3)
-        place["delay"] = m.group(4)
-        place["description"] = m.group(5)
-        places.append(place)
 
-x = 0
+hostname = None
 try:
-    hostname = None
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(("gmail.com",80))
-        hostname = s.getsockname()[0]
-        s.close()
-    except Exception as e:
-        hostname = "unknown_host%s" % ( str(id(e)) )
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.connect(("gmail.com",80))
+    hostname = s.getsockname()[0]
+    s.close()
+except Exception as e:
+    hostname = "unknown_host%s" % ( str(id(e)) )
+
+base_dir = "spawns/"
+compressedEnding = ".compressed.json"
+x = 0
+accountNumber = len( accounts )
+for f in os.listdir( base_dir ):
+    if not f.endswith( compressedEnding ):
+        continue
+    #print place
+    #print accounts[x]
     
-    for place in places:
-        #print place
-        #print accounts[x]
-        
-        account = accounts[x]
-        status_name = "worker%d@%s" % ( x, hostname )
-        #exe = "start cmd /k python runserverv2.py -ns -a %s -u %s -p %s -ss %s" % (auth, login, pw, fname)
-        execute = "python runserver.py -ns -a %s -u %s -p %s -l \"%s,%s\" -st %s -sd %s -sn %s" % \
-                    (account["auth"], account["login"], account["pw"], place["lat"], place["lng"], place["steps"], place["delay"], status_name)
-        
-        print("executing '%s' for Location '%s'" % (execute, place["description"]))
-        if windows:
-            os.system("start cmd /k %s" % execute)
-        else:
-            os.system("screen -AmdS pkmn_worker%d-thread %s" % (x, execute))
-        
-        x = x + 1
-        time.sleep(1)
-except IndexError as e:
-    print "no more accounts found! skipping"
+    fileName = base_dir + f
+    
+    account = accounts[x]
+    status_name = "@%s_worker%d" % ( hostname, x )
+    #exe = "start cmd /k python runserverv2.py -ns -a %s -u %s -p %s -ss %s" % (auth, login, pw, fname)
+    execute = "python runserver.py -ns -a %s -u %s -p %s -ss %s -sn %s" % \
+                (account["auth"], account["login"], account["pw"], fileName, status_name)
+    
+    print("executing '%s'" % ( execute ))
+    if windows:
+        os.system("start cmd /k %s" % execute)
+    else:
+        os.system("screen -AmdS pkmn_worker%d-thread %s" % (x, execute))
+    
+    x = x + 1
+    if( x >= accountNumber ):
+        print "no more accounts found! skipping"
+        exit(0)
+    time.sleep(1)

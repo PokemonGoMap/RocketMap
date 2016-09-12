@@ -12,14 +12,13 @@ siehe https://pgm.readthedocs.io/en/develop/basic-install/windows.html für den k
 -> git installieren(https://git-for-windows.github.io/)
 -> Python 2.7 installieren(https://www.python.org/downloads/release/python-2712/)
 -> Visual C++ Compiler installieren(https://www.microsoft.com/en-us/download/details.aspx?id=44266)
--> NodeJS installieren
-
 Du kannst verifizieren, ob die Installationen geklappt haben, indem du folgende Befehle (einzeln) in eine Eingabeaufforderung eingibst:
 git --version
 python --version
 pip --version
 node --version
 npm --version
+
 
 2. Project downloaden
 Während die Taste SHIFT gedrückt ist auf den Desktop(oder einen Ordner deiner Wahl) rechtsklicken und auf "Eingabeaufforderung hier öffnen" klicken, siehe: http://fs5.directupload.net/images/160822/uosc46ef.png
@@ -31,33 +30,30 @@ Gehe jetzt mit der Console in das Verzeichnis, führe dazu
 cd PokemonGo-Map-1
 aus.
 
+
 3. Projekt bauen
 siehe https://pgm.readthedocs.io/en/develop/basic-install/index.html für den kompletten Guide
 folgenden Befehl ausführen um die Bibliotheken runterzuladen
 pip install -r requirements.txt
 
-danach dann
-npm install
-
-und als letztes
-npm run build
-
 wenn alles ohne Fehler funktioniert hat, dann ist alles ok.
+
 
 4. Projekt personalisieren
 Gehe ins Verzeichnis "config" und kopiere die Datei "acc.csv.example" und ändere den Namen der Kopie in "acc.csv"
 Öffne die Datei entweder mit dem Editor oder Excel.
 Füge hier deine Accounts ein, jeweils mit einem Semikolon separiert und eine neue Zeile pro Account....
 wenn du einen PTC Account "PeterZwegat" mit Passwort "abcdef" hinzufügen willst, dann würde die Zeile so aussehen:
-PeterZwegat;abcdef;ptc;;
+PeterZwegat;abcdef;ptc;
 Die letzte Spalte "suspended" ist dazu da gebannte Accounts zu markieren(mit X), damit diese nicht starten. Ein gebannter Account würde wie folgt aussehen:
-PeterZwegat;abcdef;ptc;X;
+PeterZwegat;abcdef;ptc;X
 
 Gehe ins Verzeichnis "config" und kopiere die Datei "places.csv.example" und ändere den Namen der Kopie in "places.csv"
 Öffne die Datei entweder mit dem Editor oder Excel.
-Jetzt geht es ans eingemachte, hier werden die zu scannenden Locations hinzugefügt, sowie die jeweilige Scanweite und das Suchintervall(sollte niemals unter 10 sein!)
-Die Location "51.5107383,7.4650364"(Dortmund Stadtgarten: ) mit Scanweite 7 und Suchintervall 11 würde wie folgt aussehen:
-51.5107383;7.4650364;5;11;Dortmund Innenstadt
+Jetzt geht es ans eingemachte, hier werden die zu scannenden Locations hinzugefügt, sowie die jeweilige Scanweite
+Die Location "51.5107383,7.4650364"(Dortmund Stadtgarten: ) mit Scanweite 5 würde wie folgt aussehen:
+51.5107383;7.4650364;5;Dortmund Innenstadt
+
 
 5. Projekt starten
 Wenn die Map dort noch nie bekannt ist und somit keine Spawns bekannt sind(sind auf der Map unter Options->Spawn Points einsehbar), dann solltest du einfach in einer Spirale suchen
