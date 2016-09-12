@@ -1,3 +1,3 @@
 @echo Starting Spawn Workers..
-python startv3.py
+python startv4.py
 pause

@@ -20,7 +20,7 @@ var languageLookupThreshold = 3
 
 var searchMarkerStyles
 
-var excludedPokemon = [16,19,21,41,96,124]
+var excludedPokemon = []
 var notifiedPokemon = []
 var notifiedRarity = []
 
@@ -38,209 +38,6 @@ var selectedStyle = 'light'
 
 var gymTypes = ['Uncontested', 'Mystic', 'Valor', 'Instinct']
 var audio = new Audio('static/sounds/ding.mp3')
-var pokemonSprites = {
-  normal: {
-    columns: 12,
-    iconWidth: 30,
-    iconHeight: 30,
-    spriteWidth: 360,
-    spriteHeight: 390,
-    filename: 'static/icons-sprite.png',
-    name: 'Normal'
-  },
-  highres: {
-    columns: 7,
-    iconWidth: 65,
-    iconHeight: 65,
-    spriteWidth: 455,
-    spriteHeight: 1430,
-    filename: 'static/icons-large-sprite.png',
-    name: 'High-Res'
-  },
-  shuffle: {
-    columns: 7,
-    iconWidth: 65,
-    iconHeight: 65,
-    spriteWidth: 455,
-    spriteHeight: 1430,
-    filename: 'static/icons-shuffle-sprite.png',
-    name: 'Shuffle'
-  }
-}
-
-//
-// LocalStorage helpers
-//
-
-var StoreTypes = {
-  Boolean: {
-    parse: function (str) {
-      switch (str.toLowerCase()) {
-        case '1':
-        case 'true':
-        case 'yes':
-          return true
-        default:
-          return false
-      }
-    },
-    stringify: function (b) {
-      return b ? 'true' : 'false'
-    }
-  },
-  JSON: {
-    parse: function (str) {
-      return JSON.parse(str)
-    },
-    stringify: function (json) {
-      return JSON.stringify(json)
-    }
-  },
-  String: {
-    parse: function (str) {
-      return str
-    },
-    stringify: function (str) {
-      return str
-    }
-  },
-  Number: {
-    parse: function (str) {
-      return parseInt(str, 10)
-    },
-    stringify: function (number) {
-      return number.toString()
-    }
-  }
-}
-
-var StoreOptions = {
-  /*'last_pos_lng': {
-    default: '',
-    type: StoreTypes.String
-  },
-  'last_pos_lat': {
-    default: '',
-    type: StoreTypes.String
-  },*/
-  'map_style': {
-    default: 'style_pgo',
-    type: StoreTypes.String
-  },
-  'remember_select_exclude': {
-    default: [16,19,21,41,96,124],
-    type: StoreTypes.JSON
-  },
-  'remember_select_notify': {
-    default: [],
-    type: StoreTypes.JSON
-  },
-  'remember_select_rarity_notify': {
-    default: [],
-    type: StoreTypes.JSON
-  },
-  'showGyms': {
-    default: false,
-    type: StoreTypes.Boolean
-  },
-  'showPokemon': {
-    default: true,
-    type: StoreTypes.Boolean
-  },
-  'showPokestops': {
-    default: false,
-    type: StoreTypes.Boolean
-  },
-  'showLuredPokestopsOnly': {
-    default: 0,
-    type: StoreTypes.Number
-  },
-  'showScanned': {
-    default: false,
-    type: StoreTypes.Boolean
-  },
-  'showSpawnpoints': {
-    default: false,
-    type: StoreTypes.Boolean
-  },
-  'showRanges': {
-    default: false,
-    type: StoreTypes.Boolean
-  },
-  'playSound': {
-    default: false,
-    type: StoreTypes.Boolean
-  },
-  'geoLocate': {
-    default: false,
-    type: StoreTypes.Boolean
-  },
-  'lockMarker': {
-    default: true, // default to true if touch device
-    type: StoreTypes.Boolean
-  },
-  'startAtUserLocation': {
-    default: false,
-    type: StoreTypes.Boolean
-  },
-  'followMyLocation': {
-    default: false,
-    type: StoreTypes.Boolean
-  },
-  'followMyLocationPosition': {
-    default: [],
-    type: StoreTypes.JSON
-  },
-  'pokemonIcons': {
-    default: 'normal',
-    type: StoreTypes.String
-  },
-  'iconSizeModifier': {
-    default: 0,
-    type: StoreTypes.Number
-  },
-  'searchMarkerStyle': {
-    default: 'google',
-    type: StoreTypes.String
-  },
-  'locationMarkerStyle': {
-    default: 'none',
-    type: StoreTypes.String
-  },
-  'zoomLevel': {
-    default: 15,
-    type: StoreTypes.Number
-  }
-}
-
-var Store = {
-  getOption: function (key) {
-    var option = StoreOptions[key]
-    if (!option) {
-      throw new Error('Store key was not defined ' + key)
-    }
-    return option
-  },
-  get: function (key) {
-    var option = this.getOption(key)
-    var optionType = option.type
-    var rawValue = localStorage[key]
-    if (rawValue === null || rawValue === undefined) {
-      return option.default
-    }
-    var value = optionType.parse(rawValue)
-    return value
-  },
-  set: function (key, value) {
-    var option = this.getOption(key)
-    var optionType = option.type || StoreTypes.String
-    var rawValue = optionType.stringify(value)
-    localStorage[key] = rawValue
-  },
-  reset: function (key) {
-    localStorage.removeItem(key)
-  }
-}
 
 //
 // Functions
@@ -1317,8 +1114,8 @@ function createMyLocationButton () {
   locationButton.style.backgroundColor = '#fff'
   locationButton.style.border = 'none'
   locationButton.style.outline = 'none'
-  locationButton.style.width = '14px'
-  locationButton.style.height = '14px'
+  locationButton.style.width = '28px'
+  locationButton.style.height = '28px'
   locationButton.style.borderRadius = '2px'
   locationButton.style.boxShadow = '0 1px 4px rgba(0,0,0,0.3)'
   locationButton.style.cursor = 'pointer'
@@ -1353,23 +1150,17 @@ function createMyLocationButton () {
 
 function centerMapOnLocation () {
   var currentLocation = document.getElementById('current-location')
-  if (currentLocation == null){
-      console.log('currentLocation is null')
-  } else {
-      var imgX = '0'
-      var animationInterval = setInterval(function () {
-        if (imgX === '-18') {
-          imgX = '0'
-        } else {
-          imgX = '-18'
-        }
-        currentLocation.style.backgroundPosition = imgX + 'px 0'
-      }, 500)
-  }
+  var imgX = '0'
+  var animationInterval = setInterval(function () {
+    if (imgX === '-18') {
+      imgX = '0'
+    } else {
+      imgX = '-18'
+    }
+    currentLocation.style.backgroundPosition = imgX + 'px 0'
+  }, 500)
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(function (position) {
-		changeLocation(position.coords.latitude, position.coords.longitude)
-		
       var latlng = new google.maps.LatLng(position.coords.latitude, position.coords.longitude)
       locationMarker.setPosition(latlng)
       map.setCenter(latlng)
@@ -1384,9 +1175,6 @@ function centerMapOnLocation () {
 }
 
 function changeLocation (lat, lng) {
-  /*Store.set('last_pos_lng', lng)
-  Store.set('last_pos_lat', lat)*/
-  
   var loc = new google.maps.LatLng(lat, lng)
   changeSearchLocation(lat, lng).done(function () {
     map.setCenter(loc)
@@ -1575,13 +1363,6 @@ $(function () {
   }
 
   if (Store.get('startAtUserLocation')) {
-	/*var lat = parseFloat(Store.get('last_pos_lat'))
-	var lng = parseFloat(Store.get('last_pos_lng'))
-	
-	if(!(isNaN(lat) || isNaN(lng))) {
-		changeLocation(lat, lng)
-	}*/
-	
     centerMapOnLocation()
   }
 
@@ -1659,7 +1440,7 @@ $(function () {
 
   // run interval timers to regularly update map and timediffs
   window.setInterval(updateLabelDiffTime, 1000)
-  window.setInterval(updateMap, 10000)
+  window.setInterval(updateMap, 5000)
   window.setInterval(function () {
     if (navigator.geolocation && (Store.get('geoLocate') || Store.get('followMyLocation'))) {
       navigator.geolocation.getCurrentPosition(function (position) {
