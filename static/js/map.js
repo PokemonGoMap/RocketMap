@@ -1466,7 +1466,7 @@ $(function () {
         }
       })
     }
-  }, 1000)
+  }, 5000)
 
   // Wipe off/restore map icons when switches are toggled
   function buildSwitchChangeListener (data, dataType, storageKey) {
