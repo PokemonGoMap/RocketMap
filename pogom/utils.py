@@ -199,11 +199,11 @@ def get_args():
                     if num_fields < 0:
                         num_fields = line.count(',') + 1
                         if num_fields > 3:
-                           num_fields = 3
+                            num_fields = 3
 
                     next_num_fields = line.count(',') + 1
                     if next_num_fields > 3:
-                       next_num_fields = 3
+                        next_num_fields = 3
 
                     csv_input = []
                     csv_input.append('')
