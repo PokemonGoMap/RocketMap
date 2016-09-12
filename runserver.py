@@ -247,6 +247,13 @@ def main():
         # attempt to dump the spawn points (do this before starting threads of endure the woe)
         if args.spawnpoint_scanning and args.spawnpoint_scanning != 'nofile' and args.dump_spawnpoints:
             with open(args.spawnpoint_scanning, 'w+') as file:
+                if not os.path.exists(os.path.dirname(args.spawnpoint_scanning)):
+                    try:
+                        os.makedirs(os.path.dirname(args.spawnpoint_scanning))
+                    except OSError as exc: # Guard against race condition
+                        if exc.errno != errno.EEXIST:
+                            raise
+                
                 log.info('Saving spawn points to %s', args.spawnpoint_scanning)
                 spawns = Pokemon.get_spawnpoints_in_hex(position, args.step_limit)
                 file.write(json.dumps(spawns))

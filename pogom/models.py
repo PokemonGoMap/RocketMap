@@ -28,7 +28,7 @@ log = logging.getLogger(__name__)
 
 args = get_args()
 flaskDb = FlaskDB()
-cache = TTLCache(maxsize=100, ttl=60 * 5)
+seen_cache = TTLCache(maxsize=500, ttl=60 * 5)
 
 db_schema_version = 7
 
@@ -85,15 +85,16 @@ class Pokemon(BaseModel):
     latitude = DoubleField()
     longitude = DoubleField()
     disappear_time = DateTimeField(index=True)
-    
-    cacheActiveTimestamp = -1
-    cacheActiveQuery = None
-
-    cacheLifetime = 15 #in seconds
 
     class Meta:
         indexes = ((('latitude', 'longitude'), False),)
 
+    
+    cacheActiveTimestamp = -1
+    cacheActiveQuery = None
+
+    cacheActiveLifetime = 15 #in seconds
+    
     @staticmethod
     def get_active(swLat, swLng, neLat, neLng, pkmn_ids=None):
 #        if swLat is None or swLng is None or neLat is None or neLng is None:
@@ -115,7 +116,7 @@ class Pokemon(BaseModel):
             boundariesOn = False
         
         now = time.mktime( datetime.utcnow().timetuple() )
-        if( Pokemon.cacheActiveTimestamp + Pokemon.cacheLifetime < now ) or ( Pokemon.cacheActiveQuery is None ):
+        if( Pokemon.cacheActiveTimestamp + Pokemon.cacheActiveLifetime < now ) or ( Pokemon.cacheActiveQuery is None ):
             Pokemon.cacheActiveTimestamp = now
             log.info('Refreshing Pokemon cache..')
             Pokemon.cacheActiveQuery = (Pokemon
@@ -159,7 +160,7 @@ class Pokemon(BaseModel):
         return pokemons
 
     @classmethod
-    @cached(cache)
+    @cached(seen_cache)
     def get_seen(cls, timediff):
         if timediff:
             timediff = datetime.utcnow() - timediff
@@ -245,24 +246,52 @@ class Pokemon(BaseModel):
     def get_spawn_time(cls, disappear_time):
         return (disappear_time + 2700) % 3600
 
+    
+    cacheSpawnpointTimestamp = -1
+    cacheSpawnpointQuery = None
+
+    cacheSpawnpointLifetime = 300 #in seconds
+
     @classmethod
     def get_spawnpoints(cls, southBoundary, westBoundary, northBoundary, eastBoundary):
-        query = Pokemon.select(Pokemon.latitude, Pokemon.longitude, Pokemon.spawnpoint_id, ((Pokemon.disappear_time.minute * 60) + Pokemon.disappear_time.second).alias('time'), fn.Count(Pokemon.spawnpoint_id).alias('count'))
+        #query = Pokemon.select(Pokemon.latitude, Pokemon.longitude, Pokemon.spawnpoint_id, ((Pokemon.disappear_time.minute * 60) + Pokemon.disappear_time.second).alias('time'), fn.Count(Pokemon.spawnpoint_id).alias('count'))
 
-        if None not in (northBoundary, southBoundary, westBoundary, eastBoundary):
-            query = (query
-                     .where((Pokemon.latitude <= northBoundary) &
-                            (Pokemon.latitude >= southBoundary) &
-                            (Pokemon.longitude >= westBoundary) &
-                            (Pokemon.longitude <= eastBoundary)
-                            ))
+        #if None not in (northBoundary, southBoundary, westBoundary, eastBoundary):
+        #    query = (query
+        #             .where((Pokemon.latitude <= northBoundary) &
+        #                    (Pokemon.latitude >= southBoundary) &
+        #                    (Pokemon.longitude >= westBoundary) &
+        #                    (Pokemon.longitude <= eastBoundary)
+        #                    ))
 
-        query = query.group_by(Pokemon.latitude, Pokemon.longitude, Pokemon.spawnpoint_id, SQL('time'))
+        #query = query.group_by(Pokemon.latitude, Pokemon.longitude, Pokemon.spawnpoint_id, SQL('time'))
+        
+        now = time.mktime( datetime.utcnow().timetuple() )
+        if( Pokemon.cacheSpawnpointTimestamp + Pokemon.cacheSpawnpointLifetime < now ) or ( Pokemon.cacheSpawnpointQuery is None ):
+            Pokemon.cacheSpawnpointTimestamp = now
+            log.info('Refreshing Spawnpoint cache..')
+            query = Pokemon.select(Pokemon.latitude, Pokemon.longitude, Pokemon.spawnpoint_id, ((Pokemon.disappear_time.minute * 60) + Pokemon.disappear_time.second).alias('time'), fn.Count(Pokemon.spawnpoint_id).alias('count'))
 
-        queryDict = query.dicts()
+            query = query.group_by(Pokemon.latitude, Pokemon.longitude, Pokemon.spawnpoint_id, SQL('time'))
+            Pokemon.cacheSpawnpointQuery = query.dicts()
+            
+            
+            log.info('Cached {} Spawnpoints'.format( len( Pokemon.cacheSpawnpointQuery )) )
+        
+        
         spawnpoints = {}
+        
+        swLatFloat = float(southBoundary)
+        swLngFloat = float(westBoundary)
+        neLatFloat = float(northBoundary)
+        neLngFloat = float(eastBoundary)
+        
+        for sp in Pokemon.cacheSpawnpointQuery:
+            latitude = float(sp['latitude'])
+            longitude = float(sp['longitude'])
+            if( (latitude < swLatFloat) | (longitude < swLngFloat) | (latitude > neLatFloat) | (longitude > neLngFloat) ):
+                continue
 
-        for sp in queryDict:
             key = sp['spawnpoint_id']
             disappear_time = cls.get_spawn_time(sp.pop('time'))
             count = int(sp['count'])
@@ -459,21 +488,29 @@ class ScannedLocation(BaseModel):
 
     class Meta:
         primary_key = CompositeKey('latitude', 'longitude')
+        
+        
+    cacheScansTimestamp = -1
+    cacheScansQuery = None
+
+    cacheScansLifetime = 30 #in seconds
 
     @staticmethod
     def get_recent(swLat, swLng, neLat, neLng):
-        query = (ScannedLocation
+        now = time.mktime( datetime.utcnow().timetuple() )
+        if( ScannedLocation.cacheScansTimestamp + ScannedLocation.cacheScansLifetime < now ) or ( ScannedLocation.cacheScansQuery is None ):
+            ScannedLocation.cacheScansTimestamp = now
+            log.info('Refreshing Scanlocations cache..')
+            query = (ScannedLocation
                  .select()
                  .where((ScannedLocation.last_modified >=
-                        (datetime.utcnow() - timedelta(minutes=15))) &
-                        (ScannedLocation.latitude >= swLat) &
-                        (ScannedLocation.longitude >= swLng) &
-                        (ScannedLocation.latitude <= neLat) &
-                        (ScannedLocation.longitude <= neLng))
-                 .order_by(ScannedLocation.last_modified.asc())
-                 .dicts())
-
-        return list(query)
+                        (datetime.utcnow() - timedelta(minutes=15))))
+                 .order_by(ScannedLocation.last_modified.asc()))
+             
+            ScannedLocation.cacheScansQuery = query.dicts()
+            log.info('Cached {} Scanlocations'.format( len( ScannedLocation.cacheScansQuery )) )
+            
+        return list( ScannedLocation.cacheScansQuery )
 
 
 class MainWorker(BaseModel):

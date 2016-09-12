@@ -100,8 +100,7 @@ class Pogom(Flask):
             d['gyms'] = Gym.get_gyms(swLat, swLng, neLat, neLng)
 
         if request.args.get('scanned', 'true') == 'true':
-            d['scanned'] = ScannedLocation.get_recent(swLat, swLng, neLat,
-                                                      neLng)
+            d['scanned'] = ScannedLocation.get_recent(swLat, swLng, neLat, neLng)
 
         selected_duration = None
 
