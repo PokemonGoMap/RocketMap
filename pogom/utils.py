@@ -198,10 +198,12 @@ def get_args():
                     # First time around populate num_fields with current field count.
                     if num_fields < 0:
                         num_fields = line.count(',') + 1
+                        # Make sure we ignore anything after the 3rd field
                         if num_fields > 3:
                             num_fields = 3
 
                     next_num_fields = line.count(',') + 1
+                    # Make sure we ignore anything after the 3rd field
                     if next_num_fields > 3:
                         next_num_fields = 3
 
