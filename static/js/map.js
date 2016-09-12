@@ -173,8 +173,6 @@ var StoreOptions = {
     type: StoreTypes.Number
   }
 }
->>>>>>> 0f439e5... Updated map.js for Audio and Notification fix
-
 
 //
 // Functions
