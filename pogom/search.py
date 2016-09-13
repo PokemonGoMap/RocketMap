@@ -436,6 +436,9 @@ def get_hex_location_list(args, current_location):
         step_distance = 0.900
     else:
         step_distance = 0.070
+   
+    # for testing nearby pokemon analysis -- don't commit this change!
+    step_distance = 0.200
 
     # update our list of coords
     locations = generate_location_steps(current_location, args.step_limit, step_distance)

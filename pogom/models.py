@@ -597,11 +597,15 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue):
     pokestops = {}
     gyms = {}
     
+    # for tracking success of the nearby analysis
     global success
     global attempts
-    
-    log.info('nearby analysis success rate is {}%'.format( int( ( success * 100 ) / attempts ) ) )
+    log.debug('nearby analysis success rate is {}%'.format( int( ( success * 100 ) / attempts ) ) )
 
+    # we will collect nearby pokemon for all cells and then on the last iteration we'll check all at once
+    nearby_pokemon = []
+    cellcount = 0
+    
     cells = map_dict['responses']['GET_MAP_OBJECTS']['map_cells']
     for cell in cells:
         if config['parse_pokemon']:
@@ -609,26 +613,30 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue):
             # add all wild pokes to the seen_pokemons list
             seen_pokemons = cell.get('wild_pokemons', [])
 
+            # for testing nearby analysis -- ignore actual wild pokemons within 70m
+            seen_pokemons = []
+            
             #use extra error checking when doing nearby poke analysis? default = False
             use_extra_error_checking = True # while debugging
 
             # loop through nearby pokes, maybe add to seen_pokemons if we can figure out where they belong
-            # todo: this is stuipd - instead of passing them one at a time, pass them all at once and return an array of results, then append all those results
-            # the speed improvement will be huge
-            nearby_pokemon = cell.get('nearby_pokemons', [])
-            log.info( 'found {} nearby pokemon, will try to analyze'.format( len( nearby_pokemon) ) )
-            attempts += len( nearby_pokemon )
-            try:
-                reload( nearbyPokemonsAnalysis )
-                nearby_analyzed = nearbyPokemonsAnalysis.analyze_nearby_pokemons(step_location,nearby_pokemon,use_extra_error_checking)
-                success += len( nearby_analyzed )
-                log.info( 'was able to identify locations for {} of {} nearby pokemon!'.format( len( nearby_analyzed ), len( nearby_pokemon ) ) )
-            except:
-                import traceback
-                traceback.print_exc(file=sys.stdout)
-            for p in nearby_analyzed:
-                seen_pokemons.append( p )
-                    
+            nearby_pokemon  += cell.get('nearby_pokemons', [])
+            
+            # check to see if we're on the last cell. if so, analyze all the nearbys seen at this spawnpoint
+            cellcount += 1
+            if cellcount == len( cells ):
+                log.info( 'found {} nearby pokemon, will try to analyze'.format( len( nearby_pokemon) ) )
+                attempts += len( nearby_pokemon )
+                try:
+                    reload( nearbyPokemonsAnalysis )
+                    nearby_analyzed = nearbyPokemonsAnalysis.analyze_nearby_pokemons(step_location,nearby_pokemon,use_extra_error_checking)
+                    success += len( nearby_analyzed )
+                    log.info( 'was able to identify locations for {} of {} nearby pokemon!'.format( len( nearby_analyzed ), len( nearby_pokemon ) ) )
+                    seen_pokemons += nearby_analyzed
+                except:
+                    import traceback
+                    traceback.print_exc(file=sys.stdout)                
+                
             # loop through seen_pokemons (wild + known nearby), calculate/estimate disappear time, build db insert, queue for webhooks
             for p in seen_pokemons:
 

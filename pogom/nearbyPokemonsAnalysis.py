@@ -11,7 +11,16 @@ def anplog(m,*a):
         for n in a:
             log.info( n )
     else:
-        log.info(m.format(*a))
+        log.debug(m.format(*a))
+
+def timeit(method):
+    def t(*a, **k):
+        ts = time.time()
+        result = method(*a, **k)
+        te = time.time()
+        anplog( '{} took {}', method.__name__, te-ts )
+        return result
+    return t
     
 def get_bitgroup_analysis_constants():
     # these values will probably always be constant, but better to use
@@ -37,9 +46,9 @@ def get_bitgroup_analysis_constants():
     to reiterate: cycles are made up of sequences which are made up of values
     bitpos = bit position = what is the group's starting bit position in the 64-bit ID
     seqlen = sequence length = how many values are in a sequence before it repeats
-    seqint = sequence interval = what is the interval (ms) between sequence value incrementations
+    seqint = sequence interval = what is the interval (s) between sequence value incrementations
     cyclen = cycle length = how many sequences are in a cycle before it repeats
-    cycint = cycle interval = what is the interval (ms) between cycles ( changing to a different sequence )
+    cycint = cycle interval = what is the interval (s) between cycles ( changing to a different sequence )
     '''
 
     # define how many bitgroups we know of (currently 3: 0, 1, and 2)
@@ -69,7 +78,7 @@ def get_bitgroup_analysis_constants():
     bitgroups[1]['bitpos'] = 4
     bitgroups[1]['seqlen'] = 8  # sequence repeats after 8 value increments
     # sequence increments to next value every hour
-    bitgroups[1]['seqint'] = 1000 * 60 * 60
+    bitgroups[1]['seqint'] = 60 * 60
     # no sequence incrementation (so its always in the same one cycle)
     bitgroups[1]['cyclen'] = 1
     # no sequence incrementation (so its always in the same one cycle)
@@ -81,10 +90,10 @@ def get_bitgroup_analysis_constants():
     bitgroups[2]['bitpos'] = 7
     bitgroups[2]['seqlen'] = 8  # sequence repeats after 8 value increments
     # sequence increments to next value every 24 hrs
-    bitgroups[2]['seqint'] = 1000 * 60 * 60 * 24
+    bitgroups[2]['seqint'] = 60 * 60 * 24
     bitgroups[2]['cyclen'] = 24  # cycle repeats after 24 sequence increments
     # cycle increments to next sequence every hour
-    bitgroups[2]['cycint'] = 1000 * 60 * 60
+    bitgroups[2]['cycint'] = 60 * 60
 
     # we need to define the start of the next group even though we don't know
     # anything more about it
@@ -119,7 +128,6 @@ def convert_time_sql_to_unix():
     else:
         return "UNIX_TIMESTAMP(disappear_time)"
 
-
 def get_spawns_in_donut(center, min_dist, max_dist):
     # this sql query is getting a "square donut" where the outer distance is a square AROUND the max_dist radius
     # but the inner "hole" is a square that will fit INSIDE the min_dist radius
@@ -148,51 +156,49 @@ def get_spawns_in_donut(center, min_dist, max_dist):
     # build sql query
     in_big_box = '{} <= latitude AND latitude <= {} AND {} <= longitude AND longitude <= {}'.format(big_s, big_n, big_w, big_e)
     in_small_box = '{} <= latitude AND latitude <= {} AND {} <= longitude AND longitude <= {}'.format(small_s, small_n, small_w, small_e)
-    sql = "SELECT spawnpoint_id, latitude, longitude, {} %% 3600 as expiration_ms FROM pokemon WHERE {} AND NOT({}) GROUP BY spawnpoint_id, expiration_ms"
+    sql = "SELECT spawnpoint_id, latitude, longitude, {} %% 3600 as expiration_s FROM pokemon WHERE {} AND NOT({}) GROUP BY spawnpoint_id, expiration_s"
     sql = sql.format(convert_time_sql_to_unix(),in_big_box, in_small_box)
     
     # do sql query and cut it down to return only those which are in range of 200m and outside 70m
     return [sp for sp in do_query( sql ) if min_dist <= distance.distance( (center[0],center[1]), (sp['latitude'], sp['longitude'])).meters <= max_dist]
 
-def calculate_next_disappearance(exp_ms_past_hr):
-
+def calculate_next_disappearance(exp_s_past_hr):
     # str to int
-    exp_ms_past_hr = int(exp_ms_past_hr)
+    exp_s_past_hr = int(exp_s_past_hr)
 
-    # we'll do all work in ms, then convert to s at the end when needed
-    now_ms = time.time() * 1000
-    now_ms_past_hr = now_ms % 3600000
+    # we'll do all work in seconds, then convert to ms at the end when needed
+    now_s = time.time()
+    now_s_past_hr = now_s % ( 60 * 60 )
 
-    # to calculate the next disappear time, start with the unix ms of the
-    # current hour, then just add the exp_ms_past_hr
-    top_of_current_hour = now_ms - now_ms_past_hr
-    next_dt_ms = top_of_current_hour + exp_ms_past_hr
+    # to calculate the next disappear time, start with the unix s of the
+    # current hour, then just add the exp_s_past_hr
+    top_of_current_hour = now_s - now_s_past_hr
+    next_dt_s = top_of_current_hour + exp_s_past_hr
 
     # and if that caluclated timestamp already happend, add another hour to
     # get the next one
-    if next_dt_ms < now_ms:
-        next_dt_ms += 3600000
+    if next_dt_s < now_s:
+        next_dt_s += ( 60 * 60 )
 
     # todo: don't assume spawn length is 15min, actually figure out if this is
     # a 30min, 45min, etc
-    spawn_length_ms = 900000  # 15 min
+    spawn_length_s = ( 15 * 60 )  # 15 min
 
     # return:
     # 1. disappear_time in seconds
     # 2. last_modified_timestamp_ms (work backwards from d_t using spawn_length)
     # 3. time_till_hidden_ms ( work backwards from d_t til now )
 
-    return (next_dt_ms / 1000.0, next_dt_ms -
-            spawn_length_ms, next_dt_ms - now_ms)
+    return (next_dt_s, 1000 * ( next_dt_s - spawn_length_s ), 1000 * (next_dt_s - now_s) )
 
-
-def get_bitgroup_value(startbits, encounter_id, query='all', length=False, trackit = False):
+def get_bitgroup_value(startbits, encounter_id, query='all', length=False ):
     try:
         i = int(b64decode(encounter_id))
     except:
         i = int(encounter_id)
     if query == 'all':
-        return [get_bitgroup_value(startbits, encounter_id, n) for n in range(len(startbits[:-2]))]
+        all = [get_bitgroup_value(startbits, encounter_id, n) for n in range(len(startbits[:-2]))]
+        return all
     if not length:
         group = query
         try:
@@ -202,7 +208,7 @@ def get_bitgroup_value(startbits, encounter_id, query='all', length=False, track
         length = startbits[group + 1] - start
     else:
         start = query
-    return (i >> start) & 2 ** length - 1
+    return int( (i >> start) & 2 ** length - 1 )
 
 def extrapolate_bit_sequence_with_error_checking(s):
     
@@ -271,7 +277,6 @@ def extrapolate_bit_sequence_with_error_checking(s):
     r = map(int, new_s)
     return r
 
-
 def extrapolate_bit_sequence(s, extra_error_checking=False):
 
     if extra_error_checking: return extrapolate_bit_sequence_with_error_checking( s )
@@ -308,22 +313,20 @@ def extrapolate_bit_sequence(s, extra_error_checking=False):
 
     return [int((k * increment + first_value) % max_value) for k, v in enumerate(s)]
 
-
 def get_sid_bits(sp, c, use_extra_error_checking=False):
     sp_bitgroups = c['groups'][:-1]
-    sp['disappear_time_ms'] = sp['disappear_time'] * 1000
     base_query = "SELECT {} FROM pokemon WHERE {} HAVING {}"
     d_t_sql = "({})".format(convert_time_sql_to_unix())
-    select = 'encounter_id, disappear_time, {} as disappear_time_ms_unix'.format(
+    select = 'encounter_id, disappear_time, {} as disappear_time_unix'.format(
         d_t_sql)
     where = 'spawnpoint_id = "{}"'.format(sp['spawnpoint_id'])
     having = '1'
-    formula = "( (1000 * {}) DIV {} ) %% {}"
+    formula = "( {} DIV {} ) %% {}"
     for id, g in enumerate(sp_bitgroups):
         sp_bitgroups[id]['bitvalues'] = [
             [None for s in range(g['seqlen'])] for x in range(g['cyclen'])]
-        sp_bitgroups[id]['seqpos']      = int( sp['disappear_time_ms'] / g['seqint']) % g['seqlen']
-        sp_bitgroups[id]['cycpos']      = int( sp['disappear_time_ms'] / g['cycint']) % g['cyclen']
+        sp_bitgroups[id]['seqpos']      = int( sp['disappear_time'] / g['seqint']) % g['seqlen']
+        sp_bitgroups[id]['cycpos']      = int( sp['disappear_time'] / g['cycint']) % g['cyclen']
         sp_bitgroups[id]['seqsqlname']  = "bg_{}_seq".format(id)
         sp_bitgroups[id]['cycsqlname']  = "bg_{}_cyc".format(id)
         sp_bitgroups[id]['seqsqlmath']  = formula.format(d_t_sql, g['seqint'], g['seqlen'])
@@ -353,7 +356,7 @@ def get_sid_bits(sp, c, use_extra_error_checking=False):
     if len(results) > 0:
         for n, row in enumerate(results):
             # get all bitgroup values for this encounter_id
-            bitvalues = results[n]['bitgroup_values'] = get_bitgroup_value(c['startbits'], row['encounter_id'], 'all', False, True)
+            bitvalues = results[n]['bitgroup_values'] = get_bitgroup_value(c['startbits'], row['encounter_id'], 'all', False)
             # loop through each bitgroup and store the aquired values
             for id, g in enumerate(sp_bitgroups):
                 cycle = row['bg_{}_cyc'.format(id)]
@@ -373,53 +376,64 @@ def get_sid_bits(sp, c, use_extra_error_checking=False):
         result = [g['bitvalues'][g['cycpos']][g['seqpos']] for id, g in enumerate(sp_bitgroups)]
         return result
 
+@timeit
 def analyze_nearby_pokemons(step_loc, nearby_pokemons, use_extra_error_checking = False):
-         
+    
+    anplog( 'analyzing at {}',step_loc )
+    
+    matched_pokes = []
+    
     bg_constants=get_bitgroup_analysis_constants()
 
     nearby_spawnpoints=get_spawns_in_donut( step_loc, bg_constants['min_dist'], bg_constants['max_dist'])
+    
+    anplog( 'found {} spawnpoints in the donut', len( nearby_spawnpoints ) )
     
     for nearby_sp in nearby_spawnpoints:
 
         # calculate times for each spawnpoint, they can be used to narrow down
         # potential matches
-        nearby_sp['disappear_time'], nearby_sp['last_modified_timestamp_ms'], nearby_sp['time_till_hidden_ms'] = calculate_next_disappearance(nearby_sp['expiration_ms'])
+        nearby_sp['disappear_time'], nearby_sp['last_modified_timestamp_ms'], nearby_sp['time_till_hidden_ms'] = calculate_next_disappearance(nearby_sp['expiration_s'])
                 
         # look up bitvalues for sp
-        sid_bits = get_sid_bits(nearby_sp, bg_constants, use_extra_error_checking)
+        nearby_sp['sid_bits'] = get_sid_bits(nearby_sp, bg_constants, use_extra_error_checking)
+        
     
-    matched_pokes = []
+    deduped_nearby_spawnpoints = []
+    # check for duplicate spawnpoints and bits
+    for nearby_sp in nearby_spawnpoints:
+        is_unique = True
+        # find out if we already have this item
+        for dd in deduped_nearby_spawnpoints:
+            if dd['spawnpoint_id'] == nearby_sp['spawnpoint_id'] and dd['sid_bits'] == nearby_sp['sid_bits']:
+                is_unique = False
+                break
+        if is_unique:
+            deduped_nearby_spawnpoints.append( nearby_sp )
+            anplog( 'bits to match against for {} at exp time {} are {}', nearby_sp['spawnpoint_id'], nearby_sp['disappear_time'], nearby_sp['sid_bits'] )
+            
+    anplog( 'given {} nearby pokemon to analyze', len( nearby_pokemons ) )
+    
     for nearby_poke in nearby_pokemons:
         eid=nearby_poke['encounter_id']
         potential_spawnpoints=[]
         try:
-            eid_bits = get_bitgroup_value(c['startbits'], eid) 
-            if eid_bits != None and eid_bits == sid_bits:
-                potential_spawnpoints.append(nearby_sp)
+            eid_bits = get_bitgroup_value( bg_constants['startbits'], eid,'all',False) 
+            anplog( 'bits for nearby poke with eid {} are {}', eid, eid_bits )
+            for nearby_sp in deduped_nearby_spawnpoints:   
+                if eid_bits != None and eid_bits == nearby_sp['sid_bits']:
+                    potential_spawnpoints.append(nearby_sp)
         except:
             pass
-        if len(potential_spawnpoints) != 1:
-            continue
-
-        # shorthand name for the matched potential spawnpoint
-        sp = potential_spawnpoints[0]
-
-        # now lets add to nearby_poke the necessary keys so as to make it match the format of the data returned in a real api wild_pokemons list.
-        # encounter_id and pokemon_id already exist for nearby_poke
-
-        # move the pokemon_id to 'pokemon_data'
-        nearby_poke['pokemon_data'] = {}
-        nearby_poke['pokemon_data']['pokemon_id'] = nearby_poke['pokemon_id']
-
-        # copy data from the matched spawnpoint location to nearby_poke
-        nearby_poke['spawn_point_id'] = sp['spawnpoint_id']
-        nearby_poke['latitude'] = sp['latitude']
-        nearby_poke['longitude'] = sp['longitude']
-        nearby_poke['disappear_time'] = sp['disappear_time']
-        nearby_poke['last_modified_timestamp_ms'] = sp[
-            'last_modified_timestamp_ms']
-        nearby_poke['time_till_hidden_ms'] = sp['time_till_hidden_ms']
-       
-        matched_pokes.append( nearby_poke )
+            
+        # we only want to consider this successful when we have exactly one match
+        if len(potential_spawnpoints) == 1:
+            anplog( 'found exactly 1 match for {}: {}', eid, eid_bits )
+            nearby_poke = potential_spawnpoints[0]
+            nearby_poke['pokemon_data'] = {'pokemon_id':nearby_poke['pokemon_id']}
+            matched_pokes.append( nearby_poke )
+        
+        if len(potential_spawnpoints) > 1 :
+            anplog( 'found more than one 1 match for {}: {}', eid, eid_bits )
         
     return matched_pokes
