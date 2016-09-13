@@ -117,6 +117,8 @@ def do_query(sql):
     try:
         return [ row for row in  BaseModel.raw(sql).dicts().execute() ]
     except:
+        import traceback
+        traceback.print_exc(file=sys.stdout)
         return []
 
 def convert_time_sql_to_unix():
@@ -204,6 +206,8 @@ def get_bitgroup_value(startbits, encounter_id, query='all', length=False ):
         try:
             start = startbits[group]
         except IndexError:
+            import traceback
+            traceback.print_exc(file=sys.stdout)
             return None
         length = startbits[group + 1] - start
     else:
@@ -223,8 +227,8 @@ def extrapolate_bit_sequence_with_error_checking(s):
 
             # check for inconsistant calculations
             if inc != None and inc != new_inc:
-                #log.info(s)
-                #log.info('at step {} and the sequence interval caluclated does not match from one step to another. thought it was {} but now it seems to be {}'.format(k, inc, new_inc))
+                log.error(s)
+                log.error('at step {} and the sequence interval caluclated does not match from one step to another. thought it was {} but now it seems to be {}'.format(k, inc, new_inc))
                 return s
 
             inc = new_inc
@@ -238,8 +242,8 @@ def extrapolate_bit_sequence_with_error_checking(s):
 
             # check for inconsistant calculations
             if first != None and first != new_first:
-                #log.info(s)
-                #log.info('at step {} and the first value caluclated does not match from one step to another. thought it was {} but now it seems to be {}'.format(k, first, new_first))
+                log.error(s)
+                log.error('at step {} and the first value caluclated does not match from one step to another. thought it was {} but now it seems to be {}'.format(k, first, new_first))
                 return s
 
             first = new_first
@@ -257,21 +261,21 @@ def extrapolate_bit_sequence_with_error_checking(s):
     for k, v in enumerate(s):
         new_s.append(((k * inc) + first) % max_value)
         if v != None and new_s[k] != v:
-            #log.info(s)
-            #log.info(new_s)
-            #log.info('at step {} and the new value calulated {} does not match the existing value {}'.format(k, new_s[k], v))
+            log.error(s)
+            log.error(new_s)
+            log.error('at step {} and the new value calulated {} does not match the existing value {}'.format(k, new_s[k], v))
             return s
 
     if len(new_s) != len(s):
-        #log.info(s)
-        #log.info(new_s)
-        #log.info('length of s and new_s do not match')
+        log.error(s)
+        log.error(new_s)
+        log.error('length of s and new_s do not match')
         return s
 
     if None in new_s:
-        #log.info(s)
-        #log.info(new_s)
-        #log.info('new_s contains a None')
+        log.error(s)
+        log.error(new_s)
+        log.error('new_s contains a None')
         return s
 
     r = map(int, new_s)
@@ -364,12 +368,13 @@ def get_sid_bits(sp, c, use_extra_error_checking=False):
                 current_value = g['bitvalues'][ cycle ][ sequence ]
                 if current_value != None and current_value != bitvalues[id]:
                     pass
-                    #log.info('Houston we have a problem. BitValue is thought to be {} but we are now changing it to {}'.format(current_value, bitvalues[id]))
+                    log.error('Houston we have a problem. BitValue is thought to be {} but we are now changing it to {}'.format(current_value, bitvalues[id]))
                 sp_bitgroups[id]['bitvalues'][row['bg_{}_cyc'.format(id)]][row['bg_{}_seq'.format(id)]] = bitvalues[id]
                 try:
                     sp_bitgroups[id]['bitvalues'][row['bg_{}_cyc'.format(id)]] = extrapolate_bit_sequence(sp_bitgroups[id]['bitvalues'][row['bg_{}_cyc'.format(id)]], use_extra_error_checking)
                 except:
-                    pass
+                    import traceback
+                    traceback.print_exc(file=sys.stdout)
         # we've looped through all previous encounters at this spawnpoint and built a list of bitvalues from that information
         # now just return a list of bitvalues (for every bitgroup) based on the
         # already calculated cycpos and seqpos by pulling them from the list
@@ -424,7 +429,8 @@ def analyze_nearby_pokemons(step_loc, nearby_pokemons, use_extra_error_checking 
                 if eid_bits != None and eid_bits == nearby_sp['sid_bits']:
                     potential_spawnpoints.append(nearby_sp)
         except:
-            pass
+            import traceback
+            traceback.print_exc(file=sys.stdout)
             
         # we only want to consider this successful when we have exactly one match
         if len(potential_spawnpoints) == 1:
