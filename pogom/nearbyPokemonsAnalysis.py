@@ -430,6 +430,8 @@ def analyze_nearby_pokemons(step_loc, nearby_pokemons, use_extra_error_checking 
         if len(potential_spawnpoints) == 1:
             anplog( 'found exactly 1 match for {}: {}', eid, eid_bits )
             matched_nearby_poke = potential_spawnpoints[0]
+            matched_nearby_poke['encounter_id'] = nearby_poke['encounter_id']
+            matched_nearby_poke['spawn_point_id'] = matched_nearby_poke['spawnpoint_id']
             matched_nearby_poke['pokemon_data'] = {'pokemon_id':nearby_poke['pokemon_id']}
             matched_pokes.append( matched_nearby_poke )
         

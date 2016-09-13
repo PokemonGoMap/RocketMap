@@ -632,7 +632,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue):
                         reload( nearbyPokemonsAnalysis )
                         nearby_analyzed = nearbyPokemonsAnalysis.analyze_nearby_pokemons(step_location,nearby_pokemon,use_extra_error_checking)
                         success += len( nearby_analyzed )
-                        log.info( 'was able to identify locations for {} of {} nearby pokemon!'.format( len( nearby_analyzed ), len( nearby_pokemon ) ) )
+                        log.info( 'was able to identify locations for {} of {} nearby pokemon'.format( len( nearby_analyzed ), len( nearby_pokemon ) ) )
                         seen_pokemons += nearby_analyzed
                     except:
                         import traceback
