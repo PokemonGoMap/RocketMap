@@ -23,6 +23,7 @@ from . import config
 from .utils import get_pokemon_name, get_pokemon_rarity, get_pokemon_types, get_args
 from .transform import transform_from_wgs_to_gcj, get_new_coords
 from .customLog import printPokemon
+import nearbyPokemonsAnalysis
 
 log = logging.getLogger(__name__)
 
@@ -572,36 +573,77 @@ def hex_bounds(center, steps):
     w = get_new_coords(center, sp_dist, 270)[1]
     return (n, e, s, w)
 
+# todo: this probably shouldn't _really_ be in "models" anymore, but w/e
+#       also actually calulate disappear time, don't just assume 15 minute spawn length when given a negative integer
+def get_disappear_time(p): 
+    # we might already have the disappear_time if it was calculated by matching bits in the nearby encounter_id to a nearby spawnpoint_id
+    if 'disappear_time' in p:
+        return datetime.utcfromtimestamp( p['disappear_time'] )
+        
+    # time_till_hidden_ms was overflowing causing a negative integer.
+    # It was also returning a value above 3.6M ms.
+    if 0 < p['time_till_hidden_ms'] < 3600000:
+        return datetime.utcfromtimestamp(
+            (p['last_modified_timestamp_ms'] +
+             p['time_till_hidden_ms']) / 1000.0)
+             
+    # Set a value of 15 minutes because currently its unknown but larger than 15.
+    return datetime.utcfromtimestamp((p['last_modified_timestamp_ms'] + 900000) / 1000.0)
 
 # todo: this probably shouldn't _really_ be in "models" anymore, but w/e
+success = 0
+attempts = 1
 def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue):
     pokemons = {}
     pokestops = {}
     gyms = {}
+    
+    global success
+    global attempts
+    
+    log.info('nearby analysis success rate is {}%'.format( int( ( success * 100 ) / attempts ) ) )
 
     cells = map_dict['responses']['GET_MAP_OBJECTS']['map_cells']
     for cell in cells:
         if config['parse_pokemon']:
-            for p in cell.get('wild_pokemons', []):
-                # time_till_hidden_ms was overflowing causing a negative integer.
-                # It was also returning a value above 3.6M ms.
-                if 0 < p['time_till_hidden_ms'] < 3600000:
-                    d_t = datetime.utcfromtimestamp(
-                        (p['last_modified_timestamp_ms'] +
-                         p['time_till_hidden_ms']) / 1000.0)
-                else:
-                    # Set a value of 15 minutes because currently its unknown but larger than 15.
-                    d_t = datetime.utcfromtimestamp((p['last_modified_timestamp_ms'] + 900000) / 1000.0)
 
-                printPokemon(p['pokemon_data']['pokemon_id'], p['latitude'],
-                             p['longitude'], d_t)
+            # add all wild pokes to the seen_pokemons list
+            seen_pokemons = cell.get('wild_pokemons', [])
+
+            #use extra error checking when doing nearby poke analysis? default = False
+            use_extra_error_checking = True # while debugging
+
+            # loop through nearby pokes, maybe add to seen_pokemons if we can figure out where they belong
+            # todo: this is stuipd - instead of passing them one at a time, pass them all at once and return an array of results, then append all those results
+            # the speed improvement will be huge
+            nearby_pokemon = cell.get('nearby_pokemons', [])
+            log.info( 'found {} nearby pokemon, will try to analyze'.format( len( nearby_pokemon) ) )
+            attempts += len( nearby_pokemon )
+            try:
+                reload( nearbyPokemonsAnalysis )
+                nearby_analyzed = nearbyPokemonsAnalysis.analyze_nearby_pokemons(step_location,nearby_pokemon,use_extra_error_checking)
+                success += len( nearby_analyzed )
+                log.info( 'was able to identify locations for {} of {} nearby pokemon!'.format( len( nearby_analyzed ), len( nearby_pokemon ) ) )
+            except:
+                import traceback
+                traceback.print_exc(file=sys.stdout)
+            for p in nearby_analyzed:
+                seen_pokemons.append( p )
+                    
+            # loop through seen_pokemons (wild + known nearby), calculate/estimate disappear time, build db insert, queue for webhooks
+            for p in seen_pokemons:
+
+                p['disappear_time'] = get_disappear_time(p)
+
+                printPokemon(p['pokemon_data']['pokemon_id'], p['latitude'], p['longitude'], p['disappear_time'])
+
                 pokemons[p['encounter_id']] = {
                     'encounter_id': b64encode(str(p['encounter_id'])),
                     'spawnpoint_id': p['spawn_point_id'],
                     'pokemon_id': p['pokemon_data']['pokemon_id'],
                     'latitude': p['latitude'],
                     'longitude': p['longitude'],
-                    'disappear_time': d_t
+                    'disappear_time': p['disappear_time']
                 }
 
                 if args.webhooks:
@@ -611,7 +653,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue):
                         'pokemon_id': p['pokemon_data']['pokemon_id'],
                         'latitude': p['latitude'],
                         'longitude': p['longitude'],
-                        'disappear_time': calendar.timegm(d_t.timetuple()),
+                        'disappear_time': calendar.timegm(p['disappear_time'].timetuple()),
                         'last_modified_time': p['last_modified_timestamp_ms'],
                         'time_until_hidden_ms': p['time_till_hidden_ms']
                     }))
