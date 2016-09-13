@@ -800,23 +800,6 @@ var mapData = {
   spawnpoints: {}
 }
 
-function getFortGoogleIcon (spriteUrl) {
-  // Scale icon size up with the map exponentially
-  var iconSize = 2 + (map.getZoom() - 3) * (map.getZoom() - 3) * 0.2 + Store.get('iconSizeModifier')
-  
-  var scale = iconSize / 36
-
-  var scaledSpriteSize = new google.maps.Size(scale * 24, scale * 24)
-
-  var scaledIconCenterOffset = new google.maps.Point(scale * 24 / 2, scale * 24 / 2)
-  return {
-    url: spriteUrl,
-    size: scaledSpriteSize,
-    scaledSize: scaledSpriteSize,
-    anchor: scaledIconCenterOffset
-  }
-}
-
 function getGoogleSprite (index, sprite, displayHeight) {
   displayHeight = Math.max(displayHeight, 3)
   var scale = displayHeight / sprite.iconHeight
