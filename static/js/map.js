@@ -144,6 +144,8 @@ function initMap () { // eslint-disable-line no-unused-vars
 
     redrawPokemon(mapData.pokemons)
     redrawPokemon(mapData.lurePokemons)
+    redrawFort(mapData.gyms, 'gyms')
+    redrawFort(mapData.pokestops, 'pokestops')
   })
 
   searchMarker = createSearchMarker()
@@ -561,13 +563,14 @@ function customizePokemonMarker (marker, item, skipNotification) {
 }
 
 function setupGymMarker (item) {
+  var icon = getFortGoogleIcon('static/forts/' + gymTypes[item['team_id']] + '.png')
   var marker = new google.maps.Marker({
     position: {
       lat: item['latitude'],
       lng: item['longitude']
     },
     map: map,
-    icon: 'static/forts/' + gymTypes[item['team_id']] + '.png'
+    icon: icon
   })
 
   if (!marker.rangeCircle && isRangeActive(map)) {
@@ -584,13 +587,14 @@ function setupGymMarker (item) {
 }
 
 function updateGymMarker (item, marker) {
-  marker.setIcon('static/forts/' + gymTypes[item['team_id']] + '.png')
+  marker.setIcon(getFortGoogleIcon('static/forts/' + gymTypes[item['team_id']] + '.png'))
   marker.infoWindow.setContent(gymLabel(gymTypes[item['team_id']], item['team_id'], item['gym_points'], item['latitude'], item['longitude'], item['last_scanned'], item['name'], item['pokemon']))
   return marker
 }
 
 function setupPokestopMarker (item) {
   var imagename = item['lure_expiration'] ? 'PstopLured' : 'Pstop'
+  var icon = getFortGoogleIcon('static/forts/' + imagename + '.png')
   var marker = new google.maps.Marker({
     position: {
       lat: item['latitude'],
@@ -598,7 +602,7 @@ function setupPokestopMarker (item) {
     },
     map: map,
     zIndex: 2,
-    icon: 'static/forts/' + imagename + '.png'
+    icon: icon
   })
 
   if (!marker.rangeCircle && isRangeActive(map)) {
@@ -1052,6 +1056,25 @@ function redrawPokemon (pokemonList) {
   })
 }
 
+function redrawFort (fortList, type) {
+  var skipNotification = true
+  $.each(fortList, function (key, value) {
+    var item = fortList[key]
+    if (!item.hidden) {
+      if (item.marker.rangeCircle) item.marker.rangeCircle.setMap(null)
+      if (type === 'gyms') {
+        var newMarker = setupGymMarker(item, map, this.marker.animationDisabled)
+        item.marker.setMap(null)
+        fortList[key].marker = newMarker
+      } else if (type === 'pokestops') {
+        var newMarker = setupPokestopMarker(item, map, this.marker.animationDisabled)
+        item.marker.setMap(null)
+        fortList[key].marker = newMarker
+      }
+    }
+  })
+}
+
 var updateLabelDiffTime = function () {
   $('.label-countdown').each(function (index, element) {
     var disappearsAt = new Date(parseInt(element.getAttribute('disappears-at')))
@@ -1292,6 +1315,8 @@ $(function () {
     Store.set('iconSizeModifier', this.value)
     redrawPokemon(mapData.pokemons)
     redrawPokemon(mapData.lurePokemons)
+    redrawFort(mapData.gyms, 'gyms')
+    redrawFort(mapData.pokestops, 'pokestops')
   })
 
   $selectLuredPokestopsOnly = $('#lured-pokestops-only-switch')
