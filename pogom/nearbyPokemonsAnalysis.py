@@ -429,9 +429,9 @@ def analyze_nearby_pokemons(step_loc, nearby_pokemons, use_extra_error_checking 
         # we only want to consider this successful when we have exactly one match
         if len(potential_spawnpoints) == 1:
             anplog( 'found exactly 1 match for {}: {}', eid, eid_bits )
-            nearby_poke = potential_spawnpoints[0]
-            nearby_poke['pokemon_data'] = {'pokemon_id':nearby_poke['pokemon_id']}
-            matched_pokes.append( nearby_poke )
+            matched_nearby_poke = potential_spawnpoints[0]
+            matched_nearby_poke['pokemon_data'] = {'pokemon_id':nearby_poke['pokemon_id']}
+            matched_pokes.append( matched_nearby_poke )
         
         if len(potential_spawnpoints) > 1 :
             anplog( 'found more than one 1 match for {}: {}', eid, eid_bits )

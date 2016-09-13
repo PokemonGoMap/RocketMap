@@ -625,17 +625,18 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue):
             # check to see if we're on the last cell. if so, analyze all the nearbys seen at this spawnpoint
             cellcount += 1
             if cellcount == len( cells ):
-                log.info( 'found {} nearby pokemon, will try to analyze'.format( len( nearby_pokemon) ) )
-                attempts += len( nearby_pokemon )
-                try:
-                    reload( nearbyPokemonsAnalysis )
-                    nearby_analyzed = nearbyPokemonsAnalysis.analyze_nearby_pokemons(step_location,nearby_pokemon,use_extra_error_checking)
-                    success += len( nearby_analyzed )
-                    log.info( 'was able to identify locations for {} of {} nearby pokemon!'.format( len( nearby_analyzed ), len( nearby_pokemon ) ) )
-                    seen_pokemons += nearby_analyzed
-                except:
-                    import traceback
-                    traceback.print_exc(file=sys.stdout)                
+                if len( nearby_pokemon ) > 0:
+                    log.info( 'found {} nearby pokemon, will try to analyze'.format( len( nearby_pokemon) ) )
+                    attempts += len( nearby_pokemon )
+                    try:
+                        reload( nearbyPokemonsAnalysis )
+                        nearby_analyzed = nearbyPokemonsAnalysis.analyze_nearby_pokemons(step_location,nearby_pokemon,use_extra_error_checking)
+                        success += len( nearby_analyzed )
+                        log.info( 'was able to identify locations for {} of {} nearby pokemon!'.format( len( nearby_analyzed ), len( nearby_pokemon ) ) )
+                        seen_pokemons += nearby_analyzed
+                    except:
+                        import traceback
+                        traceback.print_exc(file=sys.stdout)                
                 
             # loop through seen_pokemons (wild + known nearby), calculate/estimate disappear time, build db insert, queue for webhooks
             for p in seen_pokemons:
