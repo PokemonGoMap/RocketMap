@@ -67,7 +67,7 @@ function removePokemonMarker (encounterId) { // eslint-disable-line no-unused-va
 function getStats (spawnpointId) { // eslint-disable-line no-unused-vars
   $('ul[name=' + spawnpointId + ']').empty()
   $.ajax({
-    url: '/spawn_history?spawnpoint_id=' + spawnpointId,
+    url: 'spawn_history?spawnpoint_id=' + spawnpointId,
     dataType: 'json',
     async: true,
     success: function (data) {
