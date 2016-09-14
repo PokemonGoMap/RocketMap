@@ -348,7 +348,10 @@ function gymLabel (teamName, teamId, gymPoints, latitude, longitude, lastScanned
     memberStr += `
       <span class="gym-member" title="${members[i].pokemon_name} | ${members[i].trainer_name} (Lvl ${members[i].trainer_level})">
         <i class="pokemon-sprite n${members[i].pokemon_id}"></i>
-        <span class="cp team-${teamId}">${members[i].pokemon_cp}</span>
+        <span class="cp team-${teamId}"> ${members[i].pokemon_cp} </span>
+	 <span class="cp team-${teamId}"> ${members[i].pokemon_name} </span>
+        <span class="cp team-${teamId}"> ${members[i].trainer_name} </span>
+	 <span class="cp team-${teamId}"> Lvl ${members[i].trainer_level} </span>
       </span>`
   }
 
