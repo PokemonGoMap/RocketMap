@@ -54,7 +54,7 @@ class Pogom(Flask):
 
     def post_search_control(self):
         args = get_args()
-        if not args.search_control:
+        if not args.single_user_control:
             return 'Search control is disabled', 403
         action = request.args.get('action', 'none')
         if action == 'on':
@@ -107,7 +107,6 @@ class Pogom(Flask):
     def fullmap(self):
         args = get_args()
         fixed_display = "none" if args.fixed_location else "inline"
-        search_display = "inline" if args.search_control else "none"
         su_control_display = "inline" if args.single_user_control else "none"
 
         return render_template('map.html',
@@ -116,7 +115,6 @@ class Pogom(Flask):
                                gmaps_key=config['GMAPS_KEY'],
                                lang=config['LOCALE'],
                                is_fixed=fixed_display,
-                               search_control=search_display,
                                su_control=su_control_display
                                )
 
