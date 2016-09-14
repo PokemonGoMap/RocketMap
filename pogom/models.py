@@ -60,7 +60,7 @@ def init_database(app):
             stale_timeout=300)
     else:
         log.info('Connecting to local SQLite database')
-        db = SqliteExtDatabase(args.db, journal_mode='WAL')
+        db = SqliteExtDatabase(args.db, , pragmas=(('journal_mode', 'WAL'), ('mmap_size', 1024 * 1024 * 32), ('cache_size', 10000), ('journal_size_limit', 1024 * 1024 * 4),))
 
     app.config['DATABASE'] = db
     flaskDb.init_app(app)
