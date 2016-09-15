@@ -1,6 +1,5 @@
 six==1.10.0
 Flask==0.11.1
-gevent==1.1.2
 Jinja2==2.8
 MarkupSafe==0.23
 Werkzeug==0.11.10
@@ -25,3 +24,5 @@ requests==2.10.0
 PySocks==1.5.6
 git+https://github.com/maddhatter/Flask-CacheBust.git@38d940cc4f18b5fcb5687746294e0360640a107e#egg=flask_cachebust
 protobuf_to_dict==0.1.0
+cachetools==1.1.6
+

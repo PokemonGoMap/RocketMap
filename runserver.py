@@ -17,7 +17,6 @@ from threading import Thread, Event
 from queue import Queue
 from flask_cors import CORS
 from flask_cache_bust import init_cache_busting
-from gevent import pywsgi
 
 from pogom import config
 from pogom.app import Pogom
@@ -26,6 +25,8 @@ from pogom.utils import get_args, get_encryption_lib_path
 from pogom.search import search_overseer_thread
 from pogom.models import init_database, create_tables, drop_tables, Pokemon, db_updater, clean_db_loop
 from pogom.webhook import wh_updater
+
+from pogom.proxy import check_proxies
 
 # Currently supported pgoapi
 pgoapi_version = "1.1.7"
@@ -57,7 +58,44 @@ if not hasattr(pgoapi, "__version__") or StrictVersion(pgoapi.__version__) < Str
     sys.exit(1)
 
 
+# Patch to make exceptions in threads cause an exception.
+def install_thread_excepthook():
+    """
+    Workaround for sys.excepthook thread bug
+    (https://sourceforge.net/tracker/?func=detail&atid=105470&aid=1230540&group_id=5470).
+    Call once from __main__ before creating any threads.
+    If using psyco, call psycho.cannotcompile(threading.Thread.run)
+    since this replaces a new-style class method.
+    """
+    import sys
+    run_old = Thread.run
+
+    def run(*args, **kwargs):
+        try:
+            run_old(*args, **kwargs)
+        except (KeyboardInterrupt, SystemExit):
+            raise
+        except:
+            sys.excepthook(*sys.exc_info())
+    Thread.run = run
+
+
+# Exception handler will log unhandled exceptions
+def handle_exception(exc_type, exc_value, exc_traceback):
+    if issubclass(exc_type, KeyboardInterrupt):
+        sys.__excepthook__(exc_type, exc_value, exc_traceback)
+        return
+
+    log.error("Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback))
+
+
 def main():
+    # Patch threading to make exceptions catchable
+    install_thread_excepthook()
+
+    # Make sure exceptions get logged
+    sys.excepthook = handle_exception
+
     args = get_args()
 
     # Check for depreciated argumented
@@ -181,9 +219,10 @@ def main():
         t.start()
 
     # db clearner; really only need one ever
-    t = Thread(target=clean_db_loop, name='db-cleaner', args=(args,))
-    t.daemon = True
-    t.start()
+    if not args.disable_clean:
+        t = Thread(target=clean_db_loop, name='db-cleaner', args=(args,))
+        t.daemon = True
+        t.start()
 
     # WH Updates
     wh_updates_queue = Queue()
@@ -196,13 +235,14 @@ def main():
         t.start()
 
     if not args.only_server:
-        # Gather the pokemons!
 
-        # check the sort of scan
-        if args.spawnpoint_scanning:
-            mode = 'sps'
-        else:
-            mode = 'hex'
+        # Check all proxies before continue so we know they are good
+        if args.proxy and not args.proxy_skip_check:
+
+            # Overwrite old args.proxy with new working list
+            args.proxy = check_proxies(args)
+
+        # Gather the pokemons!
 
         # attempt to dump the spawn points (do this before starting threads of endure the woe)
         if args.spawnpoint_scanning and args.spawnpoint_scanning != 'nofile' and args.dump_spawnpoints:
@@ -212,9 +252,9 @@ def main():
                 file.write(json.dumps(spawns))
                 log.info('Finished exporting spawn points')
 
-        argset = (args, mode, new_location_queue, pause_bit, encryption_lib_path, db_updates_queue, wh_updates_queue)
+        argset = (args, new_location_queue, pause_bit, encryption_lib_path, db_updates_queue, wh_updates_queue)
 
-        log.debug('Starting a %s search thread', mode)
+        log.debug('Starting a %s search thread', args.scheduler)
         search_thread = Thread(target=search_overseer_thread, name='search-overseer', args=argset)
         search_thread.daemon = True
         search_thread.start()
@@ -232,31 +272,20 @@ def main():
     config['GMAPS_KEY'] = args.gmaps_key
 
     if args.no_server:
-        # This loop allows for ctrl-c interupts to work since gevent won't be holding the program open
+        # This loop allows for ctrl-c interupts to work since flask won't be holding the program open
         while search_thread.is_alive():
             time.sleep(60)
     else:
-        # run gevent server
-        gevent_log = None
-        if args.verbose or args.very_verbose:
-            gevent_log = log
+        ssl_context = None
         if args.ssl_certificate and args.ssl_privatekey \
                 and os.path.exists(args.ssl_certificate) and os.path.exists(args.ssl_privatekey):
-                http_server = pywsgi.WSGIServer((args.host, args.port), app,
-                                                log=gevent_log,
-                                                error_log=log,
-                                                keyfile=args.ssl_privatekey,
-                                                certfile=args.ssl_certificate,
-                                                ssl_version=ssl.PROTOCOL_TLSv1_2)
-                log.info('Web server in SSL mode, listening at https://%s:%d', args.host, args.port)
+            ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
+            ssl_context.load_cert_chain(args.ssl_certificate, args.ssl_privatekey)
+            log.info('Web server in SSL mode.')
+        if args.verbose or args.very_verbose:
+            app.run(threaded=True, use_reloader=False, debug=True, host=args.host, port=args.port, ssl_context=ssl_context)
         else:
-            http_server = pywsgi.WSGIServer((args.host, args.port), app, log=gevent_log, error_log=log)
-            log.info('Web server listening at http://%s:%d', args.host, args.port)
-        # run it
-        try:
-            http_server.serve_forever()
-        except KeyboardInterrupt:
-            pass
+            app.run(threaded=True, use_reloader=False, debug=False, host=args.host, port=args.port, ssl_context=ssl_context)
 
 if __name__ == '__main__':
     main()

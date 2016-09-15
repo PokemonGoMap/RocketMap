@@ -10,6 +10,7 @@ var $selectIconResolution
 var $selectIconSize
 var $selectLuredPokestopsOnly
 var $selectSearchIconMarker
+var $selectLocationIconMarker
 
 var language = document.documentElement.lang === '' ? 'en' : document.documentElement.lang
 var idToPokemon = {}
@@ -31,797 +32,12 @@ var searchMarker
 var storeZoom = true
 var scanPath
 
-var noLabelsStyle = [{
-  featureType: 'poi',
-  elementType: 'labels',
-  stylers: [{
-    visibility: 'off'
-  }]
-}, {
-  'featureType': 'all',
-  'elementType': 'labels.text.stroke',
-  'stylers': [{
-    'visibility': 'off'
-  }]
-}, {
-  'featureType': 'all',
-  'elementType': 'labels.text.fill',
-  'stylers': [{
-    'visibility': 'off'
-  }]
-}, {
-  'featureType': 'all',
-  'elementType': 'labels.icon',
-  'stylers': [{
-    'visibility': 'off'
-  }]
-}]
-var light2Style = [{
-  'elementType': 'geometry',
-  'stylers': [{
-    'hue': '#ff4400'
-  }, {
-    'saturation': -68
-  }, {
-    'lightness': -4
-  }, {
-    'gamma': 0.72
-  }]
-}, {
-  'featureType': 'road',
-  'elementType': 'labels.icon'
-}, {
-  'featureType': 'landscape.man_made',
-  'elementType': 'geometry',
-  'stylers': [{
-    'hue': '#0077ff'
-  }, {
-    'gamma': 3.1
-  }]
-}, {
-  'featureType': 'water',
-  'stylers': [{
-    'hue': '#00ccff'
-  }, {
-    'gamma': 0.44
-  }, {
-    'saturation': -33
-  }]
-}, {
-  'featureType': 'poi.park',
-  'stylers': [{
-    'hue': '#44ff00'
-  }, {
-    'saturation': -23
-  }]
-}, {
-  'featureType': 'water',
-  'elementType': 'labels.text.fill',
-  'stylers': [{
-    'hue': '#007fff'
-  }, {
-    'gamma': 0.77
-  }, {
-    'saturation': 65
-  }, {
-    'lightness': 99
-  }]
-}, {
-  'featureType': 'water',
-  'elementType': 'labels.text.stroke',
-  'stylers': [{
-    'gamma': 0.11
-  }, {
-    'weight': 5.6
-  }, {
-    'saturation': 99
-  }, {
-    'hue': '#0091ff'
-  }, {
-    'lightness': -86
-  }]
-}, {
-  'featureType': 'transit.line',
-  'elementType': 'geometry',
-  'stylers': [{
-    'lightness': -48
-  }, {
-    'hue': '#ff5e00'
-  }, {
-    'gamma': 1.2
-  }, {
-    'saturation': -23
-  }]
-}, {
-  'featureType': 'transit',
-  'elementType': 'labels.text.stroke',
-  'stylers': [{
-    'saturation': -64
-  }, {
-    'hue': '#ff9100'
-  }, {
-    'lightness': 16
-  }, {
-    'gamma': 0.47
-  }, {
-    'weight': 2.7
-  }]
-}]
-var darkStyle = [{
-  'featureType': 'all',
-  'elementType': 'labels.text.fill',
-  'stylers': [{
-    'saturation': 36
-  }, {
-    'color': '#b39964'
-  }, {
-    'lightness': 40
-  }]
-}, {
-  'featureType': 'all',
-  'elementType': 'labels.text.stroke',
-  'stylers': [{
-    'visibility': 'on'
-  }, {
-    'color': '#000000'
-  }, {
-    'lightness': 16
-  }]
-}, {
-  'featureType': 'all',
-  'elementType': 'labels.icon',
-  'stylers': [{
-    'visibility': 'off'
-  }]
-}, {
-  'featureType': 'administrative',
-  'elementType': 'geometry.fill',
-  'stylers': [{
-    'color': '#000000'
-  }, {
-    'lightness': 20
-  }]
-}, {
-  'featureType': 'administrative',
-  'elementType': 'geometry.stroke',
-  'stylers': [{
-    'color': '#000000'
-  }, {
-    'lightness': 17
-  }, {
-    'weight': 1.2
-  }]
-}, {
-  'featureType': 'landscape',
-  'elementType': 'geometry',
-  'stylers': [{
-    'color': '#000000'
-  }, {
-    'lightness': 20
-  }]
-}, {
-  'featureType': 'poi',
-  'elementType': 'geometry',
-  'stylers': [{
-    'color': '#000000'
-  }, {
-    'lightness': 21
-  }]
-}, {
-  'featureType': 'road.highway',
-  'elementType': 'geometry.fill',
-  'stylers': [{
-    'color': '#000000'
-  }, {
-    'lightness': 17
-  }]
-}, {
-  'featureType': 'road.highway',
-  'elementType': 'geometry.stroke',
-  'stylers': [{
-    'color': '#000000'
-  }, {
-    'lightness': 29
-  }, {
-    'weight': 0.2
-  }]
-}, {
-  'featureType': 'road.arterial',
-  'elementType': 'geometry',
-  'stylers': [{
-    'color': '#000000'
-  }, {
-    'lightness': 18
-  }]
-}, {
-  'featureType': 'road.local',
-  'elementType': 'geometry',
-  'stylers': [{
-    'color': '#181818'
-  }, {
-    'lightness': 16
-  }]
-}, {
-  'featureType': 'transit',
-  'elementType': 'geometry',
-  'stylers': [{
-    'color': '#000000'
-  }, {
-    'lightness': 19
-  }]
-}, {
-  'featureType': 'water',
-  'elementType': 'geometry',
-  'stylers': [{
-    'lightness': 17
-  }, {
-    'color': '#525252'
-  }]
-}]
-var pGoStyle = [{
-  'featureType': 'landscape.man_made',
-  'elementType': 'geometry.fill',
-  'stylers': [{
-    'color': '#a1f199'
-  }]
-}, {
-  'featureType': 'landscape.natural.landcover',
-  'elementType': 'geometry.fill',
-  'stylers': [{
-    'color': '#37bda2'
-  }]
-}, {
-  'featureType': 'landscape.natural.terrain',
-  'elementType': 'geometry.fill',
-  'stylers': [{
-    'color': '#37bda2'
-  }]
-}, {
-  'featureType': 'poi.attraction',
-  'elementType': 'geometry.fill',
-  'stylers': [{
-    'visibility': 'on'
-  }]
-}, {
-  'featureType': 'poi.business',
-  'elementType': 'geometry.fill',
-  'stylers': [{
-    'color': '#e4dfd9'
-  }]
-}, {
-  'featureType': 'poi.business',
-  'elementType': 'labels.icon',
-  'stylers': [{
-    'visibility': 'off'
-  }]
-}, {
-  'featureType': 'poi.park',
-  'elementType': 'geometry.fill',
-  'stylers': [{
-    'color': '#37bda2'
-  }]
-}, {
-  'featureType': 'road',
-  'elementType': 'geometry.fill',
-  'stylers': [{
-    'color': '#84b09e'
-  }]
-}, {
-  'featureType': 'road',
-  'elementType': 'geometry.stroke',
-  'stylers': [{
-    'color': '#fafeb8'
-  }, {
-    'weight': '1.25'
-  }]
-}, {
-  'featureType': 'road.highway',
-  'elementType': 'labels.icon',
-  'stylers': [{
-    'visibility': 'off'
-  }]
-}, {
-  'featureType': 'water',
-  'elementType': 'geometry.fill',
-  'stylers': [{
-    'color': '#5ddad6'
-  }]
-}]
-var light2StyleNoLabels = [{
-  'elementType': 'geometry',
-  'stylers': [{
-    'hue': '#ff4400'
-  }, {
-    'saturation': -68
-  }, {
-    'lightness': -4
-  }, {
-    'gamma': 0.72
-  }]
-}, {
-  'featureType': 'road',
-  'elementType': 'labels.icon'
-}, {
-  'featureType': 'landscape.man_made',
-  'elementType': 'geometry',
-  'stylers': [{
-    'hue': '#0077ff'
-  }, {
-    'gamma': 3.1
-  }]
-}, {
-  'featureType': 'water',
-  'stylers': [{
-    'hue': '#00ccff'
-  }, {
-    'gamma': 0.44
-  }, {
-    'saturation': -33
-  }]
-}, {
-  'featureType': 'poi.park',
-  'stylers': [{
-    'hue': '#44ff00'
-  }, {
-    'saturation': -23
-  }]
-}, {
-  'featureType': 'water',
-  'elementType': 'labels.text.fill',
-  'stylers': [{
-    'hue': '#007fff'
-  }, {
-    'gamma': 0.77
-  }, {
-    'saturation': 65
-  }, {
-    'lightness': 99
-  }]
-}, {
-  'featureType': 'water',
-  'elementType': 'labels.text.stroke',
-  'stylers': [{
-    'gamma': 0.11
-  }, {
-    'weight': 5.6
-  }, {
-    'saturation': 99
-  }, {
-    'hue': '#0091ff'
-  }, {
-    'lightness': -86
-  }]
-}, {
-  'featureType': 'transit.line',
-  'elementType': 'geometry',
-  'stylers': [{
-    'lightness': -48
-  }, {
-    'hue': '#ff5e00'
-  }, {
-    'gamma': 1.2
-  }, {
-    'saturation': -23
-  }]
-}, {
-  'featureType': 'transit',
-  'elementType': 'labels.text.stroke',
-  'stylers': [{
-    'saturation': -64
-  }, {
-    'hue': '#ff9100'
-  }, {
-    'lightness': 16
-  }, {
-    'gamma': 0.47
-  }, {
-    'weight': 2.7
-  }]
-}, {
-  'featureType': 'all',
-  'elementType': 'labels.text.stroke',
-  'stylers': [{
-    'visibility': 'off'
-  }]
-}, {
-  'featureType': 'all',
-  'elementType': 'labels.text.fill',
-  'stylers': [{
-    'visibility': 'off'
-  }]
-}, {
-  'featureType': 'all',
-  'elementType': 'labels.icon',
-  'stylers': [{
-    'visibility': 'off'
-  }]
-}]
-var darkStyleNoLabels = [{
-  'featureType': 'all',
-  'elementType': 'labels.text.fill',
-  'stylers': [{
-    'visibility': 'off'
-  }]
-}, {
-  'featureType': 'all',
-  'elementType': 'labels.text.stroke',
-  'stylers': [{
-    'visibility': 'off'
-  }]
-}, {
-  'featureType': 'all',
-  'elementType': 'labels.icon',
-  'stylers': [{
-    'visibility': 'off'
-  }]
-}, {
-  'featureType': 'administrative',
-  'elementType': 'geometry.fill',
-  'stylers': [{
-    'color': '#000000'
-  }, {
-    'lightness': 20
-  }]
-}, {
-  'featureType': 'administrative',
-  'elementType': 'geometry.stroke',
-  'stylers': [{
-    'color': '#000000'
-  }, {
-    'lightness': 17
-  }, {
-    'weight': 1.2
-  }]
-}, {
-  'featureType': 'landscape',
-  'elementType': 'geometry',
-  'stylers': [{
-    'color': '#000000'
-  }, {
-    'lightness': 20
-  }]
-}, {
-  'featureType': 'poi',
-  'elementType': 'geometry',
-  'stylers': [{
-    'color': '#000000'
-  }, {
-    'lightness': 21
-  }]
-}, {
-  'featureType': 'road.highway',
-  'elementType': 'geometry.fill',
-  'stylers': [{
-    'color': '#000000'
-  }, {
-    'lightness': 17
-  }]
-}, {
-  'featureType': 'road.highway',
-  'elementType': 'geometry.stroke',
-  'stylers': [{
-    'color': '#000000'
-  }, {
-    'lightness': 29
-  }, {
-    'weight': 0.2
-  }]
-}, {
-  'featureType': 'road.arterial',
-  'elementType': 'geometry',
-  'stylers': [{
-    'color': '#000000'
-  }, {
-    'lightness': 18
-  }]
-}, {
-  'featureType': 'road.local',
-  'elementType': 'geometry',
-  'stylers': [{
-    'color': '#181818'
-  }, {
-    'lightness': 16
-  }]
-}, {
-  'featureType': 'transit',
-  'elementType': 'geometry',
-  'stylers': [{
-    'color': '#000000'
-  }, {
-    'lightness': 19
-  }]
-}, {
-  'featureType': 'water',
-  'elementType': 'geometry',
-  'stylers': [{
-    'lightness': 17
-  }, {
-    'color': '#525252'
-  }]
-}]
-var pGoStyleNoLabels = [{
-  'featureType': 'landscape.man_made',
-  'elementType': 'geometry.fill',
-  'stylers': [{
-    'color': '#a1f199'
-  }]
-}, {
-  'featureType': 'landscape.natural.landcover',
-  'elementType': 'geometry.fill',
-  'stylers': [{
-    'color': '#37bda2'
-  }]
-}, {
-  'featureType': 'landscape.natural.terrain',
-  'elementType': 'geometry.fill',
-  'stylers': [{
-    'color': '#37bda2'
-  }]
-}, {
-  'featureType': 'poi.attraction',
-  'elementType': 'geometry.fill',
-  'stylers': [{
-    'visibility': 'on'
-  }]
-}, {
-  'featureType': 'poi.business',
-  'elementType': 'geometry.fill',
-  'stylers': [{
-    'color': '#e4dfd9'
-  }]
-}, {
-  'featureType': 'poi.business',
-  'elementType': 'labels.icon',
-  'stylers': [{
-    'visibility': 'off'
-  }]
-}, {
-  'featureType': 'poi.park',
-  'elementType': 'geometry.fill',
-  'stylers': [{
-    'color': '#37bda2'
-  }]
-}, {
-  'featureType': 'road',
-  'elementType': 'geometry.fill',
-  'stylers': [{
-    'color': '#84b09e'
-  }]
-}, {
-  'featureType': 'road',
-  'elementType': 'geometry.stroke',
-  'stylers': [{
-    'color': '#fafeb8'
-  }, {
-    'weight': '1.25'
-  }]
-}, {
-  'featureType': 'road.highway',
-  'elementType': 'labels.icon',
-  'stylers': [{
-    'visibility': 'off'
-  }]
-}, {
-  'featureType': 'water',
-  'elementType': 'geometry.fill',
-  'stylers': [{
-    'color': '#5ddad6'
-  }]
-}, {
-  'featureType': 'all',
-  'elementType': 'labels.text.stroke',
-  'stylers': [{
-    'visibility': 'off'
-  }]
-}, {
-  'featureType': 'all',
-  'elementType': 'labels.text.fill',
-  'stylers': [{
-    'visibility': 'off'
-  }]
-}, {
-  'featureType': 'all',
-  'elementType': 'labels.icon',
-  'stylers': [{
-    'visibility': 'off'
-  }]
-}]
 
 var selectedStyle = 'light'
 
-var mapData = {
-  pokemons: {},
-  gyms: {},
-  pokestops: {},
-  lurePokemons: {},
-  scanned: {},
-  spawnpoints: {}
-}
+
 var gymTypes = ['Uncontested', 'Mystic', 'Valor', 'Instinct']
 var audio = new Audio('static/sounds/ding.mp3')
-var pokemonSprites = {
-  normal: {
-    columns: 12,
-    iconWidth: 30,
-    iconHeight: 30,
-    spriteWidth: 360,
-    spriteHeight: 390,
-    filename: 'static/icons-sprite.png',
-    name: 'Normal'
-  },
-  highres: {
-    columns: 7,
-    iconWidth: 65,
-    iconHeight: 65,
-    spriteWidth: 455,
-    spriteHeight: 1430,
-    filename: 'static/icons-large-sprite.png',
-    name: 'High-Res'
-  },
-  shuffle: {
-    columns: 7,
-    iconWidth: 65,
-    iconHeight: 65,
-    spriteWidth: 455,
-    spriteHeight: 1430,
-    filename: 'static/icons-shuffle-sprite.png',
-    name: 'Shuffle'
-  }
-}
-
-//
-// LocalStorage helpers
-//
-
-var StoreTypes = {
-  Boolean: {
-    parse: function (str) {
-      switch (str.toLowerCase()) {
-        case '1':
-        case 'true':
-        case 'yes':
-          return true
-        default:
-          return false
-      }
-    },
-    stringify: function (b) {
-      return b ? 'true' : 'false'
-    }
-  },
-  JSON: {
-    parse: function (str) {
-      return JSON.parse(str)
-    },
-    stringify: function (json) {
-      return JSON.stringify(json)
-    }
-  },
-  String: {
-    parse: function (str) {
-      return str
-    },
-    stringify: function (str) {
-      return str
-    }
-  },
-  Number: {
-    parse: function (str) {
-      return parseInt(str, 10)
-    },
-    stringify: function (number) {
-      return number.toString()
-    }
-  }
-}
-
-var StoreOptions = {
-  'map_style': {
-    default: 'roadmap',
-    type: StoreTypes.String
-  },
-  'remember_select_exclude': {
-    default: [],
-    type: StoreTypes.JSON
-  },
-  'remember_select_notify': {
-    default: [],
-    type: StoreTypes.JSON
-  },
-  'remember_select_rarity_notify': {
-    default: [],
-    type: StoreTypes.JSON
-  },
-  'showGyms': {
-    default: false,
-    type: StoreTypes.Boolean
-  },
-  'showPokemon': {
-    default: true,
-    type: StoreTypes.Boolean
-  },
-  'showPokestops': {
-    default: true,
-    type: StoreTypes.Boolean
-  },
-  'showLuredPokestopsOnly': {
-    default: 0,
-    type: StoreTypes.Number
-  },
-  'showScanned': {
-    default: false,
-    type: StoreTypes.Boolean
-  },
-  'showSpawnpoints': {
-    default: false,
-    type: StoreTypes.Boolean
-  },
-  'showRanges': {
-    default: false,
-    type: StoreTypes.Boolean
-  },
-  'playSound': {
-    default: false,
-    type: StoreTypes.Boolean
-  },
-  'geoLocate': {
-    default: false,
-    type: StoreTypes.Boolean
-  },
-  'lockMarker': {
-    default: isTouchDevice(), // default to true if touch device
-    type: StoreTypes.Boolean
-  },
-  'startAtUserLocation': {
-    default: false,
-    type: StoreTypes.Boolean
-  },
-  'pokemonIcons': {
-    default: 'highres',
-    type: StoreTypes.String
-  },
-  'iconSizeModifier': {
-    default: 0,
-    type: StoreTypes.Number
-  },
-  'searchMarkerStyle': {
-    default: 'google',
-    type: StoreTypes.String
-  },
-  'zoomLevel': {
-    default: 16,
-    type: StoreTypes.Number
-  }
-}
-
-var Store = {
-  getOption: function (key) {
-    var option = StoreOptions[key]
-    if (!option) {
-      throw new Error('Store key was not defined ' + key)
-    }
-    return option
-  },
-  get: function (key) {
-    var option = this.getOption(key)
-    var optionType = option.type
-    var rawValue = localStorage[key]
-    if (rawValue === null || rawValue === undefined) {
-      return option.default
-    }
-    var value = optionType.parse(rawValue)
-    return value
-  },
-  set: function (key, value) {
-    var option = this.getOption(key)
-    var optionType = option.type || StoreTypes.String
-    var rawValue = optionType.stringify(value)
-    localStorage[key] = rawValue
-  },
-  reset: function (key) {
-    localStorage.removeItem(key)
-  }
-}
 
 //
 // Functions
@@ -865,6 +81,7 @@ function initMap () { // eslint-disable-line no-unused-vars
       mapTypeIds: [
         google.maps.MapTypeId.ROADMAP,
         google.maps.MapTypeId.SATELLITE,
+        google.maps.MapTypeId.HYBRID,
         'nolabels_style',
         'dark_style',
         'style_light2',
@@ -930,9 +147,50 @@ function initMap () { // eslint-disable-line no-unused-vars
   })
 
   searchMarker = createSearchMarker()
-
-  addMyLocationButton()
+  locationMarker = createLocationMarker()
+  createMyLocationButton()
   initSidebar()
+}
+
+function updateLocationMarker (style) {
+  if (style in searchMarkerStyles) {
+    locationMarker.setIcon(searchMarkerStyles[style].icon)
+    Store.set('locationMarkerStyle', style)
+  }
+  return locationMarker
+}
+
+function createLocationMarker () {
+  var position = Store.get('followMyLocationPosition')
+  var lat = ('lat' in position) ? position.lat : centerLat
+  var lng = ('lng' in position) ? position.lng : centerLng
+
+  var locationMarker = new google.maps.Marker({
+    map: map,
+    animation: google.maps.Animation.DROP,
+    position: {
+      lat: lat,
+      lng: lng
+    },
+    draggable: true,
+    icon: null,
+    optimized: false,
+    zIndex: google.maps.Marker.MAX_ZINDEX + 2
+  })
+
+  locationMarker.infoWindow = new google.maps.InfoWindow({
+    content: '<div><b>My Location</b></div>',
+    disableAutoPan: true
+  })
+
+  addListeners(locationMarker)
+
+  google.maps.event.addListener(locationMarker, 'dragend', function () {
+    var newLocation = locationMarker.getPosition()
+    Store.set('followMyLocationPosition', { lat: newLocation.lat(), lng: newLocation.lng() })
+  })
+
+  return locationMarker
 }
 
 function updateSearchMarker (style) {
@@ -940,6 +198,7 @@ function updateSearchMarker (style) {
     searchMarker.setIcon(searchMarkerStyles[style].icon)
     Store.set('searchMarkerStyle', style)
   }
+
   return searchMarker
 }
 
@@ -956,6 +215,13 @@ function createSearchMarker () {
     optimized: false,
     zIndex: google.maps.Marker.MAX_ZINDEX + 1
   })
+
+  searchMarker.infoWindow = new google.maps.InfoWindow({
+    content: '<div><b>Search Location</b></div>',
+    disableAutoPan: true
+  })
+
+  addListeners(searchMarker)
 
   var oldLocation = null
   google.maps.event.addListener(searchMarker, 'dragstart', function () {
@@ -997,6 +263,7 @@ function initSidebar () {
   $('#geoloc-switch').prop('checked', Store.get('geoLocate'))
   $('#lock-marker-switch').prop('checked', Store.get('lockMarker'))
   $('#start-at-user-location-switch').prop('checked', Store.get('startAtUserLocation'))
+  $('#follow-my-location-switch').prop('checked', Store.get('followMyLocation'))
   $('#scanned-switch').prop('checked', Store.get('showScanned'))
   $('#spawnpoints-switch').prop('checked', Store.get('showSpawnpoints'))
   $('#ranges-switch').prop('checked', Store.get('showRanges'))
@@ -1034,6 +301,12 @@ function getTypeSpan (type) {
   return `<span style='padding: 2px 5px; text-transform: uppercase; color: white; margin-right: 2px; border-radius: 4px; font-size: 0.8em; vertical-align: text-bottom; background-color: ${type['color']}'>${type['type']}</span>`
 }
 
+function openMapDirections (lat, lng) { // eslint-disable-line no-unused-vars
+  var myLocation = locationMarker.getPosition()
+  var url = 'https://www.google.com/maps/dir/' + myLocation.lat() + ',' + myLocation.lng() + '/' + lat + ',' + lng
+  window.open(url, '_blank')
+}
+
 function pokemonLabel (name, rarity, types, disappearTime, id, latitude, longitude, encounterId) {
   var disappearDate = new Date(disappearTime)
   var rarityDisplay = rarity ? '(' + rarity + ')' : ''
@@ -1064,7 +337,7 @@ function pokemonLabel (name, rarity, types, disappearTime, id, latitude, longitu
       <a href='javascript:excludePokemon(${id})'>Exclude</a>&nbsp;&nbsp
       <a href='javascript:notifyAboutPokemon(${id})'>Notify</a>&nbsp;&nbsp
       <a href='javascript:removePokemonMarker("${encounterId}")'>Remove</a>&nbsp;&nbsp
-      <a href='https://www.google.com/maps/dir/Current+Location/${latitude},${longitude}?hl=en' target='_blank' title='View in Maps'>Get directions</a>
+      <a href='javascript:void(0);' onclick='javascript:openMapDirections(${latitude},${longitude});' title='View in Maps'>Get directions</a>
     </div>`
   return contentstring
 }
@@ -1082,7 +355,7 @@ function gymLabel (teamName, teamId, gymPoints, latitude, longitude, lastScanned
   var lastScannedStr
   if (lastScanned) {
     var lastScannedDate = new Date(lastScanned)
-    lastScannedStr = `${lastScannedDate.getFullYear()}-${pad(lastScannedDate.getMonth() + 1)}-${lastScannedDate.getDate()} ${pad(lastScannedDate.getHours())}:${pad(lastScannedDate.getMinutes())}:${pad(lastScannedDate.getSeconds())}`
+    lastScannedStr = `${lastScannedDate.getFullYear()}-${pad(lastScannedDate.getMonth() + 1)}-${pad(lastScannedDate.getDate())} ${pad(lastScannedDate.getHours())}:${pad(lastScannedDate.getMinutes())}:${pad(lastScannedDate.getSeconds())}`
   } else {
     lastScannedStr = 'Unknown'
   }
@@ -1107,7 +380,7 @@ function gymLabel (teamName, teamId, gymPoints, latitude, longitude, lastScanned
             Last Scanned: ${lastScannedStr}
           </div>
           <div>
-            <a href='https://www.google.com/maps/dir/Current+Location/${latitude},${longitude}?hl=en' target='_blank' title='View in Maps'>Get directions</a>
+            <a href='javascript:void(0);' onclick='javascript:openMapDirections(${latitude},${longitude});' title='View in Maps'>Get directions</a>
           </div>
         </center>
       </div>`
@@ -1143,7 +416,7 @@ function gymLabel (teamName, teamId, gymPoints, latitude, longitude, lastScanned
             Last Scanned: ${lastScannedStr}
           </div>
           <div>
-            <a href='https://www.google.com/maps/dir/Current+Location/${latitude},${longitude}?hl=en' target='_blank' title='View in Maps'>Get directions</a>
+            <a href='javascript:void(0);' onclick='javascript:openMapDirections(${latitude},${longitude});' title='View in Maps'>Get directions</a>
           </div>
         </center>
       </div>`
@@ -1169,7 +442,7 @@ function pokestopLabel (expireTime, latitude, longitude) {
         Location: ${latitude.toFixed(6)}, ${longitude.toFixed(7)}
       </div>
       <div>
-        <a href='https://www.google.com/maps/dir/Current+Location/${latitude},${longitude}?hl=en' target='_blank' title='View in Maps'>Get directions</a>
+        <a href='javascript:void(0);' onclick='javascript:openMapDirections(${latitude},${longitude});' title='View in Maps'>Get directions</a>
       </div>`
   } else {
     str = `
@@ -1180,7 +453,7 @@ function pokestopLabel (expireTime, latitude, longitude) {
         Location: ${latitude.toFixed(6)}, ${longitude.toFixed(7)}
       </div>
       <div>
-        <a href='https://www.google.com/maps/dir/Current+Location/${latitude},${longitude}?hl=en' target='_blank' title='View in Maps'>Get directions</a>
+        <a href='javascript:void(0);' onclick='javascript:openMapDirections(${latitude},${longitude});' title='View in Maps'>Get directions</a>
       </div>`
   }
 
@@ -1208,26 +481,6 @@ function spawnpointLabel (item) {
       </div>`
   }
   return str
-}
-
-function getGoogleSprite (index, sprite, displayHeight) {
-  displayHeight = Math.max(displayHeight, 3)
-  var scale = displayHeight / sprite.iconHeight
-  // Crop icon just a tiny bit to avoid bleedover from neighbor
-  var scaledIconSize = new google.maps.Size(scale * sprite.iconWidth - 1, scale * sprite.iconHeight - 1)
-  var scaledIconOffset = new google.maps.Point(
-    (index % sprite.columns) * sprite.iconWidth * scale + 0.5,
-    Math.floor(index / sprite.columns) * sprite.iconHeight * scale + 0.5)
-  var scaledSpriteSize = new google.maps.Size(scale * sprite.spriteWidth, scale * sprite.spriteHeight)
-  var scaledIconCenterOffset = new google.maps.Point(scale * sprite.iconWidth / 2, scale * sprite.iconHeight / 2)
-
-  return {
-    url: sprite.filename,
-    size: scaledIconSize,
-    scaledSize: scaledSpriteSize,
-    origin: scaledIconOffset,
-    anchor: scaledIconCenterOffset
-  }
 }
 
 function addRangeCircle (marker, map, type, teamId) {
@@ -1277,29 +530,7 @@ function isRangeActive (map) {
   return Store.get('showRanges')
 }
 
-function setupPokemonMarker (item, skipNotification, isBounceDisabled) {
-  // Scale icon size up with the map exponentially
-  var iconSize = 2 + (map.getZoom() - 3) * (map.getZoom() - 3) * 0.2 + Store.get('iconSizeModifier')
-  var pokemonIndex = item['pokemon_id'] - 1
-  var sprite = pokemonSprites[Store.get('pokemonIcons')] || pokemonSprites['highres']
-  var icon = getGoogleSprite(pokemonIndex, sprite, iconSize)
-
-  var animationDisabled = false
-  if (isBounceDisabled === true) {
-    animationDisabled = true
-  }
-
-  var marker = new google.maps.Marker({
-    position: {
-      lat: item['latitude'],
-      lng: item['longitude']
-    },
-    zIndex: 9999,
-    map: map,
-    icon: icon,
-    animationDisabled: animationDisabled
-  })
-
+function customizePokemonMarker (marker, item, skipNotification) {
   marker.addListener('click', function () {
     this.setAnimation(null)
     this.animationDisabled = true
@@ -1327,7 +558,6 @@ function setupPokemonMarker (item, skipNotification, isBounceDisabled) {
   }
 
   addListeners(marker)
-  return marker
 }
 
 function setupGymMarker (item) {
@@ -1426,26 +656,65 @@ function getColorBySpawnTime (value) {
   }
 
   var diff = (seconds - value)
-  var hue = 275 // purple when spawn is neither about to spawn nor active
-
+  var hue = 275 // light purple when spawn is neither about to spawn nor active
   if (diff >= 0 && diff <= 900) { // green to red over 15 minutes of active spawn
     hue = (1 - (diff / 60 / 15)) * 120
   } else if (diff < 0 && diff > -300) { // light blue to dark blue over 5 minutes til spawn
     hue = ((1 - (-diff / 60 / 5)) * 50) + 200
   }
 
-  return ['hsl(', hue, ',100%,50%)'].join('')
+  hue = Math.round(hue / 5) * 5
+
+  return hue
+}
+
+function changeSpawnIcon (color, zoom) {
+  var urlColor = ''
+  if (color === 275) {
+    urlColor = './static/icons/hsl-275-light.png'
+  } else {
+    urlColor = './static/icons/hsl-' + color + '.png'
+  }
+  var zoomScale = 1.6 // adjust this value to change the size of the spawnpoint icons
+  var minimumSize = 1
+  var newSize = Math.round(zoomScale * (zoom - 10)) // this scales the icon based on zoom
+  if (newSize < minimumSize) {
+    newSize = minimumSize
+  }
+
+  var newIcon = {
+    url: urlColor,
+    scaledSize: new google.maps.Size(newSize, newSize),
+    anchor: new google.maps.Point(newSize / 2, newSize / 2)
+  }
+
+  return newIcon
+}
+
+function spawnPointIndex (color) {
+  var newIndex = 1
+  var scale = 0
+  if (color >= 0 && color <= 120) { // high to low over 15 minutes of active spawn
+    scale = color / 120
+    newIndex = 100 + scale * 100
+  } else if (color >= 200 && color <= 250) { // low to high over 5 minutes til spawn
+    scale = (color - 200) / 50
+    newIndex = scale * 100
+  }
+
+  return newIndex
 }
 
 function setupSpawnpointMarker (item) {
   var circleCenter = new google.maps.LatLng(item['latitude'], item['longitude'])
+  var hue = getColorBySpawnTime(item.time)
+  var zoom = map.getZoom()
 
-  var marker = new google.maps.Circle({
+  var marker = new google.maps.Marker({
     map: map,
-    center: circleCenter,
-    radius: 5, // metres
-    fillColor: getColorBySpawnTime(item.time),
-    strokeWeight: 1
+    position: circleCenter,
+    icon: changeSpawnIcon(hue, zoom),
+    zIndex: spawnPointIndex(hue)
   })
 
   marker.infoWindow = new google.maps.InfoWindow({
@@ -1630,7 +899,8 @@ function processPokemons (i, item) {
       item.marker.setMap(null)
     }
     if (!item.hidden) {
-      item.marker = setupPokemonMarker(item)
+      item.marker = setupPokemonMarker(item, map)
+      customizePokemonMarker(item.marker, item)
       mapData.pokemons[item['encounter_id']] = item
     }
   }
@@ -1714,11 +984,12 @@ function processSpawnpoints (i, item) {
   }
 
   var id = item['spawnpoint_id']
+  var zoom = map.getZoom()
 
   if (id in mapData.spawnpoints) {
-    mapData.spawnpoints[id].marker.setOptions({
-      fillColor: getColorBySpawnTime(item['time'])
-    })
+    var hue = getColorBySpawnTime(item['time'])
+    mapData.spawnpoints[id].marker.setIcon(changeSpawnIcon(hue, zoom))
+    mapData.spawnpoints[id].marker.setZIndex(spawnPointIndex(hue))
   } else { // add marker to map and item to dict
     if (item.marker) {
       item.marker.setMap(null)
@@ -1773,7 +1044,8 @@ function redrawPokemon (pokemonList) {
     var item = pokemonList[key]
     if (!item.hidden) {
       if (item.marker.rangeCircle) item.marker.rangeCircle.setMap(null)
-      var newMarker = setupPokemonMarker(item, skipNotification, this.marker.animationDisabled)
+      var newMarker = setupPokemonMarker(item, map, this.marker.animationDisabled)
+      customizePokemonMarker(newMarker, item, skipNotification)
       item.marker.setMap(null)
       pokemonList[key].marker = newMarker
     }
@@ -1835,7 +1107,7 @@ function sendNotification (title, text, icon, lat, lng) {
   }
 }
 
-function myLocationButton (map, marker) {
+function createMyLocationButton () {
   var locationContainer = document.createElement('div')
 
   var locationButton = document.createElement('button')
@@ -1849,7 +1121,7 @@ function myLocationButton (map, marker) {
   locationButton.style.cursor = 'pointer'
   locationButton.style.marginRight = '10px'
   locationButton.style.padding = '0px'
-  locationButton.title = 'Your Location'
+  locationButton.title = 'My Location'
   locationContainer.appendChild(locationButton)
 
   var locationIcon = document.createElement('div')
@@ -1869,6 +1141,11 @@ function myLocationButton (map, marker) {
 
   locationContainer.index = 1
   map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(locationContainer)
+
+  google.maps.event.addListener(map, 'dragend', function () {
+    var currentLocation = document.getElementById('current-location')
+    currentLocation.style.backgroundPosition = '0px 0px'
+  })
 }
 
 function centerMapOnLocation () {
@@ -1885,12 +1162,9 @@ function centerMapOnLocation () {
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(function (position) {
       var latlng = new google.maps.LatLng(position.coords.latitude, position.coords.longitude)
-      locationMarker.setVisible(true)
-      locationMarker.setOptions({
-        'opacity': 1
-      })
       locationMarker.setPosition(latlng)
       map.setCenter(latlng)
+      Store.set('followMyLocationPosition', { lat: position.coords.latitude, lng: position.coords.longitude })
       clearInterval(animationInterval)
       currentLocation.style.backgroundPosition = '-144px 0px'
     })
@@ -1898,37 +1172,6 @@ function centerMapOnLocation () {
     clearInterval(animationInterval)
     currentLocation.style.backgroundPosition = '0px 0px'
   }
-}
-
-function addMyLocationButton () {
-  locationMarker = new google.maps.Marker({
-    map: map,
-    animation: google.maps.Animation.DROP,
-    position: {
-      lat: centerLat,
-      lng: centerLng
-    },
-    icon: {
-      path: google.maps.SymbolPath.CIRCLE,
-      fillOpacity: 1,
-      fillColor: '#1c8af6',
-      scale: 6,
-      strokeColor: '#1c8af6',
-      strokeWeight: 8,
-      strokeOpacity: 0.3
-    }
-  })
-  locationMarker.setVisible(false)
-
-  myLocationButton(map, locationMarker)
-
-  google.maps.event.addListener(map, 'dragend', function () {
-    var currentLocation = document.getElementById('current-location')
-    currentLocation.style.backgroundPosition = '0px 0px'
-    locationMarker.setOptions({
-      'opacity': 0.5
-    })
-  })
 }
 
 function changeLocation (lat, lng) {
@@ -1975,11 +1218,6 @@ function i8ln (word) {
     // Word doesn't exist in dictionary return it as is
     return word
   }
-}
-
-function isTouchDevice () {
-  // Should cover most browsers
-  return 'ontouchstart' in window || navigator.maxTouchPoints
 }
 
 //
@@ -2069,6 +1307,7 @@ $(function () {
   })
 
   $selectSearchIconMarker = $('#iconmarker-style')
+  $selectLocationIconMarker = $('#locationmarker-style')
 
   $.getJSON('static/dist/data/searchmarkerstyle.min.json').done(function (data) {
     searchMarkerStyles = data
@@ -2096,6 +1335,19 @@ $(function () {
     $selectSearchIconMarker.val(Store.get('searchMarkerStyle')).trigger('change')
 
     updateSearchMarker(Store.get('lockMarker'))
+
+    $selectLocationIconMarker.select2({
+      placeholder: 'Select Location Marker',
+      data: searchMarkerStyleList,
+      minimumResultsForSearch: Infinity
+    })
+
+    $selectLocationIconMarker.on('change', function (e) {
+      Store.set('locationMarkerStyle', this.value)
+      updateLocationMarker(this.value)
+    })
+
+    $selectLocationIconMarker.val(Store.get('locationMarkerStyle')).trigger('change')
   })
 })
 
@@ -2190,19 +1442,27 @@ $(function () {
   window.setInterval(updateLabelDiffTime, 1000)
   window.setInterval(updateMap, 5000)
   window.setInterval(function () {
-    if (navigator.geolocation && Store.get('geoLocate')) {
+    if (navigator.geolocation && (Store.get('geoLocate') || Store.get('followMyLocation'))) {
       navigator.geolocation.getCurrentPosition(function (position) {
-        var baseURL = location.protocol + '//' + location.hostname + (location.port ? ':' + location.port : '')
         var lat = position.coords.latitude
-        var lon = position.coords.longitude
+        var lng = position.coords.longitude
+        var center = new google.maps.LatLng(lat, lng)
 
-        // the search function makes any small movements cause a loop. Need to increase resolution
-        if (getPointDistance(searchMarker.getPosition(), (new google.maps.LatLng(lat, lon))) > 40) {
-          $.post(baseURL + '/next_loc?lat=' + lat + '&lon=' + lon).done(function () {
-            var center = new google.maps.LatLng(lat, lon)
+        if (Store.get('geoLocate')) {
+          // the search function makes any small movements cause a loop. Need to increase resolution
+          if ((typeof searchMarker !== 'undefined') && (getPointDistance(searchMarker.getPosition(), center) > 40)) {
+            $.post('next_loc?lat=' + lat + '&lon=' + lng).done(function () {
+              map.panTo(center)
+              searchMarker.setPosition(center)
+            })
+          }
+        }
+        if (Store.get('followMyLocation')) {
+          if ((typeof locationMarker !== 'undefined') && (getPointDistance(locationMarker.getPosition(), center) >= 5)) {
             map.panTo(center)
-            searchMarker.setPosition(center)
-          })
+            locationMarker.setPosition(center)
+            Store.set('followMyLocationPosition', { lat: lat, lng: lng })
+          }
         }
       })
     }
@@ -2278,6 +1538,15 @@ $(function () {
 
   $('#start-at-user-location-switch').change(function () {
     Store.set('startAtUserLocation', this.checked)
+  })
+
+  $('#follow-my-location-switch').change(function () {
+    if (!navigator.geolocation) {
+      this.checked = false
+    } else {
+      Store.set('followMyLocation', this.checked)
+    }
+    locationMarker.setDraggable(!this.checked)
   })
 
   if ($('#nav-accordion').length) {

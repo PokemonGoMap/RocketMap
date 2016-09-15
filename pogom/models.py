@@ -1,6 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 import logging
+import itertools
 import calendar
 import sys
 import gc
@@ -15,6 +16,8 @@ from playhouse.shortcuts import RetryOperationalError
 from playhouse.migrate import migrate, MySQLMigrator, SqliteMigrator
 from datetime import datetime, timedelta
 from base64 import b64encode
+from cachetools import TTLCache
+from cachetools import cached
 
 from . import config
 from .utils import get_pokemon_name, get_pokemon_rarity, get_pokemon_types, get_args
@@ -25,6 +28,7 @@ log = logging.getLogger(__name__)
 
 args = get_args()
 flaskDb = FlaskDB()
+cache = TTLCache(maxsize=100, ttl=60 * 5)
 
 db_schema_version = 7
 
@@ -156,6 +160,7 @@ class Pokemon(BaseModel):
         return pokemons
 
     @classmethod
+    @cached(cache)
     def get_seen(cls, timediff):
         if timediff:
             timediff = datetime.utcnow() - timediff
@@ -196,26 +201,46 @@ class Pokemon(BaseModel):
         return {'pokemon': pokemons, 'total': total}
 
     @classmethod
-    def get_appearances(cls, pokemon_id, last_appearance, timediff):
+    def get_appearances(cls, pokemon_id, timediff):
         '''
         :param pokemon_id: id of pokemon that we need appearances for
-        :param last_appearance: time of last appearance of pokemon after which we are getting appearances
         :param timediff: limiting period of the selection
         :return: list of  pokemon  appearances over a selected period
         '''
         if timediff:
             timediff = datetime.utcnow() - timediff
         query = (Pokemon
-                 .select()
+                 .select(Pokemon.latitude, Pokemon.longitude, Pokemon.pokemon_id, fn.Count(Pokemon.spawnpoint_id).alias('count'), Pokemon.spawnpoint_id)
                  .where((Pokemon.pokemon_id == pokemon_id) &
-                        (Pokemon.disappear_time > datetime.utcfromtimestamp(last_appearance / 1000.0)) &
                         (Pokemon.disappear_time > timediff)
                         )
-                 .order_by(Pokemon.disappear_time.asc())
+                 .group_by(Pokemon.latitude, Pokemon.longitude, Pokemon.pokemon_id, Pokemon.spawnpoint_id)
                  .dicts()
                  )
 
         return list(query)
+
+    @classmethod
+    def get_appearances_times_by_spawnpoint(cls, pokemon_id, spawnpoint_id, timediff):
+        '''
+        :param pokemon_id: id of pokemon that we need appearances times for
+        :param spawnpoint_id: spawnpoing id we need appearances times for
+        :param timediff: limiting period of the selection
+        :return: list of time appearances over a selected period
+        '''
+        if timediff:
+            timediff = datetime.utcnow() - timediff
+        query = (Pokemon
+                 .select(Pokemon.disappear_time)
+                 .where((Pokemon.pokemon_id == pokemon_id) &
+                        (Pokemon.spawnpoint_id == spawnpoint_id) &
+                        (Pokemon.disappear_time > timediff)
+                        )
+                 .order_by(Pokemon.disappear_time.asc())
+                 .tuples()
+                 )
+
+        return list(itertools.chain(*query))
 
     @classmethod
     def get_spawn_time(cls, disappear_time):
@@ -450,6 +475,39 @@ class ScannedLocation(BaseModel):
                  .dicts())
 
         return list(query)
+
+
+class MainWorker(BaseModel):
+    worker_name = CharField(primary_key=True, max_length=50)
+    message = CharField()
+    method = CharField(max_length=50)
+    last_modified = DateTimeField(index=True)
+
+
+class WorkerStatus(BaseModel):
+    username = CharField(primary_key=True, max_length=50)
+    worker_name = CharField()
+    success = IntegerField()
+    fail = IntegerField()
+    no_items = IntegerField()
+    skip = IntegerField()
+    last_modified = DateTimeField(index=True)
+    message = CharField(max_length=255)
+
+    @staticmethod
+    def get_recent():
+        query = (WorkerStatus
+                 .select()
+                 .where((WorkerStatus.last_modified >=
+                        (datetime.utcnow() - timedelta(minutes=5))))
+                 .order_by(WorkerStatus.username)
+                 .dicts())
+
+        status = []
+        for s in query:
+            status.append(s)
+
+        return status
 
 
 class Versions(flaskDb.Model):
@@ -809,12 +867,23 @@ def db_updater(args, q):
 def clean_db_loop(args):
     while True:
         try:
-
             # Clean out old scanned locations
             query = (ScannedLocation
                      .delete()
                      .where((ScannedLocation.last_modified <
-                            (datetime.utcnow() - timedelta(minutes=30)))))
+                             (datetime.utcnow() - timedelta(minutes=30)))))
+            query.execute()
+
+            query = (MainWorker
+                     .delete()
+                     .where((ScannedLocation.last_modified <
+                             (datetime.utcnow() - timedelta(minutes=30)))))
+            query.execute()
+
+            query = (WorkerStatus
+                     .delete()
+                     .where((ScannedLocation.last_modified <
+                             (datetime.utcnow() - timedelta(minutes=30)))))
             query.execute()
 
             # Remove active modifier from expired lured pokestops
@@ -855,13 +924,13 @@ def bulk_upsert(cls, data):
 def create_tables(db):
     db.connect()
     verify_database_schema(db)
-    db.create_tables([Pokemon, Pokestop, Gym, ScannedLocation, GymDetails, GymMember, GymPokemon, Trainer], safe=True)
+    db.create_tables([Pokemon, Pokestop, Gym, ScannedLocation, GymDetails, GymMember, GymPokemon, Trainer, MainWorker, WorkerStatus], safe=True)
     db.close()
 
 
 def drop_tables(db):
     db.connect()
-    db.drop_tables([Pokemon, Pokestop, Gym, ScannedLocation, Versions, GymDetails, GymMember, GymPokemon, Trainer], safe=True)
+    db.drop_tables([Pokemon, Pokestop, Gym, ScannedLocation, Versions, GymDetails, GymMember, GymPokemon, Trainer, MainWorker, WorkerStatus, Versions], safe=True)
     db.close()
 
 
