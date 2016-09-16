@@ -16,8 +16,6 @@ Du kannst verifizieren, ob die Installationen geklappt haben, indem du folgende 
 git --version
 python --version
 pip --version
-node --version
-npm --version
 
 
 2. Project downloaden
@@ -58,7 +56,10 @@ Die Location "51.5107383,7.4650364"(Dortmund Stadtgarten: ) mit Scanweite 5 würd
 5. Projekt starten
 Wenn die Map dort noch nie bekannt ist und somit keine Spawns bekannt sind(sind auf der Map unter Options->Spawn Points einsehbar), dann solltest du einfach in einer Spirale suchen
 führe dazu einfach die Batchdatei "start-spiral.bat" aus
-sind Spawns bekannt, dann führe die Batchdatei "start-spawns.bat" aus
+
+sind Spawns in der Datenbank bekannt, dann führe die Batchdatei "get-spawns.bat" aus. Das dauert jetzt etwas. Jetzt sollte im obersten Verzeichnis ein Ordner namens "spawns" erstellt worden sein, mit der selben Anzahl an Dateien, wie du Locations angegeben hast.
+Als nächstes wollen wir das ganze etwas kompakter machen und Spawns direkt nebeneinander zusammenfassen, hierzu führe die Batchdatei "compress-spawns.bat" aus. Der Ordner sollte nun doppelt so viele Dateien enthalten.
+ Danach führe die Batchdatei "start-spawns.bat" aus und es sollte für jede Location nun ein eigenes Fenster geöffnet werden.
 
 
 
