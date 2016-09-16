@@ -21,14 +21,14 @@ args - The configuration arguments. This may not include all of the arguments, j
 Schedulers must fill the queues with items to search.
 
 Queue items are a list containing:
-    [step, (latitude, longitude, altitude), appears_seconds, disappears_seconds)]
+    [step, (latitude, longitude, altitude), scan_seconds, disappears_seconds)]
 Where:
     - step is the step number. Used only for display purposes.
     - (latitude, longitude, altitude) is the location to be scanned.
-    - appears_seconds is the unix timestamp of when the pokemon next appears
+    - scan_seconds is the unix timestamp of when the search worker should scan
     - disappears_seconds is the unix timestamp of when the pokemon next disappears
 
-    appears_seconds and disappears_seconds are used to skip scans that are too late, and wait for scans the
+    scan_seconds and disappears_seconds are used to skip scans that are too late, and wait for scans the
     worker is early for.  If a scheduler doesn't have a specific time a location needs to be scanned, it
     should set both to 0.
 
@@ -198,7 +198,7 @@ class HexSearch(BaseScheduler):
         # Add the required appear and disappear times
         locationsZeroed = []
         for step, location in enumerate(results, 1):
-            locationsZeroed.append((step, (location[0], location[1], 0), 0, 0))
+            locationsZeroed.append((step, (location[0], location[1], 40.32), 0, 0))
         return locationsZeroed
 
     # Schedule the work to be done
@@ -276,12 +276,17 @@ class SpawnScan(BaseScheduler):
             log.debug('Loading spawn points from database')
             self.locations = Pokemon.get_spawnpoints_in_hex(self.scan_location, self.args.step_limit)
 
+        # Run the scheduling algorithm
+        # This adds a "worker" field
+        self.locations = self.assign_spawns(self.locations)
+
+
         # Well shit...
         # if not self.locations:
         #    raise Exception('No availabe spawn points!')
 
         # locations[]:
-        # {"lat": 37.53079079414139, "lng": -122.28811690874117, "spawnpoint_id": "808f9f1601d", "time": 511
+        # {"lat": 37.53079079414139, "lng": -122.28811690874117, "spawnpoint_id": "808f9f1601d", "time": 511, "worker": 1}
 
         log.info('Total of %d spawns to track', len(self.locations))
 
@@ -289,50 +294,26 @@ class SpawnScan(BaseScheduler):
 
         if self.args.very_verbose:
             for i in self.locations:
-                sec = i['time'] % 60
-                minute = (i['time'] / 60) % 60
-                m = 'Scan [{:02}:{:02}] ({}) @ {},{}'.format(minute, sec, i['time'], i['lat'], i['lng'])
+                sec = i['scan_time'] % 60
+                minute = (i['scan_time'] / 60) % 60
+                m = 'Scan [{:02}:{:02}] ({}) @ {},{}'.format(minute, sec, i['scan_time'], i['lat'], i['lng'])
                 log.debug(m)
 
+        # TODO/COMMENT: sps_scan_current is in conflict with speed limiting
         # 'time' from json and db alike has been munged to appearance time as seconds after the hour
         # Here we'll convert that to a real timestamp
         for location in self.locations:
-            # For a scan which should cover all CURRENT pokemon, we can offset
-            # the comparison time by 15 minutes so that the "appears" time
-            # won't be rolled over to the next hour.
+            location['scan_time'] = now() + (cur_sec() - location['scan_time']) % 3600
+            location['leaves'] = now() + (cur_sec() - location['time']) % 3600 + 900
 
-            # TODO: Make it work. The original logic (commented out) was producing
-            #       bogus results if your first scan was in the last 15 minute of
-            #       the hour. Wrapping my head around this isn't work right now,
-            #       so I'll just drop the feature for the time being. It does need
-            #       to come back so that repositioning/pausing works more nicely,
-            #       but we can live without it too.
-
-            # if sps_scan_current:
-            #     cursec = (location['time'] + 900) % 3600
-            # else:
-            cursec = location['time']
-
-            if cursec > cur_sec():
-                # hasn't spawn in the current hour
-                from_now = location['time'] - cur_sec()
-                appears = now() + from_now
-            else:
-                # won't spawn till next hour
-                late_by = cur_sec() - location['time']
-                appears = now() + 3600 - late_by
-
-            location['appears'] = appears
-            location['leaves'] = appears + 900
-
-        # Put the spawn points in order of next appearance time
-        self.locations.sort(key=itemgetter('appears'))
+        # Put the spawn points in order of the scheduled scan time
+        self.locations.sort(key=itemgetter('scan_time'))
 
         # Match expected structure:
-        # locations = [((lat, lng, alt), ts_appears, ts_leaves),...]
-        retset = []
-        for step, location in enumerate(self.locations, 1):
-            retset.append((step, (location['lat'], location['lng'], 40.32), location['appears'], location['leaves']))
+        # locations = [((lat, lng, alt), ts_scan_time, ts_leaves),...]
+        retset = [(location['worker'], step, (location['lat'], location['lng'],
+            40.32), location['scan_time'], location['leaves']) for step,
+            location in enumerate(self.locations, 1)]
 
         return retset
 
@@ -347,12 +328,146 @@ class SpawnScan(BaseScheduler):
 
         for location in self.locations:
             # FUTURE IMPROVEMENT - For now, queues is assumed to have a single queue.
-            self.queues[0].put(location)
-            log.debug("Added location {}".format(location))
+            self.queues[location[0]].put(location[1:])
+            log.debug("Added location {}".format(location[1:]))
 
         # Clear the locations list so it gets regenerated next cycle
         self.size = len(self.locations)
         self.locations = None
+
+    def assign_spawns(self, spawns):
+
+        num_workers = len(self.queues)
+
+        log.info('Attemping to assign %d spawn points to %d accounts' % (len(spawns), num_workers))
+
+        def dist(sp1, sp2):
+            dist = geopy.distance.distance((sp1['lat'], sp1['lng']), (sp2['lat'], sp2['lng'])).meters
+            return dist
+
+        def speed(sp1, sp2):
+            time = max((sp2['scan_time'] - sp1['scan_time']) % 3600, self.args.scan_delay)
+            if time == 0:
+                return float('inf')
+            else:
+                return dist(sp1, sp2) / time
+
+        def print_speed(q):
+            s = []
+            for i in range(len(q)):
+                j = (i + 1) % len(q)
+                s.append(speed(q[i], q[j]))
+            print 'Max speed: %f, avg speed %f' % (max(s), sum(s)/len(s))
+
+        # Insert has has two modes of operation.
+        # If dry=True, it will simulate inserting sp and return the "cost" of
+        # assigning sp to queue. The cost is a tuple (delay, s0, s1, s2). delay is
+        # the delay incurred, s1 is the speed that the worker need to travel to
+        # scan sp, s2 is the speed that the worker need to travel after scanning
+        # sp, and s0 = max(s1, s2)
+        # If dry=False, it will insert sp to the proper location
+        def insert(queue, sp, dry):
+            # make a copy so we don't change the spawnpoint passed in
+            sp = dict(sp)
+
+            if len(queue) == 0:
+                if not dry:
+                    queue.append(sp)
+                return 0, self.args.max_speed, self.args.max_speed, self.args.max_speed
+
+            # Find the slot to insert sp
+            l = [True if p['scan_time'] <= sp['scan_time'] else False for p in queue]
+            # k is the slot to call `insert' with at the end
+            k = l.index(False) if False in l else len(l)
+            # i is the previous point index
+            i = (k - 1) % len(queue)
+            # j is the next point index
+            j = k % len(queue)
+
+            # Make scan time at least scan_delay after the previous point
+            sp['scan_time'] = max(sp['scan_time'], queue[i]['scan_time'] + self.args.scan_delay)
+
+            # Calculate scanner speeds incurred by adding sp
+            s1 = speed(queue[i], sp)
+            s2 = speed(sp, queue[j])
+
+            if i != j and (queue[j]['scan_time'] - queue[i]['scan_time']) % 3600 < 2 * self.args.scan_delay:
+                # No room for sp
+                score = (float('inf'), 0, 0, 0)
+            elif s1 <= self.args.max_speed and s2 <= self.args.max_speed:
+                # We are all good to go
+                score = (0, max(s1, s2), s1, s2)
+            elif s2 > self.args.max_speed:
+                # No room for sp
+                score = (float('inf'), 0, 0, 0)
+            else:
+                # s1 > max_speed, try to wiggle the scan time for sp
+                time2wait = (dist(queue[i], sp) / self.args.max_speed) - (sp['scan_time'] - queue[i]['scan_time'])
+                if time2wait > (sp['scan_time'] - queue[j]['scan_time']) % 3600:
+                    # Wiggle failed
+                    score = (float('inf'), 0, 0, 0)
+                else:
+                    # Wiggle successful, add time2wait as delay
+                    sp['scan_time'] += time2wait
+                    s1 = self.args.max_speed
+                    s2 = speed(sp, queue[j])
+                    score = (time2wait, max(s1, s2), s1, s2)
+
+            if not dry and score[0] < float('inf'):
+                queue.insert(k, sp)
+
+            return score
+
+        # Tries to assign spawns to n workers, returns the set of delays and the
+        # set of points that cannot be covered (bad).
+        def greedy_assign(spawns, n):
+            for sp in spawns:
+                sp['scan_time'] = (sp['time'] + 10) % 3600 # 10 seconds grace period
+            spawns.sort(key=itemgetter('scan_time'))
+            Q = [[] for i in range(n)]
+            delays = []
+            bad = []
+            for sp in spawns:
+                scores = [(insert(q, sp, True), i) for i, q in enumerate(Q)]
+                min_score, min_index = min(scores)
+                delay, s0, s1, s2 = min_score
+                if delay <= self.args.max_delay:
+                    insert(Q[min_index], sp, False)
+                    if delay > 0:
+                        delays.append(delay)
+                else:
+                    bad.append(sp)
+
+            log.info("Assigned %d spawn points to %d workers, left out %d points" %
+                    (len(spawns) - len(bad), n, len(bad)))
+            return Q, delays, bad
+
+        Q, delays, bad = greedy_assign(spawns, num_workers)
+
+        if len(bad):
+            log.info('Cannot schedule %d spawnpoints under max_delay, dropping.' % len(bad))
+
+        log.debug('Completed job assignment.')
+        log.info('Job queue sizes: %s' % str([len(q) for q in Q]))
+        if len(delays):
+            log.info('Number of scan delays: %d.' % len(delays))
+            log.info('Average delay: %f seconds.' % (sum(delays) / len(delays)))
+            log.info('Max delay: %f seconds.' % max(delays))
+            if max(delays) > 60:
+                log.info('Cannot assign spawn points with delay less than a minute. You should try increasing number of accounts or decreasing number of spawn points.')
+        else:
+            log.info('No additional delay is added to any spawn point.')
+
+        # Assign worker id to each spown point
+        for index, queue in enumerate(Q):
+            for sp in queue:
+                sp['worker'] = index
+
+        # Merge individual job queues back to one queue and sort it
+        spawns = sum(Q, [])
+        spawns.sort(key=itemgetter('scan_time'))
+
+        return spawns
 
 
 # The SchedulerFactory returns an instance of the correct type of scheduler

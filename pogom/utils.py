@@ -135,6 +135,10 @@ def get_args():
                         help='Use spawnpoint scanning (instead of hex grid). Scans in a circle based on step_limit when on DB', nargs='?', const='nofile', default=False)
     parser.add_argument('--dump-spawnpoints', help='dump the spawnpoints from the db to json (only for use with -ss)',
                         action='store_true', default=False)
+    parser.add_argument('-ms', '--max-speed',
+                        help='Max speed allowed in spawnpoint mode. Workers shall not travel exceeding this speed. Defaults to 30 m/s.', type=float, default=30)
+    parser.add_argument('-md', '--max-delay',
+                        help='Max delay allowed in spawnpoint mode. Points shall be dropped if they cannot be scheduled within this delay. Defaults to 60s.', type=float, default=60)
     parser.add_argument('-pd', '--purge-data',
                         help='Clear pokemon from database this many hours after they disappear \
                         (0 to disable)', type=int, default=0)
