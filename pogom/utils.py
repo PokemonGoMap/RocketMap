@@ -139,6 +139,7 @@ def get_args():
                         help='Clear pokemon from database this many hours after they disappear \
                         (0 to disable)', type=int, default=0)
     parser.add_argument('-px', '--proxy', help='Proxy url (e.g. socks5://127.0.0.1:9050)', action='append')
+    parser.add_argument('-pxsc', '--proxy-skip-check', help='Disable checking of proxies before start', action='store_true', default=False)
     parser.add_argument('-pxt', '--proxy-timeout', help='Timeout settings for proxy checker in seconds ', type=int, default=5)
     parser.add_argument('-pxd', '--proxy-display', help='Display info on which proxy beeing used (index or full) To be used with -ps', type=str, default='index')
     parser.add_argument('--db-type', help='Type of database to be used (default: sqlite)',
@@ -203,7 +204,7 @@ def get_args():
                     csv_input.append('')
                     csv_input.append('<username>')
                     csv_input.append('<username>,<password>')
-                    csv_input.append('<ptc/gmail>,<username>,<password>')
+                    csv_input.append('<ptc/google>,<username>,<password>')
 
                     # If the number of fields is differend this is not a CSV
                     if num_fields != line.count(',') + 1:
@@ -243,8 +244,8 @@ def get_args():
 
                     # If the number of fields is three then assume this is "ptc,username,password". As requested..
                     if num_fields == 3:
-                        # If field 0 is not ptc or gmail something is wrong!
-                        if fields[0].lower() == 'ptc' or fields[0].lower() == 'gmail':
+                        # If field 0 is not ptc or google something is wrong!
+                        if fields[0].lower() == 'ptc' or fields[0].lower() == 'google':
                             args.auth_service.append(fields[0])
                         else:
                             field_error = 'method'
@@ -265,7 +266,7 @@ def get_args():
                     if field_error != '':
                         type_error = 'empty!'
                         if field_error == 'method':
-                            type_error = 'not ptc or gmail instead we got \'' + fields[0] + '\'!'
+                            type_error = 'not ptc or google instead we got \'' + fields[0] + '\'!'
                         print(sys.argv[0] + ": Error parsing CSV file on line " + str(num) + ". We found " + str(num_fields) + " fields, so your input should have looked like '" + csv_input[num_fields] + "'\nBut you gave us '" + line + "', your " + field_error + " was " + type_error)
                         sys.exit(1)
 
