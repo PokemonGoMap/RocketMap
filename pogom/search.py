@@ -256,7 +256,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
     log.info('Search overseer starting')
 
     if args.scheduler.lower() == "spawnscan":
-        search_items_queues = [Queue() for a in args.accounts]
+        search_items_queues = [Queue() for i in range(args.workers)]
     else:
         search_items_queues = [Queue()]
 
