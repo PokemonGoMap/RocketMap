@@ -36,7 +36,7 @@ for place in places:
     spawnfile = "spawns/spawns_%d.json" % ( x )
     position = "%s,%s" % ( place["lat"], place["lng"] )
     steps = place["steps"]
-    arguments = [ "python", "runserver.py", "-ss", spawnfile, "--dump-spawnpoints", "-l", position, "-st", steps, "-sd", "1000", "-u", "kek", "-p", "lel" ]
+    arguments = [ "python", "runserver.py", "-ns", "-ss", spawnfile, "--dump-spawnpoints", "-l", position, "-st", steps, "-sd", "1000", "-u", "kek", "-p", "lel" ]
     
     if( os.path.isfile( spawnfile ) ):
         print( "removing old file '%s'" % ( spawnfile ) )
