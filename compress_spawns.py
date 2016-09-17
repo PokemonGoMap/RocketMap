@@ -19,7 +19,7 @@ for f in os.listdir( base_dir ):
     fileName = base_dir + f
     newFileName = fileName[:-5] + compressedEnding
     
-    arguments = [ "python", "Tools\Spawnpoint-Clustering\cluster.py", fileName, "-os", newFileName, "-r", compressRadius, "-t", compressTimeDiff ]
+    arguments = [ "python", "Tools/Spawnpoint-Clustering/cluster.py", fileName, "-os", newFileName, "-r", compressRadius, "-t", compressTimeDiff ]
     
     if( os.path.isfile( newFileName ) ):
         print( "removing old file '%s'" % ( newFileName ) )
