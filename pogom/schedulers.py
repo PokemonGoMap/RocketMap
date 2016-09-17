@@ -308,7 +308,7 @@ class SpawnScan(BaseScheduler):
         # locations = [((lat, lng, alt), ts_scan_time, ts_leaves),...]
         retset = [(location['worker'], step, (location['lat'], location['lng'],
                    40.32), location['scan_time'], location['leaves']) for step,
-                   location in enumerate(self.locations, 1)]
+                  location in enumerate(self.locations, 1)]
 
         return retset
 
