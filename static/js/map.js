@@ -20,7 +20,7 @@ var languageLookupThreshold = 3
 
 var searchMarkerStyles
 
-var excludedPokemon = []
+var excludedPokemon = [ 10, 13, 16, 19, 21, 41, 97, 124 ]
 var notifiedPokemon = []
 var notifiedRarity = []
 
@@ -65,6 +65,8 @@ function removePokemonMarker (encounterId) { // eslint-disable-line no-unused-va
 }
 
 function initMap () { // eslint-disable-line no-unused-vars
+  Store.set('showSpawnpoints', false)
+    
   map = new google.maps.Map(document.getElementById('map'), {
     center: {
       lat: centerLat,
@@ -265,7 +267,7 @@ function initSidebar () {
   $('#start-at-user-location-switch').prop('checked', Store.get('startAtUserLocation'))
   $('#follow-my-location-switch').prop('checked', Store.get('followMyLocation'))
   $('#scanned-switch').prop('checked', Store.get('showScanned'))
-  $('#spawnpoints-switch').prop('checked', false) //old: $('#spawnpoints-switch').prop('checked', Store.get('showSpawnpoints'))
+  $('#spawnpoints-switch').prop('checked', Store.get('showSpawnpoints'))
   $('#ranges-switch').prop('checked', Store.get('showRanges'))
   $('#sound-switch').prop('checked', Store.get('playSound'))
   var searchBox = new google.maps.places.SearchBox(document.getElementById('next-location'))
@@ -848,7 +850,7 @@ function loadRawData () {
   var loadGyms = Store.get('showGyms')
   var loadPokestops = Store.get('showPokestops')
   var loadScanned = Store.get('showScanned')
-  var loadSpawnpoints = $('#spawnpoints-switch').is(':checked') //old: Store.get('showSpawnpoints')
+  var loadSpawnpoints = Store.get('showSpawnpoints')
 
   var bounds = map.getBounds()
   var swPoint = bounds.getSouthWest()
@@ -979,12 +981,7 @@ function processScanned (i, item) {
 }
 
 function processSpawnpoints (i, item) {
-  /*
   if (!Store.get('showSpawnpoints')) {
-    return false
-  }
-  */
-  if( !$('#spawnpoints-switch').is(':checked') ) {
     return false
   }
 
@@ -1508,7 +1505,7 @@ $(function () {
   $('#gyms-switch').change(buildSwitchChangeListener(mapData, ['gyms'], 'showGyms'))
   $('#pokemon-switch').change(buildSwitchChangeListener(mapData, ['pokemons'], 'showPokemon'))
   $('#scanned-switch').change(buildSwitchChangeListener(mapData, ['scanned'], 'showScanned'))
-  //$('#spawnpoints-switch').change(buildSwitchChangeListener(mapData, ['spawnpoints'], 'showSpawnpoints'))
+  $('#spawnpoints-switch').change(buildSwitchChangeListener(mapData, ['spawnpoints'], 'showSpawnpoints'))
   $('#ranges-switch').change(buildSwitchChangeListener(mapData, ['gyms', 'pokemons', 'pokestops'], 'showRanges'))
 
   $('#pokestops-switch').change(function () {

@@ -31,6 +31,9 @@ flaskDb = FlaskDB()
 seen_cache = TTLCache(maxsize=500, ttl=60 * 5)
 spawnpoint_cache = TTLCache(maxsize=50000, ttl=60 * 60)
 active_cache = TTLCache(maxsize=2500, ttl=15)
+pokestop_cache = TTLCache(maxsize=2500, ttl=2 * 60)
+gym_cache = TTLCache(maxsize=2500, ttl=60)
+scanned_cache = TTLCache(maxsize=2500, ttl=30)
 
 db_schema_version = 7
 
@@ -90,13 +93,15 @@ class Pokemon(BaseModel):
 
     class Meta:
         indexes = ((('latitude', 'longitude'), False),)
-
+    
+    
+    blacklist = [ 10, 13, 16, 19, 21, 41, 97, 124 ]
 
     @classmethod
     @cached(active_cache)
     def get_allactive(cls):
         log.info('Refreshing Pokemon cache..')
-        query = Pokemon.select().where(Pokemon.disappear_time > datetime.utcnow())
+        query = Pokemon.select().where((Pokemon.disappear_time > datetime.utcnow()) & (~(Pokemon.pokemon_id.in_( Pokemon.blacklist ))))
 
         pokemon = query.dicts()
         log.info('Cached {} Pokemon'.format( len( pokemon )) )
@@ -104,7 +109,7 @@ class Pokemon(BaseModel):
     
     @staticmethod
     def get_active(swLat, swLng, neLat, neLng, pkmn_ids=None):
-#        if swLat is None or swLng is None or neLat is None or neLng is None:
+#        if None not in (swLat, swLng, neLat, neLng):
 #            query = (Pokemon
 #                     .select()
 #                     .where(Pokemon.disappear_time > datetime.utcnow())
@@ -119,7 +124,7 @@ class Pokemon(BaseModel):
 #                              (Pokemon.longitude <= neLng))))
 #                     .dicts())
         boundariesOn = True
-        if swLat is None or swLng is None or neLat is None or neLng is None:
+        if None not in (swLat, swLng, neLat, neLng):
             boundariesOn = False
         
         pokemonCache = Pokemon.get_allactive()
@@ -168,7 +173,7 @@ class Pokemon(BaseModel):
                                        fn.COUNT(Pokemon.pokemon_id).alias('count'),
                                        fn.MAX(Pokemon.disappear_time).alias('lastappeared')
                                        )
-                               .where(Pokemon.disappear_time > timediff)
+                               .where((Pokemon.disappear_time > timediff) & (~(Pokemon.pokemon_id.in_( Pokemon.blacklist ))))
                                .group_by(Pokemon.pokemon_id)
                                .alias('counttable')
                                )
@@ -257,7 +262,7 @@ class Pokemon(BaseModel):
         return spawnpoints
 
     @classmethod
-    def get_spawnpoints(cls, southBoundary, westBoundary, northBoundary, eastBoundary):
+    def get_spawnpoints(cls, swLat, swLng, neLat, neLng):
         #query = Pokemon.select(Pokemon.latitude, Pokemon.longitude, Pokemon.spawnpoint_id, ((Pokemon.disappear_time.minute * 60) + Pokemon.disappear_time.second).alias('time'), fn.Count(Pokemon.spawnpoint_id).alias('count'))
 
         #if None not in (northBoundary, southBoundary, westBoundary, eastBoundary):
@@ -269,21 +274,26 @@ class Pokemon(BaseModel):
         #                    ))
 
         #query = query.group_by(Pokemon.latitude, Pokemon.longitude, Pokemon.spawnpoint_id, SQL('time'))
+        boundariesOn = True
+        if None not in (swLat, swLng, neLat, neLng):
+            boundariesOn = False
         
         spawnCache = Pokemon.get_allspawnpoints()
         
         spawnpoints = {}
         
-        swLatFloat = float(southBoundary)
-        swLngFloat = float(westBoundary)
-        neLatFloat = float(northBoundary)
-        neLngFloat = float(eastBoundary)
+        if boundariesOn:
+            swLatFloat = float(swLat)
+            swLngFloat = float(swLng)
+            neLatFloat = float(neLat)
+            neLngFloat = float(neLng)
         
         for sp in spawnCache:
-            latitude = float(sp['latitude'])
-            longitude = float(sp['longitude'])
-            if( (latitude < swLatFloat) | (longitude < swLngFloat) | (latitude > neLatFloat) | (longitude > neLngFloat) ):
-                continue
+            if boundariesOn:
+                latitude = float(sp['latitude'])
+                longitude = float(sp['longitude'])
+                if( (latitude < swLatFloat) | (longitude < swLngFloat) | (latitude > neLatFloat) | (longitude > neLngFloat) ):
+                    continue
 
             key = sp['spawnpoint_id']
             disappear_time = cls.get_spawn_time(sp['time']) #cls.get_spawn_time(sp.pop['time'])
@@ -362,26 +372,55 @@ class Pokestop(BaseModel):
     class Meta:
         indexes = ((('latitude', 'longitude'), False),)
 
+    @classmethod
+    @cached(pokestop_cache)
+    def get_allstops(cls):
+        log.info('Refreshing PokeStop cache..')
+        
+        query = Pokestop.select()
+        
+        pokestops = query.dicts()
+        log.info('Cached {} PokeStops'.format( len( pokestops )) )
+        
+        return pokestops
+
     @staticmethod
     def get_stops(swLat, swLng, neLat, neLng):
-        if swLat is None or swLng is None or neLat is None or neLng is None:
-            query = (Pokestop
-                     .select()
-                     .dicts())
-        else:
-            query = (Pokestop
-                     .select()
-                     .where((Pokestop.latitude >= swLat) &
-                            (Pokestop.longitude >= swLng) &
-                            (Pokestop.latitude <= neLat) &
-                            (Pokestop.longitude <= neLng))
-                     .dicts())
+        #if None not in (swLat, swLng, neLat, neLng):
+        #    query = (Pokestop
+        #             .select()
+        #             .dicts())
+        #else:
+        #    query = (Pokestop
+        #             .select()
+        #             .where((Pokestop.latitude >= swLat) &
+        #                    (Pokestop.longitude >= swLng) &
+        #                    (Pokestop.latitude <= neLat) &
+        #                    (Pokestop.longitude <= neLng))
+        #             .dicts())
+        boundariesOn = True
+        if None not in (swLat, swLng, neLat, neLng):
+            boundariesOn = False
+                     
+        pokestopCache = Pokestop.get_allstops()
 
         # Performance: Disable the garbage collector prior to creating a (potentially) large dict with append()
         gc.disable()
 
         pokestops = []
-        for p in query:
+        
+        if boundariesOn:
+            swLatFloat = float(swLat)
+            swLngFloat = float(swLng)
+            neLatFloat = float(neLat)
+            neLngFloat = float(neLng)
+
+        for p in pokestopCache:
+            if boundariesOn:
+                latitude = float(p['latitude'])
+                longitude = float(p['longitude'])
+                if( (latitude < swLatFloat) | (longitude < swLngFloat) | (latitude > neLatFloat) | (longitude > neLngFloat) ):
+                    continue
             if args.china:
                 p['latitude'], p['longitude'] = \
                     transform_from_wgs_to_gcj(p['latitude'], p['longitude'])
@@ -412,27 +451,56 @@ class Gym(BaseModel):
     class Meta:
         indexes = ((('latitude', 'longitude'), False),)
 
+    @classmethod
+    @cached(gym_cache)
+    def get_allgyms(cls):
+        log.info('Refreshing Gym cache..')
+        
+        query = Gym.select()
+        
+        gyms = query.dicts()
+        log.info('Cached {} Gyms'.format( len( gyms )) )
+        
+        return gyms
+
     @staticmethod
     def get_gyms(swLat, swLng, neLat, neLng):
-        if swLat is None or swLng is None or neLat is None or neLng is None:
-            results = (Gym
-                       .select()
-                       .dicts())
-        else:
-            results = (Gym
-                       .select()
-                       .where((Gym.latitude >= swLat) &
-                              (Gym.longitude >= swLng) &
-                              (Gym.latitude <= neLat) &
-                              (Gym.longitude <= neLng))
-                       .dicts())
+        #if None not in (swLat, swLng, neLat, neLng):
+        #    results = (Gym
+        #               .select()
+        #               .dicts())
+        #else:
+        #    results = (Gym
+        #               .select()
+        #               .where((Gym.latitude >= swLat) &
+        #                      (Gym.longitude >= swLng) &
+        #                      (Gym.latitude <= neLat) &
+        #                      (Gym.longitude <= neLng))
+        #               .dicts())
+        boundariesOn = True
+        if None not in (swLat, swLng, neLat, neLng):
+            boundariesOn = False
+        
+        gymCache = Gym.get_allgyms()
 
         # Performance: Disable the garbage collector prior to creating a (potentially) large dict with append()
         gc.disable()
 
         gyms = {}
         gym_ids = []
-        for g in results:
+        
+        if boundariesOn:
+            swLatFloat = float(swLat)
+            swLngFloat = float(swLng)
+            neLatFloat = float(neLat)
+            neLngFloat = float(neLng)
+
+        for g in gymCache:
+            if boundariesOn:
+                latitude = float(g['latitude'])
+                longitude = float(g['longitude'])
+                if( (latitude < swLatFloat) | (longitude < swLngFloat) | (latitude > neLatFloat) | (longitude > neLngFloat) ):
+                    continue
             g['name'] = None
             g['pokemon'] = []
             gyms[g['gym_id']] = g
@@ -481,30 +549,48 @@ class ScannedLocation(BaseModel):
 
     class Meta:
         primary_key = CompositeKey('latitude', 'longitude')
-        
-        
-    cacheScansTimestamp = -1
-    cacheScansQuery = None
 
-    cacheScansLifetime = 30 #in seconds
+    @classmethod
+    @cached(scanned_cache)
+    def get_allrecent(cls):
+        log.info('Refreshing ScannedLocation cache..')
+        
+        query = (ScannedLocation
+                    .select()
+                    .where((ScannedLocation.last_modified >=
+                        (datetime.utcnow() - timedelta(minutes=15))))
+                    .order_by(ScannedLocation.last_modified.asc()))
+        
+        locations = query.dicts()
+        log.info('Cached {} ScannedLocations'.format( len( locations )) )
+        
+        return locations
 
     @staticmethod
     def get_recent(swLat, swLng, neLat, neLng):
-        now = time.mktime( datetime.utcnow().timetuple() )
-        if( ScannedLocation.cacheScansTimestamp + ScannedLocation.cacheScansLifetime < now ) or ( ScannedLocation.cacheScansQuery is None ):
-            ScannedLocation.cacheScansTimestamp = now
-            log.info('Refreshing Scanlocations cache..')
-            query = (ScannedLocation
-                 .select()
-                 .where((ScannedLocation.last_modified >=
-                        (datetime.utcnow() - timedelta(minutes=15))))
-                 .order_by(ScannedLocation.last_modified.asc()))
-             
-            ScannedLocation.cacheScansQuery = query.dicts()
-            log.info('Cached {} Scanlocations'.format( len( ScannedLocation.cacheScansQuery )) )
+        boundariesOn = True
+        if None not in (swLat, swLng, neLat, neLng):
+            boundariesOn = False
             
-        return list( ScannedLocation.cacheScansQuery )
+        locationCache = ScannedLocation.get_allrecent()
+        
+        locations = []
+        
+        if boundariesOn:
+            swLatFloat = float(swLat)
+            swLngFloat = float(swLng)
+            neLatFloat = float(neLat)
+            neLngFloat = float(neLng)
 
+        for l in locationCache:
+            if boundariesOn:
+                latitude = float(l['latitude'])
+                longitude = float(l['longitude'])
+                if( (latitude < swLatFloat) | (longitude < swLngFloat) | (latitude > neLatFloat) | (longitude > neLngFloat) ):
+                    continue
+            locations.append(l)
+            
+        return locations
 
 class MainWorker(BaseModel):
     worker_name = CharField(primary_key=True, max_length=50)
