@@ -280,11 +280,6 @@ class SpawnScan(BaseScheduler):
         # This adds a "worker" field
         self.locations = self.assign_spawns(self.locations)
 
-
-        # Well shit...
-        # if not self.locations:
-        #    raise Exception('No availabe spawn points!')
-
         # locations[]:
         # {"lat": 37.53079079414139, "lng": -122.28811690874117, "spawnpoint_id": "808f9f1601d", "time": 511, "worker": 1}
 
@@ -312,8 +307,8 @@ class SpawnScan(BaseScheduler):
         # Match expected structure:
         # locations = [((lat, lng, alt), ts_scan_time, ts_leaves),...]
         retset = [(location['worker'], step, (location['lat'], location['lng'],
-            40.32), location['scan_time'], location['leaves']) for step,
-            location in enumerate(self.locations, 1)]
+                   40.32), location['scan_time'], location['leaves']) for step,
+                   location in enumerate(self.locations, 1)]
 
         return retset
 
@@ -351,13 +346,6 @@ class SpawnScan(BaseScheduler):
                 return float('inf')
             else:
                 return dist(sp1, sp2) / time
-
-        def print_speed(q):
-            s = []
-            for i in range(len(q)):
-                j = (i + 1) % len(q)
-                s.append(speed(q[i], q[j]))
-            print 'Max speed: %f, avg speed %f' % (max(s), sum(s)/len(s))
 
         # Insert has has two modes of operation.
         # If dry=True, it will simulate inserting sp and return the "cost" of
@@ -422,7 +410,7 @@ class SpawnScan(BaseScheduler):
         # set of points that cannot be covered (bad).
         def greedy_assign(spawns, n):
             for sp in spawns:
-                sp['scan_time'] = (sp['time'] + 10) % 3600 # 10 seconds grace period
+                sp['scan_time'] = (sp['time'] + 10) % 3600  # 10 seconds grace period
             spawns.sort(key=itemgetter('scan_time'))
             Q = [[] for i in range(n)]
             delays = []
@@ -439,7 +427,7 @@ class SpawnScan(BaseScheduler):
                     bad.append(sp)
 
             log.info("Assigned %d spawn points to %d workers, left out %d points" %
-                    (len(spawns) - len(bad), n, len(bad)))
+                     (len(spawns) - len(bad), n, len(bad)))
             return Q, delays, bad
 
         Q, delays, bad = greedy_assign(spawns, num_workers)
