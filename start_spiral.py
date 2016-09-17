@@ -62,16 +62,11 @@ except Exception as e:
 x = 0
 accountNumber = len( accounts )
 for place in places:
-    if not f.endswith( compressedEnding ):
-        continue
     #print place
     #print accounts[x]
     
-    fileName = base_dir + f
-    
     account = accounts[x]
     status_name = "@%s_spiral%d" % ( hostname, x )
-    #exe = "start cmd /k python runserverv2.py -ns -a %s -u %s -p %s -ss %s" % (auth, login, pw, fname)
     execute = "python runserver.py -ns -a %s -u %s -p %s -sn %s -l \"%s,%s\" -st %s" % \
                 (account["auth"], account["login"], account["pw"], status_name, place["lat"], place["lng"], place["steps"])
     

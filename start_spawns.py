@@ -58,7 +58,6 @@ for f in os.listdir( base_dir ):
     
     account = accounts[x]
     status_name = "@%s_worker%d" % ( hostname, x )
-    #exe = "start cmd /k python runserverv2.py -ns -a %s -u %s -p %s -ss %s" % (auth, login, pw, fname)
     execute = "python runserver.py -ns -a %s -u %s -p %s -ss %s -sn %s" % \
                 (account["auth"], account["login"], account["pw"], fileName, status_name)
     
