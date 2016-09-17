@@ -4,13 +4,10 @@ import time
 import socket
 
 acc_fname = "config/acc.csv"
-places_fname = "config/places.csv"
 
 acc_regex = "([^;]+);([^;]+);([^;]+);(.*)"
-places_regex = "([^;]+);([^;]+);([^;]+);([^;]+);(.*)"
 
 accounts = []
-places = []
 
 windows = (os.name == 'nt')
 if windows:
@@ -51,7 +48,6 @@ accountNumber = len( accounts )
 for f in os.listdir( base_dir ):
     if not f.endswith( compressedEnding ):
         continue
-    #print place
     #print accounts[x]
     
     fileName = base_dir + f

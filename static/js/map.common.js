@@ -708,10 +708,12 @@ var StoreOptions = {
     default: false,
     type: StoreTypes.Boolean
   },
+  /*
   'showSpawnpoints': {
     default: false,
     type: StoreTypes.Boolean
   },
+  */
   'showRanges': {
     default: false,
     type: StoreTypes.Boolean

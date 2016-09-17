@@ -29,6 +29,8 @@ log = logging.getLogger(__name__)
 args = get_args()
 flaskDb = FlaskDB()
 seen_cache = TTLCache(maxsize=500, ttl=60 * 5)
+spawnpoint_cache = TTLCache(maxsize=50000, ttl=60 * 60)
+active_cache = TTLCache(maxsize=2500, ttl=15)
 
 db_schema_version = 7
 
@@ -89,11 +91,16 @@ class Pokemon(BaseModel):
     class Meta:
         indexes = ((('latitude', 'longitude'), False),)
 
-    
-    cacheActiveTimestamp = -1
-    cacheActiveQuery = None
 
-    cacheActiveLifetime = 15 #in seconds
+    @classmethod
+    @cached(active_cache)
+    def get_allactive(cls):
+        log.info('Refreshing Pokemon cache..')
+        query = Pokemon.select().where(Pokemon.disappear_time > datetime.utcnow())
+
+        pokemon = query.dicts()
+        log.info('Cached {} Pokemon'.format( len( pokemon )) )
+        return pokemon
     
     @staticmethod
     def get_active(swLat, swLng, neLat, neLng, pkmn_ids=None):
@@ -115,15 +122,7 @@ class Pokemon(BaseModel):
         if swLat is None or swLng is None or neLat is None or neLng is None:
             boundariesOn = False
         
-        now = time.mktime( datetime.utcnow().timetuple() )
-        if( Pokemon.cacheActiveTimestamp + Pokemon.cacheActiveLifetime < now ) or ( Pokemon.cacheActiveQuery is None ):
-            Pokemon.cacheActiveTimestamp = now
-            log.info('Refreshing Pokemon cache..')
-            Pokemon.cacheActiveQuery = (Pokemon
-                     .select()
-                     .where(Pokemon.disappear_time > datetime.utcnow())
-                     .dicts())
-            log.info('Cached {} Pokemon'.format( len( Pokemon.cacheActiveQuery )) )
+        pokemonCache = Pokemon.get_allactive()
 
         # Performance: Disable the garbage collector prior to creating a (potentially) large dict with append()
         gc.disable()
@@ -135,7 +134,7 @@ class Pokemon(BaseModel):
             neLngFloat = float(neLng)
 
         pokemons = []
-        for p in Pokemon.cacheActiveQuery:
+        for p in pokemonCache:
             if boundariesOn:
                 latitude = float(p['latitude'])
                 longitude = float(p['longitude'])
@@ -246,11 +245,16 @@ class Pokemon(BaseModel):
     def get_spawn_time(cls, disappear_time):
         return (disappear_time + 2700) % 3600
 
-    
-    cacheSpawnpointTimestamp = -1
-    cacheSpawnpointQuery = None
+    @classmethod
+    @cached(spawnpoint_cache)
+    def get_allspawnpoints(cls):
+        log.info('Refreshing Spawnpoint cache..')
+        query = Pokemon.select(Pokemon.latitude, Pokemon.longitude, Pokemon.spawnpoint_id, ((Pokemon.disappear_time.minute * 60) + Pokemon.disappear_time.second).alias('time'), fn.Count(Pokemon.spawnpoint_id).alias('count'))
 
-    cacheSpawnpointLifetime = 300 #in seconds
+        query = query.group_by(Pokemon.latitude, Pokemon.longitude, Pokemon.spawnpoint_id, SQL('time'))
+        spawnpoints = query.dicts()
+        log.info('Cached {} Spawnpoints'.format( len( spawnpoints )) )
+        return spawnpoints
 
     @classmethod
     def get_spawnpoints(cls, southBoundary, westBoundary, northBoundary, eastBoundary):
@@ -266,18 +270,7 @@ class Pokemon(BaseModel):
 
         #query = query.group_by(Pokemon.latitude, Pokemon.longitude, Pokemon.spawnpoint_id, SQL('time'))
         
-        now = time.mktime( datetime.utcnow().timetuple() )
-        if( Pokemon.cacheSpawnpointTimestamp + Pokemon.cacheSpawnpointLifetime < now ) or ( Pokemon.cacheSpawnpointQuery is None ):
-            Pokemon.cacheSpawnpointTimestamp = now
-            log.info('Refreshing Spawnpoint cache..')
-            query = Pokemon.select(Pokemon.latitude, Pokemon.longitude, Pokemon.spawnpoint_id, ((Pokemon.disappear_time.minute * 60) + Pokemon.disappear_time.second).alias('time'), fn.Count(Pokemon.spawnpoint_id).alias('count'))
-
-            query = query.group_by(Pokemon.latitude, Pokemon.longitude, Pokemon.spawnpoint_id, SQL('time'))
-            Pokemon.cacheSpawnpointQuery = query.dicts()
-            
-            
-            log.info('Cached {} Spawnpoints'.format( len( Pokemon.cacheSpawnpointQuery )) )
-        
+        spawnCache = Pokemon.get_allspawnpoints()
         
         spawnpoints = {}
         
@@ -286,14 +279,14 @@ class Pokemon(BaseModel):
         neLatFloat = float(northBoundary)
         neLngFloat = float(eastBoundary)
         
-        for sp in Pokemon.cacheSpawnpointQuery:
+        for sp in spawnCache:
             latitude = float(sp['latitude'])
             longitude = float(sp['longitude'])
             if( (latitude < swLatFloat) | (longitude < swLngFloat) | (latitude > neLatFloat) | (longitude > neLngFloat) ):
                 continue
 
             key = sp['spawnpoint_id']
-            disappear_time = cls.get_spawn_time(sp.pop('time'))
+            disappear_time = cls.get_spawn_time(sp['time']) #cls.get_spawn_time(sp.pop['time'])
             count = int(sp['count'])
 
             if key not in spawnpoints:
@@ -305,8 +298,8 @@ class Pokemon(BaseModel):
                 spawnpoints[key]['time'] = disappear_time
                 spawnpoints[key]['count'] = count
 
-        for sp in spawnpoints.values():
-            del sp['count']
+        #for sp in spawnpoints.values():
+        #    del sp['count']
 
         return list(spawnpoints.values())
 
