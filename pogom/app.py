@@ -38,6 +38,7 @@ class Pogom(Flask):
         self.route("/help", methods=['GET'])(self.get_help)
         self.route("/menu", methods=['GET'])(self.get_menu)
         self.route("/iv_calc", methods=['GET'])(self.get_iv_calc)
+        self.route("/donate", methods=['GET'])(self.get_donate)
 
     def set_search_control(self, control):
         self.search_control = control
@@ -280,6 +281,10 @@ class Pogom(Flask):
         
     def get_iv_calc(self):
         return render_template('iv_calc.html')
+        
+        
+    def get_donate(self):
+        return render_template('donate.html')
 
 
 class CustomJSONEncoder(JSONEncoder):

@@ -199,6 +199,12 @@ def main():
         elif os.path.isfile(args.db):
             os.remove(args.db)
     create_tables(db)
+    
+    try:
+        log.info('First Spawnpoint cache initialization')
+        cache = Pokemon.get_allspawnpoints()
+    except Exception as e:
+        log.error('Error while %s', e)
 
     app.set_current_location(position)
 
