@@ -445,7 +445,6 @@ class SpawnScanSpeedLimit(BaseScheduler):
         self.size = len(self.locations)
         self.locations = None
 
-
     def assign_spawns(self, spawns):
 
         log.info('Attemping to assign %d spawn points to %d accounts' % (len(spawns), self.args.workers))
@@ -477,12 +476,16 @@ class SpawnScanSpeedLimit(BaseScheduler):
                     queue.append(sp)
                 return self.args.max_delay / 3, self.args.max_speed, self.args.max_speed, self.args.max_speed
 
+            # A potential position P could be scheduled between A and B if A
+            # happens before P + max_delay and B happens after P
+            # We also take account of scan_delay here
             potential_position = []
             for k in range(0, len(queue)):
                 if queue[k]['scan_time'] <= sp['scan_time'] + self.args.max_delay - self.args.scan_delay:
                     if k == len(queue) - 1 or sp['scan_time'] + self.args.scan_delay <= queue[k + 1]['scan_time']:
                         potential_position.append(k + 1)
 
+            # Try all possible positions to insert sp
             scores = []
             for k in potential_position:
                 # i is the previous point index
@@ -527,7 +530,8 @@ class SpawnScanSpeedLimit(BaseScheduler):
                             score = (float('inf',), 0, 0, 0)
                 scores.append((score, k, spp))
 
-            score, k, sp =  min(scores)
+            # only actually try to insert into the best spot
+            score, k, sp = min(scores)
 
             if not dry and score[0] < float('inf'):
                 queue.insert(k, sp)
