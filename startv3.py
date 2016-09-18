@@ -23,7 +23,7 @@ with open(acc_fname, "r") as ins:
             firstline = False
             continue
             
-        line = line[:-1] #replace that newline char
+        line = line.rstrip() #replace that newline char
         
         account = {}
         m = re.search(acc_regex, line)
@@ -40,6 +40,8 @@ with open(places_fname, "r") as ins:
         if firstline:
             firstline = False
             continue
+            
+        line = line.rstrip() #replace that newline char
         
         place = {}
         m = re.search(places_regex, line)
