@@ -445,11 +445,10 @@ class SpawnScanSpeedLimit(BaseScheduler):
         self.size = len(self.locations)
         self.locations = None
 
+
     def assign_spawns(self, spawns):
 
-        num_workers = len(self.queues)
-
-        log.info('Attemping to assign %d spawn points to %d accounts' % (len(spawns), num_workers))
+        log.info('Attemping to assign %d spawn points to %d accounts' % (len(spawns), self.args.workers))
 
         def dist(sp1, sp2):
             dist = geopy.distance.distance((sp1['lat'], sp1['lng']), (sp2['lat'], sp2['lng'])).meters
@@ -476,45 +475,59 @@ class SpawnScanSpeedLimit(BaseScheduler):
             if len(queue) == 0:
                 if not dry:
                     queue.append(sp)
-                return 0, self.args.max_speed, self.args.max_speed, self.args.max_speed
+                return self.args.max_delay / 3, self.args.max_speed, self.args.max_speed, self.args.max_speed
 
-            # Find the slot to insert sp
-            l = [True if p['scan_time'] <= sp['scan_time'] else False for p in queue]
-            # k is the slot to call `insert' with at the end
-            k = l.index(False) if False in l else len(l)
-            # i is the previous point index
-            i = (k - 1) % len(queue)
-            # j is the next point index
-            j = k % len(queue)
+            potential_position = []
+            for k in range(0, len(queue)):
+                if queue[k]['scan_time'] <= sp['scan_time'] + self.args.max_delay - self.args.scan_delay:
+                    if k == len(queue) - 1 or sp['scan_time'] + self.args.scan_delay <= queue[k + 1]['scan_time']:
+                        potential_position.append(k + 1)
 
-            # Make scan time at least scan_delay after the previous point
-            sp['scan_time'] = max(sp['scan_time'], queue[i]['scan_time'] + self.args.scan_delay)
+            scores = []
+            for k in potential_position:
+                # i is the previous point index
+                i = (k - 1) % len(queue)
+                # j is the next point index
+                j = k % len(queue)
 
-            # Calculate scanner speeds incurred by adding sp
-            s1 = speed(queue[i], sp)
-            s2 = speed(sp, queue[j])
+                if i != j and j != 0 and queue[j]['scan_time'] < sp['scan_time'] + self.args.scan_delay:
+                    continue
 
-            if i != j and (queue[j]['scan_time'] - queue[i]['scan_time']) % 3600 < 2 * self.args.scan_delay:
-                # No room for sp
-                score = (float('inf'), 0, 0, 0)
-            elif s1 <= self.args.max_speed and s2 <= self.args.max_speed:
-                # We are all good to go
-                score = (0, max(s1, s2), s1, s2)
-            elif s2 > self.args.max_speed:
-                # No room for sp
-                score = (float('inf'), 0, 0, 0)
-            else:
-                # s1 > max_speed, try to wiggle the scan time for sp
-                time2wait = (dist(queue[i], sp) / self.args.max_speed) - (sp['scan_time'] - queue[i]['scan_time'])
-                if time2wait > (sp['scan_time'] - queue[j]['scan_time']) % 3600:
-                    # Wiggle failed
+                # Make scan time at least scan_delay after the previous point
+                sp['scan_time'] = max(sp['scan_time'], queue[i]['scan_time'] + self.args.scan_delay)
+                spp = dict(sp)
+
+                # Calculate scanner speeds incurred by adding sp
+                s1 = speed(queue[i], sp)
+                s2 = speed(sp, queue[j])
+
+                if i != j and (queue[j]['scan_time'] - queue[i]['scan_time']) % 3600 < 2 * self.args.scan_delay:
+                    # No room for sp
+                    score = (float('inf'), 0, 0, 0)
+                elif s1 <= self.args.max_speed and s2 <= self.args.max_speed:
+                    # We are all good to go
+                    score = (0, max(s1, s2), s1, s2)
+                elif s2 > self.args.max_speed:
+                    # No room for sp
                     score = (float('inf'), 0, 0, 0)
                 else:
-                    # Wiggle successful, add time2wait as delay
-                    sp['scan_time'] += time2wait
-                    s1 = self.args.max_speed
-                    s2 = speed(sp, queue[j])
-                    score = (time2wait, max(s1, s2), s1, s2)
+                    # s1 > max_speed, try to wiggle the scan time for sp
+                    time2wait = (dist(queue[i], sp) / self.args.max_speed) - (sp['scan_time'] - queue[i]['scan_time'])
+                    if time2wait > (queue[j]['scan_time'] - sp['scan_time'] - self.args.scan_delay) % 3600:
+                        # Wiggle failed
+                        score = (float('inf'), 0, 0, 0)
+                    else:
+                        # Wiggle successful, add time2wait as delay
+                        spp['scan_time'] += time2wait
+                        s1 = self.args.max_speed
+                        s2 = speed(spp, queue[j])
+                        if s2 <= self.args.max_speed:
+                            score = (time2wait, max(s1, s2), s1, s2)
+                        else:
+                            score = (float('inf',), 0, 0, 0)
+                scores.append((score, k, spp))
+
+            score, k, sp =  min(scores)
 
             if not dry and score[0] < float('inf'):
                 queue.insert(k, sp)
@@ -545,7 +558,7 @@ class SpawnScanSpeedLimit(BaseScheduler):
                      (len(spawns) - len(bad), n, len(bad)))
             return Q, delays, bad
 
-        Q, delays, bad = greedy_assign(spawns, num_workers)
+        Q, delays, bad = greedy_assign(spawns, self.args.workers)
 
         if len(bad):
             log.info('Cannot schedule %d spawnpoints under max_delay, dropping.' % len(bad))
