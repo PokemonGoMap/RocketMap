@@ -556,8 +556,8 @@ class SpawnScanSpeedLimit(BaseScheduler):
             log.info('Number of scan delays: %d.' % len(delays))
             log.info('Average delay: %f seconds.' % (sum(delays) / len(delays)))
             log.info('Max delay: %f seconds.' % max(delays))
-            if max(delays) > 60:
-                log.info('Cannot assign spawn points with delay less than a minute. You should try increasing number of accounts or decreasing number of spawn points.')
+            if max(delays) > self.args.max_delay:
+                log.info('Cannot assign spawn points under max-delay. Try increasing number of accounts, decreasing number of spawn points, or increasing max-delay.')
         else:
             log.info('No additional delay is added to any spawn point.')
 
