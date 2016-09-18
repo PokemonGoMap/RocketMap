@@ -325,11 +325,14 @@ function pokemonLabel (name, rarity, types, disappearTime, id, latitude, longitu
     details = `
       <div>
         IV: ${iv.toFixed(1)}% (${atk}/${def}/${sta})
-      </div>
-      <div>
-        Moves: ${moves[move1]} / ${moves[move2]}
-      </div>
-      `
+      </div>`
+    if (moves != null) {
+        details += `
+          <div>
+            Moves: ${moves[move1]} / ${moves[move2]}
+          </div>
+          `
+    }
   }
   var contentstring = `
     <div>
