@@ -67,4 +67,4 @@ for f in os.listdir( base_dir ):
     if( x >= accountNumber ):
         print "no more accounts found! skipping"
         exit(0)
-    time.sleep(8)
+    time.sleep(5)
