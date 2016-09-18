@@ -136,9 +136,9 @@ def get_args():
     parser.add_argument('--dump-spawnpoints', help='dump the spawnpoints from the db to json (only for use with -ss)',
                         action='store_true', default=False)
     parser.add_argument('-ms', '--max-speed',
-                        help='Max speed allowed in spawnpoint mode. Workers shall not travel exceeding this speed. Defaults to 30 m/s.', type=float, default=30)
+                        help='A positive value will turn on speed limiting scheduler (value in m/s). Defaults to off value of 0.', type=float, default=0)
     parser.add_argument('-md', '--max-delay',
-                        help='Max delay allowed in spawnpoint mode. Points shall be dropped if they cannot be scheduled within this delay. Defaults to 60s.', type=float, default=60)
+                        help='Max delay allowed in spawnpoint speed-limiting mode. Points shall be dropped if they cannot be scheduled within this delay. Defaults to 60s.', type=float, default=60)
     parser.add_argument('-pd', '--purge-data',
                         help='Clear pokemon from database this many hours after they disappear \
                         (0 to disable)', type=int, default=0)
@@ -341,7 +341,10 @@ def get_args():
 
         # Decide which scanning mode to use
         if args.spawnpoint_scanning:
-            args.scheduler = 'SpawnScan'
+            if args.max_speed > 0:
+                args.scheduler = 'SpawnScanSpeedLimit'
+            else:
+                args.scheduler = 'SpawnScan'
         elif args.spawnpoints_only:
             args.scheduler = 'HexSearchSpawnpoint'
         else:
