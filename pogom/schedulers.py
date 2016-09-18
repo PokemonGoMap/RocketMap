@@ -413,8 +413,8 @@ class SpawnScanSpeedLimit(BaseScheduler):
         # 'time' from json and db alike has been munged to appearance time as seconds after the hour
         # Here we'll convert that to a real timestamp
         for location in self.locations:
-            location['scan_time'] = now() + (cur_sec() - location['scan_time']) % 3600
-            location['leaves'] = now() + (cur_sec() - location['time']) % 3600 + 900
+            location['scan_time'] = now() + (location['scan_time'] - cur_sec()) % 3600
+            location['leaves'] = now() + (location['time'] - cur_sec()) % 3600 + 900
 
         # Put the spawn points in order of the scheduled scan time
         self.locations.sort(key=itemgetter('scan_time'))
