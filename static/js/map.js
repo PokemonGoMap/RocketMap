@@ -21,7 +21,7 @@ var languageLookupThreshold = 3
 
 var searchMarkerStyles
 
-var excludedPokemon = [ 10, 13, 16, 19, 21, 41, 97, 124 ]
+var excludedPokemon = [ 10, 13, 16, 19, 21, 41, 96, 124 ]
 var notifiedPokemon = []
 var notifiedRarity = []
 var notifiedMinPerfection = null

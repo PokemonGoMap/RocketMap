@@ -100,7 +100,7 @@ class Pokemon(BaseModel):
         indexes = ((('latitude', 'longitude'), False),)
     
     
-    blacklist = [ 10, 13, 16, 19, 21, 41, 97, 124 ]
+    blacklist = [ 10, 13, 16, 19, 21, 41, 96, 124 ]
 
     @classmethod
     @cached(active_cache)
