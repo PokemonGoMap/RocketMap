@@ -106,4 +106,9 @@
     @include breakpoint(small) {
       padding: 2.5em 1.75em;
     }
+    
+    #arenaList > img {
+      height: 38px;
+      width: 38px;
+    }
   }
