@@ -54,7 +54,7 @@ except ImportError:
 
 # Assert pgoapi >= pgoapi_version
 if not hasattr(pgoapi, "__version__") or StrictVersion(pgoapi.__version__) < StrictVersion(pgoapi_version):
-    log.critical("It seems `pgoapi` is not up-to-date. You must run pip install -r requirements.txt again")
+    log.critical("It seems `pgoapi` is not up-to-date. You must run 'pip install --upgrade -r requirements.txt'")
     sys.exit(1)
 
 
