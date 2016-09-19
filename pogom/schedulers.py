@@ -371,6 +371,7 @@ class SpawnScanSpeedLimit(BaseScheduler):
 
         self.step_limit = args.step_limit
         self.locations = False
+        self.last_schedule = 0
 
     # Generate locations is called when the locations list is cleared - the first time it scans or after a location change.
     def _generate_locations(self):
@@ -433,6 +434,10 @@ class SpawnScanSpeedLimit(BaseScheduler):
             log.warning('Cannot schedule work until scan location has been set')
             return
 
+        # Only schedule once per hour
+        if now() - self.last_schedule < 3600:
+            return
+
         # SpawnScan needs to calculate the list every time, since the times will change.
         self.locations = self._generate_locations()
 
@@ -440,6 +445,8 @@ class SpawnScanSpeedLimit(BaseScheduler):
             # FUTURE IMPROVEMENT - For now, queues is assumed to have a single queue.
             self.queues[location[0]].put(location[1:])
             log.debug("Added location {}".format(location[1:]))
+
+        self.last_schedule = now()
 
         # Clear the locations list so it gets regenerated next cycle
         self.size = len(self.locations)
