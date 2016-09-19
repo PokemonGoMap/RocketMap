@@ -474,7 +474,12 @@ class SpawnScanSpeedLimit(BaseScheduler):
             if len(queue) == 0:
                 if not dry:
                     queue.append(sp)
-                return self.args.max_delay / 3, self.args.max_speed, self.args.max_speed, self.args.max_speed
+                    return 0, self.args.max_speed, self.args.max_speed, self.args.max_speed
+                else:
+                    # Return bogus deley so that a new worker only comes in
+                    # when existing workers cannot take the point with less
+                    # than a thrid of max_delay
+                    return self.args.max_delay / 3, self.args.max_speed, self.args.max_speed, self.args.max_speed
 
             # A potential position P could be scheduled between A and B if A
             # happens before P + max_delay and B happens after P
