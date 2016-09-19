@@ -1,6 +1,6 @@
 .pokemon-sprite {
   display: inline-block;
-  background-image: url(../../../icons-sprite.png);
+  background-image: url(/static/icons-sprite.png);
   background-repeat: no-repeat;
   top: 6px;
   position: relative;
@@ -611,4 +611,19 @@
 
 .pokemon-sprite.n151 {
   background-position: -180px -360px;
+}
+.pokemon-sprite.nCommon {
+  display:none
+}
+.pokemon-sprite.nUncommon {
+  display:none
+}
+.pokemon-sprite.nRare {
+  display:none
+}
+.pokemon-sprite.nVery.Rare {
+  display:none
+}
+.pokemon-sprite.nUltra.Rare {
+  display:none
 }
