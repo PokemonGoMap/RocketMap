@@ -36,6 +36,7 @@ If you're going to run a copy from the latest ``develop`` branch in ``git`` you 
 .. code-block:: bash
 
   git clone https://github.com/PokemonGoMap/PokemonGo-Map.git
+  pip install --upgrade git+https://github.com/maddhatter/Flask-CacheBust.git@38d940cc4f18b5fcb5687746294e0360640a107e#egg=flask_cachebust
 
 Installing Modules
 ******************
