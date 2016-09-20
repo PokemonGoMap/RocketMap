@@ -366,23 +366,12 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
 
         # If there are no search_items_queue either the loop has finished (or been
         # cleared above) -- either way, time to fill it back up
-        msgs = []
+        threadStatus['Overseer']['message'] = ''
         for search_items_queue in search_items_queues:
             if search_items_queue.empty():
                 log.debug('Search queue empty, scheduling more items to scan')
+                threadStatus['Overseer']['message'] = 'Some queues are empty, scheduling..'
                 scheduler.schedule()
-            else:
-                nextitem = search_items_queue.queue[0]
-                msg = '{:6f},{:6f}'.format(nextitem[1][0], nextitem[1][1])
-                # If times are specified, print the time of the next queue item, and how many seconds ahead/behind realtime
-                if nextitem[2]:
-                    msg += ' @ {}'.format(time.strftime('%H:%M:%S', time.localtime(nextitem[2])))
-                    if nextitem[2] > now():
-                        msg += ' ({}s ahead)'.format(nextitem[2] - now())
-                    else:
-                        msg += ' ({}s behind)'.format(now() - nextitem[2])
-                msgs.append(msg)
-        threadStatus['Overseer']['message'] = 'next item(s): ' + ', '.join(msgs)
 
         # Now we just give a little pause here
         time.sleep(1)
