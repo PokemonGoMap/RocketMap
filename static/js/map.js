@@ -5,6 +5,7 @@
 var $selectExclude
 var $selectPokemonNotify
 var $selectRarityNotify
+var $textPerfectionNotify
 var $selectStyle
 var $selectIconResolution
 var $selectIconSize
@@ -23,6 +24,7 @@ var searchMarkerStyles
 var excludedPokemon = []
 var notifiedPokemon = []
 var notifiedRarity = []
+var notifiedMinPerfection = null
 
 var map
 var rawDataIsLoading = false
@@ -31,12 +33,14 @@ var rangeMarkers = ['pokemon', 'pokestop', 'gym']
 var searchMarker
 var storeZoom = true
 var scanPath
+var moves
 
 
 var selectedStyle = 'light'
 
 
 var gymTypes = ['Uncontested', 'Mystic', 'Valor', 'Instinct']
+var gymPrestige = [2000, 4000, 8000, 12000, 16000, 20000, 30000, 40000, 50000]
 var audio = new Audio('static/sounds/ding.mp3')
 
 //
@@ -307,20 +311,31 @@ function openMapDirections (lat, lng) { // eslint-disable-line no-unused-vars
   window.open(url, '_blank')
 }
 
-function pokemonLabel (name, rarity, types, disappearTime, id, latitude, longitude, encounterId) {
+function pokemonLabel (name, rarity, types, disappearTime, id, latitude, longitude, encounterId, atk, def, sta, move1, move2) {
   var disappearDate = new Date(disappearTime)
   var rarityDisplay = rarity ? '(' + rarity + ')' : ''
   var typesDisplay = ''
   $.each(types, function (index, type) {
     typesDisplay += getTypeSpan(type)
   })
-
+  var details = ''
+  if (atk != null) {
+    var iv = (atk + def + sta) / 45 * 100
+    details = `
+      <div>
+        IV: ${iv.toFixed(1)}% (${atk}/${def}/${sta})
+      </div>
+      <div>
+        Moves: ${moves[move1]['name']} / ${moves[move2]['name']}
+      </div>
+      `
+  }
   var contentstring = `
     <div>
       <b>${name}</b>
       <span> - </span>
       <small>
-        <a href='http://www.pokemon.com/us/pokedex/${id}' target='_blank' title='View in Pokedex'>#${id}</a>
+        <a href='https://pokemongo.gamepress.gg/pokemon/${id}' target='_blank' title='View in Pokedex'>#${id}</a>
       </small>
       <span> ${rarityDisplay}</span>
       <span> - </span>
@@ -333,6 +348,7 @@ function pokemonLabel (name, rarity, types, disappearTime, id, latitude, longitu
     <div>
       Location: ${latitude.toFixed(6)}, ${longitude.toFixed(7)}
     </div>
+      ${details}
     <div>
       <a href='javascript:excludePokemon(${id})'>Exclude</a>&nbsp;&nbsp
       <a href='javascript:notifyAboutPokemon(${id})'>Notify</a>&nbsp;&nbsp
@@ -342,7 +358,7 @@ function pokemonLabel (name, rarity, types, disappearTime, id, latitude, longitu
   return contentstring
 }
 
-function gymLabel (teamName, teamId, gymPoints, latitude, longitude, lastScanned = null, name = null, members = []) {
+function gymLabel (teamName, teamId, gymPoints, latitude, longitude, lastScanned = null, name = null, members = [], gymId) {
   var memberStr = ''
   for (var i = 0; i < members.length; i++) {
     memberStr += `
@@ -385,11 +401,7 @@ function gymLabel (teamName, teamId, gymPoints, latitude, longitude, lastScanned
         </center>
       </div>`
   } else {
-    var gymPrestige = [2000, 4000, 8000, 12000, 16000, 20000, 30000, 40000, 50000]
-    var gymLevel = 1
-    while (gymPoints >= gymPrestige[gymLevel - 1]) {
-      gymLevel++
-    }
+    var gymLevel = getGymLevel(gymPoints)
     str = `
       <div>
         <center>
@@ -416,7 +428,8 @@ function gymLabel (teamName, teamId, gymPoints, latitude, longitude, lastScanned
             Last Scanned: ${lastScannedStr}
           </div>
           <div>
-            <a href='javascript:void(0);' onclick='javascript:openMapDirections(${latitude},${longitude});' title='View in Maps'>Get directions</a>
+            <a href='javascript:void(0);' onclick='javascript:openMapDirections(${latitude},${longitude});' title='View in Maps'>Get directions</a> |
+            <a href="javascript:showGymDetails('${gymId}')">View Details</a>
           </div>
         </center>
       </div>`
@@ -541,7 +554,7 @@ function customizePokemonMarker (marker, item, skipNotification) {
   }
 
   marker.infoWindow = new google.maps.InfoWindow({
-    content: pokemonLabel(item['pokemon_name'], item['pokemon_rarity'], item['pokemon_types'], item['disappear_time'], item['pokemon_id'], item['latitude'], item['longitude'], item['encounter_id']),
+    content: pokemonLabel(item['pokemon_name'], item['pokemon_rarity'], item['pokemon_types'], item['disappear_time'], item['pokemon_id'], item['latitude'], item['longitude'], item['encounter_id'], item['individual_attack'], item['individual_defense'], item['individual_stamina'], item['move_1'], item['move_2']),
     disableAutoPan: true
   })
 
@@ -554,6 +567,21 @@ function customizePokemonMarker (marker, item, skipNotification) {
     }
     if (marker.animationDisabled !== true) {
       marker.setAnimation(google.maps.Animation.BOUNCE)
+    }
+  }
+
+  if (item['individual_attack'] != null) {
+    var perfection = 100.0 * (item['individual_attack'] + item['individual_defense'] + item['individual_stamina']) / 45
+    if (notifiedMinPerfection > 0 && perfection >= notifiedMinPerfection) {
+      if (!skipNotification) {
+        if (Store.get('playSound')) {
+          audio.play()
+        }
+        sendNotification('A ' + perfection.toFixed(1) + '% perfect ' + item['pokemon_name'] + ' appeared!', 'Click to load map', 'static/icons/' + item['pokemon_id'] + '.png', item['latitude'], item['longitude'])
+      }
+      if (marker.animationDisabled !== true) {
+        marker.setAnimation(google.maps.Animation.BOUNCE)
+      }
     }
   }
 
@@ -575,7 +603,7 @@ function setupGymMarker (item) {
   }
 
   marker.infoWindow = new google.maps.InfoWindow({
-    content: gymLabel(gymTypes[item['team_id']], item['team_id'], item['gym_points'], item['latitude'], item['longitude'], item['last_scanned'], item['name'], item['pokemon']),
+    content: gymLabel(gymTypes[item['team_id']], item['team_id'], item['gym_points'], item['latitude'], item['longitude'], item['last_scanned'], item['name'], item['pokemon'], item['gym_id']),
     disableAutoPan: true
   })
 
@@ -585,7 +613,7 @@ function setupGymMarker (item) {
 
 function updateGymMarker (item, marker) {
   marker.setIcon('static/forts/' + gymTypes[item['team_id']] + '.png')
-  marker.infoWindow.setContent(gymLabel(gymTypes[item['team_id']], item['team_id'], item['gym_points'], item['latitude'], item['longitude'], item['last_scanned'], item['name'], item['pokemon']))
+  marker.infoWindow.setContent(gymLabel(gymTypes[item['team_id']], item['team_id'], item['gym_points'], item['latitude'], item['longitude'], item['last_scanned'], item['name'], item['pokemon'], item['gym_id']))
   return marker
 }
 
@@ -1220,6 +1248,171 @@ function i8ln (word) {
   }
 }
 
+function showGymDetails (id) { // eslint-disable-line no-unused-vars
+  var sidebar = document.querySelector('#gym-details')
+
+  sidebar.classList.add('visible')
+
+  console.log(id)
+
+  var data = $.ajax({
+    url: 'gym_data',
+    type: 'GET',
+    data: {
+      'id': id
+    },
+    dataType: 'json',
+    cache: false
+  })
+
+  data.done(function (result) {
+    var gymLevel = getGymLevel(result.gym_points)
+    var nextLvlPrestige = gymPrestige[gymLevel - 1] || 50000
+    //var prestigePercentage = ((nextLvlPrestige - result.gym_points) / nextLvlPrestige) * 100
+    var prestigePercentage = (result.gym_points / nextLvlPrestige) * 100
+    var lastScannedDate = new Date(result.last_scanned)
+
+    var pokemonHtml = ''
+    var headerHtml = `
+      <center class="team-${result.team_id}-text">
+        <div>
+          <b class="team-${result.team_id}-text">${result.name || ''}</b>
+        </div>
+        <img height="100px" style="padding: 5px;" src="static/forts/${gymTypes[result.team_id]}_large.png">
+        <div class="prestige-bar team-${result.team_id}">
+          <div class="prestige team-${result.team_id}" style="width: ${prestigePercentage}%">
+          </div>
+        </div>
+        <div>
+          ${result.gym_points}/${nextLvlPrestige}
+        </div>
+        <div>
+          <b class="team-${result.team_id}-text">Level ${gymLevel}</b>
+        </div>
+        <div style="font-size: .7em;">
+          Last Scanned: ${lastScannedDate.getFullYear()}-${pad(lastScannedDate.getMonth() + 1)}-${pad(lastScannedDate.getDate())} ${pad(lastScannedDate.getHours())}:${pad(lastScannedDate.getMinutes())}:${pad(lastScannedDate.getSeconds())}
+        </div>
+      </center>
+    `
+
+    if (result.pokemon.length) {
+      $.each(result.pokemon, function (i, pokemon) {
+        var perfectPercent = Math.round((pokemon.iv_defense + pokemon.iv_attack + pokemon.iv_stamina) * 100 / 45)
+        var moveEnergy = Math.round(100 / pokemon.move_2_energy)
+
+        pokemonHtml += `
+          <tr onclick=toggleGymPokemonDetails(this)>
+            <td width="30px">
+              <i class="pokemon-sprite n${pokemon.pokemon_id}"></i>
+            </td>
+            <td class="team-${result.team_id}-text">
+              <div style="line-height:1em;">${pokemon.pokemon_name}</div>
+              <div class="cp">CP ${pokemon.pokemon_cp}</div>
+            </td>
+            <td width="190" class="team-${result.team_id}-text" align="center">
+              <div class="trainer-level">${pokemon.trainer_level}</div>
+              <div style="line-height: 1em;">${pokemon.trainer_name}</div>
+            </td>
+            <td width="10">
+              <!--<a href="#" onclick="toggleGymPokemonDetails(this)">-->
+                <i class="team-${result.team_id}-text fa fa-angle-double-down"></i>
+              <!--</a>-->
+            </td>
+          </tr>
+          <tr class="details">
+            <td colspan="2">
+              <div class="ivs">
+                <div class="iv">
+                  <div class="type">DEF</div>
+                  <div class="value">
+                    ${pokemon.iv_defense}
+                  </div>
+                </div>
+                <div class="iv">
+                  <div class="type">ATK</div>
+                  <div class="value">
+                    ${pokemon.iv_attack}
+                  </div>
+                </div>
+                <div class="iv">
+                  <div class="type">HP</div>
+                  <div class="value">
+                    ${pokemon.iv_stamina}
+                  </div>
+                </div>
+                <div class="iv" style="width: 36px;"">
+                  <div class="type">PERFECT</div>
+                  <div class="value">
+                    ${perfectPercent}<span style="font-size: .6em;">%</span>
+                  </div>
+                </div>
+              </div>
+            </td>
+            <td colspan="2">
+              <div class="moves">
+                <div class="move">
+                  <div class="name">
+                    ${pokemon.move_1_name}
+                    <div class="type ${pokemon.move_1_type.toLowerCase()}">${pokemon.move_1_type}</div>
+                  </div>
+                  <div class="damage">
+                    ${pokemon.move_1_damage}
+                  </div>
+                </div>
+                <br>
+                <div class="move">
+                  <div class="name">
+                    ${pokemon.move_2_name}
+                    <div class="type ${pokemon.move_2_type.toLowerCase()}">${pokemon.move_2_type}</div>
+                    <div>
+                      <i class="move-bar-sprite move-bar-sprite-${moveEnergy}"></i>
+                    </div>
+                  </div>
+                  <div class="damage">
+                    ${pokemon.move_2_damage}
+                  </div>
+                </div>
+              </div>
+            </td>
+          </tr>
+          `
+      })
+
+      pokemonHtml = `<table><tbody>${pokemonHtml}</tbody></table>`
+    } else {
+      pokemonHtml = `
+        <center class="team-${result.team_id}-text">
+          Gym Leader:<br>
+          <i class="pokemon-large-sprite n${result.guard_pokemon_id}"></i><br>
+          <b class="team-${result.team_id}-text">${result.guard_pokemon_name}</b>
+
+          <p style="font-size: .75em; margin: 5px;">
+            No additional gym information is available for this gym. Make sure you are collecting <a href="https://pgm.readthedocs.io/en/develop/extras/gyminfo.html">detailed gym info.</a>
+            If you have detailed gym info collection running, this gym's Pokemon information may be out of date.
+          </p>
+        </center>
+      `
+    }
+
+    sidebar.innerHTML = `${headerHtml}${pokemonHtml}`
+  })
+}
+
+function toggleGymPokemonDetails (e) { // eslint-disable-line no-unused-vars
+  e.lastElementChild.firstElementChild.classList.toggle('fa-angle-double-up')
+  e.lastElementChild.firstElementChild.classList.toggle('fa-angle-double-down')
+  e.nextElementSibling.classList.toggle('visible')
+}
+
+function getGymLevel (points) {
+  var level = 1
+  while (points >= gymPrestige[level - 1]) {
+    level++
+  }
+
+  return level
+}
+
 //
 // Page Ready Exection
 //
@@ -1366,9 +1559,14 @@ $(function () {
     centerMapOnLocation()
   }
 
+  $.getJSON('static/dist/data/moves.min.json').done(function (data) {
+    moves = data
+  })
+
   $selectExclude = $('#exclude-pokemon')
   $selectPokemonNotify = $('#notify-pokemon')
   $selectRarityNotify = $('#notify-rarity')
+  $textPerfectionNotify = $('#notify-perfection')
   var numberOfPokemon = 151
 
   // Load pokemon names and populate lists
@@ -1427,11 +1625,23 @@ $(function () {
       notifiedRarity = $selectRarityNotify.val().map(String)
       Store.set('remember_select_rarity_notify', notifiedRarity)
     })
+    $textPerfectionNotify.on('change', function (e) {
+      notifiedMinPerfection = parseInt($textPerfectionNotify.val(), 10)
+      if (isNaN(notifiedMinPerfection) || notifiedMinPerfection <= 0) {
+        notifiedMinPerfection = ''
+      }
+      if (notifiedMinPerfection > 100) {
+        notifiedMinPerfection = 100
+      }
+      $textPerfectionNotify.val(notifiedMinPerfection)
+      Store.set('remember_text_perfection_notify', notifiedMinPerfection)
+    })
 
     // recall saved lists
     $selectExclude.val(Store.get('remember_select_exclude')).trigger('change')
     $selectPokemonNotify.val(Store.get('remember_select_notify')).trigger('change')
     $selectRarityNotify.val(Store.get('remember_select_rarity_notify')).trigger('change')
+    $textPerfectionNotify.val(Store.get('remember_text_perfection_notify')).trigger('change')
 
     if (isTouchDevice()) {
       $('.select2-search input').prop('readonly', true)

@@ -69,6 +69,17 @@ def get_args():
     parser.add_argument('-sd', '--scan-delay',
                         help='Time delay between requests in scan threads',
                         type=float, default=10)
+    parser.add_argument('-enc', '--encounter',
+                        help='Start an encounter to gather IVs and moves',
+                        action='store_true', default=False)
+    parser.add_argument('-ed', '--encounter-delay',
+                        help='Time delay between encounter pokemon in scan threads',
+                        type=float, default=1)
+    encounter_list = parser.add_mutually_exclusive_group()
+    encounter_list.add_argument('-ewht', '--encounter-whitelist', action='append', default=[],
+                                help='List of pokemon to encounter for more stats')
+    encounter_list.add_argument('-eblk', '--encounter-blacklist', action='append', default=[],
+                                help='List of pokemon to NOT encounter for more stats')
     parser.add_argument('-ld', '--login-delay',
                         help='Time delay between each login attempt',
                         type=float, default=5)
@@ -335,6 +346,9 @@ def get_args():
             print(sys.argv[0] + ": Error: no accounts specified. Use -a, -u, and -p or --accountcsv to add accounts")
             sys.exit(1)
 
+        args.encounter_blacklist = [int(i) for i in args.encounter_blacklist]
+        args.encounter_whitelist = [int(i) for i in args.encounter_whitelist]
+
         # Decide which scanning mode to use
         if args.spawnpoint_scanning:
             args.scheduler = 'SpawnScan'
@@ -400,6 +414,34 @@ def get_pokemon_rarity(pokemon_id):
 def get_pokemon_types(pokemon_id):
     pokemon_types = get_pokemon_data(pokemon_id)['types']
     return map(lambda x: {"type": i8ln(x['type']), "color": x['color']}, pokemon_types)
+
+
+def get_moves_data(move_id):
+    if not hasattr(get_moves_data, 'moves'):
+        file_path = os.path.join(
+            config['ROOT_PATH'],
+            config['DATA_DIR'],
+            'moves.min.json')
+
+        with open(file_path, 'r') as f:
+            get_moves_data.moves = json.loads(f.read())
+    return get_moves_data.moves[str(move_id)]
+
+
+def get_move_name(move_id):
+    return i8ln(get_moves_data(move_id)['name'])
+
+
+def get_move_damage(move_id):
+    return i8ln(get_moves_data(move_id)['damage'])
+
+
+def get_move_energy(move_id):
+    return i8ln(get_moves_data(move_id)['energy'])
+
+
+def get_move_type(move_id):
+    return i8ln(get_moves_data(move_id)['type'])
 
 
 def get_encryption_lib_path(args):

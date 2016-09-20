@@ -22,6 +22,10 @@
 #gym-info:              # enables detailed gym info collection (default false)
 #min-seconds-left:      # time that must be left on a spawn before considering it too late and skipping it (default 0)
 #status-name:           # enables writing status updates to the database - if you use multiple processes, each needs a unique value
+#encounter:             # start encounters to pull more info, like IVs or movesets.
+#encounter-delay:       # delay before starting an encounter. defaults to 1, must not be zero
+#encounter-whitelist:   # whitelist of pokemon ids to encounter.
+#encounter-blacklist:   # blacklist of pokemon ids to NOT encounter. Incompatible with the whitelist.
 
 # Misc
 #gmaps-key:             # your Google Maps API key

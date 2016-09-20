@@ -9,7 +9,7 @@ import time
 import geopy
 from peewee import SqliteDatabase, InsertQuery, \
     IntegerField, CharField, DoubleField, BooleanField, \
-    DateTimeField, fn, DeleteQuery, CompositeKey, FloatField, SQL, TextField
+    DateTimeField, fn, DeleteQuery, CompositeKey, FloatField, SQL, TextField, JOIN
 from playhouse.flask_utils import FlaskDB
 from playhouse.pool import PooledMySQLDatabase
 from playhouse.shortcuts import RetryOperationalError
@@ -20,7 +20,7 @@ from cachetools import TTLCache
 from cachetools import cached
 
 from . import config
-from .utils import get_pokemon_name, get_pokemon_rarity, get_pokemon_types, get_args
+from .utils import get_pokemon_name, get_pokemon_rarity, get_pokemon_types, get_args, get_move_name, get_move_damage, get_move_energy, get_move_type
 from .transform import transform_from_wgs_to_gcj, get_new_coords
 from .customLog import printPokemon
 
@@ -30,7 +30,7 @@ args = get_args()
 flaskDb = FlaskDB()
 cache = TTLCache(maxsize=100, ttl=60 * 5)
 
-db_schema_version = 7
+db_schema_version = 8
 
 
 class MyRetryDB(RetryOperationalError, PooledMySQLDatabase):
@@ -83,9 +83,27 @@ class Pokemon(BaseModel):
     latitude = DoubleField()
     longitude = DoubleField()
     disappear_time = DateTimeField(index=True)
+    individual_attack = IntegerField(null=True)
+    individual_defense = IntegerField(null=True)
+    individual_stamina = IntegerField(null=True)
+    move_1 = IntegerField(null=True)
+    move_2 = IntegerField(null=True)
 
     class Meta:
         indexes = ((('latitude', 'longitude'), False),)
+
+    @staticmethod
+    def get_encountered_pokemon(encounter_id):
+        query = (Pokemon
+                 .select()
+                 .where((Pokemon.encounter_id == b64encode(str(encounter_id))) &
+                        (Pokemon.disappear_time > datetime.utcnow()))
+                 .dicts()
+                 )
+        pokemon = []
+        for a in query:
+            pokemon.append(a)
+        return pokemon
 
     @staticmethod
     def get_active(swLat, swLng, neLat, neLng):
@@ -452,6 +470,63 @@ class Gym(BaseModel):
 
         return gyms
 
+    @staticmethod
+    def get_gym(id):
+        result = (Gym
+                  .select(Gym.gym_id,
+                          Gym.team_id,
+                          GymDetails.name,
+                          GymDetails.description,
+                          Gym.guard_pokemon_id,
+                          Gym.gym_points,
+                          Gym.latitude,
+                          Gym.longitude,
+                          Gym.last_modified,
+                          Gym.last_scanned)
+                  .join(GymDetails, JOIN.LEFT_OUTER, on=(Gym.gym_id == GymDetails.gym_id))
+                  .where(Gym.gym_id == id)
+                  .dicts()
+                  .get())
+
+        result['guard_pokemon_name'] = get_pokemon_name(result['guard_pokemon_id'])
+        result['pokemon'] = []
+
+        pokemon = (GymMember
+                   .select(GymPokemon.cp.alias('pokemon_cp'),
+                           GymPokemon.pokemon_id,
+                           GymPokemon.pokemon_uid,
+                           GymPokemon.move_1,
+                           GymPokemon.move_2,
+                           GymPokemon.iv_attack,
+                           GymPokemon.iv_defense,
+                           GymPokemon.iv_stamina,
+                           Trainer.name.alias('trainer_name'),
+                           Trainer.level.alias('trainer_level'))
+                   .join(Gym, on=(GymMember.gym_id == Gym.gym_id))
+                   .join(GymPokemon, on=(GymMember.pokemon_uid == GymPokemon.pokemon_uid))
+                   .join(Trainer, on=(GymPokemon.trainer_name == Trainer.name))
+                   .where(GymMember.gym_id == id)
+                   .where(GymMember.last_scanned > Gym.last_modified)
+                   .order_by(GymPokemon.cp.desc())
+                   .dicts())
+
+        for p in pokemon:
+            p['pokemon_name'] = get_pokemon_name(p['pokemon_id'])
+
+            p['move_1_name'] = get_move_name(p['move_1'])
+            p['move_1_damage'] = get_move_damage(p['move_1'])
+            p['move_1_energy'] = get_move_energy(p['move_1'])
+            p['move_1_type'] = get_move_type(p['move_1'])
+
+            p['move_2_name'] = get_move_name(p['move_2'])
+            p['move_2_damage'] = get_move_damage(p['move_2'])
+            p['move_2_energy'] = get_move_energy(p['move_2'])
+            p['move_2_type'] = get_move_type(p['move_2'])
+
+            result['pokemon'].append(p)
+
+        return result
+
 
 class ScannedLocation(BaseModel):
     latitude = DoubleField()
@@ -573,16 +648,55 @@ def hex_bounds(center, steps):
     return (n, e, s, w)
 
 
+def construct_pokemon_dict(pokemons, p, encounter_result, d_t):
+    pokemons[p['encounter_id']] = {
+        'encounter_id': b64encode(str(p['encounter_id'])),
+        'spawnpoint_id': p['spawn_point_id'],
+        'pokemon_id': p['pokemon_data']['pokemon_id'],
+        'latitude': p['latitude'],
+        'longitude': p['longitude'],
+        'disappear_time': d_t,
+    }
+    if encounter_result is not None:
+        ecounter_info = encounter_result['responses']['ENCOUNTER']
+        pokemon_info = ecounter_info['wild_pokemon']['pokemon_data']
+        attack = pokemon_info.get('individual_attack', 0)
+        defense = pokemon_info.get('individual_defense', 0)
+        stamina = pokemon_info.get('individual_stamina', 0)
+        pokemons[p['encounter_id']].update({
+            'individual_attack': attack,
+            'individual_defense': defense,
+            'individual_stamina': stamina,
+            'move_1': pokemon_info['move_1'],
+            'move_2': pokemon_info['move_2'],
+        })
+    else:
+        pokemons[p['encounter_id']].update({
+            'individual_attack': None,
+            'individual_defense': None,
+            'individual_stamina': None,
+            'move_1': None,
+            'move_2': None,
+        })
+
+
 # todo: this probably shouldn't _really_ be in "models" anymore, but w/e
-def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue):
+def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, api):
     pokemons = {}
     pokestops = {}
     gyms = {}
+    skipped = 0
 
     cells = map_dict['responses']['GET_MAP_OBJECTS']['map_cells']
     for cell in cells:
         if config['parse_pokemon']:
             for p in cell.get('wild_pokemons', []):
+
+                # Don't parse pokemon we've already encountered. Avoids IVs getting nulled out on rescanning.
+                if Pokemon.get_encountered_pokemon(p['encounter_id']):
+                    skipped += 1
+                    continue
+
                 # time_till_hidden_ms was overflowing causing a negative integer.
                 # It was also returning a value above 3.6M ms.
                 if 0 < p['time_till_hidden_ms'] < 3600000:
@@ -595,14 +709,17 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue):
 
                 printPokemon(p['pokemon_data']['pokemon_id'], p['latitude'],
                              p['longitude'], d_t)
-                pokemons[p['encounter_id']] = {
-                    'encounter_id': b64encode(str(p['encounter_id'])),
-                    'spawnpoint_id': p['spawn_point_id'],
-                    'pokemon_id': p['pokemon_data']['pokemon_id'],
-                    'latitude': p['latitude'],
-                    'longitude': p['longitude'],
-                    'disappear_time': d_t
-                }
+
+                # Scan for IVs and moves
+                encounter_result = None
+                if (args.encounter and (p['pokemon_data']['pokemon_id'] in args.encounter_whitelist or
+                                        p['pokemon_data']['pokemon_id'] not in args.encounter_blacklist and not args.encounter_whitelist)):
+                    time.sleep(args.encounter_delay)
+                    encounter_result = api.encounter(encounter_id=p['encounter_id'],
+                                                     spawn_point_id=p['spawn_point_id'],
+                                                     player_latitude=step_location[0],
+                                                     player_longitude=step_location[1])
+                construct_pokemon_dict(pokemons, p, encounter_result, d_t)
 
                 if args.webhooks:
                     wh_update_queue.put(('pokemon', {
@@ -613,7 +730,12 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue):
                         'longitude': p['longitude'],
                         'disappear_time': calendar.timegm(d_t.timetuple()),
                         'last_modified_time': p['last_modified_timestamp_ms'],
-                        'time_until_hidden_ms': p['time_till_hidden_ms']
+                        'time_until_hidden_ms': p['time_till_hidden_ms'],
+                        'individual_attack': pokemons[p['encounter_id']]['individual_attack'],
+                        'individual_defense': pokemons[p['encounter_id']]['individual_defense'],
+                        'individual_stamina': pokemons[p['encounter_id']]['individual_stamina'],
+                        'move_1': pokemons[p['encounter_id']]['move_1'],
+                        'move_2': pokemons[p['encounter_id']]['move_2']
                     }))
 
         for f in cell.get('forts', []):
@@ -701,7 +823,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue):
         db_update_queue.put((Gym, gyms))
 
     log.info('Parsing found %d pokemons, %d pokestops, and %d gyms',
-             len(pokemons),
+             len(pokemons) + skipped,
              len(pokestops),
              len(gyms))
 
@@ -712,7 +834,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue):
     }}))
 
     return {
-        'count': len(pokemons) + len(pokestops) + len(gyms),
+        'count': len(pokemons) + skipped + len(pokestops) + len(gyms),
         'gyms': gyms,
     }
 
@@ -1008,4 +1130,13 @@ def database_migrate(db, old_ver):
         migrate(
             migrator.drop_column('gymdetails', 'description'),
             migrator.add_column('gymdetails', 'description', TextField(null=True, default=""))
+        )
+
+    if old_ver < 8:
+        migrate(
+            migrator.add_column('pokemon', 'individual_attack', IntegerField(null=True, default=0)),
+            migrator.add_column('pokemon', 'individual_defense', IntegerField(null=True, default=0)),
+            migrator.add_column('pokemon', 'individual_stamina', IntegerField(null=True, default=0)),
+            migrator.add_column('pokemon', 'move_1', IntegerField(null=True, default=0)),
+            migrator.add_column('pokemon', 'move_2', IntegerField(null=True, default=0))
         )
