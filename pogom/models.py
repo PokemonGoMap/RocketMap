@@ -100,7 +100,18 @@ class Pokemon(BaseModel):
         indexes = ((('latitude', 'longitude'), False),)
     
     
-    blacklist = [ 10, 13, 16, 19, 21, 41, 96, 124 ]
+    blacklist = [ 10, 13, 16, 19, 21, 41, 46, 48, 96, 98, 124 ]
+    #10:Raupy
+    #13:Hornliu
+    #16:Taubsi
+    #19:Rattfratz
+    #21:Habitak
+    #41:Zubat
+    #46:Paras
+    #48:Bluzuk
+    #96:Traumato
+    #98:Krabby
+    #124:Rossana
 
     @classmethod
     @cached(active_cache)
@@ -801,6 +812,11 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
                 construct_pokemon_dict(pokemons, p, encounter_result, d_t)
 
                 if args.webhooks:
+                    pokemonId = p['pokemon_data']['pokemon_id']
+                    
+                    if( pokemonId in Pokemon.blacklist ):
+                        continue
+                        
                     wh_update_queue.put(('pokemon', {
                         'encounter_id': b64encode(str(p['encounter_id'])),
                         'spawnpoint_id': p['spawn_point_id'],

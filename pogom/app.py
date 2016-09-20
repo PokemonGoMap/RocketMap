@@ -39,6 +39,8 @@ class Pogom(Flask):
         self.route("/menu", methods=['GET'])(self.get_menu)
         self.route("/iv_calc", methods=['GET'])(self.get_iv_calc)
         self.route("/donate", methods=['GET'])(self.get_donate)
+        self.route("/donateCancel", methods=['GET'])(self.get_donate_cancel)
+        self.route("/donateSuccess", methods=['GET'])(self.get_donate_success)
 
     def set_search_control(self, control):
         self.search_control = control
@@ -285,6 +287,14 @@ class Pogom(Flask):
         
     def get_donate(self):
         return render_template('donate.html')
+        
+        
+    def get_donate_cancel(self):
+        return render_template('donate_cancel.html')
+        
+        
+    def get_donate_success(self):
+        return render_template('donate_success.html')
 
 
 class CustomJSONEncoder(JSONEncoder):

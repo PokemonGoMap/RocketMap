@@ -200,13 +200,15 @@ def main():
             os.remove(args.db)
     create_tables(db)
     
-    try:
-        log.info('First Spawnpoint cache initialization')
-        cache = Pokemon.get_allspawnpoints()
-    except Exception as e:
-        log.error('Error while %s', e)
+    
+    if not args.no_server:
+        try:
+            log.info('First Spawnpoint cache initialization')
+            cache = Pokemon.get_allspawnpoints()
+        except Exception as e:
+            log.error('Error while %s', e)
 
-    app.set_current_location(position)
+        app.set_current_location(position)
 
     # Control the search status (running or not) across threads
     pause_bit = Event()
