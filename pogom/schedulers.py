@@ -373,6 +373,15 @@ class SpawnScanSpeedLimit(BaseScheduler):
         self.locations = False
         self.last_schedule = 0
 
+    def print_status(self):
+        status = ''
+        if self.bad:
+            status += '[{} dropped points] '.format(len(self.bad))
+
+        if self.delays:
+            status += '[{} delayed points] [{:.2f} avg delay] [{:.2f} max delay]'.format(len(self.delays), (sum(self.delays) / len(self.delays)), max(self.delays))
+        return status
+
     # Generate locations is called when the locations list is cleared - the first time it scans or after a location change.
     def _generate_locations(self):
         # Attempt to load spawns from file
@@ -394,7 +403,18 @@ class SpawnScanSpeedLimit(BaseScheduler):
 
         # Run the scheduling algorithm
         # This adds a "worker" field
-        self.locations = self.assign_spawns(self.locations)
+        self.locations, self.delays, self.bad = self.assign_spawns(self.locations)
+
+        if len(self.bad):
+            log.info('Cannot schedule %d spawnpoints under max_delay, dropping.' % len(self.bad))
+
+        log.debug('Completed job assignment.')
+        if len(self.delays):
+            log.info('Number of scan delays: %d.' % len(self.delays))
+            log.info('Average delay: %f seconds.' % (sum(self.delays) / len(self.delays)))
+            log.info('Max delay: %f seconds.' % max(self.delays))
+        else:
+            log.info('No additional delay is added to any spawn point.')
 
         # locations[]:
         # {"lat": 37.53079079414139, "lng": -122.28811690874117, "spawnpoint_id": "808f9f1601d", "time": 511, "worker": 1}
@@ -576,18 +596,6 @@ class SpawnScanSpeedLimit(BaseScheduler):
 
         Q, delays, bad = greedy_assign(spawns, self.args.workers)
 
-        if len(bad):
-            log.info('Cannot schedule %d spawnpoints under max_delay, dropping.' % len(bad))
-
-        log.debug('Completed job assignment.')
-        log.info('Job queue sizes: %s' % str([len(q) for q in Q]))
-        if len(delays):
-            log.info('Number of scan delays: %d.' % len(delays))
-            log.info('Average delay: %f seconds.' % (sum(delays) / len(delays)))
-            log.info('Max delay: %f seconds.' % max(delays))
-        else:
-            log.info('No additional delay is added to any spawn point.')
-
         # Assign worker id to each spown point
         for index, queue in enumerate(Q):
             for sp in queue:
@@ -597,7 +605,7 @@ class SpawnScanSpeedLimit(BaseScheduler):
         spawns = sum(Q, [])
         spawns.sort(key=itemgetter('scan_time'))
 
-        return spawns
+        return spawns, delays, bad
 
 
 # The SchedulerFactory returns an instance of the correct type of scheduler

@@ -370,8 +370,13 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
         for search_items_queue in search_items_queues:
             if search_items_queue.empty():
                 log.debug('Search queue empty, scheduling more items to scan')
-                threadStatus['Overseer']['message'] = 'Some queues are empty, scheduling..'
+                threadStatus['Overseer']['message'] = 'Some queues are empty, scheduling.. '
                 scheduler.schedule()
+
+        try:
+            threadStatus['Overseer']['message'] += scheduler.print_status()
+        except AttributeError:
+            pass
 
         # Now we just give a little pause here
         time.sleep(1)
