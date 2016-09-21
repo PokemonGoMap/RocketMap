@@ -159,9 +159,8 @@
               </div>
             </div>
 			-->
-			<!--
             <div class="form-control switch-container" >
-              <h3>Start map at me</h3>
+              <h3>Start map at previous Location</h3>
               <div class="onoffswitch">
                 <input id="start-at-user-location-switch" type="checkbox" name="start-at-user-location-switch" class="onoffswitch-checkbox" checked/>
                 <label class="onoffswitch-label" for="start-at-user-location-switch">
@@ -170,7 +169,9 @@
                 </label>
               </div>
             </div>
-            -->
+            <div class="form-control switch-container" >
+              <input id="back-to-center-button" type="button" name="back-to-center-button" value="Go back to center" />
+            </div>
 			<!--
             <div class="form-control switch-container" style="display:{{search_control}}">
               <h3>Search</h3>
@@ -292,6 +293,8 @@
     <script>
       var centerLat = {{lat}};
       var centerLng = {{lng}};
+      var originCenterLat = {{lat}};
+      var originCenterLng = {{lng}};
     </script>
     <script src="{{ url_for('static', filename='dist/js/map.common.min.js').lstrip('/') }}"></script>
     <script src="{{ url_for('static', filename='dist/js/map.min.js').lstrip('/') }}"></script>

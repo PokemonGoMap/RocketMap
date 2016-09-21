@@ -668,10 +668,26 @@ var StoreTypes = {
     stringify: function (number) {
       return number.toString()
     }
+  },
+  Float: {
+    parse: function (str) {
+      return parseFloat(str)
+    },
+    stringify: function (f) {
+      return f.toString()
+    }
   }
 }
 
 var StoreOptions = {
+  'lastLat': {
+    default: null,
+    type: StoreTypes.Float
+  },
+  'lastLng': {
+    default: null,
+    type: StoreTypes.Float
+  },
   'map_style': {
     default: 'style_pgo',
     type: StoreTypes.String

@@ -72,6 +72,24 @@ function initMap () { // eslint-disable-line no-unused-vars
   Store.set('showPokestops', false)
   Store.set('showGyms', false)
   Store.set('showScanned', false)
+  
+  if( Store.get('startAtUserLocation') ) {
+      var lastLat = Store.get('lastLat')
+      var lastLng = Store.get('lastLng')
+      if( (null == lastLat) || (null == lastLng) ) {
+        console.error('Could not load Lat/Lng, because they are not set!')
+      } else {
+        var floatLat = parseFloat( lastLat )
+        var floatLng = parseFloat( lastLng )
+        
+        if( isNaN(lastLat) || isNaN(lastLng) ) {
+            console.error('Could not load Lat/Lng, because they are not floats!')
+        } else {
+            centerLat = floatLat
+            centerLng = floatLng
+        }
+      }
+  }
     
   map = new google.maps.Map(document.getElementById('map'), {
     center: {
@@ -898,6 +916,9 @@ function loadRawData () {
   var swLng = swPoint.lng()
   var neLat = nePoint.lat()
   var neLng = nePoint.lng()
+  
+  Store.set('lastLat', (swPoint.lat() + nePoint.lat()) / 2)
+  Store.set('lastLng', (swPoint.lng() + nePoint.lng()) / 2)
 
   return $.ajax({
     url: 'raw_data',
@@ -1223,6 +1244,10 @@ function centerMapOnLocation () {
 
 function changeLocation (lat, lng) {
   var loc = new google.maps.LatLng(lat, lng)
+  
+  Store.set('lastLat', lat)
+  Store.set('lastLng', lng)
+  
   changeSearchLocation(lat, lng).done(function () {
     map.setCenter(loc)
     searchMarker.setPosition(loc)
@@ -1602,6 +1627,10 @@ $(function () {
 
   $('#start-at-user-location-switch').change(function () {
     Store.set('startAtUserLocation', this.checked)
+  })
+
+  $('#back-to-center-button').click(function () {
+    changeLocation( originCenterLat, originCenterLng )
   })
 
   $('#follow-my-location-switch').change(function () {
