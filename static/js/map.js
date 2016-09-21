@@ -69,6 +69,9 @@ function removePokemonMarker (encounterId) { // eslint-disable-line no-unused-va
 
 function initMap () { // eslint-disable-line no-unused-vars
   Store.set('showSpawnpoints', false)
+  Store.set('showPokestops', false)
+  Store.set('showGyms', false)
+  Store.set('showScanned', false)
     
   map = new google.maps.Map(document.getElementById('map'), {
     center: {
@@ -327,9 +330,12 @@ function pokemonLabel (name, rarity, types, disappearTime, id, latitude, longitu
         IV: ${iv.toFixed(1)}% (${atk}/${def}/${sta})
       </div>`
     if (moves != null) {
+        move1 = i8ln(moves[move1])
+        move2 = i8ln(moves[move2])
+        
         details += `
           <div>
-            Moves: ${moves[move1]} / ${moves[move2]}
+            Moves: ${move1} / ${move2}
           </div>
           `
     }

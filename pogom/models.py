@@ -155,7 +155,7 @@ class Pokemon(BaseModel):
 #                              (Pokemon.longitude <= neLng))))
 #                     .dicts())
         boundariesOn = True
-        if None not in (swLat, swLng, neLat, neLng):
+        if None in (swLat, swLng, neLat, neLng):
             boundariesOn = False
         
         pokemonCache = Pokemon.get_allactive()
@@ -325,7 +325,7 @@ class Pokemon(BaseModel):
 
         #query = query.group_by(Pokemon.latitude, Pokemon.longitude, Pokemon.spawnpoint_id, SQL('time'))
         boundariesOn = True
-        if None not in (swLat, swLng, neLat, neLng):
+        if None in (swLat, swLng, neLat, neLng):
             boundariesOn = False
         
         spawnCache = Pokemon.get_allspawnpoints()
@@ -449,7 +449,7 @@ class Pokestop(BaseModel):
         #                    (Pokestop.longitude <= neLng))
         #             .dicts())
         boundariesOn = True
-        if None not in (swLat, swLng, neLat, neLng):
+        if None in (swLat, swLng, neLat, neLng):
             boundariesOn = False
                      
         pokestopCache = Pokestop.get_allstops()
@@ -528,7 +528,7 @@ class Gym(BaseModel):
         #                      (Gym.longitude <= neLng))
         #               .dicts())
         boundariesOn = True
-        if None not in (swLat, swLng, neLat, neLng):
+        if None in (swLat, swLng, neLat, neLng):
             boundariesOn = False
         
         gymCache = Gym.get_allgyms()
