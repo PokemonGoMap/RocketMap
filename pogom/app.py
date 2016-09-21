@@ -32,6 +32,10 @@ class Pogom(Flask):
         self.route("/mobile", methods=['GET'])(self.list_pokemon)
         self.route("/search_control", methods=['GET'])(self.get_search_control)
         self.route("/search_control", methods=['POST'])(self.post_search_control)
+        self.route("/step_limit", methods=['GET'])(self.get_step_limit)
+        self.route("/step_limit", methods=['POST'])(self.post_step_limit)
+        self.route("/search_mode", methods=['GET'])(self.get_search_mode)
+        self.route("/search_mode", methods=['POST'])(self.post_search_mode)
         self.route("/stats", methods=['GET'])(self.get_stats)
         self.route("/status", methods=['GET'])(self.get_status)
         self.route("/status", methods=['POST'])(self.post_status)
@@ -50,7 +54,7 @@ class Pogom(Flask):
 
     def post_search_control(self):
         args = get_args()
-        if not args.search_control:
+        if not args.single_user_control:
             return 'Search control is disabled', 403
         action = request.args.get('action', 'none')
         if action == 'on':
@@ -63,10 +67,47 @@ class Pogom(Flask):
             return jsonify({'message': 'invalid use of api'})
         return self.get_search_control()
 
+    def get_step_limit(self):
+        return jsonify({'limit': config['STEP_LIMIT']})
+
+    def post_step_limit(self):
+        args = get_args()
+        if not args.single_user_control:
+            return 'Step limit control is disabled', 403
+        if request.args:
+            limit = request.args.get('limit', type=int)
+            if limit and limit > 0:
+                config['STEP_LIMIT'] = limit
+                log.info('Step limit changed to: %s', config['STEP_LIMIT'])
+                # some dirty workaround to restart search thread
+                self.location_queue.put((self.current_location[0], self.current_location[1], 0))
+            else:
+                return jsonify({'message': 'invalid step limit'})
+        else:
+            return jsonify({'message': 'invalid use of api'})
+        return self.get_step_limit()
+
+    def get_search_mode(self):
+        return jsonify({'mode': config['SCHEDULER']})
+
+    def post_search_mode(self):
+        args = get_args()
+        if not args.single_user_control:
+            return 'Search mode control is disabled', 403
+        if request.args:
+            mode = request.args.get('mode', 'none')
+            if mode in ['HexSearch', 'HexSearchSpawnpoint', 'SpawnScan']:
+                config['SCHEDULER'] = mode
+            else:
+                return jsonify({'message': 'invalid mode set'})
+        else:
+            return jsonify({'message': 'invalid use of api'})
+        return self.get_search_mode()
+
     def fullmap(self):
         args = get_args()
         fixed_display = "none" if args.fixed_location else "inline"
-        search_display = "inline" if args.search_control else "none"
+        su_control_display = "inline" if args.single_user_control else "none"
 
         return render_template('map.html',
                                lat=self.current_location[0],
@@ -74,7 +115,7 @@ class Pogom(Flask):
                                gmaps_key=config['GMAPS_KEY'],
                                lang=config['LOCALE'],
                                is_fixed=fixed_display,
-                               search_control=search_display
+                               su_control=su_control_display
                                )
 
     def raw_data(self):

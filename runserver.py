@@ -185,6 +185,7 @@ def main():
     if args.no_gyms:
         log.info('Parsing of Gyms disabled')
 
+    config['STEP_LIMIT'] = args.step_limit
     config['LOCALE'] = args.locale
     config['CHINA'] = args.china
 
@@ -254,7 +255,7 @@ def main():
 
         argset = (args, new_location_queue, pause_bit, encryption_lib_path, db_updates_queue, wh_updates_queue)
 
-        log.debug('Starting a %s search thread', args.scheduler)
+        log.debug('Starting a %s search thread', config['SCHEDULER'])
         search_thread = Thread(target=search_overseer_thread, name='search-overseer', args=argset)
         search_thread.daemon = True
         search_thread.start()

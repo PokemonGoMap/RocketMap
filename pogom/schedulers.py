@@ -44,6 +44,7 @@ from operator import itemgetter
 from .transform import get_new_coords
 from .models import hex_bounds, Pokemon
 from .utils import now, cur_sec
+from . import config
 
 log = logging.getLogger(__name__)
 
@@ -102,8 +103,6 @@ class HexSearch(BaseScheduler):
         else:
             self.step_distance = 0.070
 
-        self.step_limit = args.step_limit
-
         # This will hold the list of locations to scan so it can be reused, instead of recalculating on each loop
         self.locations = False
 
@@ -127,12 +126,12 @@ class HexSearch(BaseScheduler):
 
         results.append((self.scan_location[0], self.scan_location[1], 0))
 
-        if self.step_limit > 1:
+        if config['STEP_LIMIT'] > 1:
             loc = self.scan_location
 
             # upper part
             ring = 1
-            while ring < self.step_limit:
+            while ring < config['STEP_LIMIT']:
 
                 loc = get_new_coords(loc, xdist, WEST if ring % 2 == 1 else EAST)
                 results.append((loc[0], loc[1], 0))
@@ -154,7 +153,7 @@ class HexSearch(BaseScheduler):
                 ring += 1
 
             # lower part
-            ring = self.step_limit - 1
+            ring = config['STEP_LIMIT'] - 1
 
             loc = get_new_coords(loc, ydist, SOUTH)
             loc = get_new_coords(loc, xdist / 2, WEST if ring % 2 == 1 else EAST)
@@ -189,8 +188,8 @@ class HexSearch(BaseScheduler):
         # This will pull the last few steps back to the front of the list
         # so you get a "center nugget" at the beginning of the scan, instead
         # of the entire nothern area before the scan spots 70m to the south.
-        if self.step_limit >= 3:
-            if self.step_limit == 3:
+        if config['STEP_LIMIT'] >= 3:
+            if config['STEP_LIMIT'] == 3:
                 results = results[-2:] + results[:-2]
             else:
                 results = results[-7:] + results[:-7]
@@ -222,11 +221,11 @@ class HexSearch(BaseScheduler):
 class HexSearchSpawnpoint(HexSearch):
 
     def _any_spawnpoints_in_range(self, coords, spawnpoints):
-        return any(geopy.distance.distance(coords, x).meters <= 70 for x in spawnpoints)
+        return any(geopy.distance.great_circle(coords, x).meters <= 70 for x in spawnpoints)
 
     # Extend the generate_locations function to remove locations with no spawnpoints
     def _generate_locations(self):
-        n, e, s, w = hex_bounds(self.scan_location, self.step_limit)
+        n, e, s, w = hex_bounds(self.scan_location, config['STEP_LIMIT'])
         spawnpoints = set((d['latitude'], d['longitude']) for d in Pokemon.get_spawnpoints(s, w, n, e))
 
         if len(spawnpoints) == 0:
@@ -254,13 +253,12 @@ class SpawnScan(BaseScheduler):
         else:
             self.step_distance = 0.070
 
-        self.step_limit = args.step_limit
         self.locations = False
 
     # Generate locations is called when the locations list is cleared - the first time it scans or after a location change.
     def _generate_locations(self):
         # Attempt to load spawns from file
-        if self.args.spawnpoint_scanning != 'nofile':
+        if self.args.spawnpoint_scanning and self.args.spawnpoint_scanning != 'nofile':
             log.debug('Loading spawn points from json file @ %s', self.args.spawnpoint_scanning)
             try:
                 with open(self.args.spawnpoint_scanning) as file:
@@ -274,7 +272,7 @@ class SpawnScan(BaseScheduler):
         # No locations yet? Try the database!
         if not self.locations:
             log.debug('Loading spawn points from database')
-            self.locations = Pokemon.get_spawnpoints_in_hex(self.scan_location, self.args.step_limit)
+            self.locations = Pokemon.get_spawnpoints_in_hex(self.scan_location, config['STEP_LIMIT'])
 
         # Well shit...
         # if not self.locations:

@@ -123,6 +123,16 @@
 
           <h3>Location & Search Settings</h3>
           <div>
+            <div class="form-control switch-container" style="display:{{su_control}}">
+              <h3>Search</h3>
+              <div class="onoffswitch">
+                <input id="search-switch" type="checkbox" name="search-switch" class="onoffswitch-checkbox" checked/>
+                <label class="onoffswitch-label" for="search-switch">
+                <span class="switch-label" data-on="On" data-off="Off"></span>
+                <span class="switch-handle"></span>
+                </label>
+              </div>
+            </div>
             <div class="form-control switch-container" style="display:{{is_fixed}}" >
               <label for="next-location">
               <h3>Change search location</h3>
@@ -149,21 +159,25 @@
                 </label>
               </div>
             </div>
+            <div class="form-control switch-container" style="display:{{su_control}}">
+              <h3>Search mode</h3>
+              <select name="search-mode" id="search-mode">
+                <option value="HexSearch">Standard hexagonal search</option>
+                <option value="HexSearchSpawnpoint">Standard with spawnpoints only</option>
+                <option value="SpawnScan">Spawnpoints at spawn time search</option>
+              </select>
+            </div>
+            <div class="form-control switch-container" style="display:{{su_control}}" >
+              <label for="step-limit">
+              <h3>Search step limit</h3>
+              <input id="step-limit" type="number" min="1" name="step-limit">
+              </label>
+            </div>
             <div class="form-control switch-container" >
               <h3>Start map at me</h3>
               <div class="onoffswitch">
                 <input id="start-at-user-location-switch" type="checkbox" name="start-at-user-location-switch" class="onoffswitch-checkbox" checked/>
                 <label class="onoffswitch-label" for="start-at-user-location-switch">
-                <span class="switch-label" data-on="On" data-off="Off"></span>
-                <span class="switch-handle"></span>
-                </label>
-              </div>
-            </div>
-            <div class="form-control switch-container" style="display:{{search_control}}">
-              <h3>Search</h3>
-              <div class="onoffswitch">
-                <input id="search-switch" type="checkbox" name="search-switch" class="onoffswitch-checkbox" checked/>
-                <label class="onoffswitch-label" for="search-switch">
                 <span class="switch-label" data-on="On" data-off="Off"></span>
                 <span class="switch-handle"></span>
                 </label>

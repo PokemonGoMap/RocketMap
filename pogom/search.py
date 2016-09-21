@@ -37,6 +37,7 @@ from pgoapi.exceptions import AuthException
 from .models import parse_map, GymDetails, parse_gyms, MainWorker, WorkerStatus
 from .fakePogoApi import FakePogoApi
 from .utils import now
+from . import config
 import schedulers
 
 import terminalsize
@@ -274,7 +275,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
     threadStatus['Overseer'] = {
         'message': 'Initializing',
         'type': 'Overseer',
-        'scheduler': args.scheduler
+        'scheduler': config['SCHEDULER']
     }
 
     if(args.print_status):
@@ -340,7 +341,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
     current_location = False
 
     # Create the appropriate type of scheduler to handle the search queue.
-    scheduler = schedulers.SchedulerFactory.get_scheduler(args.scheduler, [search_items_queue], threadStatus, args)
+    scheduler = schedulers.SchedulerFactory.get_scheduler(config['SCHEDULER'], [search_items_queue], threadStatus, args)
 
     # The real work starts here but will halt on pause_bit.set()
     while True:
@@ -358,6 +359,13 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
                     current_location = new_location_queue.get_nowait()
             except Empty:
                 pass
+            scheduler.location_changed(current_location)
+
+        # Look for scheduler change
+        if config['SCHEDULER'] != threadStatus['Overseer']['scheduler']:
+            log.info('Switching current scheduler to: %s', config['SCHEDULER'])
+            threadStatus['Overseer']['scheduler'] = config['SCHEDULER']
+            scheduler = schedulers.SchedulerFactory.get_scheduler(config['SCHEDULER'], [search_items_queue], threadStatus, args)
             scheduler.location_changed(current_location)
 
         # If there are no search_items_queue either the loop has finished (or been
@@ -476,6 +484,15 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                     log.info(status['message'])
                     # No sleep here; we've not done anything worth sleeping for. Plus we clearly need to catch up!
                     continue
+
+                # check for speed limit if applicable
+                if status['location']:
+                    speed_sleep = get_speed_sleep(args.speed_limit, status['location'], step_location, status['last_scan_time'], now())
+                    if speed_sleep > 0:
+                        speed_sleep = args.max_speed_limit_sleep if speed_sleep > args.max_speed_limit_sleep and args.max_speed_limit_sleep > 0 else speed_sleep
+                        status['message'] = 'Sleeping an additional {} seconds to stay under speed limit'.format(speed_sleep)
+                        log.info("Sleeping an additional %d seconds to stay under speed limit", speed_sleep)
+                        time.sleep(speed_sleep)
 
                 status['message'] = 'Searching at {:6f},{:6f}'.format(step_location[0], step_location[1])
                 log.info(status['message'])
@@ -664,6 +681,22 @@ def calc_distance(pos1, pos2):
     d = R * c
 
     return d
+
+
+def get_speed_sleep(speed_limit, start_location, end_location, start_time, end_time):
+    if speed_limit > 0:
+        speed_limit = speed_limit * 1000.0 / 3600.0  # convert to mps to avoid divide by zero errors
+        distance = geopy.distance.distance(start_location, end_location).meters
+        time_elapsed = 0.001 if end_time - start_time == 0 else end_time - start_time
+        speed = distance / time_elapsed
+    else:
+        return 0
+
+    if speed > speed_limit:
+        speed_sleep = int(math.ceil((distance / speed_limit) - time_elapsed))
+        return speed_sleep
+
+    return 0
 
 
 # Delay each thread start time so that logins only occur ~1s
