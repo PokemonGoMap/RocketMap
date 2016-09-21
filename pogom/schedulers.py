@@ -371,7 +371,7 @@ class SpawnScanSpeedLimit(BaseScheduler):
 
         self.step_limit = args.step_limit
         self.locations = False
-        self.last_schedule = 0
+        self._cached_schedule = False
 
     def print_status(self):
         status = ''
@@ -384,51 +384,57 @@ class SpawnScanSpeedLimit(BaseScheduler):
 
     # Generate locations is called when the locations list is cleared - the first time it scans or after a location change.
     def _generate_locations(self):
-        # Attempt to load spawns from file
-        if self.args.spawnpoint_scanning != 'nofile':
-            log.debug('Loading spawn points from json file @ %s', self.args.spawnpoint_scanning)
-            try:
-                with open(self.args.spawnpoint_scanning) as file:
-                    self.locations = json.load(file)
-            except ValueError as e:
-                log.exception(e)
-                log.error('JSON error: %s; will fallback to database', e)
-            except IOError as e:
-                log.error('Error opening json file: %s; will fallback to database', e)
+        # Scheduling with time in hourly-second format only needs to be calculated once
+        if not self._cached_schedule:
+            # Attempt to load spawns from file
+            if self.args.spawnpoint_scanning != 'nofile':
+                log.debug('Loading spawn points from json file @ %s', self.args.spawnpoint_scanning)
+                try:
+                    with open(self.args.spawnpoint_scanning) as file:
+                        self.locations = json.load(file)
+                except ValueError as e:
+                    log.exception(e)
+                    log.error('JSON error: %s; will fallback to database', e)
+                except IOError as e:
+                    log.error('Error opening json file: %s; will fallback to database', e)
 
-        # No locations yet? Try the database!
-        if not self.locations:
-            log.debug('Loading spawn points from database')
-            self.locations = Pokemon.get_spawnpoints_in_hex(self.scan_location, self.args.step_limit)
+            # No locations yet? Try the database!
+            if not self.locations:
+                log.debug('Loading spawn points from database')
+                self.locations = Pokemon.get_spawnpoints_in_hex(self.scan_location, self.args.step_limit)
 
-        # Run the scheduling algorithm
-        # This adds a "worker" field
-        self.locations, self.delays, self.bad = self.assign_spawns(self.locations)
+            # Run the scheduling algorithm
+            # This adds a "worker" field
+            self.locations, self.delays, self.bad = self.assign_spawns(self.locations)
 
-        if len(self.bad):
-            log.info('Cannot schedule %d spawnpoints under max_delay, dropping.' % len(self.bad))
+            if len(self.bad):
+                log.info('Cannot schedule %d spawnpoints under max_delay, dropping.' % len(self.bad))
 
-        log.debug('Completed job assignment.')
-        if len(self.delays):
-            log.info('Number of scan delays: %d.' % len(self.delays))
-            log.info('Average delay: %f seconds.' % (sum(self.delays) / len(self.delays)))
-            log.info('Max delay: %f seconds.' % max(self.delays))
+            log.debug('Completed job assignment.')
+            if len(self.delays):
+                log.info('Number of scan delays: %d.' % len(self.delays))
+                log.info('Average delay: %f seconds.' % (sum(self.delays) / len(self.delays)))
+                log.info('Max delay: %f seconds.' % max(self.delays))
+            else:
+                log.info('No additional delay is added to any spawn point.')
+
+            # locations[]:
+            # {"lat": 37.53079079414139, "lng": -122.28811690874117, "spawnpoint_id": "808f9f1601d", "time": 511, "worker": 1}
+
+            log.info('Total of %d spawns to track', len(self.locations))
+
+            # locations.sort(key=itemgetter('time'))
+
+            if self.args.very_verbose:
+                for i in self.locations:
+                    sec = i['scan_time'] % 60
+                    minute = (i['scan_time'] / 60) % 60
+                    m = 'Scan [{:02}:{:02}] ({}) @ {},{}'.format(minute, sec, i['scan_time'], i['lat'], i['lng'])
+                    log.debug(m)
+
+            self._cached_schedule = self.locations
         else:
-            log.info('No additional delay is added to any spawn point.')
-
-        # locations[]:
-        # {"lat": 37.53079079414139, "lng": -122.28811690874117, "spawnpoint_id": "808f9f1601d", "time": 511, "worker": 1}
-
-        log.info('Total of %d spawns to track', len(self.locations))
-
-        # locations.sort(key=itemgetter('time'))
-
-        if self.args.very_verbose:
-            for i in self.locations:
-                sec = i['scan_time'] % 60
-                minute = (i['scan_time'] / 60) % 60
-                m = 'Scan [{:02}:{:02}] ({}) @ {},{}'.format(minute, sec, i['scan_time'], i['lat'], i['lng'])
-                log.debug(m)
+            self.locations = self._cached_schedule
 
         # TODO/COMMENT: sps_scan_current is in conflict with speed limiting
         # 'time' from json and db alike has been munged to appearance time as seconds after the hour
@@ -449,24 +455,22 @@ class SpawnScanSpeedLimit(BaseScheduler):
         return retset
 
     # Schedule the work to be done
+    # This is invoked if and noly if one of the queues are empty
+    # Our job here is to fill those that are empty
     def schedule(self):
         if not self.scan_location:
             log.warning('Cannot schedule work until scan location has been set')
             return
 
-        # Only schedule once per hour
-        if now() - self.last_schedule < 3600:
-            return
-
         # SpawnScan needs to calculate the list every time, since the times will change.
         self.locations = self._generate_locations()
 
+        to_fill = [i for i, q in enumerate(self.queues) if q.empty()]
+        # Fill-in all the spawns of the next hour into empty queues
         for location in self.locations:
-            # FUTURE IMPROVEMENT - For now, queues is assumed to have a single queue.
-            self.queues[location[0]].put(location[1:])
-            log.debug("Added location {}".format(location[1:]))
-
-        self.last_schedule = now()
+            if location[0] in to_fill:
+                self.queues[location[0]].put(location[1:])
+                log.debug("Added location {} to queue {}".format(location[1:], location[0]))
 
         # Clear the locations list so it gets regenerated next cycle
         self.size = len(self.locations)
