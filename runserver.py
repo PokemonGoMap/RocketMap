@@ -49,7 +49,7 @@ try:
     import pgoapi
     from pgoapi import utilities as util
 except ImportError:
-    log.critical("It seems `pgoapi` is not installed. You must run pip install -r requirements.txt again")
+    log.critical("It seems `pgoapi` is not installed. You must run pip install -r requirements.txt again", exc_info=True)
     sys.exit(1)
 
 # Assert pgoapi >= pgoapi_version
