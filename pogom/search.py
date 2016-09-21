@@ -265,6 +265,8 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
     to the queue so they can be tried again later, but must wait a bit before doing do so to
     prevent accounts from being cycled through too quickly.
     '''
+    # Randomize order of account login
+    args.accounts.sort(key=lambda x: random.random())
     for i, account in enumerate(args.accounts):
         account_queue.put(account)
 
@@ -381,8 +383,9 @@ def search_overseer_thread(args, new_location_queue, pause_bit, encryption_lib_p
 
 
 def search_worker_thread(args, account_queue, account_failures, search_items_queue, pause_bit, encryption_lib_path, status, dbq, whq):
-
     log.debug('Search worker thread starting')
+    first_run = True
+    last_scan_time = int(round(time.time() * 1000))
 
     # The outer forever loop restarts only when the inner one is intentionally exited - which should only be done when the worker is failing too often, and probably banned.
     # This reinitializes the API and grabs a new account from the queue.
@@ -449,15 +452,17 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                 status['message'] = 'Waiting for item from queue'
                 step, step_location, appears, leaves = search_items_queue.get()
 
+                # add --random-delay
+                random_delay = random.randint(0, args.random_delay)
                 # too soon?
-                if appears and now() < appears + 10:  # adding a 10 second grace period
+                if appears and now() < appears + 10 + random_delay:  # adding a 10 second grace period
                     first_loop = True
                     paused = False
-                    while now() < appears + 10:
+                    while now() < appears + 10 + random_delay:
                         if pause_bit.is_set():
                             paused = True
                             break  # why can't python just have `break 2`...
-                        remain = appears - now() + 10
+                        remain = appears - now() + 10 + random_delay
                         status['message'] = 'Early for {:6f},{:6f}; waiting {}s...'.format(step_location[0], step_location[1], remain)
                         if first_loop:
                             log.info(status['message'])
@@ -476,6 +481,24 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                     log.info(status['message'])
                     # No sleep here; we've not done anything worth sleeping for. Plus we clearly need to catch up!
                     continue
+
+                # add --speed-limit
+                speed_limit = args.speed_limit * 1000.0 / 3600.0  # convert to mps to avoid divide by zero errors
+                if first_run:
+                    last_location = step_location
+                    first_run = False
+                elif speed_limit > 0:
+                    distance = geopy.distance.distance(last_location, step_location).meters
+                    time_elapsed = 0.001 if int(round(time.time() * 1000.0)) - last_scan_time == 0 else int(round(time.time() * 1000.0)) - last_scan_time
+                    speed = distance / (time_elapsed / 1000.0)
+                    if speed > speed_limit:
+                        speed_sleep = int(math.ceil(((1000.0 * distance / speed_limit) - time_elapsed) / 1000.0))
+                        speed_sleep = args.max_speed_limit_sleep if speed_sleep > args.max_speed_limit_sleep and args.max_speed_limit_sleep > 0 else speed_sleep
+                        status['message'] = 'Sleeping an additional {} seconds to stay under speed limit'.format(speed_sleep)
+                        log.info("Sleeping an additional %d seconds to stay under speed limit", speed_sleep)
+                        time.sleep(speed_sleep)
+
+                last_location = step_location
 
                 status['message'] = 'Searching at {:6f},{:6f}'.format(step_location[0], step_location[1])
                 log.info(status['message'])
@@ -569,8 +592,9 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                 status['location'] = step_location
 
                 # Always delay the desired amount after "scan" completion
-                status['message'] += ', sleeping {}s until {}'.format(args.scan_delay, time.strftime('%H:%M:%S', time.localtime(time.time() + args.scan_delay)))
-                time.sleep(args.scan_delay)
+                last_scan_time = int(round(time.time() * 1000))
+                status['message'] += ', sleeping {}s until {}'.format(args.scan_delay + random_delay, time.strftime('%H:%M:%S', time.localtime(time.time() + args.scan_delay + random_delay)))
+                time.sleep(args.scan_delay + random_delay)
 
         # catch any process exceptions, log them, and continue the thread
         except Exception as e:
