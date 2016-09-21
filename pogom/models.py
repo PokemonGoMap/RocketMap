@@ -15,7 +15,7 @@ from playhouse.pool import PooledMySQLDatabase
 from playhouse.shortcuts import RetryOperationalError
 from playhouse.migrate import migrate, MySQLMigrator, SqliteMigrator
 from datetime import datetime, timedelta
-from base64 import b64encode
+from base64 import b64encode, b64decode
 from cachetools import TTLCache
 from cachetools import cached
 
@@ -715,6 +715,48 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue):
         'count': len(pokemons) + len(pokestops) + len(gyms),
         'gyms': gyms,
     }
+
+
+def add_webhook(wh_type, wh_message, db_queue):
+    if wh_type == 'pokemon':
+        pokemons = {}
+        pokemons[1] = {
+            'encounter_id': wh_message['encounter_id'],
+            'spawnpoint_id': wh_message['spawnpoint_id'],
+            'pokemon_id': wh_message['pokemon_id'],
+            'latitude': wh_message['latitude'],
+            'longitude': wh_message['longitude'],
+            'disappear_time': datetime.utcfromtimestamp(wh_message['disappear_time'])
+        }
+        db_queue.put((Pokemon, pokemons))
+    elif wh_type == 'pokestop':
+        l_e = None
+        if wh_message['lure_expiration'] is not None:
+            l_e = datetime.utcfromtimestamp(wh_message['lure_expiration'])
+        pokestops = {}
+        pokestops[1] = {
+            'pokestop_id': b64decode(wh_message['pokestop_id']),
+            'enabled': wh_message['enabled'],
+            'latitude': wh_message['latitude'],
+            'longitude': wh_message['longitude'],
+            'last_modified': datetime.utcfromtimestamp(wh_message['last_modified']),
+            'lure_expiration': l_e,
+            'active_fort_modifier': wh_message["active_fort_modifier"]
+        }
+        db_queue.put((Pokestop, pokestops))
+    elif wh_type == 'gym':
+        gyms = {}
+        gyms[1] = {
+            'gym_id': b64decode(wh_message['gym_id']),
+            'team_id': wh_message['team_id'],
+            'guard_pokemon_id': wh_message['guard_pokemon_id'],
+            'gym_points': wh_message['gym_points'],
+            'enabled': wh_message['enabled'],
+            'latitude': wh_message['latitude'],
+            'longitude': wh_message['longitude'],
+            'last_modified': datetime.utcfromtimestamp(wh_message['last_modified']),
+        }
+        db_queue.put((Gym, gyms))
 
 
 def parse_gyms(args, gym_responses, wh_update_queue):

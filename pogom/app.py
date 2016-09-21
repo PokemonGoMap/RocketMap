@@ -14,7 +14,7 @@ from datetime import timedelta
 from collections import OrderedDict
 
 from . import config
-from .models import Pokemon, Gym, Pokestop, ScannedLocation, MainWorker, WorkerStatus
+from .models import Pokemon, Gym, Pokestop, ScannedLocation, MainWorker, WorkerStatus, add_webhook
 
 log = logging.getLogger(__name__)
 compress = Compress()
@@ -24,6 +24,7 @@ class Pogom(Flask):
     def __init__(self, import_name, **kwargs):
         super(Pogom, self).__init__(import_name, **kwargs)
         compress.init_app(self)
+        args = get_args()
         self.json_encoder = CustomJSONEncoder
         self.route("/", methods=['GET'])(self.fullmap)
         self.route("/raw_data", methods=['GET'])(self.raw_data)
@@ -35,12 +36,17 @@ class Pogom(Flask):
         self.route("/stats", methods=['GET'])(self.get_stats)
         self.route("/status", methods=['GET'])(self.get_status)
         self.route("/status", methods=['POST'])(self.post_status)
+        if args.webhook_server_path is not None:
+            self.route("/" + args.webhook_server_path, methods=['POST'])(self.receive_webhook)
 
     def set_search_control(self, control):
         self.search_control = control
 
     def set_location_queue(self, queue):
         self.location_queue = queue
+
+    def set_db_queue(self, queue):
+        self.db_queue = queue
 
     def set_current_location(self, location):
         self.current_location = location
@@ -267,6 +273,11 @@ class Pogom(Flask):
         else:
             d['login'] = 'failed'
         return jsonify(d)
+
+    def receive_webhook(self):
+        d = request.json
+        add_webhook(d['type'], d['message'], self.db_queue)
+        return ""
 
 
 class CustomJSONEncoder(JSONEncoder):
