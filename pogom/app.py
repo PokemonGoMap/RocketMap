@@ -32,6 +32,8 @@ class Pogom(Flask):
         self.route("/mobile", methods=['GET'])(self.list_pokemon)
         self.route("/search_control", methods=['GET'])(self.get_search_control)
         self.route("/search_control", methods=['POST'])(self.post_search_control)
+        self.route("/step_limit", methods=['GET'])(self.get_step_limit)
+        self.route("/step_limit", methods=['POST'])(self.post_step_limit)
         self.route("/stats", methods=['GET'])(self.get_stats)
         self.route("/status", methods=['GET'])(self.get_status)
         self.route("/status", methods=['POST'])(self.post_status)
@@ -63,10 +65,31 @@ class Pogom(Flask):
             return jsonify({'message': 'invalid use of api'})
         return self.get_search_control()
 
+    def get_step_limit(self):
+        return jsonify({'limit': config['STEP_LIMIT']})
+
+    def post_step_limit(self):
+        args = get_args()
+        if args.fixed_location or not args.step_control:
+            return 'Step limit control is disabled', 403
+        if request.args:
+            limit = request.args.get('limit', type=int)
+            if limit and limit > 0:
+                config['STEP_LIMIT'] = limit
+                log.info('Step limit changed to: %s', config['STEP_LIMIT'])
+                # some dirty workaround to restart search thread
+                self.location_queue.put((self.current_location[0], self.current_location[1], 0))
+            else:
+                return jsonify({'message': 'invalid step limit'})
+        else:
+            return jsonify({'message': 'invalid use of api'})
+        return self.get_step_limit()
+
     def fullmap(self):
         args = get_args()
         fixed_display = "none" if args.fixed_location else "inline"
         search_display = "inline" if args.search_control else "none"
+        step_display = "inline" if args.step_control and not args.fixed_location else "none"
 
         return render_template('map.html',
                                lat=self.current_location[0],
@@ -74,7 +97,8 @@ class Pogom(Flask):
                                gmaps_key=config['GMAPS_KEY'],
                                lang=config['LOCALE'],
                                is_fixed=fixed_display,
-                               search_control=search_display
+                               search_control=search_display,
+                               step_control=step_display
                                )
 
     def raw_data(self):
