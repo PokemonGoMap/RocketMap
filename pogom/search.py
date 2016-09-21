@@ -591,7 +591,10 @@ def check_login(args, account, api, position, proxy_url):
 
     # Try to login (a few times, but don't get stuck here)
     i = 0
-    api.set_position(position[0], position[1], position[2])
+    new_position = jitterLocation(position, maxMeters=15)
+    api.set_position(*new_position)
+    # currentPos = api.get_position()
+    # log.info("Position of {} is: {}, {}".format(account['username'], currentPos[0], currentPos[1], currentPos[2]))
     while i < args.login_retries:
         try:
             if proxy_url:
