@@ -222,7 +222,7 @@ class HexSearch(BaseScheduler):
 class HexSearchSpawnpoint(HexSearch):
 
     def _any_spawnpoints_in_range(self, coords, spawnpoints):
-        return any(geopy.distance.distance(coords, x).meters <= 70 for x in spawnpoints)
+        return any(geopy.distance.great_circle(coords, x).meters <= 70 for x in spawnpoints)
 
     # Extend the generate_locations function to remove locations with no spawnpoints
     def _generate_locations(self):

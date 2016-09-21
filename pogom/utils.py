@@ -172,6 +172,12 @@ def get_args():
     parser.add_argument('-spp', '--status-page-password', default=None,
                         help='Set the status page password')
     parser.add_argument('-el', '--encrypt-lib', help='Path to encrypt lib to be used instead of the shipped ones')
+    parser.add_argument('-sl', '--speed-limit',
+                        help='If next scan would cause the account to move above specified speed in kmph in a straight line, sleep until such time that it could reasonably move that distance',
+                        type=float, default=0)
+    parser.add_argument('-msls', '--max-speed-limit-sleep',
+                        help='Maximum time in seconds to sleep when trying to stay under the speed limit',
+                        type=float, default=0)
     verbosity = parser.add_mutually_exclusive_group()
     verbosity.add_argument('-v', '--verbose', help='Show debug messages from PomemonGo-Map and pgoapi. Optionally specify file to log to.', nargs='?', const='nofile', default=False, metavar='filename.log')
     verbosity.add_argument('-vv', '--very-verbose', help='Like verbose, but show debug messages from all modules as well.  Optionally specify file to log to.', nargs='?', const='nofile', default=False, metavar='filename.log')
@@ -341,11 +347,11 @@ def get_args():
 
         # Decide which scanning mode to use
         if args.spawnpoint_scanning:
-            args.scheduler = 'SpawnScan'
+            config['SCHEDULER'] = 'SpawnScan'
         elif args.spawnpoints_only:
-            args.scheduler = 'HexSearchSpawnpoint'
+            config['SCHEDULER'] = 'HexSearchSpawnpoint'
         else:
-            args.scheduler = 'HexSearch'
+            config['SCHEDULER'] = 'HexSearch'
 
     return args
 

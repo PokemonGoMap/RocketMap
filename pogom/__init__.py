@@ -6,5 +6,6 @@ config = {
     'LOCALES_DIR': 'static/dist/locales',
     'ROOT_PATH': '',
     'DATA_DIR': 'static/dist/data',
-    'GMAPS_KEY': None
+    'GMAPS_KEY': None,
+    'SCHEDULER': ''
 }

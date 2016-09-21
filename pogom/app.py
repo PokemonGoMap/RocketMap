@@ -32,6 +32,8 @@ class Pogom(Flask):
         self.route("/mobile", methods=['GET'])(self.list_pokemon)
         self.route("/search_control", methods=['GET'])(self.get_search_control)
         self.route("/search_control", methods=['POST'])(self.post_search_control)
+        self.route("/spawnpoints_only", methods=['GET'])(self.get_spawnpoints_only)
+        self.route("/spawnpoints_only", methods=['POST'])(self.post_spawnpoints_only)
         self.route("/stats", methods=['GET'])(self.get_stats)
         self.route("/status", methods=['GET'])(self.get_status)
         self.route("/status", methods=['POST'])(self.post_status)
@@ -63,10 +65,30 @@ class Pogom(Flask):
             return jsonify({'message': 'invalid use of api'})
         return self.get_search_control()
 
+    def get_spawnpoints_only(self):
+        return jsonify({'status': config['SCHEDULER'] == 'HexSearchSpawnpoint'})
+
+    def post_spawnpoints_only(self):
+        args = get_args()
+        if args.fixed_location:
+            return 'Fixed location is enabled', 403
+        if request.args:
+            action = request.args.get('action', 'none')
+            if action == 'on':
+                config['SCHEDULER'] = 'HexSearchSpawnpoint'
+            elif action == 'off':
+                config['SCHEDULER'] = 'HexSearch'
+            else:
+                return jsonify({'message': 'invalid action set'})
+        else:
+            return jsonify({'message': 'invalid use of api'})
+        return self.get_spawnpoints_only()
+
     def fullmap(self):
         args = get_args()
         fixed_display = "none" if args.fixed_location else "inline"
         search_display = "inline" if args.search_control else "none"
+        spawnpoints_only_display = "inline" if not args.fixed_location and not args.spawnpoint_scanning and args.speed_limit > 0 else "none"
 
         return render_template('map.html',
                                lat=self.current_location[0],
@@ -74,7 +96,8 @@ class Pogom(Flask):
                                gmaps_key=config['GMAPS_KEY'],
                                lang=config['LOCALE'],
                                is_fixed=fixed_display,
-                               search_control=search_display
+                               search_control=search_display,
+                               spawnpoints_only=spawnpoints_only_display
                                )
 
     def raw_data(self):

@@ -22,6 +22,8 @@
 #gym-info:              # enables detailed gym info collection (default false)
 #min-seconds-left:      # time that must be left on a spawn before considering it too late and skipping it (default 0)
 #status-name:           # enables writing status updates to the database - if you use multiple processes, each needs a unique value
+#speed-limit:           # if next scan would cause the account to move above specified speed in kmph in a straight line, sleep until such time that it could reasonably move that distance
+#max-speed-limit-sleep: # maximum time in seconds to sleep when trying to stay under the speed limit
 
 # Misc
 #gmaps-key:             # your Google Maps API key
