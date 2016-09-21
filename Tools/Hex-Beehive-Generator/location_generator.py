@@ -9,9 +9,9 @@ parser.add_argument("-lat", "--lat", help="latitude", type=float, required=True)
 parser.add_argument("-lon", "--lon", help="longitude", type=float, required=True)
 parser.add_argument("-st", "--steps", help="steps", default=5, type=int)
 parser.add_argument("-lp", "--leaps", help="like 'steps' but for workers instead of scans", default=3, type=int)
-parser.add_argument("-o", "--output", default="../../beehive.sh", help="output file for the script")
+parser.add_argument("-o", "--output", default="beehive.sh", help="output file for the script")
 parser.add_argument("-t", "--thread", default=1, help="Number of accounts and threads per worker")
-parser.add_argument("-or", "--output_raw", default="../../beehive.txt", help="output file for the raw coords txt")
+parser.add_argument("-or", "--output_raw", default="beehive.txt", help="output file for the raw coords txt")
 parser.add_argument("--accounts", help="List of your accounts, in csv [username],[password] format", default=None)
 parser.add_argument("--auth", help="Auth method (ptc or google)", default="ptc")
 parser.add_argument("-v", "--verbose", help="Print lat/lng to stdout for debugging", action='store_true', default=False)
@@ -45,8 +45,8 @@ if args.windows:
     server_template = 'Start "Server" /d {branchpath} /MIN {pythonpath} {executable} {actual_params}\nping 127.0.0.1 -n 6 > nul\n\n'.format(
         branchpath=branchpath, pythonpath=pythonpath, executable=executable, actual_params = actual_server_params # ends here
     )
-    if args.output == "../../beehive.sh":
-        args.output = "../../beehive.bat"
+    if args.output == "beehive.sh":
+        args.output = "beehive.bat"
 
 if args.accounts:
     print("Reading usernames/passwords from {}".format(args.accounts))
@@ -138,6 +138,6 @@ location_and_auth = [(i, j) for i, j in itertools.izip(locations, accountStack)]
 for i, (location, auth) in enumerate(location_and_auth):
     threadname = "Movable{}".format(i)
     output_fh.write(worker_template.format(lat=location.lat, lon=location.lon, steps=args.steps, auth=auth, threadname=threadname))
-    coords_fh.write(str(location.lat) + ", " + str(location.lon) + "\n")
+    coords_fh.write("{};{};{};Beehive {}\n".format(location.lat, location.lon, steps, i))
     if args.verbose:
-        print("{}, {}".format(location.lat, location.lon))
+        print("{};{};{};Beehive {}".format(location.lat, location.lon, steps, i))
