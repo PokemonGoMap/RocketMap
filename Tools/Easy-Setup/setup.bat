@@ -30,7 +30,7 @@ echo Python path not found, please specify or install.
 set /p PATH2= Specify Python path: 
 )
 
-setx PATH "%PATH%;%PATH2%;%PATH2%\Scripts;"
+setx PATH %PATH%;%PATH2%;%PATH2%\Scripts
 
 popd
 
