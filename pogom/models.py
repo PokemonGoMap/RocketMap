@@ -700,7 +700,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue):
     if len(gyms):
         db_update_queue.put((Gym, gyms))
 
-    log.info('Parsing found %d pokemons, %d pokestops, and %d gyms',
+    log.info('Parsing found %d Pokémon, %d pokestops, and %d gyms',
              len(pokemons),
              len(pokestops),
              len(gyms))
