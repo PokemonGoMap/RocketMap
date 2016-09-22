@@ -69,6 +69,14 @@ def get_args():
     parser.add_argument('-sd', '--scan-delay',
                         help='Time delay between requests in scan threads',
                         type=float, default=10)
+    parser.add_argument('-enc', '--encounter',
+                        help='Start an encounter to gather IVs and moves',
+                        action='store_true', default=False)
+    parser.add_argument('-ed', '--encounter-delay',
+                        help='Time delay between encounter pokemon in scan threads',
+                        type=float, default=1)
+    parser.add_argument('-eblk', '--encounter-blacklist', action='append', default=[],
+                        help=' Pokemon to never encounter')
     parser.add_argument('-ld', '--login-delay',
                         help='Time delay between each login attempt',
                         type=float, default=5)
@@ -339,6 +347,8 @@ def get_args():
         if len(args.accounts) == 0:
             print(sys.argv[0] + ": Error: no accounts specified. Use -a, -u, and -p or --accountcsv to add accounts")
             sys.exit(1)
+
+        args.encounter_blacklist = [int(i) for i in args.encounter_blacklist]
 
         # Decide which scanning mode to use
         if args.spawnpoint_scanning:
