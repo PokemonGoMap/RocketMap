@@ -491,7 +491,7 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                 check_login(args, account, api, step_location, status['proxy_url'])
 
                 # Make the actual request (finally!)
-                response_dict = map_request(api, step_location, args.jitter)
+                response_dict = map_request(api, step_location, args.spawnpoint_scanning)
 
                 # G'damnit, nothing back. Mark it up, sleep, carry on
                 if not response_dict:
@@ -615,9 +615,9 @@ def check_login(args, account, api, position, proxy_url):
     time.sleep(args.scan_delay)
 
 
-def map_request(api, position, jitter=False):
+def map_request(api, position, noJitter=False):
     # create scan_location to send to the api based off of position, because tuples aren't mutable
-    if jitter:
+    if not noJitter:
         # jitter it, just a little bit.
         scan_location = jitterLocation(position)
         log.debug('Jittered to: %f/%f/%f', scan_location[0], scan_location[1], scan_location[2])
