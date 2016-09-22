@@ -101,17 +101,16 @@ If you are running a ngrok container, you've got to stop it as well. To start th
 
 ## Running on docker cloud 
 
-If you want to run pokemongo-map on a service that doesn't support arguments like docker cloud or ECS, you'll need to use one of the more specialised images out there that supports variables. The image `ashex/pokemongo-map` handles variables, below is an example:
+If you want to run pokemongo-map on a service that doesn't support arguments like docker cloud or ECS, you'll need to pass settings via variables below is an example:
 
 ```bash
   docker run -d -P \
-    -e "AUTH_SERVICE=ptc" \
-    -e "USERNAME=UserName" \
-    -e "PASSWORD=Password" \
-    -e "LOCATION=Seattle, WA" \
-    -e "STEP_LIMIT=5" \
-    -e "GMAPS_KEY=SUPERSECRET" \
-    ashex/pokemongo-map
+    -e "POGOM_AUTH_SERVICE=ptc" \
+    -e "POGOM_USERNAME=UserName" \
+    -e "POGOM_PASSWORD=Password" \
+    -e "POGOM_LOCATION=Seattle, WA" \
+    -e "POGOM_GMAPS_KEY=SUPERSECRET" \
+    pokemap/pokemongo-map
 ```
 
 ## Advanced Docker Setup
