@@ -30,7 +30,6 @@
     <link rel="apple-touch-icon" href="{{ url_for('static', filename='appicons/180x180.png').lstrip('/') }}" sizes="180x180">
     <link rel="stylesheet" href="{{ url_for('static', filename='dist/css/app.min.css').lstrip('/') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.0/jquery-ui.min.css">
-    <script src="{{ url_for('static', filename='js/vendor/modernizr.custom.js').lstrip('/') }}"></script>
   </head>
   <body id="top">
     <div class="wrapper">
@@ -267,7 +266,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/skel/3.0.1/skel.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/js/select2.min.js"></script>
     <script src="{{ url_for('static', filename='dist/js/app.min.js').lstrip('/') }}"></script>
-    <script src="{{ url_for('static', filename='js/vendor/classie.js').lstrip('/') }}"></script>
     <script>
       var centerLat = {{lat}};
       var centerLng = {{lng}};
