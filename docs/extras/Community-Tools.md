@@ -4,7 +4,7 @@ Some useful tools made by the community for the community
 ## [ptc-acc-gen](https://github.com/FrostTheFox/ptc-acc-gen)
 A PTC account generation script, generates any # of accounts. ToS verification/trainer name setting via PogoPlayer. Google Scripts script to accept email verification included. Outputs in .csv format. Semi-auto (Manually finish captcha) and automatic (Automatically finish captcha using 2captcha) modes.
 
-## [PTC Account Generator](https://github.com/skvvv/pikapy)
+## [PTC Account Generator](https://github.com/sriyegna/Pikaptcha)
 ### An automation script that can create any number of Nintendo Pokémon Trainer Club accounts
 Used to generate any desired number of PTC accounts - TOS verifies them and includes a google script that can be used to verify all the emails. Outputs generated account information in .csv format.
 
