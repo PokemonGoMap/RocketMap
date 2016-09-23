@@ -510,10 +510,14 @@ function initRarities () {
           loadingDiv.show()
         }
       },
-      complete: function () {
+      complete: function (data) {
+        var updateText = 'Rarities Updated!'
+        if (data.responseText === 'Disabled') {
+          updateText = 'Rarity Update Disabled'
+        }
         raritiesUpdating = false
         // Change to finished updating text
-        raritiesDiv.addClass('no-before').find('span').html('Rarities Updated!')
+        raritiesDiv.addClass('no-before').find('span').html(updateText)
         loadingDiv.hide()
         raritiesDiv.show()
         setTimeout(function () {
