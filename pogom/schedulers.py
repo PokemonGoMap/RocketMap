@@ -37,12 +37,11 @@ If implementing a new scheduler, place it before SchedulerFactory, and add it to
 
 import logging
 import math
-import geopy
 import json
 from queue import Empty
 from operator import itemgetter
 from .transform import get_new_coords
-from .models import hex_bounds, Pokemon
+from .models import Pokemon
 from .utils import now, cur_sec
 
 log = logging.getLogger(__name__)
@@ -216,6 +215,7 @@ class HexSearch(BaseScheduler):
             self.queues[0].put(location)
             log.debug("Added location {}".format(location))
         self.size = len(self.locations)
+
 
 # Spawn Scan searches known spawnpoints at the specific time they spawn.
 class SpawnScan(BaseScheduler):
