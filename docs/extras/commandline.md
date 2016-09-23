@@ -35,7 +35,7 @@
     optional arguments:
       -h, --help            Show this help message and exit.
       -cf CONFIG, --config CONFIG
-                            Configuration file.
+                            Configuration file.  See docs/extras/configuration-files.md
       -a AUTH_SERVICE, --auth-service AUTH_SERVICE
                             Auth Services, either one for all accounts or one per
                             account: ptc or google. Defaults all to ptc. 
