@@ -8,7 +8,7 @@
                         [-ld LOGIN_DELAY] [-lr LOGIN_RETRIES] [-mf MAX_FAILURES]
                         [-msl MIN_SECONDS_LEFT] [-dc] [-H HOST] [-P PORT]
                         [-L LOCALE] [-c] [-m MOCK] [-ns] [-os] [-nsc] [-fl] -k
-                        GMAPS_KEY [--spawnpoints-only] [-C] [-D DB] [-cd] [-np]
+                        GMAPS_KEY [-C] [-D DB] [-cd] [-np]
                         [-ng] [-nk] [-ss [SPAWNPOINT_SCANNING]]
                         [--dump-spawnpoints] [-pd PURGE_DATA] [-px PROXY]
                         [-pxt PROXY_TIMEOUT] [-pxd PROXY_DISPLAY]
@@ -92,7 +92,6 @@
                             Hides the search bar for use in shared maps.
       -k GMAPS_KEY, --gmaps-key GMAPS_KEY
                             Google Maps Javascript API Key.
-      --spawnpoints-only    Only scan locations with spawnpoints in them.
       -C, --cors            Enable CORS on web server.
       -D DB, --db DB        Database filename.
       -cd, --clear-db       Deletes the existing database before starting the
