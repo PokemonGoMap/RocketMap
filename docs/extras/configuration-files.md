@@ -4,7 +4,7 @@ Configuration files can be used to organize server/scanner deployments.  Any lon
 
 ##  Default file
 
-The default configuration file is *config/config.ini* underneath the project home.   However, this location can be changed by setting the environment variable POGOMAP_CONFIG or using the -cf or --config flag on the command line.   In the event that both the environment variable and the command line argument exists, the command line value will take precedence.
+The default configuration file is *config/config.ini* underneath the project home.   However, this location can be changed by setting the environment variable POGOMAP_CONFIG or using the -cf or --config flag on the command line.   In the event that both the environment variable and the command line argument exists, the command line value will take precedence.  Note that all relative pathnames are relative to the current working directory (often, but not necessarily where runserver.py is located).
 
 ## Setting configuration key/value pairs
 
@@ -25,6 +25,7 @@ The default configuration file is *config/config.ini* underneath the project hom
 
 ## Example config file
 
+  <pre>
   -- contents of file myconfig.seattle --
   username: [ randomjoe, bob ]
   password: [ password1, password2 ]
@@ -33,6 +34,7 @@ The default configuration file is *config/config.ini* underneath the project hom
   gmaps-key: MyGmapsKeyGoesHereSomeLongString
   print-status: True
   -- end of file --
+  </pre>
 
   Running this config file as:
 
@@ -44,6 +46,6 @@ The default configuration file is *config/config.ini* underneath the project hom
 
 ## running multiple configs
 
-   One common way of running multiple locations is to use two configuration files, with the first running as both a scanner and a server, and in the second configuration file, use the *no-server* flag to not start the web interface for the second configuration.   In the config file, this would mean including a line like:
+   One common way of running multiple locations is to use two configuration files each with common or default database values, but with different location specs. The first configuration running as both a scanner and a server, and in the second configuration file, use the *no-server* flag to not start the web interface for the second configuration.   In the config file, this would mean including a line like:
 
    no-server: True
