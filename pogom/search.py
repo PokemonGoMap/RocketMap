@@ -88,7 +88,7 @@ def switch_status_printer(display_type, current_page):
 
 
 # Thread to print out the status of each worker
-def status_printer(threadStatus, search_items_queue, db_updates_queue, wh_queue, account_queue, account_failures):
+def status_printer(threadStatus, search_items_queues, db_updates_queue, wh_queue, account_queue, account_failures):
     display_type = ["workers"]
     current_page = [1]
 
@@ -126,7 +126,7 @@ def status_printer(threadStatus, search_items_queue, db_updates_queue, wh_queue,
                     skip_total += threadStatus[item]['skip']
 
             # Print the queue length
-            status_text.append('Queues: {} search items, {} db updates, {} webhook.  Total skipped items: {}. Spare accounts available: {}. Accounts on hold: {}'.format(search_items_queue.qsize(), db_updates_queue.qsize(), wh_queue.qsize(), skip_total, account_queue.qsize(), len(account_failures)))
+            status_text.append('Queues: {} search items, {} db updates, {} webhook.  Total skipped items: {}. Spare accounts available: {}. Accounts on hold: {}'.format(str([q.qsize() for q in search_items_queues]), db_updates_queue.qsize(), wh_queue.qsize(), skip_total, account_queue.qsize(), len(account_failures)))
 
             # Print status of overseer
             status_text.append('{} Overseer: {}'.format(threadStatus['Overseer']['scheduler'], threadStatus['Overseer']['message']))
@@ -255,7 +255,11 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb, encrypti
 
     log.info('Search overseer starting')
 
-    search_items_queue = Queue()
+    if args.scheduler.lower() == "spawnscanspeedlimit":
+        search_items_queues = [Queue() for i in range(args.workers)]
+    else:
+        search_items_queues = [Queue()]
+
     account_queue = Queue()
     threadStatus = {}
 
@@ -281,7 +285,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb, encrypti
         log.info('Starting status printer thread')
         t = Thread(target=status_printer,
                    name='status_printer',
-                   args=(threadStatus, search_items_queue, db_updates_queue, wh_queue, account_queue, account_failures))
+                   args=(threadStatus, search_items_queues, db_updates_queue, wh_queue, account_queue, account_failures))
         t.daemon = True
         t.start()
 
@@ -330,7 +334,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb, encrypti
 
         t = Thread(target=search_worker_thread,
                    name='search-worker-{}'.format(i),
-                   args=(args, account_queue, account_failures, search_items_queue, pause_bit,
+                   args=(args, account_queue, account_failures, search_items_queues[i % len(search_items_queues)], pause_bit,
                          encryption_lib_path, threadStatus[workerId],
                          db_updates_queue, wh_queue))
         t.daemon = True
@@ -340,7 +344,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb, encrypti
     current_location = False
 
     # Create the appropriate type of scheduler to handle the search queue.
-    scheduler = schedulers.SchedulerFactory.get_scheduler(args.scheduler, [search_items_queue], threadStatus, args)
+    scheduler = schedulers.SchedulerFactory.get_scheduler(args.scheduler, search_items_queues, threadStatus, args)
 
     # The real work starts here but will halt on pause_bit.set()
     while True:
@@ -366,19 +370,17 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb, encrypti
 
         # If there are no search_items_queue either the loop has finished (or been
         # cleared above) -- either way, time to fill it back up
-        if search_items_queue.empty():
-            log.debug('Search queue empty, scheduling more items to scan')
-            scheduler.schedule()
-        else:
-            nextitem = search_items_queue.queue[0]
-            threadStatus['Overseer']['message'] = 'Processing search queue, next item is {:6f},{:6f}'.format(nextitem[1][0], nextitem[1][1])
-            # If times are specified, print the time of the next queue item, and how many seconds ahead/behind realtime
-            if nextitem[2]:
-                threadStatus['Overseer']['message'] += ' @ {}'.format(time.strftime('%H:%M:%S', time.localtime(nextitem[2])))
-                if nextitem[2] > now():
-                    threadStatus['Overseer']['message'] += ' ({}s ahead)'.format(nextitem[2] - now())
-                else:
-                    threadStatus['Overseer']['message'] += ' ({}s behind)'.format(now() - nextitem[2])
+        threadStatus['Overseer']['message'] = ''
+        for search_items_queue in search_items_queues:
+            if search_items_queue.empty():
+                log.debug('Search queue empty, scheduling more items to scan')
+                threadStatus['Overseer']['message'] = 'Some queues are empty, scheduling.. '
+                scheduler.schedule()
+
+        try:
+            threadStatus['Overseer']['message'] += scheduler.print_status()
+        except AttributeError:
+            pass
 
         # Now we just give a little pause here
         time.sleep(1)
@@ -451,17 +453,17 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
 
                 # Grab the next thing to search (when available)
                 status['message'] = 'Waiting for item from queue'
-                step, step_location, appears, leaves = search_items_queue.get()
+                step, step_location, scan_time, leaves = search_items_queue.get()
 
                 # too soon?
-                if appears and now() < appears + 10:  # adding a 10 second grace period
+                if scan_time and now() < scan_time:  # adding a 10 second grace period
                     first_loop = True
                     paused = False
-                    while now() < appears + 10:
+                    while now() < scan_time:
                         if pause_bit.is_set():
                             paused = True
                             break  # why can't python just have `break 2`...
-                        remain = appears - now() + 10
+                        remain = scan_time - now()
                         status['message'] = 'Early for {:6f},{:6f}; waiting {}s...'.format(step_location[0], step_location[1], remain)
                         if first_loop:
                             log.info(status['message'])

@@ -45,3 +45,8 @@ Note: in this mode -st does nothing
 for generating the spawns to use with Spawnpoint Scanning it is recommended to scan the area with a scan that completes in 10 minutes for at least 1 hour, this should guarantee that all spawns are found
 
 spawn files can also be generated with an external tool such as spawnScan
+
+### Speed Limiting
+
+Speed limiting scheduler is not used by default. To use it, specify a positive max speed via `-ms` or `-max-speed` (units in m/s). There are two parameters involved: max-speed (defaults to off value of 0), max-delay (defaults to 60s). You can tune the parameters via `-ms` or `-md`, respectively. Scans are assigned to each worker so that each worker stays under the speed limit. A delay will be added if necessary. If maximum delay needed is over max-delay, the scan point will be dropped. To eliminate dropped points, try either adding more accounts, increasing max-speed, or increasing max-delay.
+
