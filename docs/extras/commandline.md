@@ -1,8 +1,8 @@
 # Command Line
 
     usage: runserver.py
-                        [-h] [-a AUTH_SERVICE] [-u USERNAME] [-p PASSWORD]
-                        [-w WORKERS] [-asi ACCOUNT_SEARCH_INTERVAL]
+                        [-h] [-cf CONFIG] [-a AUTH_SERVICE] [-u USERNAME]
+                        [-p PASSWORD] [-w WORKERS] [-asi ACCOUNT_SEARCH_INTERVAL]
                         [-ari ACCOUNT_REST_INTERVAL] [-ac ACCOUNTCSV]
                         [-l LOCATION] [-j] [-st STEP_LIMIT] [-sd SCAN_DELAY]
                         [-ld LOGIN_DELAY] [-lr LOGIN_RETRIES] [-mf MAX_FAILURES]
@@ -24,7 +24,7 @@
                         [-v [filename.log] | -vv [filename.log] | -d]
     
     Args that start with '--' (eg. -a) can also be set in a config file
-    (C:\Users\User\Desktop\Pogom\PokemonGo-map\pogom\../config/config.ini or ).
+    (default: <PokemonGo-Map Project Root>/config/config.ini or via -cf).
     The recognized syntax for setting (key, value) pairs is based on the INI and
     YAML formats (e.g. key=value or foo=TRUE). For full documentation of the
     differences from the standards please refer to the ConfigArgParse
@@ -34,6 +34,8 @@
     
     optional arguments:
       -h, --help            Show this help message and exit.
+      -cf CONFIG, --config CONFIG
+                            Configuration file.  See docs/extras/configuration-files.md
       -a AUTH_SERVICE, --auth-service AUTH_SERVICE
                             Auth Services, either one for all accounts or one per
                             account: ptc or google. Defaults all to ptc. 
