@@ -37,12 +37,11 @@ If implementing a new scheduler, place it before SchedulerFactory, and add it to
 
 import logging
 import math
-import geopy
 import json
 from queue import Empty
 from operator import itemgetter
 from .transform import get_new_coords
-from .models import hex_bounds, Pokemon
+from .models import Pokemon
 from .utils import now, cur_sec
 
 log = logging.getLogger(__name__)
@@ -218,28 +217,6 @@ class HexSearch(BaseScheduler):
         self.size = len(self.locations)
 
 
-# Spawn Only Hex Search works like Hex Search, but skips locations that have no known spawnpoints
-class HexSearchSpawnpoint(HexSearch):
-
-    def _any_spawnpoints_in_range(self, coords, spawnpoints):
-        return any(geopy.distance.distance(coords, x).meters <= 70 for x in spawnpoints)
-
-    # Extend the generate_locations function to remove locations with no spawnpoints
-    def _generate_locations(self):
-        n, e, s, w = hex_bounds(self.scan_location, self.step_limit)
-        spawnpoints = set((d['latitude'], d['longitude']) for d in Pokemon.get_spawnpoints(s, w, n, e))
-
-        if len(spawnpoints) == 0:
-            log.warning('No spawnpoints found in the specified area!  (Did you forget to run a normal scan in this area first?)')
-
-        # Call the original _generate_locations
-        locations = super(HexSearchSpawnpoint, self)._generate_locations()
-
-        # Remove items with no spawnpoints in range
-        locations = [coords for coords in locations if self._any_spawnpoints_in_range(coords[1], spawnpoints)]
-        return locations
-
-
 # Spawn Scan searches known spawnpoints at the specific time they spawn.
 class SpawnScan(BaseScheduler):
     def __init__(self, queues, status, args):
@@ -359,7 +336,6 @@ class SpawnScan(BaseScheduler):
 class SchedulerFactory():
     __schedule_classes = {
         "hexsearch": HexSearch,
-        "hexsearchspawnpoint": HexSearchSpawnpoint,
         "spawnscan": SpawnScan
     }
 
