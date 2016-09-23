@@ -1,4 +1,4 @@
-//
+﻿//
 // Global map.js variables
 //
 
@@ -10,6 +10,7 @@ var $selectIconResolution
 var $selectIconSize
 var $selectLuredPokestopsOnly
 var $selectSearchIconMarker
+var $selectGymMarkerStyle
 var $selectLocationIconMarker
 
 var language = document.documentElement.lang === '' ? 'en' : document.documentElement.lang
@@ -38,7 +39,141 @@ var updateWorker
 var lastUpdateTime
 
 var gymTypes = ['Uncontested', 'Mystic', 'Valor', 'Instinct']
-var audio = new Audio('static/sounds/ding.mp3')
+var gymPrestige = [2000, 4000, 8000, 12000, 16000, 20000, 30000, 40000, 50000]
+createjs.Sound.registerSound('static/sounds/ding.mp3', 'ding')
+var pokemonSprites = {
+  normal: {
+    columns: 12,
+    iconWidth: 30,
+    iconHeight: 30,
+    spriteWidth: 360,
+    spriteHeight: 390,
+    filename: 'static/icons-sprite.png',
+    name: 'Normal'
+  },
+  highres: {
+    columns: 7,
+    iconWidth: 65,
+    iconHeight: 65,
+    spriteWidth: 455,
+    spriteHeight: 1430,
+    filename: 'static/icons-large-sprite.png',
+    name: 'High-Res'
+  }
+}
+
+//
+// LocalStorage helpers
+//
+
+var StoreTypes = {
+  Boolean: {
+    parse: function (str) {
+      switch (str.toLowerCase()) {
+        case '1':
+        case 'true':
+        case 'yes':
+          return true
+        default:
+          return false
+      }
+    },
+    stringify: function (b) {
+      return b ? 'true' : 'false'
+    }
+  },
+  JSON: {
+    parse: function (str) {
+      return JSON.parse(str)
+    },
+    stringify: function (json) {
+      return JSON.stringify(json)
+    }
+  },
+  String: {
+    parse: function (str) {
+      return str
+    },
+    stringify: function (str) {
+      return str
+    }
+  },
+  Number: {
+    parse: function (str) {
+      return parseInt(str, 10)
+    },
+    stringify: function (number) {
+      return number.toString()
+    }
+  }
+}
+
+var StoreOptions = {
+  'map_style': {
+    default: 'roadmap',
+    type: StoreTypes.String
+  },
+  'remember_select_exclude': {
+    default: [],
+    type: StoreTypes.JSON
+  },
+  'remember_select_notify': {
+    default: [],
+    type: StoreTypes.JSON
+  },
+  'remember_select_rarity_notify': {
+    default: [],
+    type: StoreTypes.JSON
+  },
+  'showGyms': {
+    default: false,
+    type: StoreTypes.Boolean
+  },
+  'showPokemon': {
+    default: true,
+    type: StoreTypes.Boolean
+  },
+  'showPokestops': {
+    default: true,
+    type: StoreTypes.Boolean
+  },
+  'showLuredPokestopsOnly': {
+    default: 0,
+    type: StoreTypes.Number
+  },
+  'showScanned': {
+    default: false,
+    type: StoreTypes.Boolean
+  },
+  'showSpawnpoints': {
+    default: false,
+    type: StoreTypes.Boolean
+  },
+  'playSound': {
+    default: false,
+    type: StoreTypes.Boolean
+  },
+  'geoLocate': {
+    default: false,
+    type: StoreTypes.Boolean
+  },
+  'lockMarker': {
+    default: isTouchDevice(), // default to true if touch device
+    type: StoreTypes.Boolean
+  },
+  'startAtUserLocation': {
+    default: false,
+    type: StoreTypes.Boolean
+  },
+  'pokemonIcons': {
+    default: 'highres',
+    type: StoreTypes.String
+  },
+  'iconSizeModifier': {
+    default: 0,
+    type: StoreTypes.Number
+  }
+}
 
 //
 // Functions
@@ -386,11 +521,7 @@ function gymLabel (teamName, teamId, gymPoints, latitude, longitude, lastScanned
         </center>
       </div>`
   } else {
-    var gymPrestige = [2000, 4000, 8000, 12000, 16000, 20000, 30000, 40000, 50000]
-    var gymLevel = 1
-    while (gymPoints >= gymPrestige[gymLevel - 1]) {
-      gymLevel++
-    }
+    var gymLevel = getGymLevel(gymPoints)
     str = `
       <div>
         <center>
@@ -424,6 +555,15 @@ function gymLabel (teamName, teamId, gymPoints, latitude, longitude, lastScanned
   }
 
   return str
+}
+
+function getGymLevel (points) {
+  var level = 1
+  while (points >= gymPrestige[level - 1]) {
+    level++
+  }
+
+  return level
 }
 
 function pokestopLabel (expireTime, latitude, longitude) {
@@ -549,7 +689,7 @@ function customizePokemonMarker (marker, item, skipNotification) {
   if (notifiedPokemon.indexOf(item['pokemon_id']) > -1 || notifiedRarity.indexOf(item['pokemon_rarity']) > -1) {
     if (!skipNotification) {
       if (Store.get('playSound')) {
-        audio.play()
+        createjs.Sound.play('ding')
       }
       sendNotification('A wild ' + item['pokemon_name'] + ' appeared!', 'Click to load map', 'static/icons/' + item['pokemon_id'] + '.png', item['latitude'], item['longitude'])
     }
@@ -568,7 +708,7 @@ function setupGymMarker (item) {
       lng: item['longitude']
     },
     map: map,
-    icon: 'static/forts/' + gymTypes[item['team_id']] + '.png'
+    icon: {url: 'static/forts/' + Store.get('gymMarkerStyle') + '/' + gymTypes[item['team_id']] + (item['team_id'] !== 0 ? '_' + getGymLevel(item['gym_points']) : '') + '.png', scaledSize: new google.maps.Size(48, 48)}
   })
 
   if (!marker.rangeCircle && isRangeActive(map)) {
@@ -585,9 +725,14 @@ function setupGymMarker (item) {
 }
 
 function updateGymMarker (item, marker) {
-  marker.setIcon('static/forts/' + gymTypes[item['team_id']] + '.png')
+  marker.setIcon({url: 'static/forts/' + Store.get('gymMarkerStyle') + '/' + gymTypes[item['team_id']] + (item['team_id'] !== 0 ? '_' + getGymLevel(item['gym_points']) : '') + '.png', scaledSize: new google.maps.Size(48, 48)})
   marker.infoWindow.setContent(gymLabel(gymTypes[item['team_id']], item['team_id'], item['gym_points'], item['latitude'], item['longitude'], item['last_scanned'], item['name'], item['pokemon']))
   return marker
+}
+function updateGymIcons () {
+  $.each(mapData.gyms, function (key, value) {
+    mapData.gyms[key]['marker'].setIcon({url: 'static/forts/' + Store.get('gymMarkerStyle') + '/' + gymTypes[mapData.gyms[key]['team_id']] + (mapData.gyms[key]['team_id'] !== 0 ? '_' + getGymLevel(mapData.gyms[key]['gym_points']) : '') + '.png', scaledSize: new google.maps.Size(48, 48)})
+  })
 }
 
 function setupPokestopMarker (item) {
@@ -1098,21 +1243,18 @@ function sendNotification (title, text, icon, lat, lng) {
     return false // Notifications are not present in browser
   }
 
-  if (Notification.permission !== 'granted') {
-    Notification.requestPermission()
-  } else {
-    var notification = new Notification(title, {
+  if (Push.isSupported) {
+    Push.create(title, {
       icon: icon,
       body: text,
-      sound: 'sounds/ding.mp3'
+      vibrate: 1000,
+      onClick: function () {
+        window.focus()
+        this.close()
+
+        centerMap(lat, lng, 20)
+      }
     })
-
-    notification.onclick = function () {
-      window.focus()
-      notification.close()
-
-      centerMap(lat, lng, 20)
-    }
   }
 }
 
@@ -1290,14 +1432,12 @@ function createUpdateWorker () {
 //
 
 $(function () {
-  if (!Notification) {
+  if (!Push.isSupported) {
     console.log('could not load notifications')
     return
   }
 
-  if (Notification.permission !== 'granted') {
-    Notification.requestPermission()
-  }
+  Push.Permission.request()
 })
 
 $(function () {
@@ -1414,6 +1554,20 @@ $(function () {
 
     $selectLocationIconMarker.val(Store.get('locationMarkerStyle')).trigger('change')
   })
+
+  $selectGymMarkerStyle = $('#gym-marker-style')
+
+  $selectGymMarkerStyle.select2({
+    placeholder: 'Select Style',
+    minimumResultsForSearch: Infinity
+  })
+
+  $selectGymMarkerStyle.on('change', function (e) {
+    Store.set('gymMarkerStyle', this.value)
+    updateGymIcons()
+  })
+
+  $selectGymMarkerStyle.val(Store.get('gymMarkerStyle')).trigger('change')
 })
 
 $(function () {
