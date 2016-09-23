@@ -44,7 +44,7 @@ The default configuration file is *config/config.ini* underneath the project hom
 
      python runserver.py -u randomjoe -p password1 -u bob -p password2 -l "seattle, wa" -st 5 -k MyGmapsKeyGoesHereSomeLongString -ps
 
-## running multiple configs
+## Running multiple configs
 
    One common way of running multiple locations is to use two configuration files each with common or default database values, but with different location specs. The first configuration running as both a scanner and a server, and in the second configuration file, use the *no-server* flag to not start the web interface for the second configuration.   In the config file, this would mean including a line like:
 
