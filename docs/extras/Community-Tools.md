@@ -8,6 +8,12 @@ A PTC account generation script, generates any # of accounts. ToS verification/t
 ### An automation script that can create any number of Nintendo Pokémon Trainer Club accounts
 Used to generate any desired number of PTC accounts - TOS verifies them and includes a google script that can be used to verify all the emails. Outputs generated account information in .csv format.
 
+## [PGM Multi Loc](https://beccasafan.github.io/pgm-multiloc/)
+### Easily visualize locations on a map before scanning, and generate a customized launch script.
+Add multiple scan locations on the map. Automatically convert an area to a beehive. Resize and move the location on the map. Disable individual hives to stop scanning a specific location.
+
+Generate a customized launch script, with the ability to edit the templates used for the individual commands. Pass in a list of account information that contains usernames, passwords, proxies, etc.
+
 ## [Cor3Zer0's Map Calculator](https://github.com/Cor3Zer0/Map-Calculator)
 ### Calculator that helps in the creation of PokemonGo Map
 Used to calculate optimized flags for particular use cases given a set situation.
