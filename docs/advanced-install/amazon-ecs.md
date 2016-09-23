@@ -97,7 +97,7 @@ In the AWS ECS console create a Task Definition with the JSON below. You will ne
             ],
             "workingDirectory": null,
             "readonlyRootFilesystem": null,
-            "image": "pokemap/pokemongo-map",
+            "image": "frostthefox/pokemongo-map",
             "command": null,
             "user": null,
             "dockerLabels": null,
