@@ -25,6 +25,7 @@
     "Push": true,
 
     "isTouchDevice": true,
+    "isMobileDevice": true,
     "pokemonSprites": true,
     "noLabelsStyle": true,
     "darkStyle": true,
