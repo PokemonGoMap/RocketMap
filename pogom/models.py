@@ -679,6 +679,7 @@ class PokemonRarity(BaseModel):
 
     @staticmethod
     def update_rarities(duration):
+        num_pokemon = 151
         rarities = []
         rarity_groups = []
         rarities_query = {}
@@ -692,10 +693,13 @@ class PokemonRarity(BaseModel):
         rarities.sort(key=lambda x: x['spawn_rate'], reverse=True)
         # Split pokemon into groups by rarity using each rarity type percentage as the amount to split
         for rarity_type in PokemonRarity.rarity_types():
-            qty = int(rarity_type.percent * len(rarities) + 1)
+            qty = int(rarity_type.percent * num_pokemon + 1)
             end = start + qty - 1
+            if end > len(rarities):
+                rarity_groups.append(rarities[start:])
+                break
             rarity_groups.append(rarities[start:end])
-            start += qty
+            start += qty - 1
         # Assign a rarity index to each rarity group and setup rarities for DB insertion
         for i, r in enumerate(rarity_groups):
             for pokemon in r:

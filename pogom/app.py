@@ -368,7 +368,7 @@ class Pogom(Flask):
 
     def update_rarities(self):
         args = get_args()
-        if args.disable_rarity_update:
+        if not args.enable_rarity_update:
             return "Disabled"
         duration_arg = request.form.get('duration')
         for duration in self.get_valid_stat_input(duration_arg)["duration"]["items"].values():
