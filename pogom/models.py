@@ -898,6 +898,7 @@ def clean_db_loop(args):
                          .delete()
                          .where((Pokemon.disappear_time <
                                 (datetime.utcnow() - timedelta(hours=args.purge_data)))))
+                query.execute()
 
             log.info('Regular database cleaning complete')
             time.sleep(60)
@@ -908,7 +909,13 @@ def clean_db_loop(args):
 def bulk_upsert(cls, data):
     num_rows = len(data.values())
     i = 0
-    step = 120
+
+    if args.db_type == 'mysql':
+        step = 120
+    else:
+        # SQLite has a default max number of parameters of 999,
+        # so we need to limit how many rows we insert for it.
+        step = 50
 
     while i < num_rows:
         log.debug('Inserting items %d to %d', i, min(i + step, num_rows))
