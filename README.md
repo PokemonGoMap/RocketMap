@@ -24,8 +24,9 @@ Live visualization of all the pokemon (with option to show gyms and pokestops) i
 * [Website](https://pokemongomap.github.io/PoGoMapWebsite/) for general introduction
 * [Forum](http://pokemongo-map.me) for most issues and support
 * [Discord](https://discord.gg/PWp2bAm) for general support
+* [IRC](https://vulpix.thunderfox.nl/irc) if you prefer it old school
 * [Documentation](https://pgm.readthedocs.io/en/develop/) for installation and usage docs
-* [feathub](http://feathub.com/PokemonGoMap/PokemonGo-Map) to request new features
+* ~~[feathub](http://feathub.com/PokemonGoMap/PokemonGo-Map) to request new features~~ Use a Github issue, tag with [Feature Request].
 * [Github Issues](https://github.com/PokemonGoMap/PokemonGo-Map/issues) for reporting bugs (not for support!)
 
 ## Installation
@@ -34,7 +35,7 @@ For instructions on how to setup and run the tool, please refer to the project [
 
 ## Deployment
 
-[![Deploy](https://raw.githubusercontent.com/sych74/PokemonGo-Map-in-Cloud/master/images/deploy-to-jelastic.png)](https://jelastic.com/install-application/?manifest=https://raw.githubusercontent.com/sych74/PokemonGo-Map-in-Cloud/master/manifest.jps) [![Deploy on Scalingo](https://cdn.scalingo.com/deploy/button.svg)](https://my.scalingo.com/deploy?source=https://github.com/PokemonGoMap/PokemonGo-Map#develop)
+[![Deploy](https://raw.githubusercontent.com/PokemonGoMap/PokemonGo-Map-in-Cloud/master/images/deploy-to-jelastic.png)](https://jelastic.com/install-application/?manifest=https://raw.githubusercontent.com/PokemonGoMap/PokemonGo-Map-in-Cloud/master/manifest.jps) [![Deploy on Scalingo](https://cdn.scalingo.com/deploy/button.svg)](https://my.scalingo.com/deploy?source=https://github.com/PokemonGoMap/PokemonGo-Map#develop)
 
 ## Android Version
 

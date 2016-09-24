@@ -26,6 +26,8 @@ from pogom.search import search_overseer_thread
 from pogom.models import init_database, create_tables, drop_tables, Pokemon, db_updater, clean_db_loop
 from pogom.webhook import wh_updater
 
+from pogom.proxy import check_proxies
+
 # Currently supported pgoapi
 pgoapi_version = "1.1.7"
 
@@ -56,7 +58,44 @@ if not hasattr(pgoapi, "__version__") or StrictVersion(pgoapi.__version__) < Str
     sys.exit(1)
 
 
+# Patch to make exceptions in threads cause an exception.
+def install_thread_excepthook():
+    """
+    Workaround for sys.excepthook thread bug
+    (https://sourceforge.net/tracker/?func=detail&atid=105470&aid=1230540&group_id=5470).
+    Call once from __main__ before creating any threads.
+    If using psyco, call psycho.cannotcompile(threading.Thread.run)
+    since this replaces a new-style class method.
+    """
+    import sys
+    run_old = Thread.run
+
+    def run(*args, **kwargs):
+        try:
+            run_old(*args, **kwargs)
+        except (KeyboardInterrupt, SystemExit):
+            raise
+        except:
+            sys.excepthook(*sys.exc_info())
+    Thread.run = run
+
+
+# Exception handler will log unhandled exceptions
+def handle_exception(exc_type, exc_value, exc_traceback):
+    if issubclass(exc_type, KeyboardInterrupt):
+        sys.__excepthook__(exc_type, exc_value, exc_traceback)
+        return
+
+    log.error("Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback))
+
+
 def main():
+    # Patch threading to make exceptions catchable
+    install_thread_excepthook()
+
+    # Make sure exceptions get logged
+    sys.excepthook = handle_exception
+
     args = get_args()
 
     # Check for depreciated argumented
@@ -180,9 +219,10 @@ def main():
         t.start()
 
     # db clearner; really only need one ever
-    t = Thread(target=clean_db_loop, name='db-cleaner', args=(args,))
-    t.daemon = True
-    t.start()
+    if not args.disable_clean:
+        t = Thread(target=clean_db_loop, name='db-cleaner', args=(args,))
+        t.daemon = True
+        t.start()
 
     # WH Updates
     wh_updates_queue = Queue()
@@ -195,25 +235,26 @@ def main():
         t.start()
 
     if not args.only_server:
-        # Gather the pokemons!
 
-        # check the sort of scan
-        if args.spawnpoint_scanning:
-            mode = 'sps'
-        else:
-            mode = 'hex'
+        # Check all proxies before continue so we know they are good
+        if args.proxy:
+
+            # Overwrite old args.proxy with new working list
+            args.proxy = check_proxies(args)
+
+        # Gather the pokemons!
 
         # attempt to dump the spawn points (do this before starting threads of endure the woe)
         if args.spawnpoint_scanning and args.spawnpoint_scanning != 'nofile' and args.dump_spawnpoints:
             with open(args.spawnpoint_scanning, 'w+') as file:
-                log.info('Sawing spawn points to %s', args.spawnpoint_scanning)
+                log.info('Saving spawn points to %s', args.spawnpoint_scanning)
                 spawns = Pokemon.get_spawnpoints_in_hex(position, args.step_limit)
                 file.write(json.dumps(spawns))
                 log.info('Finished exporting spawn points')
 
-        argset = (args, mode, new_location_queue, pause_bit, encryption_lib_path, db_updates_queue, wh_updates_queue)
+        argset = (args, new_location_queue, pause_bit, encryption_lib_path, db_updates_queue, wh_updates_queue)
 
-        log.debug('Starting a %s search thread', mode)
+        log.debug('Starting a %s search thread', args.scheduler)
         search_thread = Thread(target=search_overseer_thread, name='search-overseer', args=argset)
         search_thread.daemon = True
         search_thread.start()
