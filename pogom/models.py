@@ -8,6 +8,8 @@ import gc
 import time
 import geopy
 from collections import namedtuple
+
+from flask import jsonify
 from peewee import SqliteDatabase, InsertQuery, \
     IntegerField, CharField, DoubleField, BooleanField, \
     DateTimeField, fn, DeleteQuery, CompositeKey, FloatField, SQL, TextField
@@ -20,7 +22,7 @@ from base64 import b64encode
 from cache import cache
 
 from . import config
-from .utils import get_pokemon_name, get_pokemon_rarity, get_pokemon_types, get_args, i8ln
+from .utils import get_pokemon_name, get_pokemon_rarity, get_pokemon_types, get_args, i8ln, get_pokemon_data
 from .transform import transform_from_wgs_to_gcj, get_new_coords
 from .customLog import printPokemon
 
@@ -678,13 +680,13 @@ class PokemonRarity(BaseModel):
         return None
 
     @staticmethod
-    def update_rarities(duration):
+    def update_rarities():
         num_pokemon = 151
         rarities = []
         rarity_groups = []
         rarities_query = {}
         start = 0
-        seen = Pokemon.get_seen(duration)
+        seen = Pokemon.get_seen(0)
         total_count = seen['total']
         for pokemon in seen['pokemon']:
                 spawn_rate = (pokemon['count'] / float(total_count))
@@ -1205,6 +1207,28 @@ def clean_db_loop(args):
             time.sleep(60)
         except Exception as e:
             log.exception('Exception in clean_db_loop: %s', e)
+
+
+def update_rarity_loop(args):
+    while True:
+        try:
+            timeout = args.rarity_update_interval * 60 * 60
+            PokemonRarity.update_rarities()
+            cache.invalidate(get_all_pokemon, 'all_pokemon')
+            log.info('Pokemon rarities update complete')
+            time.sleep(timeout)
+        except Exception as e:
+            log.exception('Exception in update_rarity_loop: %s', e)
+
+
+@cache.cache('all_pokemon')
+def get_all_pokemon():
+    pokemon = {}
+    for x in xrange(1, 151):
+        pokemon[x] = get_pokemon_data(x)
+        pokemon[x]['rarity'] = PokemonRarity.get_rarity(x) or get_pokemon_rarity(x)
+
+    return jsonify(pokemon)
 
 
 def bulk_upsert(cls, data):

@@ -36,6 +36,8 @@
 #proxy-display:         # Used with -ps, full = display complete proxy address. Index = displays just the index for that proxy (default index)
 #webhook:               # webhook URL (including http://)
 #webhook-updates-only:  # only send updates to webhooks, (excludes gyms & non-lured pokéstops)
+#enable-rarity-update:  # update pokemon rarity values based on your database statistics (default false)
+#rarity-update-interval:    # how often (in hours) to update the rarities
 
 # Webserver settings
 #host:                  # address to listen on (default 127.0.0.1)

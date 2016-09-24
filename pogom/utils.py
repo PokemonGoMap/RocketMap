@@ -200,6 +200,8 @@ def get_args():
     parser.add_argument('-odt', '--on-demand_timeout', help='Pause searching while web UI is inactive for this timeout(in seconds).', type=int, default=0)
     parser.add_argument('-eru', '--enable-rarity-update', help='Enable rarity update functionality',
                         action='store_true', default=False)
+    parser.add_argument('-rui', '--rarity-update-interval', help='How often to update rarities in hours',
+                        type=int, default=12)
     verbosity = parser.add_mutually_exclusive_group()
     verbosity.add_argument('-v', '--verbose', help='Show debug messages from PomemonGo-Map and pgoapi. Optionally specify file to log to.', nargs='?', const='nofile', default=False, metavar='filename.log')
     verbosity.add_argument('-vv', '--very-verbose', help='Like verbose, but show debug messages from all modules as well.  Optionally specify file to log to.', nargs='?', const='nofile', default=False, metavar='filename.log')
