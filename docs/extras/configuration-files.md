@@ -38,7 +38,7 @@ The default configuration file is *config/config.ini* underneath the project hom
 
   Running this config file as:
 
-     python runserver.py -c myconfig.seattle
+     python runserver.py -cf myconfig.seattle
 
   would be the same as running with the following command line:
 
