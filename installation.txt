@@ -11,15 +11,21 @@ https://pgm.readthedocs.io/en/develop/
 siehe https://pgm.readthedocs.io/en/develop/basic-install/windows.html für den kompletten Guide
 -> git installieren(https://git-for-windows.github.io/)
 -> Python 2.7 installieren(https://www.python.org/downloads/release/python-2712/)
+---> WICHTIG: Beim Installieren wo man auswählen kann, was installiert wählt, folgendes auswählen: "Python.exe zum Pfad hinzufügen*"
 -> Visual C++ Compiler installieren(https://www.microsoft.com/en-us/download/details.aspx?id=44266)
+
 Du kannst verifizieren, ob die Installationen geklappt haben, indem du folgende Befehle (einzeln) in eine Eingabeaufforderung eingibst:
 git --version
 python --version
 pip --version
 
+1.1 kleiner Tipp
+Du kannst eine Eingabeaufforderung in deinem Wunschordner öffnen, indem du SHIFT(das ist die ganz linke Taste mit dem Pfeil nach oben) gedrückt hälst und dann in dem Ordner Rechtsklick drückst
+Jetzt sollte es in dem Kontextmenü einen Punkt geben, der "Eingabeaufforderung hier öffnen" heißt - darauf klicken
+
 
 2. Project downloaden
-Während die Taste SHIFT gedrückt ist auf den Desktop(oder einen Ordner deiner Wahl) rechtsklicken und auf "Eingabeaufforderung hier öffnen" klicken, siehe: http://fs5.directupload.net/images/160822/uosc46ef.png
+Öffne eine Eingabeaufforderung(siehe 1.1) in dem Oberordner, wo das Projekt rein soll(der nachfolgende Befehl erstellt einen Ordner hier, der "PokemonGo-Map-1" heißt)
 
 In der Eingabeaufforderung das hier ausführen:
 git clone https://github.com/JapuDCret/PokemonGo-Map-1.git
@@ -38,6 +44,7 @@ wenn alles ohne Fehler funktioniert hat, dann ist alles ok.
 
 
 4. Projekt personalisieren
+(Falls du noch keine Accounts hast, siehe Punkt 4.1 und 4.2)
 Gehe ins Verzeichnis "config" und kopiere die Datei "acc.csv.example" und ändere den Namen der Kopie in "acc.csv"
 Öffne die Datei entweder mit dem Editor oder Excel.
 Füge hier deine Accounts ein, jeweils mit einem Semikolon separiert und eine neue Zeile pro Account....
@@ -47,21 +54,45 @@ Die letzte Spalte "suspended" ist dazu da gebannte Accounts zu markieren(mit X),
 PeterZwegat;abcdef;ptc;X
 
 Gehe ins Verzeichnis "config" und kopiere die Datei "places.csv.example" und ändere den Namen der Kopie in "places.csv"
-Öffne die Datei entweder mit dem Editor oder Excel.
+Öffne die Datei entweder mit dem Editor oder Notepad++. NICHT mit Excel, da sonst die Locations falsch interpretiert werden.
 Jetzt geht es ans eingemachte, hier werden die zu scannenden Locations hinzugefügt, sowie die jeweilige Scanweite
 Die Location "51.5107383,7.4650364"(Dortmund Stadtgarten: ) mit Scanweite 5 würde wie folgt aussehen:
-51.5107383;7.4650364;5;Dortmund Innenstadt
+51.5107383;7.4650364;5;Dortmund Stadtgarten
+
+4.1 Accounts erstellen
+Neue PTC Accounts kannst du hier erstellen:
+https://club.pokemon.com/us/pokemon-trainer-club/sign-up/
+Für die E-Mail Adressen empfehle ich https://dropmail.me/en/
+Die E-Mails MÜSSEN bestätigt werden, also ihr kriegt einen Link, da muss drauf geklickt werden...da kommt sowas wie "Account is not activated!"
+
+4.2 Accounts freischalten
+Neue Accounts funktionieren noch nicht, da erstmal die Nutzungsbedingungen(ToS: Terms of Service) aktiviert werden müssen
+Hierfür gehe ins Verzeichnis "scripts/" und öffne die Datei "accept-tos.py"
+In der gaaaaanz letzten Zeile editierst du die Werte so, dass die von seinem Account sind...also statt Name schreibst du PeterZwegat rein, oder wie auch immer dein Accountname ist
+
+Danach öffnest du in diesem Ordner eine Console und führst aus: 'python accept-tos.py'
+Als Ergebnis sollte als letzte Zahl eine 1 kommen, wenn erfolgreich, eine 2 wenn Server überlastet und eine 3,. Wenn du wirklich gebannt bist
+
+Für jeden weiteren Account kannst du die letzte Zeile kopieren und hinten anfügen als neue Zeile
+
+Bei einem Account namens "PeterZwegat" und Passwort "alligator3", sieht der Aufruf in der letzten Zeile so aus:
+accept_tos('PeterZwegat', 'alligator3', 'ptc')
+
 
 
 5. Projekt starten
 Wenn die Map dort noch nie bekannt ist und somit keine Spawns bekannt sind(sind auf der Map unter Options->Spawn Points einsehbar), dann solltest du einfach in einer Spirale suchen
 führe dazu einfach die Batchdatei "start-spiral.bat" aus
+Jedes gefundene Pokémon ist ein Spawnpunkt, also wenn man die Spiralsuche lange genug laufen lässt, kann man nach einiger Zeit mit der deutlich effizienteren Spawnsuche weitermachen.
+nach 12h hat man so ca. 90% aller Spawns
+nach 24h hat man so ca. 95% aller Spawns
+(es gibt Spawnpunkte die nur an einem bestimmten Wochentag aktiv werden, also erreicht man nur 100%, wenn man eine ganze Woche sucht)
 
-sind Spawns in der Datenbank bekannt, dann führe die Batchdatei "get-spawns.bat" aus. Das dauert jetzt etwas. Jetzt sollte im obersten Verzeichnis ein Ordner namens "spawns" erstellt worden sein, mit der selben Anzahl an Dateien, wie du Locations angegeben hast.
-Als nächstes wollen wir das ganze etwas kompakter machen und Spawns direkt nebeneinander zusammenfassen, hierzu führe die Batchdatei "compress-spawns.bat" aus. Der Ordner sollte nun doppelt so viele Dateien enthalten.
- Danach führe die Batchdatei "start-spawns.bat" aus und es sollte für jede Location nun ein eigenes Fenster geöffnet werden.
-
-
+sind Spawns in der Datenbank bekannt, dann führe die Batchdatei "get-spawns.bat" aus. Das dauert jetzt etwas.
+Jetzt sollte im obersten Verzeichnis ein Ordner namens "spawns" erstellt worden sein, mit der selben Anzahl an Dateien, wie du Locations angegeben hast.
+Als nächstes wollen wir das ganze etwas kompakter machen und Spawns direkt nebeneinander zusammenfassen, hierzu führe die Batchdatei "compress-spawns.bat" aus.
+Der Ordner sollte nun doppelt so viele Dateien enthalten.
+Danach führe die Batchdatei "start-spawns.bat" aus und es sollte für jede Location nun ein eigenes Fenster geöffnet werden.
 
 
 
