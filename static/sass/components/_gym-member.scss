@@ -1,7 +1,51 @@
 .gym-member {
-  
+
   display: inline-block;
-  margin-left: 1px;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  vertical-align: bottom;
+
+  .pokemon-sprite {
+    top: 0;
+    display: block;
+  }
+
+  &.team-1 .cp {
+    background-color: #4A8ACA;
+    color: #fff;
+  }
+
+  &.team-2 .cp {
+    background-color: #F0443A;
+    color: #fff;
+  }
+
+  &.team-3 .cp {
+    background-color: #FED928;
+    color: #000;
+  }
+
+  &.free {
+    width: 30px;
+    height: 48px;
+    background-color: lightgray;
+    margin: 2px;
+  }
+
+  &.selected {
+    &.team-1 {
+      border-color: #4A8ACA;
+    }
+    &.team-2 {
+      border-color: #F0443A;
+    }
+    &.team-3 {
+      border-color: #FED928;
+    }
+    .cp {
+      border-radius: 0 0 5px 5px;
+    }
+  }
 
   .cp {
     display: block;
@@ -9,20 +53,5 @@
     text-align: center;
     vertical-align: middle;
     font-size: .85em;
-
-    &.team-1 {
-      background-color: #4A8ACA;
-      color: #fff;
-    }
-
-    &.team-2 {
-      background-color: #F0443A;
-      color: #fff;
-    }
-
-    &.team-3 {
-      background-color: #FED928;
-      color: #000;
-    }
   }
 }

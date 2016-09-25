@@ -40,6 +40,11 @@ var lastUpdateTime
 var gymTypes = ['Uncontested', 'Mystic', 'Valor', 'Instinct']
 var audio = new Audio('static/sounds/ding.mp3')
 
+var openedGymMembers = []
+var moves = {}
+
+var updateInterval // eslint-disable-line no-unused-vars
+
 //
 // Functions
 //
@@ -63,6 +68,20 @@ function removePokemonMarker (encounterId) { // eslint-disable-line no-unused-va
   }
   mapData.pokemons[encounterId].marker.setMap(null)
   mapData.pokemons[encounterId].hidden = true
+}
+
+function openGymMember (gymId, trainerName) { // eslint-disable-line no-unused-vars
+  if (!openedGymMembers[gymId] || openedGymMembers[gymId] !== trainerName) {
+    openedGymMembers[gymId] = trainerName
+    updateGymMarker(mapData.gyms[gymId], mapData.gyms[gymId].marker)
+  }
+}
+
+function closeGymMember (gymId) { // eslint-disable-line no-unused-vars
+  if (openedGymMembers[gymId]) {
+    openedGymMembers[gymId] = null
+    updateGymMarker(mapData.gyms[gymId], mapData.gyms[gymId].marker)
+  }
 }
 
 function initMap () { // eslint-disable-line no-unused-vars
@@ -344,13 +363,67 @@ function pokemonLabel (name, rarity, types, disappearTime, id, latitude, longitu
 }
 
 function gymLabel (teamName, teamId, gymPoints, latitude, longitude, lastScanned = null, name = null, members = []) {
+  var gymColor = ['0, 0, 0, .4', '74, 138, 202, .6', '240, 68, 58, .6', '254, 217, 40, .6']
+  var gymPrestige = [2000, 4000, 8000, 12000, 16000, 20000, 30000, 40000, 50000]
+  var gymLevel = 1
+  while (gymPoints >= gymPrestige[gymLevel - 1]) {
+    gymLevel++
+  }
+
+  // calculate the currently opened member. if member is falsy no member is selected
+  var openedMember = null
+  if (members.length > 0 && openedGymMembers[members[0].gym_id]) {
+    var fmember = members.filter(function (m) {
+      return m.trainer_name === openedGymMembers[members[0].gym_id]
+    })
+    if (fmember.length > 0) {
+      openedMember = fmember[0]
+    }
+  }
+
   var memberStr = ''
+
+  if (teamId && members.length > 0 && gymLevel > members.length) {
+    for (var j = 0; j < gymLevel - members.length; j++) {
+      memberStr +=
+        `<span class="gym-member free" title="Free slot">
+        </span>`
+    }
+  }
+
   for (var i = 0; i < members.length; i++) {
-    memberStr += `
-      <span class="gym-member" title="${members[i].pokemon_name} | ${members[i].trainer_name} (Lvl ${members[i].trainer_level})">
+    var memberSelected = openedMember && members[i].trainer_name === openedMember.trainer_name
+    var selectedClass = memberSelected ? 'selected' : ''
+    var clickEventStr = memberSelected ? `closeGymMember('${members[i].gym_id}')` : `openGymMember('${members[i].gym_id}', '${members[i].trainer_name}')`
+
+    memberStr +=
+      `<span class="gym-member team-${teamId} ${selectedClass}" title="${members[i].pokemon_name} | ${members[i].trainer_name} (Lvl ${members[i].trainer_level})" onclick="${clickEventStr}">
         <i class="pokemon-sprite n${members[i].pokemon_id}"></i>
-        <span class="cp team-${teamId}">${members[i].pokemon_cp}</span>
+        <span class="cp">${members[i].pokemon_cp}</span>
       </span>`
+  }
+
+  var memberDetailsStr
+  if (openedMember) {
+    var memberPercent = Math.round((openedMember.iv_defense + openedMember.iv_attack + openedMember.iv_stamina) * 100 / 45)
+    var move1 = moves[openedMember.move_1] ? moves[openedMember.move_1].name : openedMember.move_1
+    var move2 = moves[openedMember.move_2] ? moves[openedMember.move_2].name : openedMember.move_2
+    memberDetailsStr = `
+      <div>
+        ${openedMember.pokemon_name} | ${openedMember.trainer_name} (Lvl ${openedMember.trainer_level})
+      </div>
+      <div>
+        IV: ${memberPercent}% (${openedMember.iv_attack}/${openedMember.iv_defense}/${openedMember.iv_stamina}) | HP: ${openedMember.pokemon_stamina}
+      </div>
+      <div>
+        Moves: ${move1}, ${move2}
+      </div>
+      `
+  } else {
+    memberDetailsStr = `
+      <div>
+        <img height='59px' style='padding: 5px;' src='static/forts/${teamName}_large.png'>
+      </div>`
   }
 
   var lastScannedStr
@@ -363,7 +436,6 @@ function gymLabel (teamName, teamId, gymPoints, latitude, longitude, lastScanned
 
   var nameStr = (name ? `<div>${name}</div>` : '')
 
-  var gymColor = ['0, 0, 0, .4', '74, 138, 202, .6', '240, 68, 58, .6', '254, 217, 40, .6']
   var str
   if (teamId === 0) {
     str = `
@@ -386,30 +458,20 @@ function gymLabel (teamName, teamId, gymPoints, latitude, longitude, lastScanned
         </center>
       </div>`
   } else {
-    var gymPrestige = [2000, 4000, 8000, 12000, 16000, 20000, 30000, 40000, 50000]
-    var gymLevel = 1
-    while (gymPoints >= gymPrestige[gymLevel - 1]) {
-      gymLevel++
-    }
     str = `
       <div>
         <center>
           <div style='padding-bottom: 2px'>
-            Gym owned by:
+            <b style='color:rgba(${gymColor[teamId]})'>Owned by Team ${teamName}</b><br>
           </div>
-          <div>
-            <b style='color:rgba(${gymColor[teamId]})'>Team ${teamName}</b><br>
-            <img height='70px' style='padding: 5px;' src='static/forts/${teamName}_large.png'>
-          </div>
-          <div>
-            ${nameStr}
-          </div>
+          ${nameStr}
           <div>
             Level: ${gymLevel} | Prestige: ${gymPoints}/${gymPrestige[gymLevel - 1] || 50000}
           </div>
           <div>
             ${memberStr}
           </div>
+          ${memberDetailsStr}
           <div>
             Location: ${latitude.toFixed(6)}, ${longitude.toFixed(7)}
           </div>
@@ -1503,9 +1565,13 @@ $(function () {
     }
   })
 
+  $.getJSON('static/dist/data/moves.min.json').done(function (data) {
+    moves = data
+  })
+
   // run interval timers to regularly update map and timediffs
   window.setInterval(updateLabelDiffTime, 1000)
-  window.setInterval(updateMap, 5000)
+  updateInterval = window.setInterval(updateMap, 5000)
   window.setInterval(updateGeoLocation, 1000)
 
   createUpdateWorker()
