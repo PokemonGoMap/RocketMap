@@ -344,7 +344,20 @@ function pokemonLabel (name, rarity, types, disappearTime, id, latitude, longitu
 }
 
 function gymLabel (teamName, teamId, gymPoints, latitude, longitude, lastScanned = null, name = null, members = []) {
+  var gymPrestige = [2000, 4000, 8000, 12000, 16000, 20000, 30000, 40000, 50000]
+  var gymLevel = 1
+  while (gymPoints >= gymPrestige[gymLevel - 1]) {
+    gymLevel++
+  }
+
   var memberStr = ''
+  if (teamId && members.length > 0 && gymLevel > members.length) {
+    for (var j = 0; j < gymLevel - members.length; j++) {
+      memberStr +=
+        `<span class="gym-member free" title="Free slot">
+        </span>`
+    }
+  }
   for (var i = 0; i < members.length; i++) {
     memberStr += `
       <span class="gym-member" title="${members[i].pokemon_name} | ${members[i].trainer_name} (Lvl ${members[i].trainer_level})">
@@ -386,11 +399,6 @@ function gymLabel (teamName, teamId, gymPoints, latitude, longitude, lastScanned
         </center>
       </div>`
   } else {
-    var gymPrestige = [2000, 4000, 8000, 12000, 16000, 20000, 30000, 40000, 50000]
-    var gymLevel = 1
-    while (gymPoints >= gymPrestige[gymLevel - 1]) {
-      gymLevel++
-    }
     str = `
       <div>
         <center>
