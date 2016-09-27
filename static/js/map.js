@@ -154,7 +154,7 @@ function initMap () { // eslint-disable-line no-unused-vars
   locationMarker = createLocationMarker()
   createMyLocationButton()
   initSidebar()
-  
+
   $('#scan-here').on('click', function () {
     var loc = map.getCenter()
     changeLocation(loc.lat(), loc.lng())
@@ -266,7 +266,7 @@ function searchControl (action) {
 function updateSearchStatus () {
   $.getJSON(searchControlURI).then(function (data) {
     $('#search-switch').prop('checked', data.status)
-	$('#scan-here').toggleClass('disabled', !data.status)
+    $('#scan-here').toggleClass('disabled', !data.status)
   })
 }
 
