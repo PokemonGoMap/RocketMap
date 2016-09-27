@@ -706,6 +706,12 @@ class PokemonRarity(BaseModel):
         for i, r in enumerate(rarity_groups):
             for pokemon in r:
                 rarities_query[pokemon['pokemon_id']] = {'pokemon_id': pokemon['pokemon_id'], 'rarity': i}
+
+        # Assign ultra rare to any unseen pokemon
+        for pokemon_id in xrange(1, num_pokemon):
+            if not hasattr(rarities_query, pokemon_id):
+                rarities_query[pokemon_id] = {'pokemon_id': pokemon_id, 'rarity': len(PokemonRarity.rarity_types())}
+
         bulk_upsert(PokemonRarity, rarities_query)
 
 
