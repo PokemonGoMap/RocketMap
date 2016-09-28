@@ -78,6 +78,7 @@ class Pogom(Flask):
                                lat=self.current_location[0],
                                lng=self.current_location[1],
                                gmaps_key=config['GMAPS_KEY'],
+                               maptitle=args.maptitle,
                                lang=config['LOCALE'],
                                is_fixed=fixed_display,
                                search_control=search_display
@@ -254,6 +255,7 @@ class Pogom(Flask):
                                lat=self.current_location[0],
                                lng=self.current_location[1],
                                gmaps_key=config['GMAPS_KEY'],
+                               maptitle=args.maptitle,
                                valid_input=self.get_valid_stat_input()
                                )
 
