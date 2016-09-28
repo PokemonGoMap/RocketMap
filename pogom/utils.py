@@ -125,6 +125,9 @@ def get_args():
     parser.add_argument('-k', '--gmaps-key',
                         help='Google Maps Javascript API Key',
                         required=True)
+    parser.add_argument('-mt', '--maptitle',
+                        help='Title of the map, ex "City of Jeannete Pokemon Go Map"',
+                        required=False, default='Pokemon Go Map')
     parser.add_argument('--skip-empty', help='Enables skipping of empty cells  in normal scans - requires previously populated database (not to be used with -ss)',
                         action='store_true', default=False)
     parser.add_argument('-C', '--cors', help='Enable CORS on web server',
