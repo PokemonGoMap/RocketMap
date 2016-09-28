@@ -255,9 +255,13 @@ class Pogom(Flask):
                                lat=self.current_location[0],
                                lng=self.current_location[1],
                                gmaps_key=config['GMAPS_KEY'],
-                               maptitle=args.maptitle,
+                               maptitle=self.get_maptitle(),
                                valid_input=self.get_valid_stat_input()
                                )
+
+    def get_maptitle(self):
+        args = get_args()
+        return args.maptitle
 
     def get_status(self):
         args = get_args()
