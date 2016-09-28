@@ -219,8 +219,6 @@ def account_recycler(accounts_queue, account_failures, args):
 
 
 def worker_status_db_thread(threads_status, name, db_updates_queue):
-    log.info("Clearing previous statuses for '%s' worker", name)
-    WorkerStatus.delete().where(WorkerStatus.worker_name == name).execute()
 
     while True:
         workers = {}
@@ -234,16 +232,7 @@ def worker_status_db_thread(threads_status, name, db_updates_queue):
                     'last_modified': datetime.utcnow()
                 }
             if status['type'] == 'Worker':
-                workers[status['user']] = {
-                    'username': status['user'],
-                    'worker_name': name,
-                    'success': status['success'],
-                    'fail': status['fail'],
-                    'no_items': status['noitems'],
-                    'skip': status['skip'],
-                    'last_modified': datetime.utcnow(),
-                    'message': status['message']
-                }
+                workers[status['user']] = WorkerStatus.db_format(status)
         if overseer is not None:
             db_updates_queue.put((MainWorker, {0: overseer}))
             db_updates_queue.put((WorkerStatus, workers))
@@ -299,6 +288,9 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb, encrypti
         t.daemon = True
         t.start()
 
+    # Create the appropriate type of scheduler to handle the search queue.
+    scheduler = schedulers.SchedulerFactory.get_scheduler(args.scheduler, [search_items_queue], threadStatus, args)
+
     # Create specified number of search_worker_thread
     log.info('Starting search worker threads')
     for i in range(0, args.workers):
@@ -323,24 +315,19 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb, encrypti
             'skip': 0,
             'user': '',
             'proxy_display': proxy_display,
-            'proxy_url': proxy_url,
-            'location': False,
-            'last_scan_time': 0,
+            'proxy_url': proxy_url
         }
 
         t = Thread(target=search_worker_thread,
                    name='search-worker-{}'.format(i),
                    args=(args, account_queue, account_failures, search_items_queue, pause_bit,
                          encryption_lib_path, threadStatus[workerId],
-                         db_updates_queue, wh_queue))
+                         db_updates_queue, wh_queue, scheduler))
         t.daemon = True
         t.start()
 
     # A place to track the current location
     current_location = False
-
-    # Create the appropriate type of scheduler to handle the search queue.
-    scheduler = schedulers.SchedulerFactory.get_scheduler(args.scheduler, [search_items_queue], threadStatus, args)
 
     # The real work starts here but will halt on pause_bit.set()
     while True:
@@ -362,29 +349,21 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb, encrypti
                     current_location = new_location_queue.get_nowait()
             except Empty:
                 pass
-            scheduler.location_changed(current_location)
+            scheduler.location_changed(current_location, db_updates_queue)
 
         # If there are no search_items_queue either the loop has finished (or been
         # cleared above) -- either way, time to fill it back up
-        if search_items_queue.empty():
-            log.debug('Search queue empty, scheduling more items to scan')
+        if scheduler.time_to_refresh_queue():
+            log.debug('Refreshing the queue')
             scheduler.schedule()
         else:
-            nextitem = search_items_queue.queue[0]
-            threadStatus['Overseer']['message'] = 'Processing search queue, next item is {:6f},{:6f}'.format(nextitem[1][0], nextitem[1][1])
-            # If times are specified, print the time of the next queue item, and how many seconds ahead/behind realtime
-            if nextitem[2]:
-                threadStatus['Overseer']['message'] += ' @ {}'.format(time.strftime('%H:%M:%S', time.localtime(nextitem[2])))
-                if nextitem[2] > now():
-                    threadStatus['Overseer']['message'] += ' ({}s ahead)'.format(nextitem[2] - now())
-                else:
-                    threadStatus['Overseer']['message'] += ' ({}s behind)'.format(now() - nextitem[2])
+            threadStatus['Overseer']['message'] = scheduler.get_overseer_message()
 
         # Now we just give a little pause here
         time.sleep(1)
 
 
-def search_worker_thread(args, account_queue, account_failures, search_items_queue, pause_bit, encryption_lib_path, status, dbq, whq):
+def search_worker_thread(args, account_queue, account_failures, search_items_queue, pause_bit, encryption_lib_path, status, dbq, whq, scheduler):
 
     log.debug('Search worker thread starting')
 
@@ -400,7 +379,12 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
             account = account_queue.get()
             status['message'] = 'Switching to account {}'.format(account['username'])
             status['user'] = account['username']
+            previous_status = WorkerStatus.get_worker(status['user'])
             log.info(status['message'])
+
+            # Make sure the scheduler is done for valid locations
+            while not scheduler.ready:
+                time.sleep(1)
 
             stagger_thread(args, account)
 
@@ -409,8 +393,14 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
             status['success'] = 0
             status['noitems'] = 0
             status['skip'] = 0
-            status['location'] = False
-            status['last_scan_time'] = 0
+            if previous_status:
+                status['last_scan_date'] = previous_status['last_scan_date']
+                status['location'] = (previous_status['latitude'], previous_status['longitude'], 0)
+
+            # if no previous record, assume at at the center of the scan
+            else:
+                status['last_scan_date'] = datetime.utcnow()
+                status['location'] = scheduler.scan_location
 
             # only sleep when consecutive_fails reaches max_failures, overall fails for stat purposes
             consecutive_fails = 0
@@ -451,7 +441,12 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
 
                 # Grab the next thing to search (when available)
                 status['message'] = 'Waiting for item from queue'
-                step, step_location, appears, leaves = search_items_queue.get()
+                step, step_location, appears, leaves = scheduler.next_item(status)
+
+                # Using step as a flag for no valid next location returned
+                if step == -1:
+                    time.sleep(scheduler.delay(status['last_scan_date']))
+                    continue
 
                 # too soon?
                 if appears and now() < appears + 10:  # adding a 10 second grace period
@@ -468,18 +463,21 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                             first_loop = False
                         time.sleep(1)
                     if paused:
-                        search_items_queue.task_done()
+                        scheduler.task_done(status)
                         continue
 
                 # too late?
                 if leaves and now() > (leaves - args.min_seconds_left):
-                    search_items_queue.task_done()
+                    scheduler.task_done(status)
                     status['skip'] += 1
                     # it is slightly silly to put this in status['message'] since it'll be overwritten very shortly after. Oh well.
                     status['message'] = 'Too late for location {:6f},{:6f}; skipping'.format(step_location[0], step_location[1])
                     log.info(status['message'])
                     # No sleep here; we've not done anything worth sleeping for. Plus we clearly need to catch up!
                     continue
+
+                status['message'] = 'Searching at {:6f},{:6f}'.format(step_location[0], step_location[1])
+                log.debug(status['message'])
 
                 # Let the api know where we intend to be for this loop
                 # doing this before check_login so it does not also have to be done there
@@ -496,19 +494,24 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                 # Make the actual request (finally!)
                 response_dict = map_request(api, step_location, args.jitter)
 
+                # Record the time and place the worker made the request at
+                status['last_scan_date'] = datetime.utcnow()
+                status['location'] = step_location
+                dbq.put((WorkerStatus, {0: WorkerStatus.db_format(status)}))
+
                 # G'damnit, nothing back. Mark it up, sleep, carry on
                 if not response_dict:
                     status['fail'] += 1
                     consecutive_fails += 1
                     status['message'] = 'Invalid response at {:6f},{:6f}, abandoning location'.format(step_location[0], step_location[1])
                     log.error(status['message'])
-                    time.sleep(args.scan_delay)
+                    time.sleep(scheduler.delay(status['last_scan_date']))
                     continue
 
                 # Got the response, parse it out, send todo's to db/wh queues
                 try:
                     parsed = parse_map(args, response_dict, step_location, dbq, whq)
-                    search_items_queue.task_done()
+                    scheduler.task_done(status, parsed)
                     status[('success' if parsed['count'] > 0 else 'noitems')] += 1
                     consecutive_fails = 0
                     status['message'] = 'Search at {:6f},{:6f} completed with {} finds'.format(step_location[0], step_location[1], parsed['count'])
@@ -571,13 +574,11 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                         if gym_responses:
                             parse_gyms(args, gym_responses, whq)
 
-                # Record the time and place the worker left off at
-                status['last_scan_time'] = now()
-                status['location'] = step_location
+                # Delay the desired amount after "scan" completion
+                delay = scheduler.delay(status['last_scan_date'])
+                status['message'] += ', sleeping {}s until {}'.format(delay, time.strftime('%H:%M:%S', time.localtime(time.time() + args.scan_delay)))
 
-                # Always delay the desired amount after "scan" completion
-                status['message'] += ', sleeping {}s until {}'.format(args.scan_delay, time.strftime('%H:%M:%S', time.localtime(time.time() + args.scan_delay)))
-                time.sleep(args.scan_delay)
+                time.sleep(delay)
 
         # catch any process exceptions, log them, and continue the thread
         except Exception as e:

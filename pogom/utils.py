@@ -10,6 +10,8 @@ import shutil
 import platform
 import pprint
 import time
+from geopy.distance import vincenty
+from s2sphere import CellId, LatLng
 
 from . import config
 
@@ -134,6 +136,10 @@ def get_args():
                         action='store_true', default=False)
     parser.add_argument('-ss', '--spawnpoint-scanning',
                         help='Use spawnpoint scanning (instead of hex grid). Scans in a circle based on step_limit when on DB', nargs='?', const='nofile', default=False)
+    parser.add_argument('-speed', '--speed-scan',
+                        help='Use speed scanning to identify spawn points, and then scan closest spawns.', nargs='?', const='nofile', default=False)
+    parser.add_argument('-kph', '--kph',
+                        help='Set a maximum speed in km/hour for scanner movement', action='store_true', default=80)
     parser.add_argument('--dump-spawnpoints', help='dump the spawnpoints from the db to json (only for use with -ss)',
                         action='store_true', default=False)
     parser.add_argument('-pd', '--purge-data',
@@ -346,6 +352,8 @@ def get_args():
             args.scheduler = 'SpawnScan'
         elif args.skip_empty:
             args.scheduler = 'HexSearchSpawnpoint'
+        elif args.speed_scan:
+            args.scheduler = 'SpeedScan'
         else:
             args.scheduler = 'HexSearch'
 
@@ -357,9 +365,24 @@ def now():
     return int(time.time())
 
 
-# gets the current time past the hour
+# gets the time past the hour
 def cur_sec():
     return (60 * time.gmtime().tm_min) + time.gmtime().tm_sec
+
+
+# gets the time past the hour for a given time
+def min_sec(t):
+    return (60 * time.gmtime(t).tm_min) + time.gmtime(t).tm_sec
+
+
+# Return the s2sphere cellid token from a location
+def cellid(loc):
+    return CellId.from_lat_lng(LatLng.from_degrees(loc[0], loc[1])).to_token()
+
+
+# Return True if distance between two locs is less than step_distance
+def in_radius(loc1, loc2, distance):
+    return vincenty(loc1, loc2).km < distance
 
 
 def i8ln(word):
