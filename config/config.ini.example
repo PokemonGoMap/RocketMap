@@ -17,6 +17,7 @@
 #no-gyms:               # disables gym scanning (default false)
 #no-pokemon:            # disables pokemon scanning (default false)
 #no-pokestops:          # disables pokestop scanning (default false)
+#ignore-list:           # list of Pokemon IDs to ignore scanning (default [])
 #scan-delay:            # default 10
 #step-limit:            # default 12
 #gym-info:              # enables detailed gym info collection (default false)

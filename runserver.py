@@ -184,6 +184,8 @@ def main():
         log.info('Parsing of Pokestops disabled')
     if args.no_gyms:
         log.info('Parsing of Gyms disabled')
+    if len(args.ignore_list):
+        log.info('Ignore Pokemon IDs: {}'.format(args.ignore_list))
 
     config['LOCALE'] = args.locale
     config['CHINA'] = args.china

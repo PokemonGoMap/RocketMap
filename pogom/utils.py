@@ -132,6 +132,9 @@ def get_args():
     parser.add_argument('-nk', '--no-pokestops',
                         help='Disables PokeStops from the map (including parsing them into local db)',
                         action='store_true', default=False)
+    parser.add_argument('-igl', '--ignore-list',
+                        help='Ignores Pokemon from the map (including parsing them into local db)',
+                        action='append', default=[])
     parser.add_argument('-ss', '--spawnpoint-scanning',
                         help='Use spawnpoint scanning (instead of hex grid). Scans in a circle based on step_limit when on DB', nargs='?', const='nofile', default=False)
     parser.add_argument('--dump-spawnpoints', help='dump the spawnpoints from the db to json (only for use with -ss)',
@@ -348,6 +351,14 @@ def get_args():
             args.scheduler = 'HexSearchSpawnpoint'
         else:
             args.scheduler = 'HexSearch'
+
+        # Return int for Pokemon Ignore list if it's exist
+        if len(args.ignore_list):
+            try:
+                args.ignore_list = set([int(i) for i in args.ignore_list])
+            except Exception as e:
+                print("Error: Pokemon IDs need to be Interger", e)
+                sys.exit(1)
 
     return args
 
