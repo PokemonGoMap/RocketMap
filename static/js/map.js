@@ -1634,7 +1634,7 @@ $(function () {
 
   $('#scan-here-switch').change(function () {
     if (this.checked && !Store.get('scanHereAlerted')) {
-      alert("Use this feature carefully ! This button will set the current map center as new search location. This may cause worker to teleport long range.")
+      alert('Use this feature carefully ! This button will set the current map center as new search location. This may cause worker to teleport long range.')
       Store.set('scanHereAlerted', true)
     }
     $('#scan-here').toggle(this.checked)
