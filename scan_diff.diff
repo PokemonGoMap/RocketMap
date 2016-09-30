@@ -1,0 +1,61 @@
+diff --git a/static/js/map.common.js b/static/js/map.common.js
+index c6da98f..6ff5559 100644
+--- a/static/js/map.common.js
++++ b/static/js/map.common.js
+@@ -740,6 +740,10 @@ var StoreOptions = {
+     default: [],
+     type: StoreTypes.JSON
+   },
++  'scanHere': {
++    default: false,
++    type: StoreTypes.Boolean
++  }
+   'pokemonIcons': {
+     default: 'highres',
+     type: StoreTypes.String
+diff --git a/static/js/map.js b/static/js/map.js
+index fdfe188..a09ff2f 100644
+--- a/static/js/map.js
++++ b/static/js/map.js
+@@ -280,6 +280,8 @@ function initSidebar () {
+   $('#lock-marker-switch').prop('checked', Store.get('lockMarker'))
+   $('#start-at-user-location-switch').prop('checked', Store.get('startAtUserLocation'))
+   $('#follow-my-location-switch').prop('checked', Store.get('followMyLocation'))
++  $('#scan-here-switch').prop('checked', Store.get('scanHere'))
++  $('#scan-here').prop('checked', Store.get('scanHere'))
+   $('#scanned-switch').prop('checked', Store.get('showScanned'))
+   $('#spawnpoints-switch').prop('checked', Store.get('showSpawnpoints'))
+   $('#ranges-switch').prop('checked', Store.get('showRanges'))
+@@ -1630,6 +1632,11 @@ $(function () {
+     locationMarker.setDraggable(!this.checked)
+   })
+ 
++  $('#scan-here-switch').change(function () {
++    $('#scan-here').toggle(this.checked)
++    Store.set('scanHere', this.checked)
++  })
++
+   if ($('#nav-accordion').length) {
+     $('#nav-accordion').accordion({
+       active: 0,
+diff --git a/templates/map.html b/templates/map.html
+index 2d97004..d714a6d 100644
+--- a/templates/map.html
++++ b/templates/map.html
+@@ -180,6 +180,16 @@
+                 </label>
+               </div>
+             </div>
++            <div class="form-control switch-container" style="display:{{show_scan}}">
++              <h3>Scan here</h3>
++              <div class="onoffswitch">
++                <input id="scan-here-switch" type="checkbox" name="scan-here-switch" class="onoffswitch-checkbox" checked/>
++                <label class="onoffswitch-label" for="follow-my-location-switch">
++                <span class="switch-label" data-on="On" data-off="Off"></span>
++                <span class="switch-handle"></span>
++                </label>
++              </div>
++            </div>
+           </div>
+ 
+           <h3>Notification Settings</h3>

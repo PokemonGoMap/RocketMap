@@ -280,6 +280,8 @@ function initSidebar () {
   $('#lock-marker-switch').prop('checked', Store.get('lockMarker'))
   $('#start-at-user-location-switch').prop('checked', Store.get('startAtUserLocation'))
   $('#follow-my-location-switch').prop('checked', Store.get('followMyLocation'))
+  $('#scan-here-switch').prop('checked', Store.get('scanHere'))
+  $('#scan-here').toggle(Store.get('scanHere'))
   $('#scanned-switch').prop('checked', Store.get('showScanned'))
   $('#spawnpoints-switch').prop('checked', Store.get('showSpawnpoints'))
   $('#ranges-switch').prop('checked', Store.get('showRanges'))
@@ -1628,6 +1630,15 @@ $(function () {
       Store.set('followMyLocation', this.checked)
     }
     locationMarker.setDraggable(!this.checked)
+  })
+
+  $('#scan-here-switch').change(function () {
+    if (this.checked && !Store.get('scanHereAlerted')) {
+      alert("Use this feature carefully ! This button will set the current map center as new search location. This may cause worker to teleport long range.")
+      Store.set('scanHereAlerted', true)
+    }
+    $('#scan-here').toggle(this.checked)
+    Store.set('scanHere', this.checked)
   })
 
   if ($('#nav-accordion').length) {
