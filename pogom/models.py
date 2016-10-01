@@ -9,7 +9,7 @@ import time
 import geopy
 from peewee import SqliteDatabase, InsertQuery, \
     IntegerField, CharField, DoubleField, BooleanField, \
-    DateTimeField, fn, DeleteQuery, CompositeKey, FloatField, SQL, TextField
+    DateTimeField, fn, DeleteQuery, CompositeKey, FloatField, SQL, TextField, OperationalError
 from playhouse.flask_utils import FlaskDB
 from playhouse.pool import PooledMySQLDatabase
 from playhouse.shortcuts import RetryOperationalError
@@ -781,11 +781,13 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
     for cell in cells:
         if config['parse_pokemon']:
             for p in cell.get('wild_pokemons', []):
-
-                # Don't parse pokemon we've already encountered. Avoids IVs getting nulled out on rescanning.
-                if Pokemon.get_encountered_pokemon(p['encounter_id']):
-                    skipped += 1
-                    continue
+                try:
+                    # Don't parse pokemon we've already encountered. Avoids IVs getting nulled out on rescanning.
+                    if Pokemon.get_encountered_pokemon(p['encounter_id']):
+                        skipped += 1
+                        continue
+                except OperationalError as e:
+                    log.debug('Could not check if Pokemon already encountered, Exception %s while connecting to db: %s', type(e).__name__, e)
 
                 # time_till_hidden_ms was overflowing causing a negative integer.
                 # It was also returning a value above 3.6M ms.
@@ -1064,6 +1066,7 @@ def db_updater(args, q):
                     break
                 except Exception as e:
                     log.warning('%s... Retrying', e)
+                    time.sleep(1)
 
             # Loop the queue
             while True:
