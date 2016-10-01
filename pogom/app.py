@@ -4,7 +4,7 @@
 import calendar
 import logging
 
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, abort, jsonify, render_template, request
 from flask.json import JSONEncoder
 from flask_compress import Compress
 from datetime import datetime
@@ -14,8 +14,8 @@ from datetime import timedelta
 from collections import OrderedDict
 
 from . import config
-from .models import Pokemon, Gym, Pokestop, ScannedLocation
-
+from .models import Pokemon, Gym, Pokestop, ScannedLocation, MainWorker, WorkerStatus
+from .utils import now
 log = logging.getLogger(__name__)
 compress = Compress()
 
@@ -33,9 +33,14 @@ class Pogom(Flask):
         self.route("/search_control", methods=['GET'])(self.get_search_control)
         self.route("/search_control", methods=['POST'])(self.post_search_control)
         self.route("/stats", methods=['GET'])(self.get_stats)
+        self.route("/status", methods=['GET'])(self.get_status)
+        self.route("/status", methods=['POST'])(self.post_status)
 
     def set_search_control(self, control):
         self.search_control = control
+
+    def set_heartbeat_control(self, heartb):
+        self.heartbeat = heartb
 
     def set_location_queue(self, queue):
         self.location_queue = queue
@@ -48,7 +53,7 @@ class Pogom(Flask):
 
     def post_search_control(self):
         args = get_args()
-        if not args.search_control:
+        if not args.search_control or args.on_demand_timeout > 0:
             return 'Search control is disabled', 403
         action = request.args.get('action', 'none')
         if action == 'on':
@@ -62,9 +67,13 @@ class Pogom(Flask):
         return self.get_search_control()
 
     def fullmap(self):
+        self.heartbeat[0] = now()
         args = get_args()
+        if args.on_demand_timeout > 0:
+            self.search_control.clear()
         fixed_display = "none" if args.fixed_location else "inline"
-        search_display = "inline" if args.search_control else "none"
+        search_display = "inline" if args.search_control and args.on_demand_timeout <= 0 else "none"
+        scan_display = "none" if (args.only_server or args.fixed_location or args.spawnpoint_scanning) else "inline"
 
         return render_template('map.html',
                                lat=self.current_location[0],
@@ -72,10 +81,15 @@ class Pogom(Flask):
                                gmaps_key=config['GMAPS_KEY'],
                                lang=config['LOCALE'],
                                is_fixed=fixed_display,
-                               search_control=search_display
+                               search_control=search_display,
+                               show_scan=scan_display
                                )
 
     def raw_data(self):
+        self.heartbeat[0] = now()
+        args = get_args()
+        if args.on_demand_timeout > 0:
+            self.search_control.clear()
         d = {}
         swLat = request.args.get('swLat')
         swLng = request.args.get('swLng')
@@ -99,17 +113,36 @@ class Pogom(Flask):
             d['scanned'] = ScannedLocation.get_recent(swLat, swLng, neLat,
                                                       neLng)
 
+        selected_duration = None
+
+        # for stats and changed nest points etc, limit pokemon queried
+        for duration in self.get_valid_stat_input()["duration"]["items"].values():
+            if duration["selected"] == "SELECTED":
+                selected_duration = duration["value"]
+                break
+
         if request.args.get('seen', 'false') == 'true':
-            for duration in self.get_valid_stat_input()["duration"]["items"].values():
-                if duration["selected"] == "SELECTED":
-                    d['seen'] = Pokemon.get_seen(duration["value"])
-                    break
+            d['seen'] = Pokemon.get_seen(selected_duration)
 
         if request.args.get('appearances', 'false') == 'true':
-            d['appearances'] = Pokemon.get_appearances(request.args.get('pokemonid'), request.args.get('last', type=float))
+            d['appearances'] = Pokemon.get_appearances(request.args.get('pokemonid'), selected_duration)
+
+        if request.args.get('appearancesDetails', 'false') == 'true':
+            d['appearancesTimes'] = Pokemon.get_appearances_times_by_spawnpoint(request.args.get('pokemonid'),
+                                                                                request.args.get('spawnpoint_id'),
+                                                                                selected_duration)
 
         if request.args.get('spawnpoints', 'false') == 'true':
             d['spawnpoints'] = Pokemon.get_spawnpoints(swLat, swLng, neLat, neLng)
+
+        if request.args.get('status', 'false') == 'true':
+            args = get_args()
+            d = {}
+            if args.status_page_password is None:
+                d['error'] = 'Access denied'
+            elif request.args.get('password', None) == args.status_page_password:
+                d['main_workers'] = MainWorker.get_all()
+                d['workers'] = WorkerStatus.get_all()
 
         return jsonify(d)
 
@@ -225,6 +258,27 @@ class Pogom(Flask):
                                gmaps_key=config['GMAPS_KEY'],
                                valid_input=self.get_valid_stat_input()
                                )
+
+    def get_status(self):
+        args = get_args()
+        if args.status_page_password is None:
+            abort(404)
+
+        return render_template('status.html')
+
+    def post_status(self):
+        args = get_args()
+        d = {}
+        if args.status_page_password is None:
+            abort(404)
+
+        if request.form.get('password', None) == args.status_page_password:
+            d['login'] = 'ok'
+            d['main_workers'] = MainWorker.get_all()
+            d['workers'] = WorkerStatus.get_all()
+        else:
+            d['login'] = 'failed'
+        return jsonify(d)
 
 
 class CustomJSONEncoder(JSONEncoder):

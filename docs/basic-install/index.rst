@@ -87,7 +87,7 @@ Linux/OSX:
 
 In order to run from a git clone, you must compile the front-end assets with node. Make sure you have node installed for your platform:
 
- * `Windows <https://nodejs.org/dist/v4.4.7/node-v4.4.7-x64.msi>`_
+ * `Windows <https://nodejs.org/dist/v4.5.0/node-v4.5.0-x64.msi>`_
  * `OSX <https://nodejs.org/dist/v4.4.7/node-v4.4.7.pkg>`_
  * Linux -- refer to the `package installation <https://nodejs.org/en/download/package-manager/>`_ for your flavor of OS
 
@@ -150,8 +150,8 @@ If you are running a ``git`` version, you can update with a few quick commands:
 .. code-block:: bash
 
   git pull
-  pip install -r requirements.txt --upgrade
+  pip install -r requirements.txt --upgrade (Prepend sudo -H on Linux)
   npm install
   npm run build
 
-You can now restart your ``runserver.py`` command.
+**IMPORTANT** Some updates will include database changes that run on first startup. These can take a while to update. You should run only **one** ``runserver.py`` command until you are certain that the DB has been updated. You will know almost immediatly that your DB needs updating by seing the following in the log/terminal screen **Detected database version 7, updating to 8** when it's done the log/terminal will continue as normal. This can take a while so be patient. Once it's done you can start all your instances like you normally would.

@@ -3,10 +3,8 @@
 
 import sys
 import configargparse
-import uuid
 import os
 import json
-from datetime import datetime, timedelta
 import logging
 import shutil
 import platform
@@ -46,14 +44,23 @@ def memoize(function):
 @memoize
 def get_args():
     # fuck PEP8
-    configpath = os.path.join(os.path.dirname(__file__), '../config/config.ini')
-    parser = configargparse.ArgParser(default_config_files=[configpath], auto_env_var_prefix='POGOMAP_')
-    parser.add_argument('-a', '--auth-service', type=str.lower, action='append',
+    defaultconfigpath = os.getenv('POGOMAP_CONFIG', os.path.join(os.path.dirname(__file__), '../config/config.ini'))
+    parser = configargparse.ArgParser(default_config_files=[defaultconfigpath], auto_env_var_prefix='POGOMAP_')
+    parser.add_argument('-cf', '--config', is_config_file=True, help='Configuration file')
+    parser.add_argument('-a', '--auth-service', type=str.lower, action='append', default=[],
                         help='Auth Services, either one for all accounts or one per account: ptc or google. Defaults all to ptc.')
-    parser.add_argument('-u', '--username', action='append',
+    parser.add_argument('-u', '--username', action='append', default=[],
                         help='Usernames, one per account.')
-    parser.add_argument('-p', '--password', action='append',
+    parser.add_argument('-p', '--password', action='append', default=[],
                         help='Passwords, either single one for all accounts or one per account.')
+    parser.add_argument('-w', '--workers', type=int,
+                        help='Number of search worker threads to start. Defaults to the number of accounts specified.')
+    parser.add_argument('-asi', '--account-search-interval', type=int, default=0,
+                        help='Seconds for accounts to search before switching to a new account. 0 to disable.')
+    parser.add_argument('-ari', '--account-rest-interval', type=int, default=7200,
+                        help='Seconds for accounts to rest when they fail or are switched out')
+    parser.add_argument('-ac', '--accountcsv',
+                        help='Load accounts from CSV file containing "auth_service,username,passwd" lines')
     parser.add_argument('-l', '--location', type=parse_unicode,
                         help='Location, can be an address or coordinates')
     parser.add_argument('-j', '--jitter', help='Apply random -9m to +9m jitter to location',
@@ -63,6 +70,17 @@ def get_args():
     parser.add_argument('-sd', '--scan-delay',
                         help='Time delay between requests in scan threads',
                         type=float, default=10)
+    parser.add_argument('-enc', '--encounter',
+                        help='Start an encounter to gather IVs and moves',
+                        action='store_true', default=False)
+    parser.add_argument('-ed', '--encounter-delay',
+                        help='Time delay between encounter pokemon in scan threads',
+                        type=float, default=1)
+    encounter_list = parser.add_mutually_exclusive_group()
+    encounter_list.add_argument('-ewht', '--encounter-whitelist', action='append', default=[],
+                                help='List of pokemon to encounter for more stats')
+    encounter_list.add_argument('-eblk', '--encounter-blacklist', action='append', default=[],
+                                help='List of pokemon to NOT encounter for more stats')
     parser.add_argument('-ld', '--login-delay',
                         help='Time delay between each login attempt',
                         type=float, default=5)
@@ -89,7 +107,6 @@ def get_args():
     parser.add_argument('-c', '--china',
                         help='Coordinates transformer for China',
                         action='store_true')
-    parser.add_argument('-d', '--debug', help='Debug Mode', action='store_true')
     parser.add_argument('-m', '--mock', type=str,
                         help='Mock mode - point to a fpgo endpoint instead of using the real PogoApi, ec: http://127.0.0.1:9090',
                         default='')
@@ -108,7 +125,7 @@ def get_args():
     parser.add_argument('-k', '--gmaps-key',
                         help='Google Maps Javascript API Key',
                         required=True)
-    parser.add_argument('--spawnpoints-only', help='Only scan locations with spawnpoints in them.',
+    parser.add_argument('--skip-empty', help='Enables skipping of empty cells  in normal scans - requires previously populated database (not to be used with -ss)',
                         action='store_true', default=False)
     parser.add_argument('-C', '--cors', help='Enable CORS on web server',
                         action='store_true', default=False)
@@ -127,13 +144,16 @@ def get_args():
                         help='Disables PokeStops from the map (including parsing them into local db)',
                         action='store_true', default=False)
     parser.add_argument('-ss', '--spawnpoint-scanning',
-                        help='Use spawnpoint scanning (instead of hex grid)', nargs='?', const='nofile', default=False)
+                        help='Use spawnpoint scanning (instead of hex grid). Scans in a circle based on step_limit when on DB', nargs='?', const='nofile', default=False)
     parser.add_argument('--dump-spawnpoints', help='dump the spawnpoints from the db to json (only for use with -ss)',
                         action='store_true', default=False)
     parser.add_argument('-pd', '--purge-data',
                         help='Clear pokemon from database this many hours after they disappear \
                         (0 to disable)', type=int, default=0)
-    parser.add_argument('-px', '--proxy', help='Proxy url (e.g. socks5://127.0.0.1:9050)')
+    parser.add_argument('-px', '--proxy', help='Proxy url (e.g. socks5://127.0.0.1:9050)', action='append')
+    parser.add_argument('-pxsc', '--proxy-skip-check', help='Disable checking of proxies before start', action='store_true', default=False)
+    parser.add_argument('-pxt', '--proxy-timeout', help='Timeout settings for proxy checker in seconds ', type=int, default=5)
+    parser.add_argument('-pxd', '--proxy-display', help='Display info on which proxy beeing used (index or full) To be used with -ps', type=str, default='index')
     parser.add_argument('--db-type', help='Type of database to be used (default: sqlite)',
                         default='sqlite')
     parser.add_argument('--db-name', help='Name of the database to be used')
@@ -147,6 +167,10 @@ def get_args():
                         type=int, default=1)
     parser.add_argument('-wh', '--webhook', help='Define URL(s) to POST webhook information to',
                         nargs='*', default=False, dest='webhooks')
+    parser.add_argument('-gi', '--gym-info', help='Get all details about gyms (causes an additional API hit for every gym)',
+                        action='store_true', default=False)
+    parser.add_argument('--disable-clean', help='Disable clean db loop',
+                        action='store_true', default=False)
     parser.add_argument('--webhook-updates-only', help='Only send updates (pokémon & lured pokéstops)',
                         action='store_true', default=False)
     parser.add_argument('--wh-threads', help='Number of webhook threads; increase if the webhook queue falls behind',
@@ -155,7 +179,16 @@ def get_args():
     parser.add_argument('--ssl-privatekey', help='Path to SSL private key file')
     parser.add_argument('-ps', '--print-status', action='store_true',
                         help='Show a status screen instead of log messages. Can switch between status and logs by pressing enter.', default=False)
+    parser.add_argument('-sn', '--status-name', default=None,
+                        help='Enable status page database update using STATUS_NAME as main worker name')
+    parser.add_argument('-spp', '--status-page-password', default=None,
+                        help='Set the status page password')
     parser.add_argument('-el', '--encrypt-lib', help='Path to encrypt lib to be used instead of the shipped ones')
+    parser.add_argument('-odt', '--on-demand_timeout', help='Pause searching while web UI is inactive for this timeout(in seconds)', type=int, default=0)
+    verbosity = parser.add_mutually_exclusive_group()
+    verbosity.add_argument('-v', '--verbose', help='Show debug messages from PomemonGo-Map and pgoapi. Optionally specify file to log to.', nargs='?', const='nofile', default=False, metavar='filename.log')
+    verbosity.add_argument('-vv', '--very-verbose', help='Like verbose, but show debug messages from all modules as well.  Optionally specify file to log to.', nargs='?', const='nofile', default=False, metavar='filename.log')
+    verbosity.add_argument('-d', '--debug', help='Deprecated, use -v or -vv instead.', action='store_true')
     parser.set_defaults(DEBUG=False)
 
     args = parser.parse_args()
@@ -166,32 +199,120 @@ def get_args():
             print(sys.argv[0] + ": error: arguments -l/--location is required")
             sys.exit(1)
     else:
+        # If using a CSV file, add the data where needed into the username,password and auth_service arguments.
+        # CSV file should have lines like "ptc,username,password", "username,password" or "username".
+        if args.accountcsv is not None:
+            # Giving num_fields something it would usually not get
+            num_fields = -1
+            with open(args.accountcsv, 'r') as f:
+                for num, line in enumerate(f, 1):
+
+                    fields = []
+
+                    # First time around populate num_fields with current field count.
+                    if num_fields < 0:
+                        num_fields = line.count(',') + 1
+
+                    csv_input = []
+                    csv_input.append('')
+                    csv_input.append('<username>')
+                    csv_input.append('<username>,<password>')
+                    csv_input.append('<ptc/google>,<username>,<password>')
+
+                    # If the number of fields is differend this is not a CSV
+                    if num_fields != line.count(',') + 1:
+                        print(sys.argv[0] + ": Error parsing CSV file on line " + str(num) + ". Your file started with the following input, '" + csv_input[num_fields] + "' but now you gave us '" + csv_input[line.count(',') + 1] + "'.")
+                        sys.exit(1)
+
+                    field_error = ''
+                    line = line.strip()
+
+                    # Ignore blank lines and comment lines
+                    if len(line) == 0 or line.startswith('#'):
+                        continue
+
+                    # If number of fields is more than 1 split the line into fields and strip them
+                    if num_fields > 1:
+                        fields = line.split(",")
+                        fields = map(str.strip, fields)
+
+                    # If the number of fields is one then assume this is "username". As requested..
+                    if num_fields == 1:
+                        # Empty lines are already ignored.
+                        args.username.append(line)
+
+                    # If the number of fields is two then assume this is "username,password". As requested..
+                    if num_fields == 2:
+                        # If field length is not longer then 0 something is wrong!
+                        if len(fields[0]) > 0:
+                            args.username.append(fields[0])
+                        else:
+                            field_error = 'username'
+
+                        # If field length is not longer then 0 something is wrong!
+                        if len(fields[1]) > 0:
+                            args.password.append(fields[1])
+                        else:
+                            field_error = 'password'
+
+                    # If the number of fields is three then assume this is "ptc,username,password". As requested..
+                    if num_fields == 3:
+                        # If field 0 is not ptc or google something is wrong!
+                        if fields[0].lower() == 'ptc' or fields[0].lower() == 'google':
+                            args.auth_service.append(fields[0])
+                        else:
+                            field_error = 'method'
+
+                        # If field length is not longer then 0 something is wrong!
+                        if len(fields[1]) > 0:
+                            args.username.append(fields[1])
+                        else:
+                            field_error = 'username'
+
+                        # If field length is not longer then 0 something is wrong!
+                        if len(fields[2]) > 0:
+                            args.password.append(fields[2])
+                        else:
+                            field_error = 'password'
+
+                    if num_fields > 3:
+                        print 'Too many fields in accounts file: max supported are 3 fields. Found {} fields'.format(num_fields)
+                        sys.exit(1)
+
+                    # If something is wrong display error.
+                    if field_error != '':
+                        type_error = 'empty!'
+                        if field_error == 'method':
+                            type_error = 'not ptc or google instead we got \'' + fields[0] + '\'!'
+                        print(sys.argv[0] + ": Error parsing CSV file on line " + str(num) + ". We found " + str(num_fields) + " fields, so your input should have looked like '" + csv_input[num_fields] + "'\nBut you gave us '" + line + "', your " + field_error + " was " + type_error)
+                        sys.exit(1)
+
         errors = []
 
-        num_auths = 1
+        num_auths = len(args.auth_service)
         num_usernames = 0
         num_passwords = 0
 
-        if (args.username is None):
-            errors.append('Missing `username` either as -u/--username or in config')
+        if len(args.username) == 0:
+            errors.append('Missing `username` either as -u/--username, csv file using -ac, or in config')
         else:
             num_usernames = len(args.username)
 
-        if (args.location is None):
+        if args.location is None:
             errors.append('Missing `location` either as -l/--location or in config')
 
-        if (args.password is None):
-            errors.append('Missing `password` either as -p/--password or in config')
+        if len(args.password) == 0:
+            errors.append('Missing `password` either as -p/--password, csv file, or in config')
         else:
             num_passwords = len(args.password)
 
-        if (args.step_limit is None):
+        if args.step_limit is None:
             errors.append('Missing `step_limit` either as -st/--step-limit or in config')
 
-        if args.auth_service is None:
+        if num_auths == 0:
             args.auth_service = ['ptc']
-        else:
-            num_auths = len(args.auth_service)
+
+        num_auths = len(args.auth_service)
 
         if num_usernames > 1:
             if num_passwords > 1 and num_usernames != num_passwords:
@@ -217,61 +338,42 @@ def get_args():
         for i, username in enumerate(args.username):
             args.accounts.append({'username': username, 'password': args.password[i], 'auth_service': args.auth_service[i]})
 
+        # Make max workers equal number of accounts if unspecified, and disable account switching
+        if args.workers is None:
+            args.workers = len(args.accounts)
+            args.account_search_interval = None
+
+        # Disable search interval if 0 specified
+        if args.account_search_interval == 0:
+            args.account_search_interval = None
+
+        # Make sure we don't have an empty account list after adding command line and CSV accounts
+        if len(args.accounts) == 0:
+            print(sys.argv[0] + ": Error: no accounts specified. Use -a, -u, and -p or --accountcsv to add accounts")
+            sys.exit(1)
+
+        args.encounter_blacklist = [int(i) for i in args.encounter_blacklist]
+        args.encounter_whitelist = [int(i) for i in args.encounter_whitelist]
+
+        # Decide which scanning mode to use
+        if args.spawnpoint_scanning:
+            args.scheduler = 'SpawnScan'
+        elif args.skip_empty:
+            args.scheduler = 'HexSearchSpawnpoint'
+        else:
+            args.scheduler = 'HexSearch'
+
     return args
-
-
-def insert_mock_data(position):
-    num_pokemon = 6
-    num_pokestop = 6
-    num_gym = 6
-
-    log.info('Creating fake: %d pokemon, %d pokestops, %d gyms',
-             num_pokemon, num_pokestop, num_gym)
-
-    from .models import Pokemon, Pokestop, Gym
-    from .search import generate_location_steps
-
-    latitude, longitude = float(position[0]), float(position[1])
-
-    locations = [l for l in generate_location_steps((latitude, longitude), num_pokemon, 0.07)]
-    disappear_time = datetime.now() + timedelta(hours=1)
-
-    detect_time = datetime.now()
-
-    for i in range(1, num_pokemon):
-        Pokemon.create(encounter_id=uuid.uuid4(),
-                       spawnpoint_id='sp{}'.format(i),
-                       pokemon_id=(i + 1) % 150,
-                       latitude=locations[i][0],
-                       longitude=locations[i][1],
-                       disappear_time=disappear_time,
-                       detect_time=detect_time)
-
-    for i in range(1, num_pokestop):
-        Pokestop.create(pokestop_id=uuid.uuid4(),
-                        enabled=True,
-                        latitude=locations[i + num_pokemon][0],
-                        longitude=locations[i + num_pokemon][1],
-                        last_modified=datetime.now(),
-                        # Every other pokestop be lured
-                        lure_expiration=disappear_time if (i % 2 == 0) else None,
-                        )
-
-    for i in range(1, num_gym):
-        Gym.create(gym_id=uuid.uuid4(),
-                   team_id=i % 3,
-                   guard_pokemon_id=(i + 1) % 150,
-                   latitude=locations[i + num_pokemon + num_pokestop][0],
-                   longitude=locations[i + num_pokemon + num_pokestop][1],
-                   last_modified=datetime.now(),
-                   enabled=True,
-                   gym_points=1000
-                   )
 
 
 def now():
     # The fact that you need this helper...
     return int(time.time())
+
+
+# gets the current time past the hour
+def cur_sec():
+    return (60 * time.gmtime().tm_min) + time.gmtime().tm_sec
 
 
 def i8ln(word):
