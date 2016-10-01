@@ -185,6 +185,12 @@ def get_args():
                         help='Set the status page password')
     parser.add_argument('-el', '--encrypt-lib', help='Path to encrypt lib to be used instead of the shipped ones')
     parser.add_argument('-odt', '--on-demand_timeout', help='Pause searching while web UI is inactive for this timeout(in seconds)', type=int, default=0)
+    parser.add_argument('-sl', '--speed-limit',
+                        help='Speed limit in kilometers per hour',
+                        type=int, default=0)
+    parser.add_argument('-msld', '--max-speed-limit-delay',
+                        help='Maximum delay in seconds allowed due to speed limit',
+                        type=int, default=0)
     verbosity = parser.add_mutually_exclusive_group()
     verbosity.add_argument('-v', '--verbose', help='Show debug messages from PomemonGo-Map and pgoapi. Optionally specify file to log to.', nargs='?', const='nofile', default=False, metavar='filename.log')
     verbosity.add_argument('-vv', '--very-verbose', help='Like verbose, but show debug messages from all modules as well.  Optionally specify file to log to.', nargs='?', const='nofile', default=False, metavar='filename.log')
@@ -318,6 +324,12 @@ def get_args():
                 errors.append('The number of provided passwords ({}) must match the username count ({})'.format(num_passwords, num_usernames))
             if num_auths > 1 and num_usernames != num_auths:
                 errors.append('The number of provided auth ({}) must match the username count ({})'.format(num_auths, num_usernames))
+
+        if args.speed_limit < 0:
+            errors.append('Speed limit cannot be less than 0')
+
+        if args.max_speed_limit_delay < 0:
+            errors.append('Maximum delay due to speed limit cannot be less than 0')
 
         if len(errors) > 0:
             parser.print_usage()
