@@ -1,7 +1,7 @@
-SET latitude=51.5100694
-SET longitude=7.4739465
-SET stepsize=5
-SET leaps=3
+SET latitude=51.5561097
+SET longitude=7.9132573
+SET stepsize=6
+SET leaps=2
 
 @echo Generating Beehive for Lat:%latitude%, Lon:%longitude%, Steps:%stepsize%, Leaps:%leaps%
 

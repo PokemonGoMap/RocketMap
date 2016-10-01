@@ -135,6 +135,7 @@ for i in range(0,total_workers):
 
 location_and_auth = [(i, j) for i, j in itertools.izip(locations, accountStack)]
 
+coords_fh.write("Lat;Long;Steps;Desc\n")
 for i, (location, auth) in enumerate(location_and_auth):
     threadname = "Movable{}".format(i)
     output_fh.write(worker_template.format(lat=location.lat, lon=location.lon, steps=args.steps, auth=auth, threadname=threadname))
