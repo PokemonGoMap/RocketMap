@@ -2,7 +2,8 @@
 // Global map.js variables
 //
 
-var $selectExclude
+var $selectPokemonExclude
+var $selectRarityExcluded
 var $selectPokemonNotify
 var $selectRarityNotify
 var $textPerfectionNotify
@@ -23,6 +24,7 @@ var languageLookupThreshold = 3
 var searchMarkerStyles
 
 var excludedPokemon = []
+var excludedRarity = []
 var notifiedPokemon = []
 var notifiedRarity = []
 var notifiedMinPerfection = null
@@ -51,8 +53,8 @@ var audio = new Audio('static/sounds/ding.mp3')
 //
 
 function excludePokemon (id) { // eslint-disable-line no-unused-vars
-  $selectExclude.val(
-    $selectExclude.val().concat(id)
+  $selectPokemonExclude.val(
+    $selectPokemonExclude.val().concat(id)
   ).trigger('change')
 }
 
@@ -375,7 +377,7 @@ function pokemonLabel (name, rarity, types, disappearTime, id, latitude, longitu
   return contentstring
 }
 
-function gymLabel (teamName, teamId, gymPoints, latitude, longitude, lastScanned = null, name = null, members = []) {
+function gymLabel (teamName, teamId, gymPoints, latitude, longitude, lastScanned = null, name = null, members = [], gymId) {
   var memberStr = ''
   for (var i = 0; i < members.length; i++) {
     memberStr += `
@@ -445,7 +447,8 @@ function gymLabel (teamName, teamId, gymPoints, latitude, longitude, lastScanned
             Last Scanned: ${lastScannedStr}
           </div>
           <div>
-            <a href='javascript:void(0);' onclick='javascript:openMapDirections(${latitude},${longitude});' title='View in Maps'>Get directions</a>
+            <a href='javascript:void(0);' onclick='javascript:openMapDirections(${latitude},${longitude});' title='View in Maps'>Get directions</a> |
+            <a href="javascript:showGymDetails('${gymId}')">View Details</a>
           </div>
         </center>
       </div>`
@@ -628,7 +631,7 @@ function setupGymMarker (item) {
   }
 
   marker.infoWindow = new google.maps.InfoWindow({
-    content: gymLabel(gymTypes[item['team_id']], item['team_id'], item['gym_points'], item['latitude'], item['longitude'], item['last_scanned'], item['name'], item['pokemon']),
+    content: gymLabel(gymTypes[item['team_id']], item['team_id'], item['gym_points'], item['latitude'], item['longitude'], item['last_scanned'], item['name'], item['pokemon'], item['gym_id']),
     disableAutoPan: true
   })
 
@@ -638,7 +641,7 @@ function setupGymMarker (item) {
 
 function updateGymMarker (item, marker) {
   marker.setIcon({url: 'static/forts/' + Store.get('gymMarkerStyle') + '/' + gymTypes[item['team_id']] + (item['team_id'] !== 0 ? '_' + getGymLevel(item['gym_points']) : '') + '.png', scaledSize: new google.maps.Size(48, 48)})
-  marker.infoWindow.setContent(gymLabel(gymTypes[item['team_id']], item['team_id'], item['gym_points'], item['latitude'], item['longitude'], item['last_scanned'], item['name'], item['pokemon']))
+  marker.infoWindow.setContent(gymLabel(gymTypes[item['team_id']], item['team_id'], item['gym_points'], item['latitude'], item['longitude'], item['last_scanned'], item['name'], item['pokemon'], item['gym_id']))
   return marker
 }
 function updateGymIcons () {
@@ -831,7 +834,8 @@ function addListeners (marker) {
 function clearStaleMarkers () {
   $.each(mapData.pokemons, function (key, value) {
     if (mapData.pokemons[key]['disappear_time'] < new Date().getTime() ||
-      excludedPokemon.indexOf(mapData.pokemons[key]['pokemon_id']) >= 0) {
+      excludedPokemon.indexOf(mapData.pokemons[key]['pokemon_id']) >= 0 ||
+      excludedRarity.indexOf(mapData.pokemons[key]['pokemon_rarity']) >= 0) {
       if (mapData.pokemons[key].marker.rangeCircle) {
         mapData.pokemons[key].marker.rangeCircle.setMap(null)
         delete mapData.pokemons[key].marker.rangeCircle
@@ -843,7 +847,8 @@ function clearStaleMarkers () {
 
   $.each(mapData.lurePokemons, function (key, value) {
     if (mapData.lurePokemons[key]['lure_expiration'] < new Date().getTime() ||
-      excludedPokemon.indexOf(mapData.lurePokemons[key]['pokemon_id']) >= 0) {
+      excludedPokemon.indexOf(mapData.lurePokemons[key]['pokemon_id']) >= 0 ||
+      excludedRarity.indexOf(mapData.lurePokemons[key]['pokemon_rarity']) >= 0) {
       mapData.lurePokemons[key].marker.setMap(null)
       delete mapData.lurePokemons[key]
     }
@@ -958,7 +963,8 @@ function processPokemons (i, item) {
   }
 
   if (!(item['encounter_id'] in mapData.pokemons) &&
-    excludedPokemon.indexOf(item['pokemon_id']) < 0) {
+    excludedPokemon.indexOf(item['pokemon_id']) < 0 &&
+    excludedPokemon.indexOf(item['pokemon_rarity']) < 0) {
     // add marker to map and item to dict
     if (item.marker) {
       item.marker.setMap(null)
@@ -1342,6 +1348,163 @@ function createUpdateWorker () {
   }
 }
 
+function showGymDetails (id) { // eslint-disable-line no-unused-vars
+  var sidebar = document.querySelector('#gym-details')
+
+  sidebar.classList.add('visible')
+
+  console.log(id)
+
+  var data = $.ajax({
+    url: 'gym_data',
+    type: 'GET',
+    data: {
+      'id': id
+    },
+    dataType: 'json',
+    cache: false
+  })
+
+  data.done(function (result) {
+    var gymLevel = getGymLevel(result.gym_points)
+    var nextLvlPrestige = gymPrestige[gymLevel - 1] || 50000
+    var prestigePercentage = (result.gym_points / nextLvlPrestige) * 100
+    var lastScannedDate = new Date(result.last_scanned)
+    var freeSlots = result.pokemon.length ? gymLevel - result.pokemon.length : 0
+    var freeSlotsStr = freeSlots ? ` - ${freeSlots} Free Slots` : ''
+
+    var pokemonHtml = ''
+    var headerHtml = `
+      <center class="team-${result.team_id}-text">
+        <div>
+          <b class="team-${result.team_id}-text">${result.name || ''}</b>
+        </div>
+        <img height="100px" style="padding: 5px;" src="static/forts/${gymTypes[result.team_id]}_large.png">
+        <div class="prestige-bar team-${result.team_id}">
+          <div class="prestige team-${result.team_id}" style="width: ${prestigePercentage}%">
+          </div>
+        </div>
+        <div>
+          ${result.gym_points}/${nextLvlPrestige}
+        </div>
+        <div>
+          <b class="team-${result.team_id}-text">Level ${gymLevel}${freeSlotsStr}</b>
+        </div>
+        <div style="font-size: .7em;">
+          Last Scanned: ${lastScannedDate.getFullYear()}-${pad(lastScannedDate.getMonth() + 1)}-${pad(lastScannedDate.getDate())} ${pad(lastScannedDate.getHours())}:${pad(lastScannedDate.getMinutes())}:${pad(lastScannedDate.getSeconds())}
+        </div>
+      </center>
+    `
+
+    if (result.pokemon.length) {
+      $.each(result.pokemon, function (i, pokemon) {
+        var perfectPercent = Math.round((pokemon.iv_defense + pokemon.iv_attack + pokemon.iv_stamina) * 100 / 45)
+        var moveEnergy = Math.round(100 / pokemon.move_2_energy)
+
+        pokemonHtml += `
+          <tr onclick=toggleGymPokemonDetails(this)>
+            <td width="30px">
+              <i class="pokemon-sprite n${pokemon.pokemon_id}"></i>
+            </td>
+            <td class="team-${result.team_id}-text">
+              <div style="line-height:1em;">${pokemon.pokemon_name}</div>
+              <div class="cp">CP ${pokemon.pokemon_cp}</div>
+            </td>
+            <td width="190" class="team-${result.team_id}-text" align="center">
+              <div class="trainer-level">${pokemon.trainer_level}</div>
+              <div style="line-height: 1em;">${pokemon.trainer_name}</div>
+            </td>
+            <td width="10">
+              <!--<a href="#" onclick="toggleGymPokemonDetails(this)">-->
+                <i class="team-${result.team_id}-text fa fa-angle-double-down"></i>
+              <!--</a>-->
+            </td>
+          </tr>
+          <tr class="details">
+            <td colspan="2">
+              <div class="ivs">
+                <div class="iv">
+                  <div class="type">ATK</div>
+                  <div class="value">
+                    ${pokemon.iv_attack}
+                  </div>
+                </div>
+                <div class="iv">
+                  <div class="type">DEF</div>
+                  <div class="value">
+                    ${pokemon.iv_defense}
+                  </div>
+                </div>
+                <div class="iv">
+                  <div class="type">STA</div>
+                  <div class="value">
+                    ${pokemon.iv_stamina}
+                  </div>
+                </div>
+                <div class="iv" style="width: 36px;"">
+                  <div class="type">PERFECT</div>
+                  <div class="value">
+                    ${perfectPercent}<span style="font-size: .6em;">%</span>
+                  </div>
+                </div>
+              </div>
+            </td>
+            <td colspan="2">
+              <div class="moves">
+                <div class="move">
+                  <div class="name">
+                    ${pokemon.move_1_name}
+                    <div class="type ${pokemon.move_1_type.toLowerCase()}">${pokemon.move_1_type}</div>
+                  </div>
+                  <div class="damage">
+                    ${pokemon.move_1_damage}
+                  </div>
+                </div>
+                <br>
+                <div class="move">
+                  <div class="name">
+                    ${pokemon.move_2_name}
+                    <div class="type ${pokemon.move_2_type.toLowerCase()}">${pokemon.move_2_type}</div>
+                    <div>
+                      <i class="move-bar-sprite move-bar-sprite-${moveEnergy}"></i>
+                    </div>
+                  </div>
+                  <div class="damage">
+                    ${pokemon.move_2_damage}
+                  </div>
+                </div>
+              </div>
+            </td>
+          </tr>
+          `
+      })
+
+      pokemonHtml = `<table><tbody>${pokemonHtml}</tbody></table>`
+    } else {
+      pokemonHtml = `
+        <center class="team-${result.team_id}-text">
+          Gym Leader:<br>
+          <i class="pokemon-large-sprite n${result.guard_pokemon_id}"></i><br>
+          <b class="team-${result.team_id}-text">${result.guard_pokemon_name}</b>
+
+          <p style="font-size: .75em; margin: 5px;">
+            No additional gym information is available for this gym. Make sure you are collecting <a href="https://pgm.readthedocs.io/en/develop/extras/gyminfo.html">detailed gym info.</a>
+            If you have detailed gym info collection running, this gym's Pokemon information may be out of date.
+          </p>
+        </center>
+      `
+    }
+
+    sidebar.innerHTML = `${headerHtml}${pokemonHtml}`
+  })
+}
+
+function toggleGymPokemonDetails (e) { // eslint-disable-line no-unused-vars
+  e.lastElementChild.firstElementChild.classList.toggle('fa-angle-double-up')
+  e.lastElementChild.firstElementChild.classList.toggle('fa-angle-double-down')
+  e.nextElementSibling.classList.toggle('visible')
+}
+
 //
 // Page Ready Exection
 //
@@ -1506,7 +1669,8 @@ $(function () {
     moves = data
   })
 
-  $selectExclude = $('#exclude-pokemon')
+  $selectPokemonExclude = $('#exclude-pokemon')
+  $selectRarityExcluded = $('#excluded-rarity')
   $selectPokemonNotify = $('#notify-pokemon')
   $selectRarityNotify = $('#notify-rarity')
   $textPerfectionNotify = $('#notify-perfection')
@@ -1538,9 +1702,14 @@ $(function () {
     })
 
     // setup the filter lists
-    $selectExclude.select2({
+    $selectPokemonExclude.select2({
       placeholder: i8ln('Select Pokémon'),
       data: pokeList,
+      templateResult: formatState
+    })
+    $selectRarityExcluded.select2({
+      placeholder: i8ln('Select Rarity Excluded'),
+      data: [i8ln('Common'), i8ln('Uncommon'), i8ln('Rare'), i8ln('Very Rare'), i8ln('Ultra Rare')],
       templateResult: formatState
     })
     $selectPokemonNotify.select2({
@@ -1555,10 +1724,14 @@ $(function () {
     })
 
     // setup list change behavior now that we have the list to work from
-    $selectExclude.on('change', function (e) {
-      excludedPokemon = $selectExclude.val().map(Number)
+    $selectPokemonExclude.on('change', function (e) {
+      excludedPokemon = $selectPokemonExclude.val().map(Number)
       clearStaleMarkers()
       Store.set('remember_select_exclude', excludedPokemon)
+    })
+    $selectRarityExcluded.on('change', function (e) {
+      excludedRarity = $selectRarityExcluded.val().map(String)
+      Store.set('remember_select_rarity_excluded', excludedRarity)
     })
     $selectPokemonNotify.on('change', function (e) {
       notifiedPokemon = $selectPokemonNotify.val().map(Number)
@@ -1581,7 +1754,8 @@ $(function () {
     })
 
     // recall saved lists
-    $selectExclude.val(Store.get('remember_select_exclude')).trigger('change')
+    $selectPokemonExclude.val(Store.get('remember_select_exclude')).trigger('change')
+    $selectRarityExcluded.val(Store.get('remember_select_rarity_excluded')).trigger('change')
     $selectPokemonNotify.val(Store.get('remember_select_notify')).trigger('change')
     $selectRarityNotify.val(Store.get('remember_select_rarity_notify')).trigger('change')
     $textPerfectionNotify.val(Store.get('remember_text_perfection_notify')).trigger('change')
