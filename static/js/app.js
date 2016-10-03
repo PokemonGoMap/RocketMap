@@ -107,6 +107,16 @@
   var $statsToggle = document.querySelector('a[href="#stats"]')
   var $statsClose
 
+  // History.
+  var $history = document.querySelector('#history')
+  var $historyToggle = document.querySelector('a[href="#history"]')
+  var $historyClose
+
+  // Spawn.
+  var $spawn = document.querySelector('#spawn')
+  var $spawnToggle = document.querySelector('a[href="#spawn"]')
+  var $spawnClose
+
   // Event: Prevent clicks/taps inside the nav from bubbling.
   addEventsListener($nav, 'click touchend', function (event) {
     event.stopPropagation()
@@ -115,6 +125,19 @@
   if ($stats) {
     // Event: Prevent clicks/taps inside the stats from bubbling.
     addEventsListener($stats, 'click touchend', function (event) {
+      event.stopPropagation()
+    })
+  }
+  if ($history) {
+    // Event: Prevent clicks/taps inside the stats from bubbling.
+    addEventsListener($history, 'click touchend', function (event) {
+      event.stopPropagation()
+    })
+  }
+
+  if ($spawn) {
+    // Event: Prevent clicks/taps inside the stats from bubbling.
+    addEventsListener($spawn, 'click touchend', function (event) {
       event.stopPropagation()
     })
   }
@@ -130,9 +153,21 @@
     if ($stats && event.target.matches('a[href="#stats"]')) {
       return
     }
+    if ($history && event.target.matches('a[href="#history]')) {
+      return
+    }
+    if ($spawn && event.target.matches('a[href="#spawn]')) {
+      return
+    }
     $nav.classList.remove('visible')
     if ($stats) {
       $stats.classList.remove('visible')
+    }
+    if ($history) {
+      $history.classList.remove('visible')
+    }
+    if ($spawn) {
+      $spawn.classList.remove('visible')
     }
   })
 
@@ -151,6 +186,49 @@
       event.preventDefault()
       event.stopPropagation()
       $stats.classList.toggle('visible')
+      if ($('#stats').hasClass('visible')) {
+        if ($('#history').hasClass('visible')) {
+          $history.classList.toggle('visible')
+        }
+        if ($('#spawn').hasClass('visible')) {
+          $spawn.classList.toggle('visible')
+        }
+      }
+    })
+  }
+
+  // Event: Toggle history on click.
+  if ($historyToggle) {
+    $historyToggle.addEventListener('click', function (event) {
+      event.preventDefault()
+      event.stopPropagation()
+      $history.classList.toggle('visible')
+      if ($('#history').hasClass('visible')) {
+        if ($('#stats').hasClass('visible')) {
+          $stats.classList.toggle('visible')
+        }
+        if ($('#spawn').hasClass('visible')) {
+          $spawn.classList.toggle('visible')
+        }
+        getHistory()
+      }
+    })
+  }
+
+  // Event: Toggle spawn on click.
+  if ($spawnToggle) {
+    $spawnToggle.addEventListener('click', function (event) {
+      event.preventDefault()
+      event.stopPropagation()
+      $spawn.classList.toggle('visible')
+      if ($('#spawn').hasClass('visible')) {
+        if ($('#stats').hasClass('visible')) {
+          $stats.classList.toggle('visible')
+        }
+        if ($('#history').hasClass('visible')) {
+          $history.classList.toggle('visible')
+        }
+      }
     })
   }
 
@@ -169,6 +247,22 @@
     $statsClose.className = 'close'
     $statsClose.tabIndex = 0
     $stats.appendChild($statsClose)
+  }
+
+  if ($history) {
+    $historyClose = document.createElement('a')
+    $historyClose.href = '#'
+    $historyClose.className = 'close'
+    $historyClose.tabIndex = 0
+    $history.appendChild($historyClose)
+  }
+
+  if ($spawn) {
+    $spawnClose = document.createElement('a')
+    $spawnClose.href = '#'
+    $spawnClose.className = 'close'
+    $spawnClose.tabIndex = 0
+    $spawn.appendChild($spawnClose)
   }
 
   // Event: Hide on ESC.
@@ -194,6 +288,22 @@
       event.preventDefault()
       event.stopPropagation()
       $stats.classList.remove('visible')
+    })
+  }
+  if ($historyClose) {
+    // Event: Hide stats on click.
+    $historyClose.addEventListener('click', function (event) {
+      event.preventDefault()
+      event.stopPropagation()
+      $history.classList.remove('visible')
+    })
+  }
+  if ($spawnClose) {
+    // Event: Hide stats on click.
+    $spawnClose.addEventListener('click', function (event) {
+      event.preventDefault()
+      event.stopPropagation()
+      $spawn.classList.remove('visible')
     })
   }
 })()

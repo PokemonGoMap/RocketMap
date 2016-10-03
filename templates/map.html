@@ -39,7 +39,9 @@
       <header id="header">
         <a href="#nav"><span class="label">Options</span></a>
         <h1><a href="#">Pokémon Go Map</a></h1>
-        <a href="#stats" id="statsToggle" class="statsNav" style="float: right;"><span class="label">Stats</span></a>
+		<a href="#stats" id="statsToggle" class="statsNav" style="float: right;"><span class="label">Stats</span></a>
+        <a href="#history" id="historyToggle" class="historyNav" style="float: right;"><span class="label">History</span></a>
+        <a href="#spawn" id="spawnToggle" class="spawnNav" style="float: right;"><span class="label">Spawn</span></a>
       </header>
       <!-- NAV -->
       <nav id="nav">
@@ -295,6 +297,46 @@
           <div id="pokestopList" style="color: black;"></div>
         </div>
       </nav>
+      <nav id="history">
+		<div class="switch-container">
+          <div class="switch-container">
+            <center><h1 id="history-ldg-label">History For Spawns in Window</h1></center>
+          </div>
+		  <div class="stats-label-container">
+            <center><h1 id="stats-history-label"></h1></center>
+          </div>
+            <div id="historyList" style="color: black;">
+                <table id="historyList_table" class="display" cellspacing="0" width="100%">
+              <thead>
+                <tr>
+                  <th>Icon</th> <th>Name</th> <th>Count</th> <th>%</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+            </div>
+		</div>
+	  </nav>
+        <nav id="spawn">
+		<div class="switch-container">
+          <div class="switch-container">
+            <center><h1 id="spawn-ldg-label">History For Spawn</h1></center>
+          </div>
+		  <div class="stats-label-container">
+            <center><h1 id="stats-spawn-label"></h1></center>
+          </div>
+            <div id="spawnList" style="color: black;">
+                <table id="spawnList_table" class="display" cellspacing="0" width="100%">
+              <thead>
+                <tr>
+                  <th>Icon</th> <th>Name</th> <th>Count</th> <th>%</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+            </div>
+		</div>
+	  </nav>
       <div id="map"></div>
       <div class="fab" id="scan-here" style="display:none"></div>
     </div>

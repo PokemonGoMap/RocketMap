@@ -145,3 +145,91 @@ function countMarkers (map) { // eslint-disable-line no-unused-vars
     document.getElementById('pokestopList').innerHTML = 'PokéStops markers are disabled'
   }
 }
+
+function compileHistory (data) { // eslint-disable-line no-unused-vars
+  document.getElementById('stats-history-label').innerHTML = 'Pokémons';
+
+  var i = 0
+  var pkmnCount = []
+  var pkmnTotal = 0
+  var pokeStatTable = $('#historyList_table').DataTable()
+
+  $.each(data.pokemons, function (key, value) {
+    pkmnCount[value['pokemon_id']] = {
+      'ID': value['pokemon_id'],
+      'Count': value['count'],
+      'Name': value['pokemon_name']
+    }
+    pkmnTotal = pkmnTotal + value['count']
+  })
+
+  var pokeCounts = []
+  for (i = 0; i < pkmnCount.length; i++) {
+      if (pkmnCount[i] && pkmnCount[i].Count > 0) {
+        pokeCounts.push(
+          [
+            '<img src=\'static/icons/' + pkmnCount[i].ID + '.png\' />',
+            '<a href=\'http://www.pokemon.com/us/pokedex/' + pkmnCount[i].ID + '\' target=\'_blank\' title=\'View in Pokédex\' style=\'color: black;\'>' + pkmnCount[i].Name + '</a>',
+            pkmnCount[i].Count,
+            (Math.round(pkmnCount[i].Count * 100 / pkmnTotal * 10) / 10) + '%'
+          ]
+        )
+      }
+    }
+
+  $('#historyList_table').dataTable().show()
+  pokeStatTable
+    .clear()
+    .rows.add(pokeCounts)
+    .draw()
+}
+
+function getStats (spawnpointId) { // eslint-disable-line no-unused-vars
+  $.ajax({
+    url: 'spawn_history?spawnpoint_id=' + spawnpointId,
+    dataType: 'json',
+    async: true,
+    success: function (data) {
+      document.getElementById('stats-spawn-label').innerHTML = 'Pokémons';
+
+      var i = 0
+      var pkmnCount = []
+      var pkmnTotal = 0
+      var pokeStatTable = $('#spawnList_table').DataTable()
+
+      $.each(data.spawn_history, function (key, value) {
+        pkmnCount[value['pokemon_id']] = {
+          'ID': value['pokemon_id'],
+          'Count': value['count'],
+          'Name': value['pokemon_name']
+        }
+        pkmnTotal = pkmnTotal + value['count']
+      })
+
+      var pokeCounts = []
+      for (i = 0; i < pkmnCount.length; i++) {
+        if (pkmnCount[i] && pkmnCount[i].Count > 0) {
+          pokeCounts.push(
+            [
+              '<img src=\'static/icons/' + pkmnCount[i].ID + '.png\' />',
+              '<a href=\'http://www.pokemon.com/us/pokedex/' + pkmnCount[i].ID + '\' target=\'_blank\' title=\'View in Pokédex\' style=\'color: black;\'>' + pkmnCount[i].Name + '</a>',
+              pkmnCount[i].Count,
+              (Math.round(pkmnCount[i].Count * 100 / pkmnTotal * 10) / 10) + '%'
+            ]
+          )
+        }
+      }
+      $('#spawnList_table').dataTable().show()
+        pokeStatTable
+          .clear()
+          .rows.add(pokeCounts)
+          .draw()
+      var $spawn = document.querySelector('#spawn')
+      document.getElementById('spawn').classList.add('visible')
+
+    },
+    error: function (jqXHR, status, error) {
+      console.log('Error loading stats: ' + error)
+    }
+  })
+}
