@@ -147,7 +147,7 @@ function countMarkers (map) { // eslint-disable-line no-unused-vars
 }
 
 function compileHistory (data) { // eslint-disable-line no-unused-vars
-  document.getElementById('stats-history-label').innerHTML = 'Pokémons';
+  document.getElementById('stats-history-label').innerHTML = 'Pokémons'
 
   var i = 0
   var pkmnCount = []
@@ -165,17 +165,17 @@ function compileHistory (data) { // eslint-disable-line no-unused-vars
 
   var pokeCounts = []
   for (i = 0; i < pkmnCount.length; i++) {
-      if (pkmnCount[i] && pkmnCount[i].Count > 0) {
-        pokeCounts.push(
-          [
-            '<img src=\'static/icons/' + pkmnCount[i].ID + '.png\' />',
-            '<a href=\'http://www.pokemon.com/us/pokedex/' + pkmnCount[i].ID + '\' target=\'_blank\' title=\'View in Pokédex\' style=\'color: black;\'>' + pkmnCount[i].Name + '</a>',
-            pkmnCount[i].Count,
-            (Math.round(pkmnCount[i].Count * 100 / pkmnTotal * 10) / 10) + '%'
-          ]
-        )
-      }
+    if (pkmnCount[i] && pkmnCount[i].Count > 0) {
+      pokeCounts.push(
+        [
+          '<img src=\'static/icons/' + pkmnCount[i].ID + '.png\' />',
+          '<a href=\'http://www.pokemon.com/us/pokedex/' + pkmnCount[i].ID + '\' target=\'_blank\' title=\'View in Pokédex\' style=\'color: black;\'>' + pkmnCount[i].Name + '</a>',
+          pkmnCount[i].Count,
+          (Math.round(pkmnCount[i].Count * 100 / pkmnTotal * 10) / 10) + '%'
+        ]
+      )
     }
+  }
 
   $('#historyList_table').dataTable().show()
   pokeStatTable
@@ -184,13 +184,13 @@ function compileHistory (data) { // eslint-disable-line no-unused-vars
     .draw()
 }
 
-function getStats (spawnpointId) { // eslint-disable-line no-unused-vars
+function getSpawnStats (spawnpointId) { // eslint-disable-line no-unused-vars
   $.ajax({
     url: 'spawn_history?spawnpoint_id=' + spawnpointId,
     dataType: 'json',
     async: true,
     success: function (data) {
-      document.getElementById('stats-spawn-label').innerHTML = 'Pokémons';
+      document.getElementById('stats-spawn-label').innerHTML = 'Pokémons'
 
       var i = 0
       var pkmnCount = []
@@ -220,13 +220,12 @@ function getStats (spawnpointId) { // eslint-disable-line no-unused-vars
         }
       }
       $('#spawnList_table').dataTable().show()
-        pokeStatTable
-          .clear()
-          .rows.add(pokeCounts)
-          .draw()
-      var $spawn = document.querySelector('#spawn')
-      document.getElementById('spawn').classList.add('visible')
+      pokeStatTable
+        .clear()
+        .rows.add(pokeCounts)
+        .draw()
 
+      document.getElementById('spawn').classList.add('visible')
     },
     error: function (jqXHR, status, error) {
       console.log('Error loading stats: ' + error)

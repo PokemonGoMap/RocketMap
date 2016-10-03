@@ -72,13 +72,13 @@ function removePokemonMarker (encounterId) { // eslint-disable-line no-unused-va
 }
 
 function getHistory () { // eslint-disable-line no-unused-vars
-  var bounds = map.getBounds();
-  var swPoint = bounds.getSouthWest();
-  var nePoint = bounds.getNorthEast();
-  var swLat = swPoint.lat();
-  var swLng = swPoint.lng();
-  var neLat = nePoint.lat();
-  var neLng = nePoint.lng();
+  var bounds = map.getBounds()
+  var swPoint = bounds.getSouthWest()
+  var nePoint = bounds.getNorthEast()
+  var swLat = swPoint.lat()
+  var swLng = swPoint.lng()
+  var neLat = nePoint.lat()
+  var neLng = nePoint.lng()
 
   $.ajax({
     url: '/history',
@@ -94,7 +94,7 @@ function getHistory () { // eslint-disable-line no-unused-vars
       compileHistory(data)
     },
     error: function (jqXHR, status, error) {
-      console.log('Error loading stats: ' + error);
+      console.log('Error loading stats: ' + error)
     }
   })
 }
@@ -549,7 +549,7 @@ function spawnpointLabel (item) {
 
   str += `
       <div>
-      <a href="javascript:getStats('${item.spawnpoint_id}')">Stats</a>&nbsp;&nbsp;
+      <a href="javascript:getSpawnStats('${item.spawnpoint_id}')">Stats</a>&nbsp;&nbsp;
               <ul class="statsHolder " name="${item.spawnpoint_id}" style="max-width: 240px; list-style: none"></ul>
 
     </div>`

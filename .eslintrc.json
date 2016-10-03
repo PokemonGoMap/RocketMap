@@ -19,6 +19,8 @@
     "centerLng": true,
     "pageLoaded": true,
     "countMarkers": true,
+    "compileHistory": true,
+    "getSpawnStats": true,
     "skel": true,
     "setupPokemonMarker": true,
 
