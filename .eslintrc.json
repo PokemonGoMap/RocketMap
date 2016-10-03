@@ -21,6 +21,7 @@
     "countMarkers": true,
     "compileHistory": true,
     "getSpawnStats": true,
+    "getHistory": true,
     "skel": true,
     "setupPokemonMarker": true,
 
