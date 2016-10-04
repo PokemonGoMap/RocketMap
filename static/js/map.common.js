@@ -848,6 +848,7 @@ function setupPokemonMarker (item, map, isBounceDisabled) {
     animationDisabled = true
   }
 
+  var MarkerWithLabel
   var marker = new MarkerWithLabel({
     position: {
       lat: item['latitude'],
