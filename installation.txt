@@ -39,6 +39,7 @@ aus.
 siehe https://pgm.readthedocs.io/en/develop/basic-install/index.html für den kompletten Guide
 folgenden Befehl ausführen um die Bibliotheken runterzuladen
 pip install -r requirements.txt
+(unter Linux "sudo -H pip install -r requirements.txt" benutzen)
 
 wenn alles ohne Fehler funktioniert hat, dann ist alles ok.
 
