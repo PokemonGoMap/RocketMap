@@ -1,4 +1,4 @@
-function inherits(childCtor, parentCtor) {
+ function inherits(childCtor, parentCtor) {
     function tempCtor() {}
     tempCtor.prototype = parentCtor.prototype;
     childCtor.superClass_ = parentCtor.prototype;
@@ -6,7 +6,7 @@ function inherits(childCtor, parentCtor) {
     childCtor.prototype.constructor = childCtor;
 }
 
-function MarkerLabel_(marker, crossURL, handCursorURL) {
+ function MarkerLabel_(marker, crossURL, handCursorURL) {
     this.marker_ = marker;
     this.handCursorURL_ = marker.handCursorURL;
     this.labelDiv_ = document.createElement("div");
