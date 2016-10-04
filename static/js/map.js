@@ -34,7 +34,6 @@ var reids = []
 
 
 var map
-var MarkerWithLabel
 var rawDataIsLoading = false
 var locationMarker
 var rangeMarkers = ['pokemon', 'pokestop', 'gym']
