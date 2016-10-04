@@ -35,12 +35,6 @@ class Pogom(Flask):
         self.route("/stats", methods=['GET'])(self.get_stats)
         self.route("/status", methods=['GET'])(self.get_status)
         self.route("/status", methods=['POST'])(self.post_status)
-        self.route("/help", methods=['GET'])(self.get_help)
-        self.route("/menu", methods=['GET'])(self.get_menu)
-        self.route("/iv_calc", methods=['GET'])(self.get_iv_calc)
-        self.route("/donate", methods=['GET'])(self.get_donate)
-        self.route("/donateCancel", methods=['GET'])(self.get_donate_cancel)
-        self.route("/donateSuccess", methods=['GET'])(self.get_donate_success)
 
     def set_search_control(self, control):
         self.search_control = control
@@ -281,30 +275,6 @@ class Pogom(Flask):
         else:
             d['login'] = 'failed'
         return jsonify(d)
-        
-        
-    def get_help(self):
-        return render_template('help.html')
-        
-        
-    def get_menu(self):
-        return render_template('menu.html')
-        
-        
-    def get_iv_calc(self):
-        return render_template('iv_calc.html')
-        
-        
-    def get_donate(self):
-        return render_template('donate.html')
-        
-        
-    def get_donate_cancel(self):
-        return render_template('donate_cancel.html')
-        
-        
-    def get_donate_success(self):
-        return render_template('donate_success.html')
 
 
 class CustomJSONEncoder(JSONEncoder):

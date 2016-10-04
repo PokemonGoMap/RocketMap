@@ -1302,6 +1302,8 @@ function i8ln (word) {
 }
 
 function updateGeoLocation () {
+  return;
+  
   if (navigator.geolocation && (Store.get('geoLocate') || Store.get('followMyLocation'))) {
     navigator.geolocation.getCurrentPosition(function (position) {
       var lat = position.coords.latitude

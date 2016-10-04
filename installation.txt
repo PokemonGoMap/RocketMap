@@ -98,10 +98,10 @@ Danach führe die Batchdatei "start-spawns.bat" aus und es sollte für jede Locati
 
 Fehlerbehebung
 >> "Der Befehl "git" ist entweder falsch geschrieben oder konnte nicht gefunden werden."
--> Entweder Git der Umgebungsvariable hinzufügen oder einfach das Project downloaden wie hier zu sehen: http://fs5.directupload.net/images/160822/s78y474k.png
+-> git der Umgebungsvariable anfügen NICHT ersetzen
 
 >> "Der Befehl "python" ist entweder falsch geschrieben oder konnte nicht gefunden werden."
 -> Python der Umgebungsvariable anfügen NICHT ersetzen("C:\Python27" und "C:\Python27\Scripts")
 
 >> "Der Befehl "pip" ist entweder falsch geschrieben oder konnte nicht gefunden werden."
--> Python der Umgebungsvariable anfügen NICHT ersetzen("C:\Python27\Scripts")
+-> Python-Scripts der Umgebungsvariable anfügen NICHT ersetzen("C:\Python27\Scripts")

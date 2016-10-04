@@ -72,7 +72,7 @@
         margin-left: 0.5em;
       }
 
-      &[href="/help"] {
+      &[href="http://pokemap-nrw.de/index.php/hilfe/"] {
         @include icon('\2753');
         -webkit-tap-highlight-color: rgba(0,0,0,0);
 
@@ -81,14 +81,14 @@
         }
       }
 
-      & + a[href="/help"]:last-child {
+      & + a[href="http://pokemap-nrw.de/index.php/hilfe/"]:last-child {
         border-left: solid 1px _palette(accent2, border);
         padding-left: 1.25em;
         margin-left: 0.5em;
       }
       
-      &[href="/menu"] {
-        @include icon('\2630');
+      &[href="http://pokemap-nrw.de/"] {
+        @include icon('\01F3E0');
         -webkit-tap-highlight-color: rgba(0,0,0,0);
 
         &:before {
@@ -96,13 +96,13 @@
         }
       }
 
-      & + a[href="/menu"]:last-child {
+      & + a[href="http://pokemap-nrw.de/"]:last-child {
         border-left: solid 1px _palette(accent2, border);
         padding-left: 1.25em;
         margin-left: 0.5em;
       }
       
-      &[href="/donate"] {
+      &[href="http://pokemap-nrw.de/index.php/unterstuetzen/"] {
         @include icon('\2665');
         -webkit-tap-highlight-color: rgba(0,0,0,0);
 
@@ -111,7 +111,7 @@
         }
       }
 
-      & + a[href="/donate"]:last-child {
+      & + a[href="http://pokemap-nrw.de/index.php/unterstuetzen/"]:last-child {
         border-left: solid 1px _palette(accent2, border);
         padding-left: 1.25em;
         margin-left: 0.5em;
