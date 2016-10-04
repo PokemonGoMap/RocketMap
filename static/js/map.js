@@ -276,6 +276,9 @@ function initSidebar () {
 
   searchBox.addListener('place_changed', function () {
     var place = searchBox.getPlace()
+
+    if (!place.geometry) return
+    
     var loc = place.geometry.location
     changeLocation(loc.lat(), loc.lng())
   })
