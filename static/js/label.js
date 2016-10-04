@@ -17,9 +17,7 @@
  *  itself because this feature is not (yet) supported in the <code>google.maps.Marker</code> class.
  */
 
-/*!
- *
- * Licensed under the Apache License, Version 2.0 (the 'License');
+/* Licensed under the Apache License, Version 2.0 (the 'License');
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
@@ -32,8 +30,8 @@
  * limitations under the License.
  */
 
-/*jslint browser:true */
-/*global document,google */
+/* jslint browser:true */
+/* global document,google */
 
 /**
  * @param {Function} childCtor Child class.
@@ -42,10 +40,10 @@
  */
 function inherits (childCtor, parentCtor) {
   /* @constructor */
-  function tempCtor () {}
-  tempCtor.prototype = parentCtor.prototype
+  function TempCtor () {}
+  TempCtor.prototype = parentCtor.prototype
   childCtor.superClass_ = parentCtor.prototype
-  childCtor.prototype = new tempCtor()
+  childCtor.prototype = new TempCtor()
   /* @override */
   childCtor.prototype.constructor = childCtor
 }
@@ -345,7 +343,7 @@ MarkerLabel_.prototype.setContent = function () {
  * @private
  */
 MarkerLabel_.prototype.setTitle = function () {
-   this.labelDiv_.title = this.marker_.getTitle() || ''
+  this.labelDiv_.title = this.marker_.getTitle() || ''
 }
 
 /**
@@ -540,7 +538,6 @@ inherits(MarkerWithLabel, google.maps.Marker)
  * @private
  */
 MarkerWithLabel.prototype.setMap = function (theMap) {
-
   // Call the inherited function...
   google.maps.Marker.prototype.setMap.apply(this, arguments)
 
