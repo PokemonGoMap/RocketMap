@@ -1,12 +1,12 @@
- function inherits(childCtor, parentCtor) {
-    function tempCtor() {}
+function inherits (childCtor, parentCtor) {
+    function tempCtor () {}
     tempCtor.prototype = parentCtor.prototype;
     childCtor.superClass_ = parentCtor.prototype;
     childCtor.prototype = new tempCtor();
     childCtor.prototype.constructor = childCtor;
 }
 
- function MarkerLabel_(marker, crossURL, handCursorURL) {
+function MarkerLabel_ (marker, crossURL, handCursorURL) {
     this.marker_ = marker;
     this.handCursorURL_ = marker.handCursorURL;
     this.labelDiv_ = document.createElement("div");
@@ -14,7 +14,7 @@
     this.crossDiv_ = MarkerLabel_.getSharedCross(crossURL);
 }
 inherits(MarkerLabel_, google.maps.OverlayView);
-MarkerLabel_.getSharedCross = function(crossURL) {
+MarkerLabel_.getSharedCross = function (crossURL) {
     var div;
     if (typeof MarkerLabel_.getSharedCross.crossDiv === "undefined") {
         div = document.createElement("img");
@@ -26,7 +26,7 @@ MarkerLabel_.getSharedCross = function(crossURL) {
     }
     return MarkerLabel_.getSharedCross.crossDiv;
 };
-MarkerLabel_.prototype.onAdd = function() {
+MarkerLabel_.prototype.onAdd = function () {
     var me = this;
     var cMouseIsDown = false;
     var cDraggingLabel = false;
@@ -38,7 +38,7 @@ MarkerLabel_.prototype.onAdd = function() {
     var cStartCenter;
     var cRaiseOffset = 20;
     var cDraggingCursor = "url(" + this.handCursorURL_ + ")";
-    var cAbortEvent = function(e) {
+    var cAbortEvent = function (e) {
         if (e.preventDefault) {
             e.preventDefault();
         }
@@ -47,7 +47,7 @@ MarkerLabel_.prototype.onAdd = function() {
             e.stopPropagation();
         }
     };
-    var cStopBounce = function() {
+    var cStopBounce = function () {
         me.marker_.setAnimation(null);
     };
     this.getPanes().markerLayer.appendChild(this.labelDiv_);
@@ -55,17 +55,17 @@ MarkerLabel_.prototype.onAdd = function() {
         this.getPanes().markerLayer.appendChild(this.crossDiv_);
         MarkerLabel_.getSharedCross.processed = true;
     }
-    this.listeners_ = [google.maps.event.addDomListener(this.labelDiv_, "mouseover", function(e) {
+    this.listeners_ = [google.maps.event.addDomListener(this.labelDiv_, "mouseover", function (e) {
         if (me.marker_.getDraggable() || me.marker_.getClickable()) {
             this.style.cursor = "pointer";
             google.maps.event.trigger(me.marker_, "mouseover", e);
         }
-    }), google.maps.event.addDomListener(this.labelDiv_, "mouseout", function(e) {
+    }), google.maps.event.addDomListener(this.labelDiv_, "mouseout", function (e) {
         if ((me.marker_.getDraggable() || me.marker_.getClickable()) && !cDraggingLabel) {
             this.style.cursor = me.marker_.getCursor();
             google.maps.event.trigger(me.marker_, "mouseout", e);
         }
-    }), google.maps.event.addDomListener(this.labelDiv_, "mousedown", function(e) {
+    }), google.maps.event.addDomListener(this.labelDiv_, "mousedown", function (e) {
         cDraggingLabel = false;
         if (me.marker_.getDraggable()) {
             cMouseIsDown = true;
@@ -75,7 +75,7 @@ MarkerLabel_.prototype.onAdd = function() {
             google.maps.event.trigger(me.marker_, "mousedown", e);
             cAbortEvent(e);
         }
-    }), google.maps.event.addDomListener(document, "mouseup", function(mEvent) {
+    }), google.maps.event.addDomListener(document, "mouseup", function (mEvent) {
         var position;
         if (cMouseIsDown) {
             cMouseIsDown = false;
@@ -99,7 +99,7 @@ MarkerLabel_.prototype.onAdd = function() {
             mEvent.latLng = me.marker_.getPosition();
             google.maps.event.trigger(me.marker_, "dragend", mEvent);
         }
-    }), google.maps.event.addListener(me.marker_.getMap(), "mousemove", function(mEvent) {
+    }), google.maps.event.addListener(me.marker_.getMap(), "mousemove", function (mEvent) {
         var position;
         if (cMouseIsDown) {
             if (cDraggingLabel) {
@@ -129,7 +129,7 @@ MarkerLabel_.prototype.onAdd = function() {
                 google.maps.event.trigger(me.marker_, "dragstart", mEvent);
             }
         }
-    }), google.maps.event.addDomListener(document, "keydown", function(e) {
+    }), google.maps.event.addDomListener(document, "keydown", function (e) {
         if (cDraggingLabel) {
             if (e.keyCode === 27) {
                 cRaiseEnabled = false;
@@ -138,7 +138,7 @@ MarkerLabel_.prototype.onAdd = function() {
                 google.maps.event.trigger(document, "mouseup", e);
             }
         }
-    }), google.maps.event.addDomListener(this.labelDiv_, "click", function(e) {
+    }), google.maps.event.addDomListener(this.labelDiv_, "click", function (e) {
         if (me.marker_.getDraggable() || me.marker_.getClickable()) {
             if (cIgnoreClick) {
                 cIgnoreClick = false;
@@ -147,61 +147,61 @@ MarkerLabel_.prototype.onAdd = function() {
                 cAbortEvent(e);
             }
         }
-    }), google.maps.event.addDomListener(this.labelDiv_, "dblclick", function(e) {
+    }), google.maps.event.addDomListener(this.labelDiv_, "dblclick", function (e) {
         if (me.marker_.getDraggable() || me.marker_.getClickable()) {
             google.maps.event.trigger(me.marker_, "dblclick", e);
             cAbortEvent(e);
         }
-    }), google.maps.event.addListener(this.marker_, "dragstart", function(mEvent) {
+    }), google.maps.event.addListener(this.marker_, "dragstart", function (mEvent) {
         if (!cDraggingLabel) {
             cRaiseEnabled = this.get("raiseOnDrag");
         }
-    }), google.maps.event.addListener(this.marker_, "drag", function(mEvent) {
+    }), google.maps.event.addListener(this.marker_, "drag", function (mEvent) {
         if (!cDraggingLabel) {
             if (cRaiseEnabled) {
                 me.setPosition(cRaiseOffset);
                 me.labelDiv_.style.zIndex = 1000000 + (this.get("labelInBackground") ? -1 : +1);
             }
         }
-    }), google.maps.event.addListener(this.marker_, "dragend", function(mEvent) {
+    }), google.maps.event.addListener(this.marker_, "dragend", function (mEvent) {
         if (!cDraggingLabel) {
             if (cRaiseEnabled) {
                 me.setPosition(0);
             }
         }
-    }), google.maps.event.addListener(this.marker_, "position_changed", function() {
+    }), google.maps.event.addListener(this.marker_, "position_changed", function () {
         me.setPosition();
-    }), google.maps.event.addListener(this.marker_, "zindex_changed", function() {
+    }), google.maps.event.addListener(this.marker_, "zindex_changed", function () {
         me.setZIndex();
-    }), google.maps.event.addListener(this.marker_, "visible_changed", function() {
+    }), google.maps.event.addListener(this.marker_, "visible_changed", function () {
         me.setVisible();
-    }), google.maps.event.addListener(this.marker_, "labelvisible_changed", function() {
+    }), google.maps.event.addListener(this.marker_, "labelvisible_changed", function () {
         me.setVisible();
-    }), google.maps.event.addListener(this.marker_, "title_changed", function() {
+    }), google.maps.event.addListener(this.marker_, "title_changed", function () {
         me.setTitle();
-    }), google.maps.event.addListener(this.marker_, "labelcontent_changed", function() {
+    }), google.maps.event.addListener(this.marker_, "labelcontent_changed", function () {
         me.setContent();
-    }), google.maps.event.addListener(this.marker_, "labelanchor_changed", function() {
+    }), google.maps.event.addListener(this.marker_, "labelanchor_changed", function () {
         me.setAnchor();
-    }), google.maps.event.addListener(this.marker_, "labelclass_changed", function() {
+    }), google.maps.event.addListener(this.marker_, "labelclass_changed", function () {
         me.setStyles();
-    }), google.maps.event.addListener(this.marker_, "labelstyle_changed", function() {
+    }), google.maps.event.addListener(this.marker_, "labelstyle_changed", function () {
         me.setStyles();
     })];
 };
-MarkerLabel_.prototype.onRemove = function() {
+MarkerLabel_.prototype.onRemove = function () {
     var i;
     this.labelDiv_.parentNode.removeChild(this.labelDiv_);
     for (i = 0; i < this.listeners_.length; i++) {
         google.maps.event.removeListener(this.listeners_[i]);
     }
 };
-MarkerLabel_.prototype.draw = function() {
+MarkerLabel_.prototype.draw = function () {
     this.setContent();
     this.setTitle();
     this.setStyles();
 };
-MarkerLabel_.prototype.setContent = function() {
+MarkerLabel_.prototype.setContent = function () {
     var content = this.marker_.get("labelContent");
     if (typeof content.nodeType === "undefined") {
         this.labelDiv_.innerHTML = content;
@@ -210,10 +210,10 @@ MarkerLabel_.prototype.setContent = function() {
         this.labelDiv_.appendChild(content);
     }
 };
-MarkerLabel_.prototype.setTitle = function() {
+MarkerLabel_.prototype.setTitle = function () {
     this.labelDiv_.title = this.marker_.getTitle() || "";
 };
-MarkerLabel_.prototype.setStyles = function() {
+MarkerLabel_.prototype.setStyles = function () {
     var i, labelStyle;
     this.labelDiv_.className = this.marker_.get("labelClass");
     this.labelDiv_.style.cssText = "";
@@ -225,7 +225,7 @@ MarkerLabel_.prototype.setStyles = function() {
     }
     this.setMandatoryStyles();
 };
-MarkerLabel_.prototype.setMandatoryStyles = function() {
+MarkerLabel_.prototype.setMandatoryStyles = function () {
     this.labelDiv_.style.position = "absolute";
     this.labelDiv_.style.overflow = "hidden";
     if (typeof this.labelDiv_.style.opacity !== "undefined" && this.labelDiv_.style.opacity !== "") {
@@ -236,12 +236,12 @@ MarkerLabel_.prototype.setMandatoryStyles = function() {
     this.setPosition();
     this.setVisible();
 };
-MarkerLabel_.prototype.setAnchor = function() {
+MarkerLabel_.prototype.setAnchor = function () {
     var anchor = this.marker_.get("labelAnchor");
     this.labelDiv_.style.marginLeft = -anchor.x + "px";
     this.labelDiv_.style.marginTop = -anchor.y + "px";
 };
-MarkerLabel_.prototype.setPosition = function(yOffset) {
+MarkerLabel_.prototype.setPosition = function (yOffset) {
     var position = this.getProjection().fromLatLngToDivPixel(this.marker_.getPosition());
     if (typeof yOffset === "undefined") {
         yOffset = 0;
@@ -250,7 +250,7 @@ MarkerLabel_.prototype.setPosition = function(yOffset) {
     this.labelDiv_.style.top = Math.round(position.y - yOffset) + "px";
     this.setZIndex();
 };
-MarkerLabel_.prototype.setZIndex = function() {
+MarkerLabel_.prototype.setZIndex = function () {
     var zAdjust = (this.marker_.get("labelInBackground") ? -1 : +1);
     if (typeof this.marker_.getZIndex() === "undefined") {
         this.labelDiv_.style.zIndex = parseInt(this.labelDiv_.style.top, 10) + zAdjust;
@@ -258,7 +258,7 @@ MarkerLabel_.prototype.setZIndex = function() {
         this.labelDiv_.style.zIndex = this.marker_.getZIndex() + zAdjust;
     }
 };
-MarkerLabel_.prototype.setVisible = function() {
+MarkerLabel_.prototype.setVisible = function () {
     if (this.marker_.get("labelVisible")) {
         this.labelDiv_.style.display = this.marker_.getVisible() ? "block" : "none";
     } else {
@@ -266,7 +266,7 @@ MarkerLabel_.prototype.setVisible = function() {
     }
 };
 
-function MarkerWithLabel(opt_options) {
+function MarkerWithLabel (opt_options) {
     opt_options = opt_options || {};
     opt_options.labelContent = opt_options.labelContent || "";
     opt_options.labelAnchor = opt_options.labelAnchor || new google.maps.Point(0, 0);
@@ -295,7 +295,7 @@ function MarkerWithLabel(opt_options) {
     google.maps.Marker.apply(this, arguments);
 }
 inherits(MarkerWithLabel, google.maps.Marker);
-MarkerWithLabel.prototype.setMap = function(theMap) {
+MarkerWithLabel.prototype.setMap = function (theMap) {
     google.maps.Marker.prototype.setMap.apply(this, arguments);
     this.label.setMap(theMap);
 };
