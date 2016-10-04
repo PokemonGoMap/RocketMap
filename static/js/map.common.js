@@ -848,8 +848,7 @@ function setupPokemonMarker (item, map, isBounceDisabled) {
     animationDisabled = true
   }
 
-  var MarkerWithLabel
-  var marker = new MarkerWithLabel({
+  var marker = new MarkerWithLabel({ // eslint-disable-line no-undef
     position: {
       lat: item['latitude'],
       lng: item['longitude']
