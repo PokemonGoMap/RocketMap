@@ -868,8 +868,16 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
                 # Set a value of 15 minutes because currently its unknown but larger than 15.
                 d_t = datetime.utcfromtimestamp((p['last_modified_timestamp_ms'] + 900000) / 1000.0)
 
-            printPokemon(p['pokemon_data']['pokemon_id'], p['latitude'],
-                         p['longitude'], d_t)
+            if args.display_in_console:
+                pokemon_id = p['pokemon_data']['pokemon_id']
+                pokemon_data = {
+                    "id": pokemon_id,
+                    "name": get_pokemon_name(pokemon_id),
+                    "rarity": PokemonRarity.get_rarity(pokemon_id) or get_pokemon_rarity(pokemon_id)
+                }
+
+                printPokemon(pokemon_data, p['latitude'],
+                             p['longitude'], d_t)
 
             # Scan for IVs and moves.
             encounter_result = None
