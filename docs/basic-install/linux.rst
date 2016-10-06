@@ -53,7 +53,7 @@ If your output looks as above, you can proceed with installation:
 
 .. code-block:: bash
         
-	cd ..
+	cd ~/
 	sudo apt-get install git
 	git clone https://github.com/PokemonGoMap/PokemonGo-Map.git
 	cd PokemonGo-Map
