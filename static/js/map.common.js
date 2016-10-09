@@ -864,10 +864,10 @@ var StoreTypes = {
   }
 }
 
-//set the default parameters for you map here
+// set the default parameters for you map here
 var StoreOptions = {
   'map_style': {
-    default: 'roadmap', //roadmap, satellite, hybrid, nolabels_style, dark_style, style_light2, style_pgo, dark_style_nl, style_pgo_day, style_pgo_night, style_pgo_dynamic
+    default: 'roadmap', // roadmap, satellite, hybrid, nolabels_style, dark_style, style_light2, style_pgo, dark_style_nl, style_pgo_day, style_pgo_night, style_pgo_dynamic
     type: StoreTypes.String
   },
   'remember_select_exclude': {
@@ -879,7 +879,7 @@ var StoreOptions = {
     type: StoreTypes.JSON
   },
   'remember_select_rarity_notify': {
-    default: [], //Common, Uncommon, Rare, Very Rare, Ultra Rare
+    default: [], // Common, Uncommon, Rare, Very Rare, Ultra Rare
     type: StoreTypes.JSON
   },
   'remember_text_perfection_notify': {
