@@ -23,7 +23,7 @@ from pogom.app import Pogom
 from pogom.utils import get_args, get_encryption_lib_path, now
 
 from pogom.search import search_overseer_thread
-from pogom.models import init_database, create_tables, drop_tables, Pokemon, db_updater, clean_db_loop
+from pogom.models import init_database, create_tables, drop_tables, Pokemon, db_updater, clean_db_loop, Spawnpoints
 from pogom.webhook import wh_updater
 
 from pogom.proxy import check_proxies
@@ -272,6 +272,16 @@ def main():
 
     config['ROOT_PATH'] = app.root_path
     config['GMAPS_KEY'] = args.gmaps_key
+    if Spawnpoints.get_count() == 0:
+        log.info('Reading spawnpoint data from pokemon table.')
+        spawns = Pokemon.get_spawnpoints(None, None, None, None, spawntbl=True)
+        log.info('Done reading, processing/upserting spawnpoints.')
+        spawnpoints = {}
+        for s in spawns:
+            spawnpoints[s['spawnpoint_id'] + str(s['time'])] = s
+
+        Spawnpoints.upsert(spawnpoints)
+        log.info('Done upserting.')
 
     if args.no_server:
         # This loop allows for ctrl-c interupts to work since flask won't be holding the program open

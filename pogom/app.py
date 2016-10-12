@@ -14,7 +14,7 @@ from datetime import timedelta
 from collections import OrderedDict
 
 from . import config
-from .models import Pokemon, Gym, Pokestop, ScannedLocation, MainWorker, WorkerStatus
+from .models import Pokemon, Gym, Pokestop, ScannedLocation, MainWorker, WorkerStatus, Spawnpoints
 from .utils import now
 log = logging.getLogger(__name__)
 compress = Compress()
@@ -224,11 +224,11 @@ class Pogom(Flask):
 
         if request.args.get('spawnpoints', 'false') == 'true':
             if lastspawns != 'true':
-                d['spawnpoints'] = Pokemon.get_spawnpoints(swLat=swLat, swLng=swLng, neLat=neLat, neLng=neLng)
+                d['spawnpoints'] = Spawnpoints.get_spawnpoints(swLat=swLat, swLng=swLng, neLat=neLat, neLng=neLng)
             else:
-                d['spawnpoints'] = Pokemon.get_spawnpoints(swLat=swLat, swLng=swLng, neLat=neLat, neLng=neLng, timestamp=timestamp)
+                d['spawnpoints'] = Spawnpoints.get_spawnpoints(swLat=swLat, swLng=swLng, neLat=neLat, neLng=neLng, timestamp=timestamp)
                 if newArea:
-                    d['spawnpoints'] = d['spawnpoints'] + (Pokemon.get_spawnpoints(swLat, swLng, neLat, neLng, oSwLat=oSwLat, oSwLng=oSwLng, oNeLat=oNeLat, oNeLng=oNeLng))
+                    d['spawnpoints'] = d['spawnpoints'] + (Spawnpoints.get_spawnpoints(swLat, swLng, neLat, neLng, oSwLat=oSwLat, oSwLng=oSwLng, oNeLat=oNeLat, oNeLng=oNeLng))
 
         if request.args.get('status', 'false') == 'true':
             args = get_args()
