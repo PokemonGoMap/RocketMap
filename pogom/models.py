@@ -75,7 +75,6 @@ class BaseModel(flaskDb.Model):
 
 
 class Spawnpoints(BaseModel):
-
     latitude = DoubleField()
     longitude = DoubleField()
     spawnpoint_id = CharField()
@@ -147,6 +146,9 @@ class Spawnpoints(BaseModel):
             if 'time' not in spawnpoints[key] or count >= spawnpoints[key]['count']:
                 spawnpoints[key]['time'] = appear_time
                 spawnpoints[key]['count'] = count
+
+        for sp in spawnpoints.values():
+            del sp['count']
 
         return list(spawnpoints.values())
 
