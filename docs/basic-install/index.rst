@@ -90,6 +90,8 @@ In order to run from a git clone, you must compile the front-end assets with nod
  * `Windows <https://nodejs.org/dist/v4.5.0/node-v4.5.0-x64.msi>`_
  * `OSX <https://nodejs.org/dist/v4.4.7/node-v4.4.7.pkg>`_
  * Linux -- refer to the `package installation <https://nodejs.org/en/download/package-manager/>`_ for your flavor of OS
+ 
+(Please use Node.js v6 to avoid build errors) 
 
 Once node/npm is installed, open a command window and validation your install:
 
