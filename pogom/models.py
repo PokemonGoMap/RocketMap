@@ -393,7 +393,8 @@ class Pokemon(BaseModel):
 
         if spawntbl:
             for sp in queryDict:
-                spawnpoints[sp['spawnpoint_id'] + str(sp['time'])] = sp
+                if not (sp['spawnpoint_id'] is None):
+                    spawnpoints[sp['spawnpoint_id'] + str(sp['time'])] = sp
         else:
             for sp in queryDict:
                 key = sp['spawnpoint_id']
