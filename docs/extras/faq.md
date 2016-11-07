@@ -15,7 +15,7 @@ The -dp, -dg -dl, -i, -o and -ar parameters are no longer needed. Remove them fr
 
 [See this helpful guide](external.md)
 
-## "It's acting like the location flag is missing.
+## "It's acting like the location flag is missing."
 
 `-l`, never forget.
 
@@ -46,4 +46,26 @@ error: command 'gcc' failed with exit status 1
 ```
 
 Your OS is missing the `gcc` compiler library. For Debian, run `apt-get install build-essentials`. For Red Hat, run `yum groupinstall 'Development Tools'`
+
+## Formulas?
+```
+st=step distance
+
+sd=scan delay [default: 10]
+
+w=# of workers
+
+t=desired scan time
+```
+time to scan:
+`(sd/w)*(3st^2-3st+1)`
+
+workers needed:
+`(sd/t)*(3st^2-3st+1)`
+
+time to scan (using default scan delay):
+`(10/w)*(3st^2-3st+1)`
+
+workers needed (using default scan delay):
+`(10/t)*(3st^2-3st+1)`
 

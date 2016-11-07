@@ -760,6 +760,14 @@ var StoreOptions = {
     default: [],
     type: StoreTypes.JSON
   },
+  'scanHere': {
+    default: false,
+    type: StoreTypes.Boolean
+  },
+  'scanHereAlerted': {
+    default: false,
+    type: StoreTypes.Boolean
+  },
   'pokemonIcons': {
     default: 'highres',
     type: StoreTypes.String
@@ -774,6 +782,10 @@ var StoreOptions = {
   },
   'locationMarkerStyle': {
     default: 'none',
+    type: StoreTypes.String
+  },
+  'gymMarkerStyle': {
+    default: 'shield',
     type: StoreTypes.String
   },
   'zoomLevel': {

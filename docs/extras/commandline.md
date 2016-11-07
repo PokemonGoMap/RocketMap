@@ -1,41 +1,44 @@
 # Command Line
 
-    usage: runserver.py 
-                        [-h] [-a AUTH_SERVICE] [-u USERNAME] [-p PASSWORD]
-                        [-w WORKERS] [-asi ACCOUNT_SEARCH_INTERVAL]
+    usage: runserver.py
+                        [-h] [-cf CONFIG] [-a AUTH_SERVICE] [-u USERNAME]
+                        [-p PASSWORD] [-w WORKERS] [-asi ACCOUNT_SEARCH_INTERVAL]
                         [-ari ACCOUNT_REST_INTERVAL] [-ac ACCOUNTCSV]
                         [-l LOCATION] [-j] [-st STEP_LIMIT] [-sd SCAN_DELAY]
+                        [-enc] [-ed ENCOUNTER_DELAY]
+                        [-ewht ENCOUNTER_WHITELIST | -eblk ENCOUNTER_BLACKLIST]
                         [-ld LOGIN_DELAY] [-lr LOGIN_RETRIES] [-mf MAX_FAILURES]
                         [-msl MIN_SECONDS_LEFT] [-dc] [-H HOST] [-P PORT]
                         [-L LOCALE] [-c] [-m MOCK] [-ns] [-os] [-nsc] [-fl] -k
-                        GMAPS_KEY [--skip-empty] [-C] [-D DB] [-cd] [-np] [-ng]
-                        [-nk] [-ss [SPAWNPOINT_SCANNING]] [--dump-spawnpoints]
-                        [-pd PURGE_DATA] [-px PROXY] [-pxsc] [-pxt PROXY_TIMEOUT]
-                        [-pxd PROXY_DISPLAY] [--db-type DB_TYPE]
-                        [--db-name DB_NAME] [--db-user DB_USER]
-                        [--db-pass DB_PASS] [--db-host DB_HOST]
-                        [--db-port DB_PORT]
+                        GMAPS_KEY [--skip-empty] [-C] [-D DB] [-cd] [-np]
+                        [-ng] [-nk] [-ss [SPAWNPOINT_SCANNING]]
+                        [--dump-spawnpoints] [-pd PURGE_DATA] [-px PROXY]
+                        [-pxt PROXY_TIMEOUT] [-pxd PROXY_DISPLAY]
+                        [--db-type DB_TYPE] [--db-name DB_NAME]
+                        [--db-user DB_USER] [--db-pass DB_PASS]
+                        [--db-host DB_HOST] [--db-port DB_PORT]
                         [--db-max_connections DB_MAX_CONNECTIONS]
                         [--db-threads DB_THREADS] [-wh [WEBHOOKS [WEBHOOKS ...]]]
-                        [-gi] [--disable-clean] [--webhook-updates-only]
-                        [--wh-threads WH_THREADS]
+                        [-gi] [--webhook-updates-only] [--wh-threads WH_THREADS]
                         [--ssl-certificate SSL_CERTIFICATE]
                         [--ssl-privatekey SSL_PRIVATEKEY] [-ps] [-sn STATUS_NAME]
                         [-spp STATUS_PAGE_PASSWORD] [-el ENCRYPT_LIB]
-                        [-odt ON_DEMAND_TIMEOUT] [-v [filename.log] | -vv
-                        [filename.log] | -d]
+                        [-v [filename.log] | -vv [filename.log]]
     
     Args that start with '--' (eg. -a) can also be set in a config file
-    (/home/primaxius/PokemonGo-Map/pogom/../config/config.ini or ). The recognized
-    syntax for setting (key, value) pairs is based on the INI and YAML formats
-    (e.g. key=value or foo=TRUE). For full documentation of the differences from
-    the standards please refer to the ConfigArgParse documentation. If an arg is
-    specified in more than one place, then commandline values override environment
-    variables which override config file values which override defaults.
+    (default: <PokemonGo-Map Project Root>/config/config.ini or via -cf).
+    The recognized syntax for setting (key, value) pairs is based on the INI and
+    YAML formats (e.g. key=value or foo=TRUE). For full documentation of the
+    differences from the standards please refer to the ConfigArgParse
+    documentation. If an arg is specified in more than one place, then commandline
+    values override environment variables which override config file values which
+    override defaults.
     
     optional arguments:
       -h, --help            show this help message and exit [env var:
                             POGOMAP_HELP]
+      -cf CONFIG, --config CONFIG
+                            Configuration file.  See docs/extras/configuration-files.md
       -a AUTH_SERVICE, --auth-service AUTH_SERVICE
                             Auth Services, either one for all accounts or one per
                             account: ptc or google. Defaults all to ptc. [env var:
@@ -71,6 +74,17 @@
       -sd SCAN_DELAY, --scan-delay SCAN_DELAY
                             Time delay between requests in scan threads [env var:
                             POGOMAP_SCAN_DELAY]
+      -enc, --encounter     Start an encounter to gather IVs and moves [env var:
+                            POGOMAP_ENCOUNTER]
+      -ed ENCOUNTER_DELAY, --encounter-delay ENCOUNTER_DELAY
+                            Time delay between encounter pokemon in scan threads
+                            [env var: POGOMAP_ENCOUNTER_DELAY]
+      -ewht ENCOUNTER_WHITELIST, --encounter-whitelist ENCOUNTER_WHITELIST
+                            List of pokemon to encounter for more stats [env var:
+                            POGOMAP_ENCOUNTER_WHITELIST]
+      -eblk ENCOUNTER_BLACKLIST, --encounter-blacklist ENCOUNTER_BLACKLIST
+                            List of pokemon to NOT encounter for more stats [env
+                            var: POGOMAP_ENCOUNTER_BLACKLIST]    
       -ld LOGIN_DELAY, --login-delay LOGIN_DELAY
                             Time delay between each login attempt [env var:
                             POGOMAP_LOGIN_DELAY]
@@ -205,5 +219,3 @@
                             Like verbose, but show debug messages from all modules
                             as well. Optionally specify file to log to. [env var:
                             POGOMAP_VERY_VERBOSE]
-      -d, --debug           Deprecated, use -v or -vv instead. [env var:
-                            POGOMAP_DEBUG]

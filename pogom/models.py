@@ -35,7 +35,7 @@ pokestop_cache = TTLCache(maxsize=2500, ttl=2 * 60)
 gym_cache = TTLCache(maxsize=2500, ttl=60)
 scanned_cache = TTLCache(maxsize=2500, ttl=30)
 
-db_schema_version = 8
+db_schema_version = 9
 
 
 class MyRetryDB(RetryOperationalError, PooledMySQLDatabase):
@@ -95,6 +95,7 @@ class Pokemon(BaseModel):
     individual_stamina = IntegerField(null=True)
     move_1 = IntegerField(null=True)
     move_2 = IntegerField(null=True)
+    last_modified = DateTimeField(null=True, index=True, default=datetime.utcnow)
 
     class Meta:
         indexes = ((('latitude', 'longitude'), False),)
@@ -196,7 +197,7 @@ class Pokemon(BaseModel):
 
     @staticmethod
     def get_active_by_id(ids, swLat, swLng, neLat, neLng):
-        if swLat is None or swLng is None or neLat is None or neLng is None:
+        if not (swLat and swLng and neLat and neLng):
             query = (Pokemon
                      .select()
                      .where((Pokemon.pokemon_id << ids) &
@@ -418,6 +419,7 @@ class Pokestop(BaseModel):
     last_modified = DateTimeField(index=True)
     lure_expiration = DateTimeField(null=True, index=True)
     active_fort_modifier = CharField(max_length=50, null=True)
+    last_updated = DateTimeField(null=True, index=True, default=datetime.utcnow)
 
     class Meta:
         indexes = ((('latitude', 'longitude'), False),)
@@ -532,7 +534,6 @@ class Gym(BaseModel):
             boundariesOn = False
         
         gymCache = Gym.get_allgyms()
-
         # Performance: Disable the garbage collector prior to creating a (potentially) large dict with append()
         gc.disable()
 
@@ -595,7 +596,7 @@ class Gym(BaseModel):
 class ScannedLocation(BaseModel):
     latitude = DoubleField()
     longitude = DoubleField()
-    last_modified = DateTimeField(index=True)
+    last_modified = DateTimeField(index=True, default=datetime.utcnow)
 
     class Meta:
         primary_key = CompositeKey('latitude', 'longitude')
@@ -747,9 +748,8 @@ def construct_pokemon_dict(pokemons, p, encounter_result, d_t):
         'longitude': p['longitude'],
         'disappear_time': d_t,
     }
-    if encounter_result is not None:
-        ecounter_info = encounter_result['responses']['ENCOUNTER']
-        pokemon_info = ecounter_info['wild_pokemon']['pokemon_data']
+    if encounter_result is not None and 'wild_pokemon' in encounter_result['responses']['ENCOUNTER']:
+        pokemon_info = encounter_result['responses']['ENCOUNTER']['wild_pokemon']['pokemon_data']
         attack = pokemon_info.get('individual_attack', 0)
         defense = pokemon_info.get('individual_defense', 0)
         stamina = pokemon_info.get('individual_stamina', 0)
@@ -761,6 +761,8 @@ def construct_pokemon_dict(pokemons, p, encounter_result, d_t):
             'move_2': pokemon_info['move_2'],
         })
     else:
+        if encounter_result is not None and 'wild_pokemon' not in encounter_result['responses']['ENCOUNTER']:
+            log.warning("Error encountering {}, status code: {}".format(p['encounter_id'], encounter_result['responses']['ENCOUNTER']['status']))
         pokemons[p['encounter_id']].update({
             'individual_attack': None,
             'individual_defense': None,
@@ -776,18 +778,47 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
     pokestops = {}
     gyms = {}
     skipped = 0
+    stopsskipped = 0
+    forts = None
+    wild_pokemon = None
+    pokesfound = False
+    fortsfound = False
 
     cells = map_dict['responses']['GET_MAP_OBJECTS']['map_cells']
     for cell in cells:
         if config['parse_pokemon']:
-            for p in cell.get('wild_pokemons', []):
-                try:
-                    # Don't parse pokemon we've already encountered. Avoids IVs getting nulled out on rescanning.
-                    if Pokemon.get_encountered_pokemon(p['encounter_id']):
-                        skipped += 1
-                        continue
-                except OperationalError as e:
-                    log.debug('Could not check if Pokemon already encountered, Exception %s while connecting to db: %s', type(e).__name__, e)
+            if len(cell.get('wild_pokemons', [])) > 0:
+                pokesfound = True
+                if wild_pokemon is None:
+                    wild_pokemon = cell.get('wild_pokemons', [])
+                else:
+                    wild_pokemon += cell.get('wild_pokemons', [])
+
+        if config['parse_pokestops'] or config['parse_gyms']:
+            if len(cell.get('forts', [])) > 0:
+                fortsfound = True
+                if forts is None:
+                    forts = cell.get('forts', [])
+                else:
+                    forts += cell.get('forts', [])
+
+    if pokesfound:
+        encounter_ids = [b64encode(str(p['encounter_id'])) for p in wild_pokemon]
+        # For all the wild pokemon we found check if an active pokemon is in the database
+        try:
+            query = (Pokemon
+                     .select(Pokemon.encounter_id, Pokemon.spawnpoint_id)
+                     .where((Pokemon.disappear_time > datetime.utcnow()) & (Pokemon.encounter_id << encounter_ids))
+                     .dicts())
+
+            # Store all encounter_ids and spawnpoint_id for the pokemon in query (all thats needed to make sure its unique)
+            encountered_pokemon = [(p['encounter_id'], p['spawnpoint_id']) for p in query]
+
+            for p in wild_pokemon:
+                if (b64encode(str(p['encounter_id'])), p['spawn_point_id']) in encountered_pokemon:
+                    # If pokemon has been encountered before dont process it.
+                    skipped += 1
+                    continue
 
                 # time_till_hidden_ms was overflowing causing a negative integer.
                 # It was also returning a value above 3.6M ms.
@@ -812,13 +843,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
                                                      player_latitude=step_location[0],
                                                      player_longitude=step_location[1])
                 construct_pokemon_dict(pokemons, p, encounter_result, d_t)
-
                 if args.webhooks:
-                    pokemonId = p['pokemon_data']['pokemon_id']
-                    
-                    if( pokemonId in Pokemon.blacklist ):
-                        continue
-                        
                     wh_update_queue.put(('pokemon', {
                         'encounter_id': b64encode(str(p['encounter_id'])),
                         'spawnpoint_id': p['spawn_point_id'],
@@ -834,8 +859,23 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
                         'move_1': pokemons[p['encounter_id']]['move_1'],
                         'move_2': pokemons[p['encounter_id']]['move_2']
                     }))
+        except OperationalError as e:
+            log.debug('Could not check if Pokemon already encountered, Exception %s while connecting to db: %s', type(e).__name__, e)
 
-        for f in cell.get('forts', []):
+    if fortsfound:
+        if config['parse_pokestops']:
+            stop_ids = [f['id'] for f in forts if f.get('type') == 1]
+            if len(stop_ids) > 0:
+                try:
+                    query = (Pokestop
+                             .select(Pokestop.pokestop_id, Pokestop.last_modified)
+                             .where((Pokestop.pokestop_id << stop_ids))
+                             .dicts())
+                    encountered_pokestops = [(f['pokestop_id'], int((f['last_modified'] - datetime(1970, 1, 1)).total_seconds())) for f in query]
+                except OperationalError as e:
+                    log.debug('Could not check if PokeStop already encountered, Exception %s while connecting to db: %s', type(e).__name__, e)
+
+        for f in forts:
             if config['parse_pokestops'] and f.get('type') == 1:  # Pokestops
                 if 'active_fort_modifier' in f:
                     lure_expiration = datetime.utcfromtimestamp(
@@ -854,17 +894,6 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
                 else:
                     lure_expiration, active_fort_modifier = None, None
 
-                pokestops[f['id']] = {
-                    'pokestop_id': f['id'],
-                    'enabled': f['enabled'],
-                    'latitude': f['latitude'],
-                    'longitude': f['longitude'],
-                    'last_modified': datetime.utcfromtimestamp(
-                        f['last_modified_timestamp_ms'] / 1000.0),
-                    'lure_expiration': lure_expiration,
-                    'active_fort_modifier': active_fort_modifier
-                }
-
                 # Send all pokéstops to webhooks
                 if args.webhooks and not args.webhook_updates_only:
                     # Explicitly set 'webhook_data', in case we want to change the information pushed to webhooks,
@@ -879,24 +908,28 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
                         'enabled': f['enabled'],
                         'latitude': f['latitude'],
                         'longitude': f['longitude'],
-                        'last_modified': calendar.timegm(pokestops[f['id']]['last_modified'].timetuple()),
+                        'last_modified': f['last_modified_timestamp_ms'],
                         'lure_expiration': l_e,
                         'active_fort_modifier': active_fort_modifier
                     }))
 
-            elif config['parse_gyms'] and f.get('type') is None:  # Currently, there are only stops and gyms
-                gyms[f['id']] = {
-                    'gym_id': f['id'],
-                    'team_id': f.get('owned_by_team', 0),
-                    'guard_pokemon_id': f.get('guard_pokemon_id', 0),
-                    'gym_points': f.get('gym_points', 0),
+                if (f['id'], int(f['last_modified_timestamp_ms'] / 1000.0)) in encountered_pokestops:
+                    # If pokestop has been encountered before and hasn't changed dont process it.
+                    stopsskipped += 1
+                    continue
+
+                pokestops[f['id']] = {
+                    'pokestop_id': f['id'],
                     'enabled': f['enabled'],
                     'latitude': f['latitude'],
                     'longitude': f['longitude'],
                     'last_modified': datetime.utcfromtimestamp(
                         f['last_modified_timestamp_ms'] / 1000.0),
+                    'lure_expiration': lure_expiration,
+                    'active_fort_modifier': active_fort_modifier
                 }
 
+            elif config['parse_gyms'] and f.get('type') is None:  # Currently, there are only stops and gyms
                 # Send gyms to webhooks
                 if args.webhooks and not args.webhook_updates_only:
                     # Explicitly set 'webhook_data', in case we want to change the information pushed to webhooks,
@@ -909,8 +942,20 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
                         'enabled': f['enabled'],
                         'latitude': f['latitude'],
                         'longitude': f['longitude'],
-                        'last_modified': calendar.timegm(gyms[f['id']]['last_modified'].timetuple())
+                        'last_modified': f['last_modified_timestamp_ms']
                     }))
+
+                gyms[f['id']] = {
+                    'gym_id': f['id'],
+                    'team_id': f.get('owned_by_team', 0),
+                    'guard_pokemon_id': f.get('guard_pokemon_id', 0),
+                    'gym_points': f.get('gym_points', 0),
+                    'enabled': f['enabled'],
+                    'latitude': f['latitude'],
+                    'longitude': f['longitude'],
+                    'last_modified': datetime.utcfromtimestamp(
+                        f['last_modified_timestamp_ms'] / 1000.0),
+                }
 
     if len(pokemons):
         db_update_queue.put((Pokemon, pokemons))
@@ -919,19 +964,22 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
     if len(gyms):
         db_update_queue.put((Gym, gyms))
 
-    log.info('Parsing found %d pokemons, %d pokestops, and %d gyms',
+    log.info('Parsing found %d pokemons, %d pokestops, and %d gyms.',
              len(pokemons) + skipped,
-             len(pokestops),
+             len(pokestops) + stopsskipped,
              len(gyms))
+
+    log.debug('Skipped %d Pokemons and %d pokestops.',
+              skipped,
+              stopsskipped)
 
     db_update_queue.put((ScannedLocation, {0: {
         'latitude': step_location[0],
         'longitude': step_location[1],
-        'last_modified': datetime.utcnow()
     }}))
 
     return {
-        'count': len(pokemons) + skipped + len(pokestops) + len(gyms),
+        'count': skipped + stopsskipped + len(pokemons) + len(pokestops) + len(gyms),
         'gyms': gyms,
     }
 
@@ -1108,7 +1156,7 @@ def clean_db_loop(args):
 
             # Remove active modifier from expired lured pokestops
             query = (Pokestop
-                     .update(lure_expiration=None)
+                     .update(lure_expiration=None, active_fort_modifier=None)
                      .where(Pokestop.lure_expiration < datetime.utcnow()))
             query.execute()
 
@@ -1118,6 +1166,7 @@ def clean_db_loop(args):
                          .delete()
                          .where((Pokemon.disappear_time <
                                 (datetime.utcnow() - timedelta(hours=args.purge_data)))))
+                query.execute()
 
             log.info('Regular database cleaning complete')
             time.sleep(60)
@@ -1243,4 +1292,10 @@ def database_migrate(db, old_ver):
             migrator.add_column('pokemon', 'individual_stamina', IntegerField(null=True, default=0)),
             migrator.add_column('pokemon', 'move_1', IntegerField(null=True, default=0)),
             migrator.add_column('pokemon', 'move_2', IntegerField(null=True, default=0))
+        )
+
+    if old_ver < 9:
+        migrate(
+            migrator.add_column('pokemon', 'last_modified', DateTimeField(null=True, index=True)),
+            migrator.add_column('pokestop', 'last_updated', DateTimeField(null=True, index=True))
         )

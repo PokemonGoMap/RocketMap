@@ -30,6 +30,7 @@
     <link rel="apple-touch-icon" href="{{ url_for('static', filename='appicons/180x180.png').lstrip('/') }}" sizes="180x180">
     <link rel="stylesheet" href="{{ url_for('static', filename='dist/css/app.min.css').lstrip('/') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.0/jquery-ui.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.10.12/css/jquery.dataTables.css">
     <script src="{{ url_for('static', filename='js/vendor/modernizr.custom.js').lstrip('/') }}"></script>
   </head>
   <body id="top">
@@ -193,8 +194,18 @@
                 </label>
               </div>
             </div>
-			-->
+            <div class="form-control switch-container" style="display:{{show_scan}}">
+              <h3>Scan here button</h3>
+              <div class="onoffswitch">
+                <input id="scan-here-switch" type="checkbox" name="scan-here-switch" class="onoffswitch-checkbox" checked/>
+                <label class="onoffswitch-label" for="scan-here-switch">
+                <span class="switch-label" data-on="On" data-off="Off"></span>
+                <span class="switch-handle"></span>
+                </label>
+              </div>
+            </div>
           </div>
+			-->
 
           <h3>Notification Settings</h3>
           <div>
@@ -256,6 +267,11 @@
               <select name="iconmarker-style" id="iconmarker-style"></select>
             </div>
             <div class="form-control switch-container">
+              <h3>Gym Marker Style</h3>
+              <select name="gym-marker-style" id="gym-marker-style">
+                <option value='ingame'>In-Game</option>
+                <option value='shield'>Shield</option>
+              </select>
               <h3>Location Icon Marker</h3>
               <select name="locationmarker-style" id="locationmarker-style"></select>
             </div>
@@ -266,20 +282,36 @@
         <div class="switch-container">
           <div class="switch-container">
             <div><center><a href="stats">Full Stats</a></center></div>
-            <center><h1 id="stats-pkmn-label">Loading...</h1></center>
           </div>
-          <div id="pokemonList" style="color: black;"></div>
           <div class="switch-container">
+            <center><h1 id="stats-ldg-label">Loading...</h1></center>
+          </div>
+          <div class="stats-label-container">
+            <center><h1 id="stats-pkmn-label"></h1></center>
+          </div>
+          <div id="pokemonList" style="color: black;">
+            <table id="pokemonList_table" class="display" cellspacing="0" width="100%">
+              <thead>
+                <tr>
+                  <th>Icon</th> <th>Name</th> <th>Count</th> <th>%</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+            <div id="pokeStatStatus" style="color: black;"></div>
+          </div>
+          <div class="stats-label-container">
             <center><h1 id="stats-gym-label"></h1></center>
           </div>
           <div id="arenaList" style="color: black;"></div>
-          <div class="switch-container">
+          <div class="stats-label-container">
             <center><h1 id="stats-pkstop-label"></h1></center>
           </div>
           <div id="pokestopList" style="color: black;"></div>
         </div>
       </nav>
       <div id="map"></div>
+      <div class="fab" id="scan-here" style="display:none"></div>
     </div>
     <!-- Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-polyfill/6.9.1/polyfill.min.js"></script>
@@ -287,6 +319,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.0/jquery-ui.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/skel/3.0.1/skel.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/js/select2.min.js"></script>
+    <script src="https://cdn.datatables.net/1.10.12/js/jquery.dataTables.min.js"></script>
     <script src="{{ url_for('static', filename='dist/js/app.min.js').lstrip('/') }}"></script>
     <script src="{{ url_for('static', filename='js/vendor/classie.js').lstrip('/') }}"></script>
     <script src="{{ url_for('static', filename='dist/js/tracking.min.js').lstrip('/') }}"></script>
