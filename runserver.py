@@ -194,8 +194,16 @@ def main():
         elif os.path.isfile(args.db):
             os.remove(args.db)
     create_tables(db)
+    
+    
+    if not args.no_server:
+        try:
+            log.info('First Spawnpoint cache initialization')
+            cache = Pokemon.get_allspawnpoints()
+        except Exception as e:
+            log.error('Error while %s', e)
 
-    app.set_current_location(position)
+        app.set_current_location(position)
 
     # Control the search status (running or not) across threads
     pause_bit = Event()
@@ -220,7 +228,8 @@ def main():
         t.start()
 
     # db clearner; really only need one ever
-    if not args.disable_clean:
+    if args.enable_clean:
+        log.debug('Starting clean_db_loop worker thread')
         t = Thread(target=clean_db_loop, name='db-cleaner', args=(args,))
         t.daemon = True
         t.start()
@@ -247,7 +256,15 @@ def main():
 
         # attempt to dump the spawn points (do this before starting threads of endure the woe)
         if args.spawnpoint_scanning and args.spawnpoint_scanning != 'nofile' and args.dump_spawnpoints:
+            if not os.path.exists(os.path.dirname(args.spawnpoint_scanning)):
+                try:
+                    os.makedirs(os.path.dirname(args.spawnpoint_scanning))
+                except OSError as exc: # Guard against race condition
+                    if exc.errno != errno.EEXIST:
+                        raise
+                        
             with open(args.spawnpoint_scanning, 'w+') as file:
+                
                 log.info('Saving spawn points to %s', args.spawnpoint_scanning)
                 spawns = Pokemon.get_spawnpoints_in_hex(position, args.step_limit)
                 file.write(json.dumps(spawns))

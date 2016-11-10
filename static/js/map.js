@@ -37,7 +37,7 @@ var rawDataIsLoading = false
 var locationMarker
 var rangeMarkers = ['pokemon', 'pokestop', 'gym']
 var searchMarker
-var storeZoom = true
+var storeZoom = false
 var scanPath
 var moves
 
@@ -87,6 +87,29 @@ function removePokemonMarker (encounterId) { // eslint-disable-line no-unused-va
 }
 
 function initMap () { // eslint-disable-line no-unused-vars
+  Store.set('showSpawnpoints', false)
+  Store.set('showPokestops', false)
+  Store.set('showGyms', false)
+  Store.set('showScanned', false)
+  
+  if( Store.get('startAtUserLocation') ) {
+      var lastLat = Store.get('lastLat')
+      var lastLng = Store.get('lastLng')
+      if( (null == lastLat) || (null == lastLng) ) {
+        console.error('Could not load Lat/Lng, because they are not set!')
+      } else {
+        var floatLat = parseFloat( lastLat )
+        var floatLng = parseFloat( lastLng )
+        
+        if( isNaN(lastLat) || isNaN(lastLng) ) {
+            console.error('Could not load Lat/Lng, because they are not floats!')
+        } else {
+            centerLat = floatLat
+            centerLng = floatLng
+        }
+      }
+  }
+    
   map = new google.maps.Map(document.getElementById('map'), {
     center: {
       lat: centerLat,
@@ -356,11 +379,17 @@ function pokemonLabel (name, rarity, types, disappearTime, id, latitude, longitu
     details = `
       <div>
         IV: ${iv.toFixed(1)}% (${atk}/${def}/${sta})
-      </div>
-      <div>
-        Moves: ${i8ln(moves[move1]['name'])} / ${i8ln(moves[move2]['name'])}
-      </div>
-      `
+      </div>`
+    if (moves != null) {
+        move1 = i8ln(moves[move1])
+        move2 = i8ln(moves[move2])
+        
+        details += `
+          <div>
+            Moves: ${move1} / ${move2}
+          </div>
+          `
+    }
   }
   var contentstring = `
     <div>
@@ -938,6 +967,9 @@ function loadRawData () {
   var swLng = swPoint.lng()
   var neLat = nePoint.lat()
   var neLng = nePoint.lng()
+  
+  Store.set('lastLat', (swPoint.lat() + nePoint.lat()) / 2)
+  Store.set('lastLng', (swPoint.lng() + nePoint.lng()) / 2)
 
   return $.ajax({
     url: 'raw_data',
@@ -1321,6 +1353,12 @@ function createMyLocationButton () {
 
 function centerMapOnLocation () {
   var currentLocation = document.getElementById('current-location')
+  
+  if (currentLocation == null) {
+    console.warn("currentLocation is null!! WAT R WE GONNA DOO!??!?! HALP PL0X")
+    return
+  }
+  
   var imgX = '0'
   var animationInterval = setInterval(function () {
     if (imgX === '-18') {
@@ -1347,6 +1385,10 @@ function centerMapOnLocation () {
 
 function changeLocation (lat, lng) {
   var loc = new google.maps.LatLng(lat, lng)
+  
+  Store.set('lastLat', lat)
+  Store.set('lastLng', lng)
+  
   changeSearchLocation(lat, lng).done(function () {
     map.setCenter(loc)
     searchMarker.setPosition(loc)
@@ -1392,6 +1434,8 @@ function i8ln (word) {
 }
 
 function updateGeoLocation () {
+  return;
+  
   if (navigator.geolocation && (Store.get('geoLocate') || Store.get('followMyLocation'))) {
     navigator.geolocation.getCurrentPosition(function (position) {
       var lat = position.coords.latitude
@@ -1703,7 +1747,32 @@ $(function () {
   // run interval timers to regularly update map and timediffs
   window.setInterval(updateLabelDiffTime, 1000)
   window.setInterval(updateMap, 5000)
-  window.setInterval(updateGeoLocation, 1000)
+  window.setInterval(function () {
+    if (navigator.geolocation && (Store.get('geoLocate') || Store.get('followMyLocation'))) {
+      navigator.geolocation.getCurrentPosition(function (position) {
+        var lat = position.coords.latitude
+        var lng = position.coords.longitude
+        var center = new google.maps.LatLng(lat, lng)
+
+        if (Store.get('geoLocate')) {
+          // the search function makes any small movements cause a loop. Need to increase resolution
+          if ((typeof searchMarker !== 'undefined') && (getPointDistance(searchMarker.getPosition(), center) > 40)) {
+            $.post('next_loc?lat=' + lat + '&lon=' + lng).done(function () {
+              map.panTo(center)
+              searchMarker.setPosition(center)
+            })
+          }
+        }
+        if (Store.get('followMyLocation')) {
+          if ((typeof locationMarker !== 'undefined') && (getPointDistance(locationMarker.getPosition(), center) >= 5)) {
+            map.panTo(center)
+            locationMarker.setPosition(center)
+            Store.set('followMyLocationPosition', { lat: lat, lng: lng })
+          }
+        }
+      })
+    }
+  }, 5000)
 
   createUpdateWorker()
 
@@ -1801,6 +1870,10 @@ $(function () {
 
   $('#start-at-user-location-switch').change(function () {
     Store.set('startAtUserLocation', this.checked)
+  })
+
+  $('#back-to-center-button').click(function () {
+    changeLocation( originCenterLat, originCenterLng )
   })
 
   $('#follow-my-location-switch').change(function () {

@@ -2,7 +2,7 @@
 <html lang="{{lang}}">
   <head>
     <meta charset="utf-8">
-    <title>Pokémon Go Map</title>
+    <title>PoGo Map - Dortmund</title>
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
@@ -38,7 +38,10 @@
       <!-- Header -->
       <header id="header">
         <a href="#nav"><span class="label">Options</span></a>
-        <h1><a href="#">Pokémon Go Map</a></h1>
+        <h1><a href="#">Dortmund</a></h1>
+        <a href="http://pokemap-nrw.de/" style="float: right;"><span class="label">Homepage</span></a>
+        <a href="http://pokemap-nrw.de/index.php/hilfe/" style="float: right;"><span class="label">Hilfe</span></a>
+        <a href="http://pokemap-nrw.de/index.php/unterstuetzen/" style="float: right;"><span class="label">Unterstützen</span></a>
         <a href="#stats" id="statsToggle" class="statsNav" style="float: right;"><span class="label">Stats</span></a>
       </header>
       <!-- NAV -->
@@ -56,6 +59,7 @@
                 </label>
               </div>
             </div>
+            
             <div class="form-control switch-container">
               <h3>Gyms</h3>
               <div class="onoffswitch">
@@ -82,6 +86,7 @@
                 <option value="1">Only Lured</option>
               </select>
             </div>
+            
             <div class="form-control switch-container">
               <h3>Scanned Locations</h3>
               <div class="onoffswitch">
@@ -102,6 +107,7 @@
                 </label>
               </div>
             </div>
+            <!--
             <div class="form-control switch-container">
               <h3>Ranges</h3>
               <div class="onoffswitch">
@@ -112,6 +118,7 @@
                 </label>
               </div>
             </div>
+            -->
             <div class="form-control">
               <label for="exclude-pokemon">
               <h3>Hide Pokémon</h3>
@@ -119,17 +126,19 @@
                 <select id="exclude-pokemon" multiple="multiple"></select>
               </div>
               </label>
+              <p>Raupy, Hornliu, Taubsi, Rattfratz, Habitak, Zubat, Paras, Bluzuk, Traumato, Krabby und Rossana sind blockiert um Last zu reduzieren.</p>
             </div>
           </div>
 
-          <h3>Location &amp; Search Settings</h3>
+          <h3>Location Settings</h3>
           <div>
             <div class="form-control switch-container" style="display:{{is_fixed}}" >
               <label for="next-location">
-              <h3>Change search location</h3>
-              <input id="next-location" type="text" name="next-location" placeholder="Change search location">
+                  <h3>Change location</h3><br/>
               </label>
+              <input id="next-location" type="text" name="next-location" placeholder="Change your location">
             </div>
+            <!--
             <div class="form-control switch-container" style="display:{{is_fixed}}" >
               <h3>Lock search marker</h3>
               <div class="onoffswitch">
@@ -150,8 +159,9 @@
                 </label>
               </div>
             </div>
+			-->
             <div class="form-control switch-container" >
-              <h3>Start map at me</h3>
+              <h3>Start map at previous Location</h3>
               <div class="onoffswitch">
                 <input id="start-at-user-location-switch" type="checkbox" name="start-at-user-location-switch" class="onoffswitch-checkbox" checked/>
                 <label class="onoffswitch-label" for="start-at-user-location-switch">
@@ -160,6 +170,10 @@
                 </label>
               </div>
             </div>
+            <div class="form-control switch-container" >
+              <input id="back-to-center-button" type="button" name="back-to-center-button" value="Go back to center" />
+            </div>
+			<!--
             <div class="form-control switch-container" style="display:{{search_control}}">
               <h3>Search</h3>
               <div class="onoffswitch">
@@ -190,6 +204,7 @@
                 </label>
               </div>
             </div>
+			-->
           </div>
 
           <h3>Notification Settings</h3>
@@ -307,9 +322,12 @@
     <script src="https://cdn.datatables.net/1.10.12/js/jquery.dataTables.min.js"></script>
     <script src="{{ url_for('static', filename='dist/js/app.min.js').lstrip('/') }}"></script>
     <script src="{{ url_for('static', filename='js/vendor/classie.js').lstrip('/') }}"></script>
+    <script src="{{ url_for('static', filename='dist/js/tracking.min.js').lstrip('/') }}"></script>
     <script>
       var centerLat = {{lat}};
       var centerLng = {{lng}};
+      var originCenterLat = {{lat}};
+      var originCenterLng = {{lng}};
     </script>
     <script src="{{ url_for('static', filename='dist/js/map.common.min.js').lstrip('/') }}"></script>
     <script src="{{ url_for('static', filename='dist/js/map.min.js').lstrip('/') }}"></script>

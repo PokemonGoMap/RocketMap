@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>PoGo Map - Menü</title>
+
+        <!-- Fav- & Apple-Touch-Icons -->
+        <!-- Favicon -->
+        <link rel="shortcut icon" href="{{ url_for('static', filename='appicons/favicon.ico').lstrip('/') }}" type="image/x-icon">
+        <!-- non-retina iPhone pre iOS 7 -->
+        <link rel="apple-touch-icon" href="{{ url_for('static', filename='appicons/114x114.png').lstrip('/') }}" sizes="57x57">
+        <!-- non-retina iPad pre iOS 7 -->
+        <link rel="apple-touch-icon" href="{{ url_for('static', filename='appicons/144x144.png').lstrip('/') }}" sizes="72x72">
+        <!-- non-retina iPad iOS 7 -->
+        <link rel="apple-touch-icon" href="{{ url_for('static', filename='appicons/152x152.png').lstrip('/') }}" sizes="76x76">
+        <!-- retina iPhone pre iOS 7 -->
+        <link rel="apple-touch-icon" href="{{ url_for('static', filename='appicons/114x114.png').lstrip('/') }}" sizes="114x114">
+        <!-- retina iPhone iOS 7 -->
+        <link rel="apple-touch-icon" href="{{ url_for('static', filename='appicons/120x120.png').lstrip('/') }}" sizes="120x120">
+        <!-- retina iPad pre iOS 7 -->
+        <link rel="apple-touch-icon" href="{{ url_for('static', filename='appicons/144x144.png').lstrip('/') }}" sizes="144x144">
+        <!-- retina iPad iOS 7 -->
+        <link rel="apple-touch-icon" href="{{ url_for('static', filename='appicons/152x152.png').lstrip('/') }}" sizes="152x152">
+        <!-- retina iPhone 6 iOS 7 -->
+        <link rel="apple-touch-icon" href="{{ url_for('static', filename='appicons/180x180.png').lstrip('/') }}" sizes="180x180">
+
+
+        <link rel="stylesheet" href="{{ url_for('static', filename='dist/css/app.min.css').lstrip('/') }}">
+        <link rel="stylesheet" href="{{ url_for('static', filename='dist/css/menu.min.css').lstrip('/') }}">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/skel/3.0.1/skel.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.0/jquery-ui.min.js"></script>
+    </head>
+    <body>
+    <!-- Header -->
+    <header id="header">
+        <a href="#nav">Options</a>
+        <h1><a href="..">Dortmund</a></h1>
+        <a href="/help" style="float: right;"><span class="label">Hilfe</span></a>
+        <a href="/menu" style="float: right;"><span class="label">Menü</span></a>
+        <a href="/donate" style="float: right;"><span class="label">Unterstützen</span></a>
+    </header>
+    <nav id="nav">
+        nothing to see here
+    </nav>
+    <div class="spacing"></div>
+    <div class="help_container" id="help_container">
+        <div class="help_form">
+            <br/>
+            <p class="header"><a href="/iv_calc">IV Ausrechner, Movesets, weitere Infos und Pokédex..!</a></p>
+            <hr/>
+            <p class="header"><a href="http://138.201.55.36/stikked/">hinterlasse ein Kommentar!</a></p>
+            <hr/>
+            <p class="header"><a href="http://telegram.me/PokeReminder">Tritt der Telegram Gruppe für Benachrichtungen bei! &#10148; http://telegram.me/PokeReminder</a>
+            <hr/>
+            <p class="header"><a href="/donate">&#9829; Unterstütz mein Projekt :)</a></p>
+            <br/><br/>
+            <ul>
+                <li>
+                    <p class="header">Kontaktinfos</p>
+                    <p>Telegram: @japumk</p>
+                    <div>
+                        <span style="vertical-align: middle;">WhatsApp: </span>
+                        <img src="http://138.201.55.36:80/images/number.png" alt="ERR: Image not found." style="vertical-align: middle;" />
+                    </div>
+                </li>
+            </ul>
+        </div>
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='dist/js/app.min.js').lstrip('/') }}"></script>
+    </body>
+</html>

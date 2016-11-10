@@ -157,28 +157,10 @@ class Pogom(Flask):
         if request.args.get('pokemon', 'true') == 'true':
             if request.args.get('ids'):
                 ids = [int(x) for x in request.args.get('ids').split(',')]
-                d['pokemons'] = Pokemon.get_active_by_id(ids, swLat, swLng,
-                                                         neLat, neLng)
-            elif lastpokemon != 'true':
-                # If this is first request since switch on, load all pokemon on screen.
-                d['pokemons'] = Pokemon.get_active(swLat, swLng, neLat, neLng)
+                d['pokemons'] = Pokemon.get_active(swLat, swLng, neLat, neLng, pkmn_ids=ids)
             else:
-                # If map is already populated only request modified Pokemon since last request time
-                d['pokemons'] = Pokemon.get_active(swLat, swLng, neLat, neLng, timestamp=timestamp)
-                if newArea:
-                    # If screen is moved add newly uncovered Pokemon to the ones that were modified since last request time
-                    d['pokemons'] = d['pokemons'] + (Pokemon.get_active(swLat, swLng, neLat, neLng, oSwLat=oSwLat, oSwLng=oSwLng, oNeLat=oNeLat, oNeLng=oNeLng))
-
-            if request.args.get('eids'):
-                # Exclude id's of pokemon that are hidden
-                eids = [int(x) for x in request.args.get('eids').split(',')]
-                d['pokemons'] = [x for x in d['pokemons'] if x['pokemon_id'] not in eids]
-
-            if request.args.get('reids'):
-                reids = [int(x) for x in request.args.get('reids').split(',')]
-                d['pokemons'] = d['pokemons'] + (Pokemon.get_active_by_id(reids, swLat, swLng, neLat, neLng))
-                d['reids'] = reids
-
+                d['pokemons'] = Pokemon.get_active(swLat, swLng, neLat, neLng)
+                
         if request.args.get('pokestops', 'true') == 'true':
             if lastpokestops != 'true':
                 d['pokestops'] = Pokestop.get_stops(swLat, swLng, neLat, neLng, lured=luredonly)
@@ -196,12 +178,7 @@ class Pogom(Flask):
                     d['gyms'].update(Gym.get_gyms(swLat, swLng, neLat, neLng, oSwLat=oSwLat, oSwLng=oSwLng, oNeLat=oNeLat, oNeLng=oNeLng))
 
         if request.args.get('scanned', 'true') == 'true':
-            if lastslocs != 'true':
-                d['scanned'] = ScannedLocation.get_recent(swLat, swLng, neLat, neLng)
-            else:
-                d['scanned'] = ScannedLocation.get_recent(swLat, swLng, neLat, neLng, timestamp=timestamp)
-                if newArea:
-                    d['scanned'] = d['scanned'] + (ScannedLocation.get_recent(swLat, swLng, neLat, neLng, oSwLat=oSwLat, oSwLng=oSwLng, oNeLat=oNeLat, oNeLng=oNeLng))
+            d['scanned'] = ScannedLocation.get_recent(swLat, swLng, neLat, neLng)
 
         selected_duration = None
 
@@ -264,8 +241,8 @@ class Pogom(Flask):
             log.warning('Invalid next location: %s,%s', lat, lon)
             return 'bad parameters', 400
         else:
-            self.location_queue.put((lat, lon, 0))
-            self.set_current_location((lat, lon, 0))
+            #self.location_queue.put((lat, lon, 0))
+            #self.set_current_location((lat, lon, 0))
             log.info('Changing next location: %s,%s', lat, lon)
             return self.loc()
 
@@ -320,12 +297,12 @@ class Pogom(Flask):
         valid_durations["12h"] = {"display": "Last 12 Hours", "value": timedelta(hours=12), "selected": ("SELECTED" if duration == "12h" else "")}
         valid_durations["1d"] = {"display": "Last Day", "value": timedelta(days=1), "selected": ("SELECTED" if duration == "1d" else "")}
         valid_durations["7d"] = {"display": "Last 7 Days", "value": timedelta(days=7), "selected": ("SELECTED" if duration == "7d" else "")}
-        valid_durations["14d"] = {"display": "Last 14 Days", "value": timedelta(days=14), "selected": ("SELECTED" if duration == "14d" else "")}
-        valid_durations["1m"] = {"display": "Last Month", "value": timedelta(days=365 / 12), "selected": ("SELECTED" if duration == "1m" else "")}
-        valid_durations["3m"] = {"display": "Last 3 Months", "value": timedelta(days=3 * 365 / 12), "selected": ("SELECTED" if duration == "3m" else "")}
-        valid_durations["6m"] = {"display": "Last 6 Months", "value": timedelta(days=6 * 365 / 12), "selected": ("SELECTED" if duration == "6m" else "")}
-        valid_durations["1y"] = {"display": "Last Year", "value": timedelta(days=365), "selected": ("SELECTED" if duration == "1y" else "")}
-        valid_durations["all"] = {"display": "Map Lifetime", "value": 0, "selected": ("SELECTED" if duration == "all" else "")}
+        #valid_durations["14d"] = {"display": "Last 14 Days", "value": timedelta(days=14), "selected": ("SELECTED" if duration == "14d" else "")}
+        #valid_durations["1m"] = {"display": "Last Month", "value": timedelta(days=365 / 12), "selected": ("SELECTED" if duration == "1m" else "")}
+        #valid_durations["3m"] = {"display": "Last 3 Months", "value": timedelta(days=3 * 365 / 12), "selected": ("SELECTED" if duration == "3m" else "")}
+        #valid_durations["6m"] = {"display": "Last 6 Months", "value": timedelta(days=6 * 365 / 12), "selected": ("SELECTED" if duration == "6m" else "")}
+        #valid_durations["1y"] = {"display": "Last Year", "value": timedelta(days=365), "selected": ("SELECTED" if duration == "1y" else "")}
+        #valid_durations["all"] = {"display": "Map Lifetime", "value": 0, "selected": ("SELECTED" if duration == "all" else "")}
         if duration not in valid_durations:
             valid_durations["1d"]["selected"] = "SELECTED"
         valid_sort = OrderedDict()

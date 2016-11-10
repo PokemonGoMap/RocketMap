@@ -1,0 +1,5 @@
+DELETE FROM `pokemon` WHERE spawnpoint_id IN (
+    SELECT id
+    FROM `spawns`
+    WHERE (lat < 51.5674139 AND lng > 7.3996112)
+    AND (lat > 51.5571426 AND lng < 7.4236867))

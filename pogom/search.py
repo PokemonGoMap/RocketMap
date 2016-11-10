@@ -24,6 +24,7 @@ import random
 import time
 import geopy
 import geopy.distance
+import sys
 
 from datetime import datetime
 from threading import Thread
@@ -38,6 +39,7 @@ from .models import parse_map, GymDetails, parse_gyms, MainWorker, WorkerStatus
 from .fakePogoApi import FakePogoApi
 from .utils import now
 import schedulers
+from peewee import OperationalError
 
 import terminalsize
 
@@ -534,6 +536,9 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                             except GymDetails.DoesNotExist as e:
                                 gyms_to_update[gym['gym_id']] = gym
                                 continue
+                            except OperationalError as e:
+                                log.info('Skipping update of gym @ %f/%f, Exception %s while connecting to db: %s', gym['latitude'], gym['longitude'], type(e).__name__, e)
+                                continue
 
                             # if we have a record of this gym already, check if the gym has been updated since our last update
                             if record.last_scanned < gym['last_modified']:
@@ -580,10 +585,15 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                 time.sleep(args.scan_delay)
 
         # catch any process exceptions, log them, and continue the thread
+
         except Exception as e:
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            log.error('type: {} filename: {} line: {}'.format(exc_type, fname, exc_tb.tb_lineno))
+            
             status['message'] = 'Exception in search_worker using account {}. Restarting with fresh account. See logs for details.'.format(account['username'])
             time.sleep(args.scan_delay)
-            log.error('Exception in search_worker under account {} Exception message: {}'.format(account['username'], e))
+            log.error('Exception in search_worker under account {} Exception: {} with message: {}'.format(account['username'], type(e).__name__, e))
             account_failures.append({'account': account, 'last_fail_time': now(), 'reason': 'exception'})
 
 

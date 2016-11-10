@@ -668,16 +668,32 @@ var StoreTypes = {
     stringify: function (number) {
       return number.toString()
     }
+  },
+  Float: {
+    parse: function (str) {
+      return parseFloat(str)
+    },
+    stringify: function (f) {
+      return f.toString()
+    }
   }
 }
 
 var StoreOptions = {
+  'lastLat': {
+    default: null,
+    type: StoreTypes.Float
+  },
+  'lastLng': {
+    default: null,
+    type: StoreTypes.Float
+  },
   'map_style': {
-    default: 'roadmap',
+    default: 'style_pgo',
     type: StoreTypes.String
   },
   'remember_select_exclude': {
-    default: [],
+    default: [ 10, 13, 16, 19, 21, 41, 46, 48, 96, 98, 124 ],
     type: StoreTypes.JSON
   },
   'remember_select_notify': {
@@ -701,11 +717,11 @@ var StoreOptions = {
     type: StoreTypes.Boolean
   },
   'showPokestops': {
-    default: true,
+    default: false,
     type: StoreTypes.Boolean
   },
   'showLuredPokestopsOnly': {
-    default: 0,
+    default: 1,
     type: StoreTypes.Number
   },
   'showScanned': {
@@ -725,15 +741,15 @@ var StoreOptions = {
     type: StoreTypes.Boolean
   },
   'geoLocate': {
-    default: false,
+    default: true,
     type: StoreTypes.Boolean
   },
   'lockMarker': {
-    default: isTouchDevice(), // default to true if touch device
+    default: true, // default to true if touch device
     type: StoreTypes.Boolean
   },
   'startAtUserLocation': {
-    default: false,
+    default: true,
     type: StoreTypes.Boolean
   },
   'followMyLocation': {
@@ -773,7 +789,7 @@ var StoreOptions = {
     type: StoreTypes.String
   },
   'zoomLevel': {
-    default: 16,
+    default: 15,
     type: StoreTypes.Number
   }
 }

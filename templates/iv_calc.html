@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>PoGo Map - Hilfe</title>
+
+        <!-- Fav- & Apple-Touch-Icons -->
+        <!-- Favicon -->
+        <link rel="shortcut icon" href="{{ url_for('static', filename='appicons/favicon.ico').lstrip('/') }}" type="image/x-icon">
+        <!-- non-retina iPhone pre iOS 7 -->
+        <link rel="apple-touch-icon" href="{{ url_for('static', filename='appicons/114x114.png').lstrip('/') }}" sizes="57x57">
+        <!-- non-retina iPad pre iOS 7 -->
+        <link rel="apple-touch-icon" href="{{ url_for('static', filename='appicons/144x144.png').lstrip('/') }}" sizes="72x72">
+        <!-- non-retina iPad iOS 7 -->
+        <link rel="apple-touch-icon" href="{{ url_for('static', filename='appicons/152x152.png').lstrip('/') }}" sizes="76x76">
+        <!-- retina iPhone pre iOS 7 -->
+        <link rel="apple-touch-icon" href="{{ url_for('static', filename='appicons/114x114.png').lstrip('/') }}" sizes="114x114">
+        <!-- retina iPhone iOS 7 -->
+        <link rel="apple-touch-icon" href="{{ url_for('static', filename='appicons/120x120.png').lstrip('/') }}" sizes="120x120">
+        <!-- retina iPad pre iOS 7 -->
+        <link rel="apple-touch-icon" href="{{ url_for('static', filename='appicons/144x144.png').lstrip('/') }}" sizes="144x144">
+        <!-- retina iPad iOS 7 -->
+        <link rel="apple-touch-icon" href="{{ url_for('static', filename='appicons/152x152.png').lstrip('/') }}" sizes="152x152">
+        <!-- retina iPhone 6 iOS 7 -->
+        <link rel="apple-touch-icon" href="{{ url_for('static', filename='appicons/180x180.png').lstrip('/') }}" sizes="180x180">
+
+
+        <link rel="stylesheet" href="{{ url_for('static', filename='dist/css/app.min.css').lstrip('/') }}">
+        <link rel="stylesheet" href="{{ url_for('static', filename='dist/css/help.min.css').lstrip('/') }}">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/skel/3.0.1/skel.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.0/jquery-ui.min.js"></script>
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1">
+    <link rel="stylesheet" href="{{ url_for('static', filename='dist/iv_calc/css/lotus.min.css').lstrip('/') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='dist/iv_calc/css/react-select.min.css').lstrip('/') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='dist/iv_calc/css/main.min.css').lstrip('/') }}">
+    </head>
+    <body>
+        <!-- Header -->
+        <header id="header">
+            <a href="#nav">Options</a>
+            <h1><a href="..">Dortmund</a></h1>
+            <a href="/help" style="float: right;"><span class="label">Hilfe</span></a>
+            <a href="/menu" style="float: right;"><span class="label">Menü</span></a>
+            <a href="/donate" style="float: right;"><span class="label">Unterstützen</span></a>
+        </header>
+        <nav id="nav">
+          <div class="ui-accordion-content">
+                <div class="form-control switch-container">
+                  nothing to see here
+                </div>
+          </div>
+        </nav>
+        <div class="spacing"></div>
+        <div class="help_container" id="help_container">
+        
+            <div id="app"></div>
+            <canvas id="capturedPhoto" width="750" height="1334" style="position: absolute; left: -1000em"></canvas>
+        </div>
+  </body>
+  </div>
+  <script src="{{ url_for('static', filename='dist/iv_calc/js/build.min.js').lstrip('/') }}"></script>
+</html>
