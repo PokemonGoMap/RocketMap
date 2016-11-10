@@ -28,7 +28,7 @@ Jetzt sollte es in dem Kontextmenü einen Punkt geben, der "Eingabeaufforderung h
 Öffne eine Eingabeaufforderung(siehe 1.1) in dem Oberordner, wo das Projekt rein soll(der nachfolgende Befehl erstellt einen Ordner hier, der "PokemonGo-Map-1" heißt)
 
 In der Eingabeaufforderung das hier ausführen:
-git clone https://github.com/JapuDCret/PokemonGo-Map-1.git
+git clone --recursive https://github.com/JapuDCret/PokemonGo-Map-1.git
 
 Gehe jetzt mit der Console in das Verzeichnis, führe dazu
 cd PokemonGo-Map-1
@@ -80,8 +80,24 @@ Bei einem Account namens "PeterZwegat" und Passwort "alligator3", sieht der Aufr
 accept_tos('PeterZwegat', 'alligator3', 'ptc')
 
 
+5. Richtig konfigurieren
+Standardmäßig hat das Projekt noch keine Datenbank Verbindung zu meinem Server eingebunden, daher bitte ich dich die notwendigen Daten bei mir abzufragen.
+Meine Kontaktdaten findest du hier: http://pokemap-nrw.de/index.php/hilfe/
 
-5. Projekt starten
+Ich werde dir 3 Sachen nennen: den Namen der Datenbank, den Accountnamen und das zugehörige Passwort.
+Wenn du die Informationen hast öffne die Datei unter "config/config.ini" und öffne sie mit Notepad++ NICHT mit dem normalen Editor.
+in Zeile 10-12 findest du folgende Einträge
+>>> db-name:DB-NAME
+>>> db-user:ACC-NAME
+>>> db-pass:PASSWORT
+dort fügst du dann die von mir übermittelten Informationen ein und speicherst die Datei....
+Ein Beispiel:
+Sei der Namen der Datenbank "pokemon", der Accountnamen "test" und das zugehörige Passwort "123", dann sieht das wie folgt aus:
+>>> db-name:pokemon
+>>> db-user:test
+>>> db-pass:123
+
+6. Projekt starten
 Wenn die Map dort noch nie bekannt ist und somit keine Spawns bekannt sind(sind auf der Map unter Options->Spawn Points einsehbar), dann solltest du einfach in einer Spirale suchen
 führe dazu einfach die Batchdatei "start-spiral.bat" aus
 Jedes gefundene Pokémon ist ein Spawnpunkt, also wenn man die Spiralsuche lange genug laufen lässt, kann man nach einiger Zeit mit der deutlich effizienteren Spawnsuche weitermachen.
