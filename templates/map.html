@@ -315,5 +315,6 @@
     <script src="{{ url_for('static', filename='dist/js/map.min.js').lstrip('/') }}"></script>
     <script src="{{ url_for('static', filename='dist/js/stats.min.js').lstrip('/') }}"></script>
     <script defer src="https://maps.googleapis.com/maps/api/js?key={{ gmaps_key }}&amp;callback=initMap&amp;libraries=places,geometry"></script>
+    <script defer src="{{ url_for('static', filename='dist/js/label.min.js').lstrip('/') }}"></script>
   </body>
 </html>
