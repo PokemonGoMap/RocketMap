@@ -2,7 +2,7 @@
 <html lang="{{lang}}">
   <head>
     <meta charset="utf-8">
-    <title>Pokémon Go Map</title>
+    <title>GoMap - Pokémon Live Map</title>
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
@@ -32,14 +32,36 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.0/jquery-ui.min.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/1.10.12/css/jquery.dataTables.css">
     <script src="{{ url_for('static', filename='js/vendor/modernizr.custom.js').lstrip('/') }}"></script>
+    <script>
+     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+     (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+      ga('create', 'UA-83529283-1', 'auto');
+      ga('send', 'pageview');
+    </script>
   </head>
   <body id="top">
     <div class="wrapper">
       <!-- Header -->
       <header id="header">
+        <style>
+            #donation {
+                margin-top: 0.5%;
+                float: right;
+                }
+        </style>
         <a href="#nav"><span class="label">Options</span></a>
-        <h1><a href="#">Pokémon Go Map</a></h1>
         <a href="#stats" id="statsToggle" class="statsNav" style="float: right;"><span class="label">Stats</span></a>
+          <div id=donation>
+          <form action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_top">
+          <input type="hidden" name="cmd" value="_s-xclick">
+          <input type="hidden" name="hosted_button_id" value="VSEQRLRB6488G">
+          <input type="image" src="https://www.paypalobjects.com/de_DE/AT/i/btn/btn_donate_SM.gif" border="0" name="submit" alt="Jetzt einfach, schnell und sicher online bezahlen – mit PayPal.">
+          <img alt="" border="0" src="https://www.paypalobjects.com/de_DE/i/scr/pixel.gif" width="1" height="1">
+          </form>
+        </div>
       </header>
       <!-- NAV -->
       <nav id="nav">
@@ -66,7 +88,7 @@
                 </label>
               </div>
             </div>
-            <div class="form-control switch-container">
+           <div class="form-control switch-container">
               <h3>Pokéstops</h3>
               <div class="onoffswitch">
                 <input id="pokestops-switch" type="checkbox" name="pokestops-switch" class="onoffswitch-checkbox" checked>
@@ -111,7 +133,7 @@
                 <span class="switch-handle"></span>
                 </label>
               </div>
-            </div>
+            </div>!-->
             <div class="form-control">
               <label for="exclude-pokemon">
               <h3>Hide Pokémon</h3>
@@ -140,7 +162,7 @@
                 </label>
               </div>
             </div>
-            <div class="form-control switch-container" style="display:{{is_fixed}}" >
+            <!--<div class="form-control switch-container" style="display:{{is_fixed}}" >
               <h3>Search follows me</h3>
               <div class="onoffswitch">
                 <input id="geoloc-switch" type="checkbox" name="geoloc-switch" class="onoffswitch-checkbox" checked/>
@@ -159,7 +181,7 @@
                 <span class="switch-handle"></span>
                 </label>
               </div>
-            </div>
+            </div>!-->
             <div class="form-control switch-container" style="display:{{search_control}}">
               <h3>Search</h3>
               <div class="onoffswitch">
@@ -170,7 +192,7 @@
                 </label>
               </div>
             </div>
-            <div class="form-control switch-container">
+            <!--<div class="form-control switch-container">
               <h3>Follow me</h3>
               <div class="onoffswitch">
                 <input id="follow-my-location-switch" type="checkbox" name="follow-my-location-switch" class="onoffswitch-checkbox" checked/>
@@ -179,17 +201,7 @@
                 <span class="switch-handle"></span>
                 </label>
               </div>
-            </div>
-            <div class="form-control switch-container" style="display:{{show_scan}}">
-              <h3>Scan here button</h3>
-              <div class="onoffswitch">
-                <input id="scan-here-switch" type="checkbox" name="scan-here-switch" class="onoffswitch-checkbox" checked/>
-                <label class="onoffswitch-label" for="scan-here-switch">
-                <span class="switch-label" data-on="On" data-off="Off"></span>
-                <span class="switch-handle"></span>
-                </label>
-              </div>
-            </div>
+            </div>!-->
           </div>
 
           <h3>Notification Settings</h3>
@@ -210,12 +222,12 @@
                 </div>
               </label>
             </div>
-            <div class="form-control">
+            <!--<div class="form-control">
               <label for="notify-perfection">
                 <h3>Notify of Perfection</h3>
                 <input id="notify-perfection" type="text" name="notify-perfection" placeholder="Minimum perfection %"/>
               </label>
-            </div>
+            </div>!-->
             <div class="form-control switch-container">
               <h3>Notify with sound</h3>
               <div class="onoffswitch">
@@ -296,7 +308,6 @@
         </div>
       </nav>
       <div id="map"></div>
-      <div class="fab" id="scan-here" style="display:none"></div>
     </div>
     <!-- Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-polyfill/6.9.1/polyfill.min.js"></script>
