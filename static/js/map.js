@@ -343,7 +343,7 @@ function openMapDirections (lat, lng) { // eslint-disable-line no-unused-vars
   window.open(url, '_blank')
 }
 
-function pokemonLabel (name, rarity, types, disappearTime, id, latitude, longitude, encounterId, atk, def, sta, move1, move2) {
+function pokemonLabel (name, rarity, types, disappearTime, id, latitude, longitude, encounterId, atk, def, sta, move1, move2, valid) {
   var disappearDate = new Date(disappearTime)
   var rarityDisplay = rarity ? '(' + rarity + ')' : ''
   var typesDisplay = ''
@@ -363,30 +363,33 @@ function pokemonLabel (name, rarity, types, disappearTime, id, latitude, longitu
       `
   }
   var contentstring = `
-    <div>
-      <b>${name}</b>
-      <span> - </span>
-      <small>
-        <a href='http://www.pokemon.com/us/pokedex/${id}' target='_blank' title='View in Pokedex'>#${id}</a>
-      </small>
-      <span> ${rarityDisplay}</span>
-      <span> - </span>
-      <small>${typesDisplay}</small>
-    </div>
-    <div>
-      Disappears at ${pad(disappearDate.getHours())}:${pad(disappearDate.getMinutes())}:${pad(disappearDate.getSeconds())}
-      <span class='label-countdown' disappears-at='${disappearTime}'>(00m00s)</span>
-    </div>
-    <div>
-      Location: ${latitude.toFixed(6)}, ${longitude.toFixed(7)}
-    </div>
-      ${details}
-    <div>
-      <a href='javascript:excludePokemon(${id})'>Exclude</a>&nbsp;&nbsp
-      <a href='javascript:notifyAboutPokemon(${id})'>Notify</a>&nbsp;&nbsp
-      <a href='javascript:removePokemonMarker("${encounterId}")'>Remove</a>&nbsp;&nbsp
-      <a href='javascript:void(0);' onclick='javascript:openMapDirections(${latitude},${longitude});' title='View in Maps'>Get directions</a>
-    </div>`
+	<div>
+	<b>${name}</b>
+	<span> - </span>
+	<small>
+		<a href='http://www.pokemon.com/us/pokedex/${id}' target='_blank' title='View in Pokedex'>#${id}</a>
+	</small>
+	<span> ${rarityDisplay}</span>
+	<span> - </span>
+	<small>${typesDisplay}</small>
+	</div>
+	<div>`
+  if (valid === 1) {
+    `Disappears at ${pad(disappearDate.getHours())}:${pad(disappearDate.getMinutes())}:${pad(disappearDate.getSeconds())}
+    <span class='label-countdown' disappears-at='${disappearTime}'>(00m00s)</span>`
+  } else {
+    'Disappear time unknown'
+  }`
+	</div>
+	<div>
+	Location: ${latitude.toFixed(6)}, ${longitude.toFixed(7)}
+	</div>
+	${details}
+	<div>
+	<a href='javascript:excludePokemon(${id})'>Exclude</a>&nbsp;&nbsp
+	<a href='javascript:notifyAboutPokemon(${id})'>Notify</a>&nbsp;&nbsp
+	<a href='javascript:void(0);' onclick='javascript:openMapDirections(${latitude},${longitude});' title='View in Maps'>Get directions</a>
+	</div>`
   return contentstring
 }
 
@@ -594,7 +597,7 @@ function customizePokemonMarker (marker, item, skipNotification) {
   }
 
   marker.infoWindow = new google.maps.InfoWindow({
-    content: pokemonLabel(item['pokemon_name'], item['pokemon_rarity'], item['pokemon_types'], item['disappear_time'], item['pokemon_id'], item['latitude'], item['longitude'], item['encounter_id'], item['individual_attack'], item['individual_defense'], item['individual_stamina'], item['move_1'], item['move_2']),
+    content: pokemonLabel(item['pokemon_name'], item['pokemon_rarity'], item['pokemon_types'], item['disappear_time'], item['pokemon_id'], item['latitude'], item['longitude'], item['encounter_id'], item['individual_attack'], item['individual_defense'], item['individual_stamina'], item['move_1'], item['move_2'], item['valid']),
     disableAutoPan: true
   })
 
