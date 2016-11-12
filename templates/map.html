@@ -295,6 +295,36 @@
           <div id="pokestopList" style="color: black;"></div>
         </div>
       </nav>
+      <nav id="spawn-details">
+        <div class="switch-container">
+          <div class="switch-container">
+            <center><h1 id="spawn-ldg-label">Loading...</h1></center>
+          </div>
+          <div class="spawn-label-container">
+            <center><h1 id="spawn-hist-label"></h1></center>
+          </div>
+          <div class="form-control switch-container">
+            <h3 style="font-size: 12px">Show IV & Moves</h3>
+            <div class="onoffswitch">
+              <input id="showstats-switch" type="checkbox" name="showstats-switch" class="onoffswitch-checkbox">
+              <label class="onoffswitch-label" for="showstats-switch">
+                <span class="switch-label" data-on="On" data-off="Off"></span>
+                <span class="switch-handle"></span>
+              </label>
+            </div>
+          </div>
+          <div id="spawnPokemonList" style="color: black;">
+            <table id="spawnHistory_table" class="display" cellspacing="0" width="100%">
+              <thead>
+                <tr>
+                  <th>&nbsp;</th> <th>LocaleTime</th> <th>Time</th> <th>%</th> <th>A</th> <th>D</th> <th>S</th> <th>Move 1</th><th>Move 2</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </nav>
       <div id="map"></div>
       <div class="fab" id="scan-here" style="display:none"></div>
     </div>

@@ -20,7 +20,7 @@ from cachetools import TTLCache
 from cachetools import cached
 
 from . import config
-from .utils import get_pokemon_name, get_pokemon_rarity, get_pokemon_types, get_args
+from .utils import get_pokemon_name, get_pokemon_rarity, get_pokemon_types, get_args, get_move_name, get_move_damage, get_move_energy, get_move_type
 from .transform import transform_from_wgs_to_gcj, get_new_coords
 from .customLog import printPokemon
 
@@ -376,6 +376,37 @@ class Pokemon(BaseModel):
             location['time'] = cls.get_spawn_time(location['time'])
 
         return filtered
+
+    @staticmethod
+    def get_spawnpoint_history(id):
+        result = {}
+        result['pokemon'] = []
+        pokemon = (Pokemon
+                   .select(Pokemon.pokemon_id,
+                           Pokemon.disappear_time,
+                           Pokemon.individual_attack,
+                           Pokemon.individual_defense,
+                           Pokemon.individual_stamina,
+                           Pokemon.move_1,
+                           Pokemon.move_2)
+                   .where(Pokemon.spawnpoint_id == id)
+                   .order_by(Pokemon.disappear_time.desc())
+                   .dicts())
+        for p in pokemon:
+            p['pokemon_name'] = get_pokemon_name(p['pokemon_id'])
+
+            if p['move_1'] is not None:
+                p['move_1_name'] = get_move_name(p['move_1'])
+                p['move_1_damage'] = get_move_damage(p['move_1'])
+                p['move_1_energy'] = get_move_energy(p['move_1'])
+                p['move_1_type'] = get_move_type(p['move_1'])
+            if p['move_2'] is not None:
+                p['move_2_name'] = get_move_name(p['move_2'])
+                p['move_2_damage'] = get_move_damage(p['move_2'])
+                p['move_2_energy'] = get_move_energy(p['move_2'])
+                p['move_2_type'] = get_move_type(p['move_2'])
+            result['pokemon'].append(p)
+        return result
 
 
 class Pokestop(BaseModel):

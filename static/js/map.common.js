@@ -775,6 +775,10 @@ var StoreOptions = {
   'zoomLevel': {
     default: 16,
     type: StoreTypes.Number
+  },
+  'showStats': {
+    default: true,
+    type: StoreTypes.Boolean
   }
 }
 
