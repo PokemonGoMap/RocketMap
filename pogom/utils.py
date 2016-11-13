@@ -431,8 +431,8 @@ def get_pokemon_types(pokemon_id):
     pokemon_types = get_pokemon_data(pokemon_id)['types']
     return map(lambda x: {"type": i8ln(x['type']), "color": x['color']}, pokemon_types)
 
-class Timer():
 
+class Timer():
 
     def __init__(self, name):
         self.times = [(name, time.time(), 0)]
