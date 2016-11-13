@@ -7,7 +7,6 @@ import os
 import json
 import logging
 import shutil
-import platform
 import pprint
 import time
 
@@ -433,6 +432,7 @@ def get_pokemon_types(pokemon_id):
     return map(lambda x: {"type": i8ln(x['type']), "color": x['color']}, pokemon_types)
 
 class Timer():
+
 
     def __init__(self, name):
         self.times = [(name, time.time(), 0)]
