@@ -24,7 +24,7 @@ from pogom.utils import get_args, now
 
 from pogom.search import search_overseer_thread
 from pogom.models import init_database, create_tables, drop_tables, Pokemon, db_updater, clean_db_loop
-from pogom.webhook import wh_updater
+from pogom.webhook import wh_overseer
 
 from pogom.proxy import check_proxies
 
@@ -223,12 +223,11 @@ def main():
     # WH Updates
     wh_updates_queue = Queue()
 
-    # Thread to process webhook updates
-    for i in range(args.wh_threads):
-        log.debug('Starting wh-updater worker thread %d', i)
-        t = Thread(target=wh_updater, name='wh-updater-{}'.format(i), args=(args, wh_updates_queue))
-        t.daemon = True
-        t.start()
+    # Thread to oversee webhook updates
+    log.debug('Starting wh-overseer worker thread')
+    t = Thread(target=wh_overseer, name='wh-overseer', args=(args, wh_updates_queue))
+    t.daemon = True
+    t.start()
 
     if not args.only_server:
 
