@@ -707,7 +707,7 @@ def token_request(args, status, url):
     path = os.path.dirname(os.path.realpath(__file__))
 
     if args.captcha_key is None:
-        for x in xrange(1,60):
+        for x in xrange(1,args.manual_captcha_solving_allowance_time):
             if os.path.exists('{}/../token_captcha.txt'.format(path)):
                 lock_token.acquire()
                 if not os.path.exists('{}/res/token_captcha.txt'.format(path)):
@@ -722,7 +722,7 @@ def token_request(args, status, url):
                         os.remove('{}/../token_captcha.txt'.format(path))
                 lock_token.release()
                 break
-            sleep(1)
+            time.sleep(1)
 
         if token is not None:
             return token
