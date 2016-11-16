@@ -54,7 +54,7 @@ class Pogom(Flask):
         args = get_args()
         return render_template("inject.js",
                                domain=args.manual_captcha_solving_domain
-                              )
+                               )
 
     def set_search_control(self, control):
         self.search_control = control

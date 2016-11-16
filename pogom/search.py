@@ -48,7 +48,7 @@ TIMESTAMP = '\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\00
 
 lock_token = Lock()
 
-# Apply a location jitter.
+
 def jitterLocation(location=None, maxMeters=10):
     origin = geopy.Point(location[0], location[1])
     b = random.randint(0, 360)
@@ -707,7 +707,7 @@ def token_request(args, status, url):
     path = os.path.dirname(os.path.realpath(__file__))
 
     if args.captcha_key is None:
-        for x in xrange(1,args.manual_captcha_solving_allowance_time):
+        for x in xrange(1, args.manual_captcha_solving_allowance_time):
             if os.path.exists('{}/../token_captcha.txt'.format(path)):
                 lock_token.acquire()
                 if not os.path.exists('{}/res/token_captcha.txt'.format(path)):
