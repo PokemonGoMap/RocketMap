@@ -3,6 +3,7 @@
 
 import calendar
 import logging
+import os
 
 from flask import Flask, abort, jsonify, render_template, request
 from flask.json import JSONEncoder
@@ -35,6 +36,25 @@ class Pogom(Flask):
         self.route("/stats", methods=['GET'])(self.get_stats)
         self.route("/status", methods=['GET'])(self.get_status)
         self.route("/status", methods=['POST'])(self.post_status)
+        self.route("/inject.js", methods=['GET'])(self.render_inject_js)
+        self.route("/add_token", methods=['GET'])(self.add_token)
+
+    def add_token(self):
+        token = request.args.get('token')
+        try:
+            path = os.path.dirname(os.path.realpath(__file__))
+            f = open('{}/../token_captcha.txt'.format(path), 'a')
+            f.write('{}'.format(token))
+        finally:
+            if 'f' in vars() and not f.closed:
+                f.close()
+        return self.send_static_file('1x1.gif')
+
+    def render_inject_js(self):
+        args = get_args()
+        return render_template("inject.js",
+                               domain=args.manual_captcha_solving_domain
+                              )
 
     def set_search_control(self, control):
         self.search_control = control

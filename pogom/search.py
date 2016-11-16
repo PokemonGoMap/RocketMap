@@ -27,7 +27,7 @@ import geopy.distance
 import requests
 
 from datetime import datetime
-from threading import Thread
+from threading import Thread, Lock
 from queue import Queue, Empty
 
 from pgoapi import PGoApi
@@ -46,6 +46,7 @@ log = logging.getLogger(__name__)
 
 TIMESTAMP = '\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000'
 
+lock_token = Lock()
 
 # Apply a location jitter.
 def jitterLocation(location=None, maxMeters=10):
@@ -443,7 +444,10 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                         captcha_url = captcha_request(api)
 
                         if len(captcha_url) > 1:
-                            status['message'] = 'Account {} is encountering a captcha, starting 2captcha sequence'.format(account['username'])
+                            if args.captcha_key is not None:
+                                status['message'] = 'Account {} is encountering a captcha, starting 2captcha sequence'.format(account['username'])
+                            else:
+                                status['message'] = 'Account {} is encountering a captcha, starting manual captcha solving'.format(account['username'])
                             log.warning(status['message'])
                             captcha_token = token_request(args, status, captcha_url)
 
@@ -699,6 +703,32 @@ def captcha_request(api):
 
 
 def token_request(args, status, url):
+
+    path = os.path.dirname(os.path.realpath(__file__))
+
+    if args.captcha_key is None:
+        for x in xrange(1,60):
+            if os.path.exists('{}/../token_captcha.txt'.format(path)):
+                lock_token.acquire()
+                if not os.path.exists('{}/res/token_captcha.txt'.format(path)):
+                    lock_token.release()
+                    continue
+                try:
+                    f = open('{}/../token_captcha.txt'.format(path), 'r')
+                    token = f.read()
+                finally:
+                    if 'f' in vars() and not f.closed:
+                        f.close()
+                        os.remove('{}/../token_captcha.txt'.format(path))
+                lock_token.release()
+                break
+            sleep(1)
+
+        if token is not None:
+            return token
+        else:
+            return 'ERROR'
+
     s = requests.Session()
     # Fetch the CAPTCHA_ID from 2captcha.
     try:
