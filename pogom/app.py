@@ -3,7 +3,6 @@
 
 import calendar
 import logging
-import os
 
 from flask import Flask, abort, jsonify, render_template, request
 from flask.json import JSONEncoder
@@ -15,7 +14,7 @@ from datetime import timedelta
 from collections import OrderedDict
 
 from . import config
-from .models import Pokemon, Gym, Pokestop, ScannedLocation, MainWorker, WorkerStatus
+from .models import Pokemon, Gym, Pokestop, ScannedLocation, MainWorker, WorkerStatus, Token
 from .utils import now
 log = logging.getLogger(__name__)
 compress = Compress()
@@ -41,13 +40,8 @@ class Pogom(Flask):
 
     def add_token(self):
         token = request.args.get('token')
-        try:
-            path = os.path.dirname(os.path.realpath(__file__))
-            f = open('{}/../token_captcha.txt'.format(path), 'a')
-            f.write('{}'.format(token))
-        finally:
-            if 'f' in vars() and not f.closed:
-                f.close()
+        query = Token.insert(token=token, last_updated=datetime.utcnow())
+        query.execute()
         return self.send_static_file('1x1.gif')
 
     def render_inject_js(self):
