@@ -27,7 +27,7 @@ import geopy.distance
 import requests
 
 from datetime import datetime
-from threading import Thread, Lock
+from threading import Thread
 from queue import Queue, Empty
 
 from pgoapi import PGoApi
@@ -35,7 +35,7 @@ from pgoapi.utilities import f2i
 from pgoapi import utilities as util
 from pgoapi.exceptions import AuthException
 
-from .models import parse_map, GymDetails, parse_gyms, MainWorker, WorkerStatus
+from .models import parse_map, GymDetails, parse_gyms, MainWorker, WorkerStatus, Token
 from .fakePogoApi import FakePogoApi
 from .utils import now
 import schedulers
@@ -45,8 +45,6 @@ import terminalsize
 log = logging.getLogger(__name__)
 
 TIMESTAMP = '\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000'
-
-lock_token = Lock()
 
 
 def jitterLocation(location=None, maxMeters=10):
@@ -704,30 +702,15 @@ def captcha_request(api):
 
 def token_request(args, status, url):
 
-    path = os.path.dirname(os.path.realpath(__file__))
+    request_time = datetime.utcnow()
 
     if args.captcha_key is None:
         for x in xrange(1, args.manual_captcha_solving_allowance_time):
-            if os.path.exists('{}/../token_captcha.txt'.format(path)):
-                lock_token.acquire()
-                if not os.path.exists('{}/res/token_captcha.txt'.format(path)):
-                    lock_token.release()
-                    continue
-                try:
-                    f = open('{}/../token_captcha.txt'.format(path), 'r')
-                    token = f.read()
-                finally:
-                    if 'f' in vars() and not f.closed:
-                        f.close()
-                        os.remove('{}/../token_captcha.txt'.format(path))
-                lock_token.release()
-                break
+            token = Token.get_match(request_time)
+            if token is not None:
+                return token.token
             time.sleep(1)
-
-        if token is not None:
-            return token
-        else:
-            return 'ERROR'
+        return 'ERROR'
 
     s = requests.Session()
     # Fetch the CAPTCHA_ID from 2captcha.
