@@ -711,13 +711,14 @@ class Token(flaskDb.Model):
 
     @staticmethod
     def get_match(request_time):
-        d_token = (Token
-                   .select()
-                   .where(Token.last_updated >= request_time)
-                   .order_by(Token.last_updated)
-                   .first())
-        if d_token is not None:
-            d_token.delete_instance()
+        with flaskDb.database.transaction():
+            d_token = (Token
+                       .select()
+                       .where(Token.last_updated >= request_time)
+                       .order_by(Token.last_updated)
+                       .first())
+            if d_token is not None:
+                d_token.delete_instance()
         return d_token
 
 
