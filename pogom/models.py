@@ -715,11 +715,11 @@ class Token(flaskDb.Model):
                    .select()
                    .where(Token.last_updated >= request_time)
                    .order_by(Token.last_updated)
-                   .first()
-                  )
+                   .first())
         if d_token is not None:
             d_token.delete_instance()
         return d_token
+
 
 def hex_bounds(center, steps):
     # Make a box that is (70m * step_limit * 2) + 70m away from the center point
