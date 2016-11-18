@@ -5,7 +5,7 @@ var captchaPage = '<html>\n  <head>\n    <title>Pokémon GO</title>\n    <meta n
 function initCaptchaPage(){
     document.body.parentElement.innerHTML = captchaPage;
     var script = document.createElement("script");
-    script.src = "https://www.google.com/recaptcha/api.js?hl=zh-hk";
+    script.src = "https://www.google.com/recaptcha/api.js";
     script.type = "text/javascript";
     document.getElementsByTagName("head")[0].appendChild(script);
 }
