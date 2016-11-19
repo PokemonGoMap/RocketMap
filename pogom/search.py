@@ -706,12 +706,13 @@ def captcha_request(api):
 
 def token_request(args, status, url, whq):
 
+    global token_needed
     request_time = datetime.utcnow()
 
     if args.captcha_key is None:
         token_needed += 1
         if args.webhooks:
-            whq.put(('token_needed', {"num" : token_needed}))
+            whq.put(('token_needed', {"num": token_needed}))
         while request_time + timedelta(seconds=args.manual_captcha_solving_allowance_time) > datetime.utcnow():
             tokenLock.acquire()
             token = Token.get_match(request_time)
@@ -719,7 +720,7 @@ def token_request(args, status, url, whq):
             if token is not None:
                 token_needed -= 1
                 if args.webhooks:
-                    whq.put(('token_needed', {"num" : token_needed}))
+                    whq.put(('token_needed', {"num": token_needed}))
                 return token.token
             time.sleep(1)
         token_needed -= 1
