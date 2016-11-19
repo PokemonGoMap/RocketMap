@@ -728,7 +728,7 @@ def token_request(args, status, url, whq):
             time.sleep(1)
         token_needed -= 1
         if args.webhooks:
-            whq.put(('token_needed', {"num" : token_needed}))
+            whq.put(('token_needed', {"num": token_needed}))
         return 'ERROR'
 
     s = requests.Session()
