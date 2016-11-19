@@ -214,7 +214,7 @@ def main():
         t.daemon = True
         t.start()
 
-    # db clearner; really only need one ever
+    # db cleaner; really only need one ever
     if not args.disable_clean:
         t = Thread(target=clean_db_loop, name='db-cleaner', args=(args,))
         t.daemon = True
@@ -283,6 +283,7 @@ def main():
             app.run(threaded=True, use_reloader=False, debug=True, host=args.host, port=args.port, ssl_context=ssl_context)
         else:
             app.run(threaded=True, use_reloader=False, debug=False, host=args.host, port=args.port, ssl_context=ssl_context)
+
 
 if __name__ == '__main__':
     main()
