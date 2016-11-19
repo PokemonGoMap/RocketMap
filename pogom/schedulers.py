@@ -244,7 +244,7 @@ class HexSearch(BaseScheduler):
         for step, location in enumerate(results, 1):
             try:
                 r = requests.Session()
-                response = r.get("https://maps.googleapis.com/maps/api/elevation/json?locations={},{}&key={}".format(latitude, longitude, self.key))
+                response = r.get("https://maps.googleapis.com/maps/api/elevation/json?locations={},{}&key={}".format(location[0], location[1], self.key))
                 response = response.json()
                 altitude = response["results"][0]["elevation"]
             except:
