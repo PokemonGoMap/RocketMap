@@ -26,8 +26,8 @@ import geopy
 import geopy.distance
 import requests
 
-from datetime import datetime
-from threading import Thread
+from datetime import datetime, timedelta
+from threading import Thread, Lock
 from queue import Queue, Empty
 
 from pgoapi import PGoApi
@@ -45,6 +45,8 @@ import terminalsize
 log = logging.getLogger(__name__)
 
 TIMESTAMP = '\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000'
+
+tokenLock = Lock()
 
 
 # Apply a location jitter
@@ -708,8 +710,10 @@ def token_request(args, status, url):
     request_time = datetime.utcnow()
 
     if args.captcha_key is None:
-        for x in xrange(1, args.manual_captcha_solving_allowance_time):
+        while request_time+timedelta(seconds=args.manual_captcha_solving_allowance_time) > datetime.utcnow():
+            tokenLock.acquire()
             token = Token.get_match(request_time)
+            tokenLock.release()
             if token is not None:
                 return token.token
             time.sleep(1)
