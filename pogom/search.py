@@ -131,7 +131,7 @@ def status_printer(threadStatus, search_items_queue, db_updates_queue, wh_queue,
                     skip_total += threadStatus[item]['skip']
 
             # Print the queue length
-            status_text.append('Queues: {} search items, {} db updates, {} webhook.  Total skipped items: {}. Spare accounts available: {}. Accounts on hold: {} Token needed: {}'.format(search_items_queue.qsize(), db_updates_queue.qsize(), wh_queue.qsize(), skip_total, account_queue.qsize(), len(account_failures), token_needed))
+            status_text.append('Queues: {} search items, {} db updates, {} webhook.  Total skipped items: {}. Spare accounts available: {}. Accounts on hold: {}. Token needed: {}'.format(search_items_queue.qsize(), db_updates_queue.qsize(), wh_queue.qsize(), skip_total, account_queue.qsize(), len(account_failures), token_needed))
 
             # Print status of overseer
             status_text.append('{} Overseer: {}'.format(threadStatus['Overseer']['scheduler'], threadStatus['Overseer']['message']))
@@ -721,11 +721,13 @@ def token_request(args, status, url, whq):
             tokenLock.release()
             if token is not None:
                 tokenNeeded -= 1
-                whq.put(('token_needed', {"num":token_needed}))
+                if args.webhooks:
+                    whq.put(('token_needed', {"num":token_needed}))
                 return token.token
             time.sleep(1)
         token_needed -= 1
-        whq.put(('token_needed', {"num":token_needed}))
+        if args.webhooks:
+            whq.put(('token_needed', {"num":token_needed}))
         return 'ERROR'
 
     s = requests.Session()
