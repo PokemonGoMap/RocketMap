@@ -605,8 +605,6 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                     # No sleep here; we've not done anything worth sleeping for. Plus we clearly need to catch up!
                     continue
 
-                status['message'] = messages['search']
-                log.debug(status['message'])
 
                 # Let the api know where we intend to be for this loop
                 # doing this before check_login so it does not also have to be done there
@@ -892,8 +890,7 @@ def calc_distance(pos1, pos2):
 
     return d
 
-
-# Delay each thread start time so that logins occur after delay.
+# Delay each thread start time so that logins only occur ~1s
 def stagger_thread(args, account):
     if args.accounts.index(account) == 0:
         return  # No need to delay the first one.

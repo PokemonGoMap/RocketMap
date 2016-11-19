@@ -40,12 +40,8 @@ import logging
 import math
 import geopy
 import json
-import time
+import requests
 
-import sys
-from copy import deepcopy
-import traceback
-from collections import Counter
 from queue import Empty
 from operator import itemgetter
 from datetime import datetime, timedelta
@@ -150,6 +146,7 @@ class HexSearch(BaseScheduler):
             self.step_distance = 0.070
 
         self.step_limit = args.step_limit
+        self.key = args.gmaps_key
 
         # This will hold the list of locations to scan so it can be reused, instead of recalculating on each loop.
         self.locations = False
@@ -245,7 +242,14 @@ class HexSearch(BaseScheduler):
         # Add the required appear and disappear times.
         locationsZeroed = []
         for step, location in enumerate(results, 1):
-            locationsZeroed.append((step, (location[0], location[1], 0), 0, 0))
+            try:
+                r = requests.Session()
+                response = r.get("https://maps.googleapis.com/maps/api/elevation/json?locations={},{}&key={}".format(latitude, longitude, self.key))
+                response = response.json()
+                altitude = response["results"][0]["elevation"]
+            except:
+                altitude = 0.0
+            locationsZeroed.append((step, (location[0], location[1], altitude), 0, 0))
         return locationsZeroed
 
     # Schedule the work to be done.
