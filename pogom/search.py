@@ -707,7 +707,7 @@ def token_request(args, status, url):
     request_time = datetime.utcnow()
 
     if args.captcha_key is None:
-        while request_time+timedelta(seconds=args.manual_captcha_solving_allowance_time) > datetime.utcnow():
+        while request_time + timedelta(seconds=args.manual_captcha_solving_allowance_time) > datetime.utcnow():
             tokenLock.acquire()
             token = Token.get_match(request_time)
             tokenLock.release()
