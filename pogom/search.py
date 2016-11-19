@@ -48,7 +48,7 @@ TIMESTAMP = '\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\00
 
 tokenLock = Lock()
 
-token_needed = 0;
+token_needed = 0
 
 
 def jitterLocation(location=None, maxMeters=10):
@@ -711,20 +711,20 @@ def token_request(args, status, url, whq):
     if args.captcha_key is None:
         token_needed += 1
         if args.webhooks:
-            whq.put(('token_needed', {"num":token_needed}))
+            whq.put(('token_needed', {"num" : token_needed}))
         while request_time + timedelta(seconds=args.manual_captcha_solving_allowance_time) > datetime.utcnow():
             tokenLock.acquire()
             token = Token.get_match(request_time)
             tokenLock.release()
             if token is not None:
-                tokenNeeded -= 1
+                token_needed -= 1
                 if args.webhooks:
-                    whq.put(('token_needed', {"num":token_needed}))
+                    whq.put(('token_needed', {"num" : token_needed}))
                 return token.token
             time.sleep(1)
         token_needed -= 1
         if args.webhooks:
-            whq.put(('token_needed', {"num":token_needed}))
+            whq.put(('token_needed', {"num" : token_needed}))
         return 'ERROR'
 
     s = requests.Session()
