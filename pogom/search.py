@@ -48,6 +48,8 @@ TIMESTAMP = '\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\00
 
 tokenLock = Lock()
 
+token_needed = 0;
+
 
 def jitterLocation(location=None, maxMeters=10):
     origin = geopy.Point(location[0], location[1])
@@ -128,7 +130,7 @@ def status_printer(threadStatus, search_items_queue, db_updates_queue, wh_queue,
                     skip_total += threadStatus[item]['skip']
 
             # Print the queue length.
-            status_text.append('Queues: {} search items, {} db updates, {} webhook.  Total skipped items: {}. Spare accounts available: {}. Accounts on hold: {}'.format(search_items_queue.qsize(), db_updates_queue.qsize(), wh_queue.qsize(), skip_total, account_queue.qsize(), len(account_failures)))
+            status_text.append('Queues: {} search items, {} db updates, {} webhook.  Total skipped items: {}. Spare accounts available: {}. Accounts on hold: {} Token needed: {}'.format(search_items_queue.qsize(), db_updates_queue.qsize(), wh_queue.qsize(), skip_total, account_queue.qsize(), len(account_failures), token_needed))
 
             # Print status of overseer.
             status_text.append('{} Overseer: {}'.format(threadStatus['Overseer']['scheduler'], threadStatus['Overseer']['message']))
@@ -449,7 +451,7 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                             else:
                                 status['message'] = 'Account {} is encountering a captcha, starting manual captcha solving'.format(account['username'])
                             log.warning(status['message'])
-                            captcha_token = token_request(args, status, captcha_url)
+                            captcha_token = token_request(args, status, captcha_url, whq)
 
                             if 'ERROR' in captcha_token:
                                 log.warning("Unable to resolve captcha, please check your 2captcha API key and/or wallet balance")
@@ -702,18 +704,25 @@ def captcha_request(api):
     return captcha_url
 
 
-def token_request(args, status, url):
+def token_request(args, status, url, whq):
 
     request_time = datetime.utcnow()
 
     if args.captcha_key is None:
+        token_needed += 1
+        if args.webhooks:
+            whq.put(('token_needed', {"num":token_needed}))
         while request_time + timedelta(seconds=args.manual_captcha_solving_allowance_time) > datetime.utcnow():
             tokenLock.acquire()
             token = Token.get_match(request_time)
             tokenLock.release()
             if token is not None:
+                tokenNeeded -= 1
+                whq.put(('token_needed', {"num":token_needed}))
                 return token.token
             time.sleep(1)
+        token_needed -= 1
+        whq.put(('token_needed', {"num":token_needed}))
         return 'ERROR'
 
     s = requests.Session()
