@@ -35,7 +35,7 @@ If you're going to run a copy from the latest ``develop`` branch in ``git`` you 
 
 .. code-block:: bash
 
-  git clone --recursive https://github.com/PokemonGoMap/PokemonGo-Map.git
+  git clone https://github.com/PokemonGoMap/PokemonGo-Map.git
 
 Installing Modules
 ******************
@@ -87,9 +87,10 @@ Linux/OSX:
 
 In order to run from a git clone, you must compile the front-end assets with node. Make sure you have node installed for your platform:
 
- * `Windows <https://nodejs.org/dist/v4.5.0/node-v4.5.0-x64.msi>`_
- * `OSX <https://nodejs.org/dist/v4.4.7/node-v4.4.7.pkg>`_
+ * `Windows/OSX <https://nodejs.org/en/download/>`_ (Click the Windows or Macintosh Installer respectively)
  * Linux -- refer to the `package installation <https://nodejs.org/en/download/package-manager/>`_ for your flavor of OS
+ 
+ If you have build errors, try the current version. Otherwise, use LTS."
 
 Once node/npm is installed, open a command window and validation your install:
 

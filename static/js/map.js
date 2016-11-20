@@ -1,4 +1,4 @@
-﻿//
+//
 // Global map.js variables
 //
 
@@ -110,7 +110,10 @@ function initMap () { // eslint-disable-line no-unused-vars
         'style_pgo',
         'dark_style_nl',
         'style_light2_nl',
-        'style_pgo_nl'
+        'style_pgo_nl',
+        'style_pgo_day',
+        'style_pgo_night',
+        'style_pgo_dynamic'
       ]
     }
   })
@@ -149,6 +152,22 @@ function initMap () { // eslint-disable-line no-unused-vars
     name: 'PokemonGo (No Labels)'
   })
   map.mapTypes.set('style_pgo_nl', stylePgoNl)
+
+  var stylePgoDay = new google.maps.StyledMapType(pGoStyleDay, {
+    name: 'PokemonGo Day'
+  })
+  map.mapTypes.set('style_pgo_day', stylePgoDay)
+
+  var stylePgoNight = new google.maps.StyledMapType(pGoStyleNight, {
+    name: 'PokemonGo Night'
+  })
+  map.mapTypes.set('style_pgo_night', stylePgoNight)
+
+  // dynamic map style chooses stylePgoDay or stylePgoNight depending on client time
+  var currentDate = new Date()
+  var currentHour = currentDate.getHours()
+  var stylePgoDynamic = (currentHour >= 6 && currentHour < 19) ? stylePgoDay : stylePgoNight
+  map.mapTypes.set('style_pgo_dynamic', stylePgoDynamic)
 
   map.addListener('maptypeid_changed', function (s) {
     Store.set('map_style', this.mapTypeId)
@@ -304,20 +323,18 @@ function initSidebar () {
   $('#spawnpoints-switch').prop('checked', Store.get('showSpawnpoints'))
   $('#ranges-switch').prop('checked', Store.get('showRanges'))
   $('#sound-switch').prop('checked', Store.get('playSound'))
-  var searchBox = new google.maps.places.SearchBox(document.getElementById('next-location'))
+  var searchBox = new google.maps.places.Autocomplete(document.getElementById('next-location'))
   $('#next-location').css('background-color', $('#geoloc-switch').prop('checked') ? '#e0e0e0' : '#ffffff')
 
   updateSearchStatus()
   setInterval(updateSearchStatus, 5000)
 
-  searchBox.addListener('places_changed', function () {
-    var places = searchBox.getPlaces()
+  searchBox.addListener('place_changed', function () {
+    var place = searchBox.getPlace()
 
-    if (places.length === 0) {
-      return
-    }
+    if (!place.geometry) return
 
-    var loc = places[0].geometry.location
+    var loc = place.geometry.location
     changeLocation(loc.lat(), loc.lng())
   })
 
@@ -343,7 +360,7 @@ function openMapDirections (lat, lng) { // eslint-disable-line no-unused-vars
   window.open(url, '_blank')
 }
 
-function pokemonLabel (name, rarity, types, disappearTime, id, latitude, longitude, encounterId, atk, def, sta, move1, move2) {
+function pokemonLabel (name, rarity, types, disappearTime, id, latitude, longitude, encounterId, atk, def, sta, move1, move2, timedetail) {
   var disappearDate = new Date(disappearTime)
   var rarityDisplay = rarity ? '(' + rarity + ')' : ''
   var typesDisplay = ''
@@ -362,6 +379,26 @@ function pokemonLabel (name, rarity, types, disappearTime, id, latitude, longitu
       </div>
       `
   }
+
+  var timecontent = ''
+
+  if (timedetail === 1) {
+    timecontent = `<div><span style="font-weight: bold; color: #3bb345">This time is secure. It has been received from the server.</span><br>
+    Disappears at ${pad(disappearDate.getHours())}:${pad(disappearDate.getMinutes())}:${pad(disappearDate.getSeconds())}
+    <span class='label-countdown' disappears-at='${disappearTime}'>(00m00s)</span>
+    </div>`
+  } else if (timedetail === 0) {
+    timecontent = `<div><span style="font-weight: bold; color: #bfbc27">This time is only a prediction. It may be wrong.</span><br>
+    Disappears at ${pad(disappearDate.getHours())}:${pad(disappearDate.getMinutes())}:${pad(disappearDate.getSeconds())}
+    <span class='label-countdown' disappears-at='${disappearTime}'>(00m00s)</span>
+    </div>`
+  } else if (timedetail === -1) {
+    timecontent = `<div><span style="font-weight: bold; color: #f1504e">Don't trust this time! It has been set manually to<br>15m when this pokemon has been encountered</span><br>
+    Disappears at ${pad(disappearDate.getHours())}:${pad(disappearDate.getMinutes())}:${pad(disappearDate.getSeconds())}
+    <span class='label-countdown' disappears-at='${disappearTime}'>(00m00s)</span>
+    </div>`
+  }
+
   var contentstring = `
     <div>
       <b>${name}</b>
@@ -372,11 +409,7 @@ function pokemonLabel (name, rarity, types, disappearTime, id, latitude, longitu
       <span> ${rarityDisplay}</span>
       <span> - </span>
       <small>${typesDisplay}</small>
-    </div>
-    <div>
-      Disappears at ${pad(disappearDate.getHours())}:${pad(disappearDate.getMinutes())}:${pad(disappearDate.getSeconds())}
-      <span class='label-countdown' disappears-at='${disappearTime}'>(00m00s)</span>
-    </div>
+    </div>` + timecontent + `
     <div>
       Location: ${latitude.toFixed(6)}, ${longitude.toFixed(7)}
     </div>
@@ -594,7 +627,7 @@ function customizePokemonMarker (marker, item, skipNotification) {
   }
 
   marker.infoWindow = new google.maps.InfoWindow({
-    content: pokemonLabel(item['pokemon_name'], item['pokemon_rarity'], item['pokemon_types'], item['disappear_time'], item['pokemon_id'], item['latitude'], item['longitude'], item['encounter_id'], item['individual_attack'], item['individual_defense'], item['individual_stamina'], item['move_1'], item['move_2']),
+    content: pokemonLabel(item['pokemon_name'], item['pokemon_rarity'], item['pokemon_types'], item['disappear_time'], item['pokemon_id'], item['latitude'], item['longitude'], item['encounter_id'], item['individual_attack'], item['individual_defense'], item['individual_stamina'], item['move_1'], item['move_2'], item['time_detail']),
     disableAutoPan: true
   })
 
@@ -703,6 +736,50 @@ function getColorByDate (value) {
 function setupScannedMarker (item) {
   var circleCenter = new google.maps.LatLng(item['latitude'], item['longitude'])
 
+  var zoom = map.getZoom()
+  var fontSize = '1m'
+  var text = item['username']
+  var color = getRandomColor(text)
+
+  var label = new google.maps.Marker({
+    position: circleCenter,
+    map: map,
+    icon: {
+      url: '',
+      size: new google.maps.Size(0, 0)
+    }
+  })
+
+  if (zoom >= 17) {
+    label.setLabel({
+      text: text,
+      fontSize: fontSize,
+      color: color
+    })
+  } else {
+    label.setLabel({
+      text: ' ',
+      fontSize: fontSize
+    })
+  }
+
+  google.maps.event.addListener(map, 'zoom_changed', function () {
+    zoom = map.getZoom()
+
+    if (zoom >= 16) {
+      label.setLabel({
+        text: text,
+        fontSize: fontSize,
+        color: color
+      })
+    } else {
+      label.setLabel({
+        text: ' ',
+        fontSize: fontSize
+      })
+    }
+  })
+
   var marker = new google.maps.Circle({
     map: map,
     clickable: false,
@@ -715,6 +792,31 @@ function setupScannedMarker (item) {
   })
 
   return marker
+}
+
+function getRandomColor (seed) {
+  var val = parseInt(seed, 10)
+
+  if (seed !== val) { // we don't have an integer.  Let's create a seed from the string
+    val = 0
+
+    for (var i = 0; i < seed.length; i++) {
+      val += seed.charCodeAt(i)
+    }
+  }
+
+  var hexChars = '0123456789ABCDEF'
+  var color = '#'
+  for (var ind = 0; ind < 6; ind++) {
+    color += hexChars[Math.floor(random(val + ind) * 16)]
+  }
+
+  return color
+}
+
+function random (seed) {
+  var x = Math.sin(seed) * 10000
+  return x - Math.floor(x)
 }
 
 function getColorBySpawnTime (value) {
