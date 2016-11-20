@@ -41,6 +41,8 @@ from .utils import now
 from .transform import get_new_coords
 import schedulers
 
+from .proxy import get_new_proxy
+
 import terminalsize
 
 log = logging.getLogger(__name__)
@@ -212,7 +214,7 @@ def account_recycler(accounts_queue, account_failures, args):
         # Create a new copy of the failure list to search through, so we can iterate through it without it changing.
         failed_temp = list(account_failures)
 
-        # Search through the list for any item that last failed before 2 hours ago.
+        # Search through the list for any item that last failed before -ari/--account-rest-interval seconds
         ok_time = now() - args.account_rest_interval
         for a in failed_temp:
             if a['last_fail_time'] <= ok_time:
@@ -328,12 +330,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb, db_updat
 
         # Set proxy for each worker, using round robin
         proxy_display = 'No'
-        proxy_url = False
-
-        if args.proxy:
-            proxy_display = proxy_url = args.proxy[i % len(args.proxy)]
-            if args.proxy_display.upper() != 'FULL':
-                proxy_display = i % len(args.proxy)
+        proxy_url = False    # Will be assigned inside a search thread
 
         workerId = 'Worker {:03}'.format(i)
         threadStatus[workerId] = {
@@ -504,9 +501,11 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
             status['location'] = False
             status['last_scan_time'] = 0
 
-            # Only sleep when consecutive_fails reaches max_failures, overall fails for stat purposes.
+            # sleep when consecutive_fails reaches max_failures, overall fails for stat purposes
             consecutive_fails = 0
-            consecutive_empties = 0
+
+            # sleep when consecutive_noitems reaches max_empty, overall noitems for stat purposes
+            consecutive_noitems = 0
 
             # Create the API instance this will use.
             if args.mock != '':
@@ -514,23 +513,27 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
             else:
                 api = PGoApi()
 
+            # New account - new proxy
+            if args.proxy:
+                # If proxy is not assigned yet or if proxy-rotation is defined - query for new proxy
+                if (not status['proxy_url']) or \
+                   ((args.proxy_rotation is not None) and (args.proxy_rotation != 'none')):
+
+                    proxy_num, status['proxy_url'] = get_new_proxy(args)
+                    if args.proxy_display.upper() != 'FULL':
+                        status['proxy_display'] = proxy_num
+                    else:
+                        status['proxy_display'] = status['proxy_url']
+
             if status['proxy_url']:
                 log.debug("Using proxy %s", status['proxy_url'])
                 api.set_proxy({'http': status['proxy_url'], 'https': status['proxy_url']})
 
             # The forever loop for the searches.
             while True:
-
-                # If this account has been messing up too hard, let it rest.
-                if consecutive_fails >= args.max_failures:
-                    status['message'] = 'Account {} failed more than {} scans; possibly bad account. Switching accounts...'.format(account['username'], args.max_failures)
-                    log.warning(status['message'])
-                    account_failures.append({'account': account, 'last_fail_time': now(), 'reason': 'failures'})
-                    break  # Exit this loop to get a new account and have the API recreated.
-
                 if args.captcha_solving:
 
-                    if consecutive_empties >= 2:
+                    if consecutive_noitems >= 2:
                         captcha_url = captcha_request(api)
 
                         if len(captcha_url) > 1:
@@ -563,7 +566,28 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                     status['message'] = 'Scanning paused'
                     time.sleep(2)
 
-                # If this account has been running too long, let it rest.
+                # If this account has been messing up too hard, let it rest
+                if (args.max_failures > 0) and (consecutive_fails >= args.max_failures):
+                    status['message'] = 'Account {} failed more than {} scans; possibly bad account. Switching accounts...'.format(account['username'], args.max_failures)
+                    log.warning(status['message'])
+                    account_failures.append({'account': account, 'last_fail_time': now(), 'reason': 'failures'})
+                    break  # exit this loop to get a new account and have the API recreated
+
+                # If this account had not find anything for too long, let it rest
+                if (args.max_empty > 0) and (consecutive_noitems >= args.max_empty):
+                    status['message'] = 'Account {} returned empty scan for more than {} scans; possibly ip is banned. Switching accounts...'.format(account['username'], args.max_empty)
+                    log.warning(status['message'])
+                    account_failures.append({'account': account, 'last_fail_time': now(), 'reason': 'empty scans'})
+                    break  # exit this loop to get a new account and have the API recreated
+
+                # If used proxy disappears from "live list" after background checking - switch account but DO not freeze it (it's not an account failure)
+                if (args.proxy) and (not status['proxy_url'] in args.proxy):
+                    status['message'] = 'Account {} proxy {} is not in a live list any more. Switching accounts...'.format(account['username'], status['proxy_url'])
+                    log.warning(status['message'])
+                    account_queue.put(account)  # experimantal, nobody did this before :)
+                    break  # exit this loop to get a new account and have the API recreated
+
+                # If this account has been running too long, let it rest
                 if (args.account_search_interval is not None):
                     if (status['starttime'] <= (now() - args.account_search_interval)):
                         status['message'] = 'Account {} is being rotated out to rest.'.format(account['username'])
@@ -608,44 +632,50 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                 # when the auth token is refreshed.
                 api.set_position(*step_location)
 
-                # Ok, let's get started -- check our login status.
+                # Ok, let's get started -- check our login status
+                status['message'] = 'Logging in...'
                 check_login(args, account, api, step_location, status['proxy_url'])
 
                 # Putting this message after the check_login so the messages aren't out of order.
                 status['message'] = 'Searching at {:6f},{:6f}'.format(step_location[0], step_location[1])
                 log.info(status['message'])
 
-                # Make the actual request. (finally!)
+                # Make the actual request (finally!)
+                status['message'] = 'Searching at {:6f},{:6f}'.format(step_location[0], step_location[1])
+                log.info(status['message'])
                 response_dict = map_request(api, step_location, args.jitter)
 
                 # G'damnit, nothing back. Mark it up, sleep, carry on.
                 if not response_dict:
                     status['fail'] += 1
                     consecutive_fails += 1
+                    # consecutive_noitems = 0 - I propose to leave noitems counter in case of error
                     status['message'] = 'Invalid response at {:6f},{:6f}, abandoning location'.format(step_location[0], step_location[1])
                     log.error(status['message'])
                     time.sleep(args.scan_delay)
                     continue
 
-                # Got the response, parse it out, send todo's to db/wh queues.
+                # Got the response, parse it out, send to_do's to db/wh queues
                 try:
                     parsed = parse_map(args, response_dict, step_location, dbq, whq, api, status)
                     search_items_queue.task_done()
                     if parsed['count'] > 0:
                         status['success'] += 1
-                        consecutive_empties = 0
+                        consecutive_noitems = 0
                     else:
                         status['noitems'] += 1
-                        consecutive_empties += 1
+                        consecutive_noitems += 1
                     consecutive_fails = 0
                     status['message'] = 'Search at {:6f},{:6f} completed with {} finds'.format(step_location[0], step_location[1], parsed['count'])
                     log.debug(status['message'])
-                except KeyError:
+                # except KeyError as e:
+                except Exception as e:
                     parsed = False
                     status['fail'] += 1
                     consecutive_fails += 1
+                    # consecutive_noitems = 0 - I propose to leave noitems counter in case of error
                     status['message'] = 'Map parse failed at {:6f},{:6f}, abandoning location. {} may be banned.'.format(step_location[0], step_location[1], account['username'])
-                    log.exception(status['message'])
+                    log.exception('{}. Exception message: {}'.format(status['message'], e))
 
                 # Get detailed information about gyms.
                 if args.gym_info and parsed:
@@ -679,11 +709,13 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                         log.debug(status['message'])
 
                         for gym in gyms_to_update.values():
-                            status['message'] = 'Getting details for gym {} of {} for location {},{}...'.format(current_gym, len(gyms_to_update), step_location[0], step_location[1])
+                            status['message'] = 'Getting details for gym {} of {} for location {:6f},{:6f}...'.format(current_gym, len(gyms_to_update), step_location[0], step_location[1])
                             time.sleep(random.random() + 2)
                             response = gym_request(api, step_location, gym)
 
-                            # Make sure the gym was in range. (sometimes the API gets cranky about gyms that are ALMOST 1km away)
+                            # todo: if not response => +1 fail?, error status?, continue/break?
+
+                            # make sure the gym was in range. (sometimes the API gets cranky about gyms that are ALMOST 1km away)
                             if response['responses']['GET_GYM_DETAILS']['result'] == 2:
                                 log.warning('Gym @ %f/%f is out of range (%dkm), skipping', gym['latitude'], gym['longitude'], distance)
                             else:
@@ -692,7 +724,7 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                             # Increment which gym we're on. (for status messages)
                             current_gym += 1
 
-                        status['message'] = 'Processing details of {} gyms for location {},{}...'.format(len(gyms_to_update), step_location[0], step_location[1])
+                        status['message'] = 'Processing details of {} gyms for location {:6f},{:6f}...'.format(len(gyms_to_update), step_location[0], step_location[1])
                         log.debug(status['message'])
 
                         if gym_responses:
