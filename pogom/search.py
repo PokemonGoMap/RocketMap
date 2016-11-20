@@ -63,7 +63,9 @@ def jitterLocation(location=None, maxMeters=10):
 
 
 # Thread to handle user input.
-def switch_status_printer(display_type, current_page, mainlog, loglevel):
+def switch_status_printer(display_type, current_page):
+    # Get a reference to the root logger.
+    mainlog = logging.getLogger()
     # Disable logging of the first handler - the stream handler, and disable it's output.
     mainlog.handlers[0].setLevel(logging.CRITICAL)
 
@@ -75,7 +77,7 @@ def switch_status_printer(display_type, current_page, mainlog, loglevel):
             # Switch between logging and display.
             if display_type[0] != 'logs':
                 # Disable display, enable on screen logging.
-                mainlog.handlers[0].setLevel(loglevel)
+                mainlog.handlers[0].setLevel(logging.DEBUG)
                 display_type[0] = 'logs'
                 # If logs are going slowly, sometimes it's hard to tell you switched.  Make it clear.
                 print 'Showing logs...'
@@ -93,7 +95,7 @@ def switch_status_printer(display_type, current_page, mainlog, loglevel):
 
 
 # Thread to print out the status of each worker.
-def status_printer(threadStatus, search_items_queue_array, db_updates_queue, wh_queue, account_queue, account_failures):
+def status_printer(threadStatus, search_items_queue, db_updates_queue, wh_queue, account_queue, account_failures):
     display_type = ["workers"]
     current_page = [1]
     # Grab current log / level.
@@ -134,12 +136,7 @@ def status_printer(threadStatus, search_items_queue_array, db_updates_queue, wh_
                     skip_total += threadStatus[item]['skip']
 
             # Print the queue length.
-            search_items_queue_size = 0
-            for i in range(0, len(search_items_queue_array)):
-                search_items_queue_size += search_items_queue_array[i].qsize()
-
-            status_text.append('Queues: {} search items, {} db updates, {} webhook.  Total skipped items: {}. Spare accounts available: {}. Accounts on hold: {}'
-                               .format(search_items_queue_size, db_updates_queue.qsize(), wh_queue.qsize(), skip_total, account_queue.qsize(), len(account_failures)))
+            status_text.append('Queues: {} search items, {} db updates, {} webhook.  Total skipped items: {}. Spare accounts available: {}. Accounts on hold: {}'.format(search_items_queue.qsize(), db_updates_queue.qsize(), wh_queue.qsize(), skip_total, account_queue.qsize(), len(account_failures)))
 
             # Print status of overseer.
             status_text.append('{} Overseer: {}'.format(threadStatus['Overseer']['scheduler'], threadStatus['Overseer']['message']))
@@ -220,7 +217,7 @@ def account_recycler(accounts_queue, account_failures, args):
         # Create a new copy of the failure list to search through, so we can iterate through it without it changing.
         failed_temp = list(account_failures)
 
-        # Search through the list for any item that last failed before -ari/--account-rest-interval seconds.
+        # Search through the list for any item that last failed before 2 hours ago.
         ok_time = now() - args.account_rest_interval
         for a in failed_temp:
             if a['last_fail_time'] <= ok_time:
@@ -293,7 +290,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb, db_updat
         t.start()
 
     # Create account recycler thread.
-    log.info('Starting account recycler thread...')
+    log.info('Starting account recycler thread')
     t = Thread(target=account_recycler, name='account-recycler', args=(account_queue, account_failures, args))
     t.daemon = True
     t.start()
@@ -306,19 +303,14 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb, db_updat
         t.daemon = True
         t.start()
 
-    # Create the hash server key scheduler (only if the keys are passed as a list)
-    if args.hash_key:
-        key_scheduler = schedulers.KeyScheduler(args.hash_key).scheduler()
-
     # Create specified number of search_worker_thread.
-    log.info('Starting search worker threads...')
+    log.info('Starting search worker threads')
     for i in range(0, args.workers):
         log.debug('Starting search worker thread %d...', i)
 
-        if i == 0 or (args.beehive and i % args.workers_per_hive == 0):
-            search_items_queue = Queue()
-            # Create the appropriate type of scheduler to handle the search queue.
-            scheduler = schedulers.SchedulerFactory.get_scheduler(args.scheduler, [search_items_queue], threadStatus, args)
+        # Set proxy for each worker, using round robin.
+        proxy_display = 'No'
+        proxy_url = False
 
             scheduler_array.append(scheduler)
             search_items_queue_array.append(search_items_queue)
@@ -351,6 +343,9 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb, db_updat
     # A place to track the current location.
     current_location = False
 
+    # Create the appropriate type of scheduler to handle the search queue.
+    scheduler = schedulers.SchedulerFactory.get_scheduler(args.scheduler, [search_items_queue], threadStatus, args)
+
     # The real work starts here but will halt on pause_bit.set().
     while True:
 
@@ -373,27 +368,23 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb, db_updat
             except Empty:
                 pass
 
-            step_distance = 0.9 if args.no_pokemon else 0.07
+            scheduler.location_changed(current_location)
 
-            locations = generate_hive_locations(current_location, step_distance, args.step_limit, len(scheduler_array))
-
-            for i in range(0, len(scheduler_array)):
-                scheduler_array[i].location_changed(locations[i], db_updates_queue)
-
-        # If there are no search_items_queue either the loop has finished or it's been
-        # cleared above.  Either way, time to fill it back up.
-        for i in range(0, len(scheduler_array)):
-            if scheduler_array[i].time_to_refresh_queue():
-                threadStatus['Overseer']['message'] = 'Search queue {} empty, scheduling more items to scan.'.format(i)
-                log.debug('Search queue %d empty, scheduling more items to scan.', i)
-                try:  # Can't have the scheduler die because of a DB deadlock.
-                    scheduler_array[i].schedule()
-                except Exception as e:
-                    log.error('Schedule creation had an Exception: {}.'.format(e))
-                    traceback.print_exc(file=sys.stdout)
-                    time.sleep(10)
-            else:
-                threadStatus['Overseer']['message'] = scheduler_array[i].get_overseer_message()
+        # If there are no search_items_queue either the loop has finished (or been
+        # cleared above) -- either way, time to fill it back up.
+        if search_items_queue.empty():
+            log.debug('Search queue empty, scheduling more items to scan')
+            scheduler.schedule()
+        else:
+            nextitem = search_items_queue.queue[0]
+            threadStatus['Overseer']['message'] = 'Processing search queue, next item is {:6f},{:6f}'.format(nextitem[1][0], nextitem[1][1])
+            # If times are specified, print the time of the next queue item, and how many seconds ahead/behind realtime.
+            if nextitem[2]:
+                threadStatus['Overseer']['message'] += ' @ {}'.format(time.strftime('%H:%M:%S', time.localtime(nextitem[2])))
+                if nextitem[2] > now():
+                    threadStatus['Overseer']['message'] += ' ({}s ahead)'.format(nextitem[2] - now())
+                else:
+                    threadStatus['Overseer']['message'] += ' ({}s behind)'.format(now() - nextitem[2])
 
         # Now we just give a little pause here.
         time.sleep(1)
@@ -472,7 +463,7 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
             status['starttime'] = now()
 
             # Get an account.
-            status['message'] = 'Waiting to get new account from the queue...'
+            status['message'] = 'Waiting to get new account from the queue'
             log.info(status['message'])
             # Make sure the scheduler is done for valid locations
             while not scheduler.ready:
@@ -491,11 +482,9 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
             status['noitems'] = 0
             status['skip'] = 0
 
-            # Sleep when consecutive_fails reaches max_failures, overall fails for stat purposes.
+            # Only sleep when consecutive_fails reaches max_failures, overall fails for stat purposes.
             consecutive_fails = 0
 
-            # Sleep when consecutive_noitems reaches max_empty, overall noitems for stat purposes.
-            consecutive_noitems = 0
 
             # Create the API instance this will use.
             if args.mock != '':
@@ -522,16 +511,37 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
             # The forever loop for the searches.
             while True:
 
-                while pause_bit.is_set():
-                    status['message'] = 'Scanning paused.'
-                    time.sleep(2)
-
                 # If this account has been messing up too hard, let it rest.
-                if (args.max_failures > 0) and (consecutive_fails >= args.max_failures):
+                if consecutive_fails >= args.max_failures:
                     status['message'] = 'Account {} failed more than {} scans; possibly bad account. Switching accounts...'.format(account['username'], args.max_failures)
                     log.warning(status['message'])
                     account_failures.append({'account': account, 'last_fail_time': now(), 'reason': 'failures'})
                     break  # Exit this loop to get a new account and have the API recreated.
+
+
+                if args.captcha_solving:
+
+                    if consecutive_empties >= 2:
+                        captcha_url = captcha_request(api)
+
+                        if len(captcha_url) > 1:
+                            status['message'] = 'Account {} is encountering a captcha, starting 2captcha sequence'.format(account['username'])
+                            log.warning(status['message'])
+                            captcha_token = token_request(args, status, captcha_url)
+
+                            if 'ERROR' in captcha_token:
+                                log.warning("Unable to resolve captcha, please check your 2captcha API key and/or wallet balance")
+                                account_failures.append({'account': account, 'last_fail_time': now(), 'reason': 'catpcha failed to verify'})
+                                break
+
+                            else:
+                                status['message'] = 'Retrieved captcha token, attempting to verify challenge for {}'.format(account['username'])
+                                log.info(status['message'])
+                                response = api.verify_challenge(token=captcha_token)
+
+                                if 'success' in response['responses']['VERIFY_CHALLENGE']:
+                                    status['message'] = "Account {} successfully uncaptcha'd".format(account['username'])
+                                    log.info(status['message'])
 
                 # If this account has not found anything for too long, let it rest.
                 if (args.max_empty > 0) and (consecutive_noitems >= args.max_empty):
@@ -556,13 +566,8 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                         break
 
                 # Grab the next thing to search (when available).
-                step, step_location, appears, leaves, messages = scheduler.next_item(status)
-                status['message'] = messages['wait']
-
-                # Using step as a flag for no valid next location returned.
-                if step == -1:
-                    time.sleep(scheduler.delay(status['last_scan_date']))
-                    continue
+                status['message'] = 'Waiting for item from queue'
+                step, step_location, appears, leaves = search_items_queue.get()
 
                 # Too soon?
                 if appears and now() < appears + 10:  # Adding a 10 second grace period.
@@ -572,7 +577,8 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                         if pause_bit.is_set():
                             paused = True
                             break  # Why can't python just have `break 2`...
-                        status['message'] = messages['early']
+                        remain = appears - now() + 10
+                        status['message'] = 'Early for {:6f},{:6f}; waiting {}s...'.format(step_location[0], step_location[1], remain)
                         if first_loop:
                             log.info(status['message'])
                             first_loop = False
@@ -585,34 +591,26 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                 if leaves and now() > (leaves - args.min_seconds_left):
                     scheduler.task_done(status)
                     status['skip'] += 1
-                    status['message'] = messages['late']
+
+                    # It is slightly silly to put this in status['message'] since it'll be overwritten very shortly after. Oh well.
+                    status['message'] = 'Too late for location {:6f},{:6f}; skipping'.format(step_location[0], step_location[1])
                     log.info(status['message'])
                     # No sleep here; we've not done anything worth sleeping for. Plus we clearly need to catch up!
                     continue
 
-                status['message'] = messages['search']
-                log.debug(status['message'])
-
                 # Let the api know where we intend to be for this loop.
-                # Doing this before check_login so it does not also have to be done
+                # Doing this before check_login so it does not also have to be done there
                 # when the auth token is refreshed.
                 api.set_position(*step_location)
 
-                if args.hash_key:
-                    key = key_scheduler.next()
-                    api.activate_hash_server(key)
-                    log.info('Using key {} for this scan.'.format(key))
-
-                # Ok, let's get started -- check our login status
-                status['message'] = 'Logging in...'
+                # Ok, let's get started -- check our login status.
                 check_login(args, account, api, step_location, status['proxy_url'])
 
                 # Putting this message after the check_login so the messages aren't out of order.
-                status['message'] = messages['search']
+                status['message'] = 'Searching at {:6f},{:6f}'.format(step_location[0], step_location[1])
                 log.info(status['message'])
 
-                # Make the actual request.
-                scan_date = datetime.utcnow()
+                # Make the actual request. (finally!)
                 response_dict = map_request(api, step_location, args.jitter)
                 status['last_scan_date'] = datetime.utcnow()
 
@@ -621,7 +619,7 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                 status['longitude'] = step_location[1]
                 dbq.put((WorkerStatus, {0: WorkerStatus.db_format(status)}))
 
-                # Nothing back. Mark it up, sleep, carry on.
+                # G'damnit, nothing back. Mark it up, sleep, carry on.
                 if not response_dict:
                     status['fail'] += 1
                     consecutive_fails += 1
@@ -630,7 +628,8 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                     time.sleep(scheduler.delay(status['last_scan_date']))
                     continue
 
-                # Got the response, check for captcha, parse it out, then send todo's to db/wh queues.
+
+                # Got the response, parse it out, send todo's to db/wh queues.
                 try:
                     # Captcha check.
                     if args.captcha_solving:
@@ -687,13 +686,15 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
 
                 # Get detailed information about gyms.
                 if args.gym_info and parsed:
-                    # Build a list of gyms to update.
+
+                    # Build up a list of gyms to update.
                     gyms_to_update = {}
                     for gym in parsed['gyms'].values():
                         # Can only get gym details within 1km of our position.
                         distance = calc_distance(step_location, [gym['latitude'], gym['longitude']])
                         if distance < 1:
-                            # Check if we already have details on this gym.  Get them if not.
+
+                            # Check if we already have details on this gym. (if not, get them)
                             try:
                                 record = GymDetails.get(gym_id=gym['gym_id'])
                             except GymDetails.DoesNotExist as e:
@@ -721,13 +722,13 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                             time.sleep(random.random() + 2)
                             response = gym_request(api, step_location, gym)
 
-                            # Make sure the gym was in range. (Sometimes the API gets cranky about gyms that are ALMOST 1km away.)
+                            # Make sure the gym was in range. (sometimes the API gets cranky about gyms that are ALMOST 1km away)
                             if response['responses']['GET_GYM_DETAILS']['result'] == 2:
                                 log.warning('Gym @ %f/%f is out of range (%dkm), skipping.', gym['latitude'], gym['longitude'], distance)
                             else:
                                 gym_responses[gym['gym_id']] = response['responses']['GET_GYM_DETAILS']
 
-                            # Increment which gym we're on for status messages.
+                            # Increment which gym we're on. (for status messages)
                             current_gym += 1
 
                         status['message'] = 'Processing details of {} gyms for location {:6f},{:6f}...'.format(len(gyms_to_update), step_location[0], step_location[1])
@@ -736,11 +737,13 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                         if gym_responses:
                             parse_gyms(args, gym_responses, whq, dbq)
 
-                # Delay the desired amount after "scan" completion.
-                delay = scheduler.delay(status['last_scan_date'])
-                status['message'] += ', sleeping {}s until {}.'.format(delay, time.strftime('%H:%M:%S', time.localtime(time.time() + args.scan_delay)))
+                # Record the time and place the worker left off at.
+                status['last_scan_time'] = now()
+                status['location'] = step_location
 
-                time.sleep(delay)
+                # Always delay the desired amount after "scan" completion.
+                status['message'] += ', sleeping {}s until {}'.format(args.scan_delay, time.strftime('%H:%M:%S', time.localtime(time.time() + args.scan_delay)))
+                time.sleep(args.scan_delay)
 
         # Catch any process exceptions, log them, and continue the thread.
         except Exception as e:
@@ -760,7 +763,7 @@ def check_login(args, account, api, position, proxy_url):
             log.debug('Credentials remain valid for another %f seconds.', remaining_time)
             return
 
-    # Try to login. Repeat a few times, but don't get stuck here.
+    # Try to login. (a few times, but don't get stuck here)
     i = 0
     while i < args.login_retries:
         try:
@@ -822,13 +825,8 @@ def gym_request(api, position, gym):
                                 player_longitude=f2i(position[1]),
                                 gym_latitude=gym['latitude'],
                                 gym_longitude=gym['longitude'])
-        x = req.check_challenge()
-        x = req.get_hatched_eggs()
-        x = req.get_inventory()
-        x = req.check_awarded_badges()
-        x = req.download_settings()
-        x = req.get_buddy_walked()
-        x = req.call()
+
+
         # Print pretty(x).
         return x
 
@@ -848,7 +846,8 @@ def token_request(args, status, url):
         return 'ERROR'
     status['message'] = 'Retrieved captcha ID: {}; now retrieving token.'.format(captcha_id)
     log.info(status['message'])
-    # Get the response, retry every 5 seconds if it's not ready.
+
+    # Get the response, retry every 5 seconds if its not ready.
     recaptcha_response = s.get("http://2captcha.com/res.php?key={}&action=get&id={}".format(args.captcha_key, captcha_id)).text
     while 'CAPCHA_NOT_READY' in recaptcha_response:
         log.info("Captcha token is not ready, retrying in 5 seconds...")
@@ -859,7 +858,7 @@ def token_request(args, status, url):
 
 
 def calc_distance(pos1, pos2):
-    R = 6378.1  # KM radius of the earth.
+    R = 6378.1  # KM radius of the earth
 
     dLat = math.radians(pos1[0] - pos2[0])
     dLon = math.radians(pos1[1] - pos2[1])
@@ -874,12 +873,12 @@ def calc_distance(pos1, pos2):
     return d
 
 
-# Delay each thread start time so that logins occur after delay.
+# Delay each thread start time so that logins only occur ~1s.
 def stagger_thread(args, account):
     if args.accounts.index(account) == 0:
         return  # No need to delay the first one.
-    delay = args.accounts.index(account) * args.login_delay + ((random.random() - .5) / 2)
-    log.debug('Delaying thread startup for %.2f seconds...', delay)
+    delay = args.accounts.index(account) + ((random.random() - .5) / 2)
+    log.debug('Delaying thread startup for %.2f seconds', delay)
     time.sleep(delay)
 
 

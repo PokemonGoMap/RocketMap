@@ -86,43 +86,8 @@ class BaseScheduler(object):
     def getsize(self):
         return self.size
 
-    def get_overseer_message(self):
-        nextitem = self.queues[0].queue[0]
-        message = 'Processing search queue, next item is {:6f},{:6f}'.format(nextitem[1][0], nextitem[1][1])
-        # If times are specified, print the time of the next queue item, and how many seconds ahead/behind realtime
-        if nextitem[2]:
-            message += ' @ {}'.format(time.strftime('%H:%M:%S', time.localtime(nextitem[2])))
-            if nextitem[2] > now():
-                message += ' ({}s ahead)'.format(nextitem[2] - now())
-            else:
-                message += ' ({}s behind)'.format(now() - nextitem[2])
-        return message
 
-    # check if time to refresh queue
-    def time_to_refresh_queue(self):
-        return self.queues[0].empty()
-
-    def task_done(self, *args):
-        return self.queues[0].task_done()
-
-    # Return the next item in the queue
-    def next_item(self, search_items_queue):
-        step, step_location, appears, leaves = self.queues[0].get()
-        remain = appears - now() + 10
-        messages = {
-            'wait': 'Waiting for item from queue',
-            'early': 'Early for {:6f},{:6f}; waiting {}s...'.format(step_location[0], step_location[1], remain),
-            'late': 'Too late for location {:6f},{:6f}; skipping'.format(step_location[0], step_location[1]),
-            'search': 'Searching at {:6f},{:6f}'.format(step_location[0], step_location[1]),
-            'invalid': 'Invalid response at {:6f},{:6f}, abandoning location'.format(step_location[0], step_location[1])
-        }
-        return step, step_location, appears, leaves, messages
-
-    # How long to delay since last action
-    def delay(self, *args):
-        return self.args.scan_delay  # always scan delay time
-
-    # Function to empty all queues in the queues list
+    # Function to empty all queues in the queues list.
     def empty_queues(self):
         self.ready = False
         for queue in self.queues:
@@ -152,8 +117,8 @@ class HexSearch(BaseScheduler):
         # This will hold the list of locations to scan so it can be reused, instead of recalculating on each loop.
         self.locations = False
 
-    # On location change, empty the current queue and the locations list
-    def location_changed(self, scan_location, dbq):
+    # On location change, empty the current queue and the locations list.
+    def location_changed(self, scan_location):
         self.scan_location = scan_location
         self.empty_queues()
         self.locations = False
@@ -828,24 +793,6 @@ class SpeedScan(HexSearch):
 
                 # Were we looking for spawn?
                 if item['kind'] == 'spawn':
-
-                    sp_id = item['sp']
-                    # Did we find the spawn?
-                    if sp_id in parsed['sp_id_list']:
-                        self.spawns_found += 1
-                    elif start_delay > 0:  # not sure why this could be negative, but sometimes it is
-
-                        # if not, record ID and put back in queue
-                        self.spawns_missed_delay[sp_id] = self.spawns_missed_delay.get(sp_id, [])
-                        self.spawns_missed_delay[sp_id].append(start_delay)
-                        item['done'] = 'Scanned'
-
-                # For existing spawn points, if in any other queue items, mark 'scanned'
-                for sp_id in parsed['sp_id_list']:
-                    for item in self.queues[0]:
-                        if (sp_id == item.get('sp', None) and item.get('done', None) is None and
-                                now_secs > item['start'] and now_secs < item['end']):
-                            item['done'] = 'Scanned'
 
 
 # The SchedulerFactory returns an instance of the correct type of scheduler.
