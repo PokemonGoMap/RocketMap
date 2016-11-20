@@ -701,6 +701,50 @@ function getColorByDate (value) {
 function setupScannedMarker (item) {
   var circleCenter = new google.maps.LatLng(item['latitude'], item['longitude'])
 
+  var zoom = map.getZoom()
+  var fontSize = '1m'
+  var text = item['username']
+  var color = getRandomColor(text)
+
+  var label = new google.maps.Marker({
+    position: circleCenter,
+    map: map,
+    icon: {
+      url: '',
+      size: new google.maps.Size(0, 0)
+    }
+  })
+
+  if (zoom >= 17) {
+    label.setLabel({
+      text: text,
+      fontSize: fontSize,
+      color: color
+    })
+  } else {
+    label.setLabel({
+      text: ' ',
+      fontSize: fontSize
+    })
+  }
+
+  google.maps.event.addListener(map, 'zoom_changed', function () {
+    zoom = map.getZoom()
+
+    if (zoom >= 16) {
+      label.setLabel({
+        text: text,
+        fontSize: fontSize,
+        color: color
+      })
+    } else {
+      label.setLabel({
+        text: ' ',
+        fontSize: fontSize
+      })
+    }
+  })
+
   var marker = new google.maps.Circle({
     map: map,
     clickable: false,
@@ -713,6 +757,31 @@ function setupScannedMarker (item) {
   })
 
   return marker
+}
+
+function getRandomColor (seed) {
+  var val = parseInt(seed, 10)
+
+  if (seed !== val) { // we don't have an integer.  Let's create a seed from the string
+    val = 0
+
+    for (var i = 0; i < seed.length; i++) {
+      val += seed.charCodeAt(i)
+    }
+  }
+
+  var hexChars = '0123456789ABCDEF'
+  var color = '#'
+  for (var ind = 0; ind < 6; ind++) {
+    color += hexChars[Math.floor(random(val + ind) * 16)]
+  }
+
+  return color
+}
+
+function random (seed) {
+  var x = Math.sin(seed) * 10000
+  return x - Math.floor(x)
 }
 
 function getColorBySpawnTime (value) {
