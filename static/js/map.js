@@ -341,8 +341,9 @@ function openMapDirections (lat, lng) { // eslint-disable-line no-unused-vars
   window.open(url, '_blank')
 }
 
-function pokemonLabel (name, rarity, types, disappearTime, id, latitude, longitude, encounterId, atk, def, sta, move1, move2) {
+function pokemonLabel (name, rarity, types, disappearTime, id, latitude, longitude, encounterId, atk, def, sta, move1, move2, dtisknown, scanTime) {
   var disappearDate = new Date(disappearTime)
+  var scanDate = new Date(scanTime)
   var rarityDisplay = rarity ? '(' + rarity + ')' : ''
   var typesDisplay = ''
   $.each(types, function (index, type) {
@@ -360,6 +361,22 @@ function pokemonLabel (name, rarity, types, disappearTime, id, latitude, longitu
       </div>
       `
   }
+
+  var disappearstatus = ''
+  if (dtisknown) {
+    disappearstatus = `
+      <div>
+        <b>Known</b> disappear time is ${pad(disappearDate.getHours())}:${pad(disappearDate.getMinutes())}:${pad(disappearDate.getSeconds())}
+        <span class='label-countdown' disappears-at='${disappearTime}'>(00m00s)</span>
+      </div>`
+  } else {
+    disappearstatus = `
+      <div>
+        Disappear time <b>unknown</b>.  Presumed before ${pad(disappearDate.getHours())}:${pad(disappearDate.getMinutes())}:${pad(disappearDate.getSeconds())}
+        <span class='label-countdown' disappears-at='${disappearTime}'>(00m00s)</span>
+      </div>`
+  }
+
   var contentstring = `
     <div>
       <b>${name}</b>
@@ -372,9 +389,10 @@ function pokemonLabel (name, rarity, types, disappearTime, id, latitude, longitu
       <small>${typesDisplay}</small>
     </div>
     <div>
-      Disappears at ${pad(disappearDate.getHours())}:${pad(disappearDate.getMinutes())}:${pad(disappearDate.getSeconds())}
-      <span class='label-countdown' disappears-at='${disappearTime}'>(00m00s)</span>
+      Scanned/updated at ${pad(scanDate.getHours())}:${pad(scanDate.getMinutes())}:${pad(scanDate.getSeconds())}
+      <span class='label-countup' scanned-at='${scanTime}'>(00m00s)</span>
     </div>
+    ${disappearstatus}
     <div>
       Location: ${latitude.toFixed(6)}, ${longitude.toFixed(7)}
     </div>
@@ -512,25 +530,31 @@ function pokestopLabel (expireTime, latitude, longitude) {
 }
 
 function formatSpawnTime (seconds) {
-  // the addition and modulo are required here because the db stores when a spawn disappears
-  // the subtraction to get the appearance time will knock seconds under 0 if the spawn happens in the previous hour
-  return ('0' + Math.floor(((seconds + 3600) % 3600) / 60)).substr(-2) + ':' + ('0' + seconds % 60).substr(-2)
+  return ('0' + Math.floor(seconds / 60)).substr(-2) + 'm' + ('0' + (seconds % 60)).substr(-2) + 's'
 }
 function spawnpointLabel (item) {
+  var timeinfo = ''
+  if (item.dtisknown) {
+    timeinfo = `
+      <div>
+        Disappears every hour at ${formatSpawnTime(item.time)}
+      </div>
+      <div>
+        Spawn time unknown.
+      </div>`
+  } else {
+    timeinfo = `
+      <div>
+        Disappear and spawn times are <b>unknown</b>.
+      </div>`
+  }
+
   var str = `
     <div>
       <b>Spawn Point</b>
     </div>
-    <div>
-      Every hour from ${formatSpawnTime(item.time)} to ${formatSpawnTime(item.time + 900)}
-    </div>`
+    ${timeinfo}`
 
-  if (item.special) {
-    str += `
-      <div>
-        May appear as early as ${formatSpawnTime(item.time - 1800)}
-      </div>`
-  }
   return str
 }
 
@@ -592,7 +616,7 @@ function customizePokemonMarker (marker, item, skipNotification) {
   }
 
   marker.infoWindow = new google.maps.InfoWindow({
-    content: pokemonLabel(item['pokemon_name'], item['pokemon_rarity'], item['pokemon_types'], item['disappear_time'], item['pokemon_id'], item['latitude'], item['longitude'], item['encounter_id'], item['individual_attack'], item['individual_defense'], item['individual_stamina'], item['move_1'], item['move_2']),
+    content: pokemonLabel(item['pokemon_name'], item['pokemon_rarity'], item['pokemon_types'], item['disappear_time'], item['pokemon_id'], item['latitude'], item['longitude'], item['encounter_id'], item['individual_attack'], item['individual_defense'], item['individual_stamina'], item['move_1'], item['move_2'], item['dtisknown'], item['last_modified']),
     disableAutoPan: true
   })
 
@@ -720,18 +744,19 @@ function getColorBySpawnTime (value) {
   var seconds = now.getMinutes() * 60 + now.getSeconds()
 
   // account for hour roll-over
-  if (seconds < 900 && value > 2700) {
-    seconds += 3600
-  } else if (seconds > 2700 && value < 900) {
-    value += 3600
+  var diff = ''
+  if (seconds > value) {
+    diff = (3600 + value - seconds)
+  } else {
+    diff = (value - seconds)
   }
-
-  var diff = (seconds - value)
+  // Hardcoded 30 minute timespan for spawns.  Eventually the color changing should either be
+  // deprecated or it should account for different spawntypes.
   var hue = 275 // light purple when spawn is neither about to spawn nor active
-  if (diff >= 0 && diff <= 900) { // green to red over 15 minutes of active spawn
-    hue = (1 - (diff / 60 / 15)) * 120
-  } else if (diff < 0 && diff > -300) { // light blue to dark blue over 5 minutes til spawn
-    hue = ((1 - (-diff / 60 / 5)) * 50) + 200
+  if (diff < 1800) { // green to red over 30 minutes of active spawn
+    hue = diff / 15
+  } else if (diff < 2100) { // light blue to dark blue over 5 minutes til spawn
+    hue = (11 - diff / 60 / 5) * 50
   }
 
   hue = Math.round(hue / 5) * 5
@@ -813,6 +838,7 @@ function addListeners (marker) {
       marker.infoWindow.open(map, marker)
       clearSelection()
       updateLabelDiffTime()
+      updateLabelUpTime()
       marker.persist = true
       marker.infoWindowIsOpen = true
     } else {
@@ -830,6 +856,7 @@ function addListeners (marker) {
     marker.infoWindow.open(map, marker)
     clearSelection()
     updateLabelDiffTime()
+    updateLabelUpTime()
   })
 
   marker.addListener('mouseout', function () {
@@ -1237,12 +1264,39 @@ var updateLabelDiffTime = function () {
     } else {
       timestring = '('
       if (hours > 0) {
-        timestring = hours + 'h'
+        timestring += hours + 'h'
       }
 
       timestring += ('0' + minutes).slice(-2) + 'm'
       timestring += ('0' + seconds).slice(-2) + 's'
       timestring += ')'
+    }
+
+    $(element).text(timestring)
+  })
+}
+
+var updateLabelUpTime = function () {
+  $('.label-countup').each(function (index, element) {
+    var scannedAt = new Date(parseInt(element.getAttribute('scanned-at')))
+    var now = new Date()
+
+    var difference = Math.abs(now - scannedAt)
+    var hours = Math.floor(difference / 36e5)
+    var minutes = Math.floor((difference - (hours * 36e5)) / 6e4)
+    var seconds = Math.floor((difference - (hours * 36e5) - (minutes * 6e4)) / 1e3)
+    var timestring = ''
+
+    if (scannedAt > now) {
+      timestring = '(invalid)'
+    } else {
+      timestring = '('
+      if (hours > 0) {
+        timestring += hours + 'h'
+      }
+
+      timestring += ('0' + minutes).slice(-2) + 'm'
+      timestring += ('0' + seconds).slice(-2) + 's ago)'
     }
 
     $(element).text(timestring)
@@ -1700,6 +1754,7 @@ $(function () {
 
   // run interval timers to regularly update map and timediffs
   window.setInterval(updateLabelDiffTime, 1000)
+  window.setInterval(updateLabelUpTime, 1000)
   window.setInterval(updateMap, 5000)
   window.setInterval(updateGeoLocation, 1000)
 
