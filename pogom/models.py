@@ -1,4 +1,4 @@
-#!/usr/bin/python
+﻿#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
 import logging
@@ -382,7 +382,7 @@ class Pokemon(BaseModel):
             # examples: time    shifted
             #           0       (   0 + 2700) = 2700 % 3600 = 2700 (0th minute to 45th minute, 15 minutes prior to appearance as time wraps around the hour.)
             #           1800    (1800 + 2700) = 4500 % 3600 =  900 (30th minute, moved to arrive at 15th minute.)
-            # todo: this DOES NOT ACCOUNT for Pokemon that appear sooner and live longer, but you'll _always_ have at least 15 minutes, so it works well enough.
+            # todo: this DOES NOT ACCOUNT for pokemons that appear sooner and live longer, but you'll _always_ have at least 15 minutes, so it works well enough.
             location['time'] = cls.get_spawn_time(location['time'])
 
         return filtered
@@ -1416,10 +1416,10 @@ class GymDetails(BaseModel):
     last_scanned = DateTimeField(default=datetime.utcnow)
 
 
-def hex_bounds(center, steps=None, radius=None):
-    # Make a box that is (70m * step_limit * 2) + 70m away from the center point
-    # Rationale is that you need to travel
-    sp_dist = 0.07 * (2 * steps + 1) if steps else radius
+def hex_bounds(center, steps):
+    # Make a box that is (70m * step_limit * 2) + 70m away from the center point.
+    # Rationale is that you need to travel.
+    sp_dist = 0.07 * 2 * steps
     n = get_new_coords(center, sp_dist, 0)[0]
     e = get_new_coords(center, sp_dist, 90)[1]
     s = get_new_coords(center, sp_dist, 180)[0]
@@ -1427,8 +1427,42 @@ def hex_bounds(center, steps=None, radius=None):
     return (n, e, s, w)
 
 
-# todo: this probably shouldn't _really_ be in "models" anymore, but w/e
-def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, api, now_date):
+def construct_pokemon_dict(pokemons, p, encounter_result, d_t):
+    pokemons[p['encounter_id']] = {
+        'encounter_id': b64encode(str(p['encounter_id'])),
+        'spawnpoint_id': p['spawn_point_id'],
+        'pokemon_id': p['pokemon_data']['pokemon_id'],
+        'latitude': p['latitude'],
+        'longitude': p['longitude'],
+        'disappear_time': d_t,
+    }
+    if encounter_result is not None and 'wild_pokemon' in encounter_result['responses']['ENCOUNTER']:
+        pokemon_info = encounter_result['responses']['ENCOUNTER']['wild_pokemon']['pokemon_data']
+        attack = pokemon_info.get('individual_attack', 0)
+        defense = pokemon_info.get('individual_defense', 0)
+        stamina = pokemon_info.get('individual_stamina', 0)
+        pokemons[p['encounter_id']].update({
+            'individual_attack': attack,
+            'individual_defense': defense,
+            'individual_stamina': stamina,
+            'move_1': pokemon_info['move_1'],
+            'move_2': pokemon_info['move_2'],
+        })
+    else:
+        if encounter_result is not None and 'wild_pokemon' not in encounter_result['responses']['ENCOUNTER']:
+            log.warning("Error encountering {}, status code: {}".format(p['encounter_id'], encounter_result['responses']['ENCOUNTER']['status']))
+        pokemons[p['encounter_id']].update({
+            'individual_attack': None,
+            'individual_defense': None,
+            'individual_stamina': None,
+            'move_1': None,
+            'move_2': None,
+        })
+
+
+# todo: this probably shouldn't _really_ be in "models" anymore, but w/e ¯\_(ツ)_/¯
+def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, api):
+
     pokemons = {}
     pokestops = {}
     gyms = {}
@@ -1483,7 +1517,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
                  .where((Pokemon.disappear_time > datetime.utcnow()) & (Pokemon.encounter_id << encounter_ids))
                  .dicts())
 
-        # Store all encounter_ids and spawnpoint_id for the Pokemon in query (all thats needed to make sure its unique).
+        # Store all encounter_ids and spawnpoint_id for the pokemon in query (all thats needed to make sure its unique).
         encountered_pokemon = [(p['encounter_id'], p['spawnpoint_id']) for p in query]
 
         for p in wild_pokemon:
@@ -1628,7 +1662,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
                 else:
                     lure_expiration, active_fort_modifier = None, None
 
-                # Send all pokestops to webhooks.
+                # Send all pokéstops to webhooks.
                 if args.webhooks and not args.webhook_updates_only:
                     # Explicitly set 'webhook_data', in case we want to change the information pushed to webhooks,
                     # similar to above and previous commits.
@@ -1865,8 +1899,7 @@ def parse_gyms(args, gym_responses, wh_update_queue, db_update_queue):
              len(gym_details),
              len(gym_members))
 
-
-def db_updater(args, q, db):
+def db_updater(args, q):
     # The forever loop.
     while True:
         try:
@@ -1897,6 +1930,13 @@ def db_updater(args, q, db):
 def clean_db_loop(args):
     while True:
         try:
+            # Clean out old scanned locations.
+            query = (ScannedLocation
+                     .delete()
+                     .where((ScannedLocation.last_modified <
+                             (datetime.utcnow() - timedelta(minutes=30)))))
+            query.execute()
+
             query = (MainWorker
                      .delete()
                      .where((ScannedLocation.last_modified <
@@ -1915,7 +1955,7 @@ def clean_db_loop(args):
                      .where(Pokestop.lure_expiration < datetime.utcnow()))
             query.execute()
 
-            # If desired, clear old Pokemon spawns.
+            # If desired, clear old pokemon spawns.
             if args.purge_data > 0:
                 query = (Pokemon
                          .delete()
@@ -2042,7 +2082,7 @@ def database_migrate(db, old_ver):
         db.drop_tables([ScannedLocation])
 
     if old_ver < 5:
-        # Some Pokemon were added before the 595 bug was "fixed".
+        # Some pokemon were added before the 595 bug was "fixed".
         # Clean those up for a better UX.
         query = (Pokemon
                  .delete()
