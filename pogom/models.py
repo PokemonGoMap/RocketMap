@@ -613,6 +613,7 @@ class Gym(BaseModel):
 class ScannedLocation(BaseModel):
     latitude = DoubleField()
     longitude = DoubleField()
+    username = CharField()
     last_modified = DateTimeField(index=True, default=datetime.utcnow)
 
     class Meta:
@@ -789,8 +790,8 @@ def construct_pokemon_dict(pokemons, p, encounter_result, d_t, time_detail=-1):
         })
 
 
-# todo: this probably shouldn't _really_ be in "models" anymore, but w/e ¯\_(ツ)_/¯
-def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, api):
+# todo: this probably shouldn't _really_ be in "models" anymore, but w/e
+def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, api, status):
     pokemons = {}
     pokestops = {}
     gyms = {}
@@ -1000,6 +1001,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
     db_update_queue.put((ScannedLocation, {0: {
         'latitude': step_location[0],
         'longitude': step_location[1],
+        'username': status['user'],
     }}))
 
     return {
@@ -1324,5 +1326,5 @@ def database_migrate(db, old_ver):
         )
     if old_ver < 10:
         migrate(
-            migrator.add_column('pokemon', 'time_detail', IntegerField(default=-1))
+            migrator.add_column('scannedlocation', 'username', CharField(max_length=255, null=False, default=" ")),
         )
