@@ -30,7 +30,7 @@ args = get_args()
 flaskDb = FlaskDB()
 cache = TTLCache(maxsize=100, ttl=60 * 5)
 
-db_schema_version = 9
+db_schema_version = 10
 
 
 class MyRetryDB(RetryOperationalError, PooledMySQLDatabase):
@@ -89,6 +89,7 @@ class Pokemon(BaseModel):
     move_1 = IntegerField(null=True)
     move_2 = IntegerField(null=True)
     last_modified = DateTimeField(null=True, index=True, default=datetime.utcnow)
+    valid = IntegerField(null=True, default=0)
 
     class Meta:
         indexes = ((('latitude', 'longitude'), False),)
@@ -716,7 +717,7 @@ def hex_bounds(center, steps):
     return (n, e, s, w)
 
 
-def construct_pokemon_dict(pokemons, p, encounter_result, d_t):
+def construct_pokemon_dict(pokemons, p, encounter_result, d_t, valid, nptime):
     pokemons[p['encounter_id']] = {
         'encounter_id': b64encode(str(p['encounter_id'])),
         'spawnpoint_id': p['spawn_point_id'],
@@ -724,7 +725,11 @@ def construct_pokemon_dict(pokemons, p, encounter_result, d_t):
         'latitude': p['latitude'],
         'longitude': p['longitude'],
         'disappear_time': d_t,
+        'last_modified': nptime,  # insert when the map discovered the pokemon
+        # Above line isn't necessary, but if there's network latency, or database locks, last_modified could end up being after despawn
+        'valid': valid,  # insert if the pokemon is valid or not
     }
+
     if encounter_result is not None and 'wild_pokemon' in encounter_result['responses']['ENCOUNTER']:
         pokemon_info = encounter_result['responses']['ENCOUNTER']['wild_pokemon']['pokemon_data']
         attack = pokemon_info.get('individual_attack', 0)
@@ -737,6 +742,7 @@ def construct_pokemon_dict(pokemons, p, encounter_result, d_t):
             'move_1': pokemon_info['move_1'],
             'move_2': pokemon_info['move_2'],
         })
+
     else:
         if encounter_result is not None and 'wild_pokemon' not in encounter_result['responses']['ENCOUNTER']:
             log.warning("Error encountering {}, status code: {}".format(p['encounter_id'], encounter_result['responses']['ENCOUNTER']['status']))
@@ -781,19 +787,19 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
 
     if pokesfound:
         encounter_ids = [b64encode(str(p['encounter_id'])) for p in wild_pokemon]
-        # For all the wild pokemon we found check if an active pokemon is in the database
+        # For all the wild pokemon we found check if an active valid pokemon is in the database
         query = (Pokemon
                  .select(Pokemon.encounter_id, Pokemon.spawnpoint_id)
-                 .where((Pokemon.disappear_time > datetime.utcnow()) & (Pokemon.encounter_id << encounter_ids))
-                 .dicts())
+                 .where((Pokemon.disappear_time > datetime.utcnow()) & (Pokemon.encounter_id << encounter_ids) & (Pokemon.valid > 0))
+                 .dicts())  # above: Pokemon.valid > 0 just gets active, VALID pokemon in the database
 
         # Store all encounter_ids and spawnpoint_id for the pokemon in query (all thats needed to make sure its unique)
         encountered_pokemon = [(p['encounter_id'], p['spawnpoint_id']) for p in query]
 
         for p in wild_pokemon:
             if (b64encode(str(p['encounter_id'])), p['spawn_point_id']) in encountered_pokemon:
-                # If pokemon has been encountered before dont process it.
-                skipped += 1
+                # If pokemon has been encountered before and is already valid, dont process it.
+                skipped += 1  # Leaving this here, if we have a valid active pokemon, there's no need to update it.
                 continue
 
             # time_till_hidden_ms was overflowing causing a negative integer.
@@ -802,9 +808,29 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
                 d_t = datetime.utcfromtimestamp(
                     (p['last_modified_timestamp_ms'] +
                      p['time_till_hidden_ms']) / 1000.0)
+                nptime = datetime.utcfromtimestamp(p['last_modified_timestamp_ms'] / 1000.0)
+                valid = 1
             else:
-                # Set a value of 15 minutes because currently its unknown but larger than 15.
-                d_t = datetime.utcfromtimestamp((p['last_modified_timestamp_ms'] + 900000) / 1000.0)
+                # lets grab the times from our database to compare to
+                nptime = datetime.utcfromtimestamp(p['last_modified_timestamp_ms'] / 1000.0)
+                try:
+                    query = (Pokemon
+                             .select(Pokemon.disappear_time, Pokemon.last_modified)  # we only need the times
+                             .where((Pokemon.spawnpoint_id == p['spawn_point_id']) & (Pokemon.disappear_time < nptime) & (Pokemon.valid == 1))  # grab old spawn point ID with a valid timer
+                             .order_by(Pokemon.disappear_time.desc())  # sort by most recent
+                             .limit(1)  # we only want one
+                             .dicts())
+                    db = query[0]
+                    diff = (nptime - db['last_modified']).total_seconds()  # compare the new pokemon discovery time to the database pokemon
+                    diff = int(diff / 3600) + 1  # get how many full hours have elapsed since the old pokemon
+                    d_t = db['disappear_time'] + timedelta(hours=diff)  # add an hour to the old time because we still need a future time
+                    if (d_t - nptime).total_seconds() > 3600:  # is the despawn time longer than 1 hour?
+                        diff = int(((d_t - nptime).total_seconds) / 3600)  # how many hours between discovery and despawn?
+                        d_t = d_t - timedelta(hours=diff)  # subtract enough that we get a < 1 hour spawn
+                    valid = 1  # validate the timer
+                except:
+                    d_t = nptime + timedelta(minutes=15)
+                    valid = 0  # invalidate the timer
 
             printPokemon(p['pokemon_data']['pokemon_id'], p['latitude'],
                          p['longitude'], d_t)
@@ -818,7 +844,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
                                                  spawn_point_id=p['spawn_point_id'],
                                                  player_latitude=step_location[0],
                                                  player_longitude=step_location[1])
-            construct_pokemon_dict(pokemons, p, encounter_result, d_t)
+            construct_pokemon_dict(pokemons, p, encounter_result, d_t, valid, nptime)  # sending validity to construct_pokemon_dict
             if args.webhooks:
                 wh_update_queue.put(('pokemon', {
                     'encounter_id': b64encode(str(p['encounter_id'])),
@@ -1268,4 +1294,9 @@ def database_migrate(db, old_ver):
         migrate(
             migrator.add_column('pokemon', 'last_modified', DateTimeField(null=True, index=True)),
             migrator.add_column('pokestop', 'last_updated', DateTimeField(null=True, index=True))
+        )
+
+    if old_ver < 10:
+        migrate(
+            migrator.add_column('pokemon', 'valid', IntegerField(null=True, default=0))
         )
