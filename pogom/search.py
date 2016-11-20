@@ -50,7 +50,7 @@ tokenLock = Lock()
 
 token_needed = 0
 
-
+# Apply a location jitter.
 def jitterLocation(location=None, maxMeters=10):
     origin = geopy.Point(location[0], location[1])
     b = random.randint(0, 360)
