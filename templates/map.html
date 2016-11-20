@@ -180,6 +180,16 @@
                 </label>
               </div>
             </div>
+            <div class="form-control switch-container" style="display:{{show_scan}}">
+              <h3>Scan here button</h3>
+              <div class="onoffswitch">
+                <input id="scan-here-switch" type="checkbox" name="scan-here-switch" class="onoffswitch-checkbox" checked/>
+                <label class="onoffswitch-label" for="scan-here-switch">
+                <span class="switch-label" data-on="On" data-off="Off"></span>
+                <span class="switch-handle"></span>
+                </label>
+              </div>
+            </div>
           </div>
 
           <h3>Notification Settings</h3>
@@ -198,6 +208,12 @@
                 <div style="max-height:165px;overflow-y:auto">
                   <select id="notify-rarity" multiple="multiple"></select>
                 </div>
+              </label>
+            </div>
+            <div class="form-control">
+              <label for="notify-perfection">
+                <h3>Notify of Perfection</h3>
+                <input id="notify-perfection" type="text" name="notify-perfection" placeholder="Minimum perfection %"/>
               </label>
             </div>
             <div class="form-control switch-container">
@@ -236,6 +252,11 @@
               <select name="iconmarker-style" id="iconmarker-style"></select>
             </div>
             <div class="form-control switch-container">
+              <h3>Gym Marker Style</h3>
+              <select name="gym-marker-style" id="gym-marker-style">
+                <option value='ingame'>In-Game</option>
+                <option value='shield'>Shield</option>
+              </select>
               <h3>Location Icon Marker</h3>
               <select name="locationmarker-style" id="locationmarker-style"></select>
             </div>
@@ -275,6 +296,7 @@
         </div>
       </nav>
       <div id="map"></div>
+      <div class="fab" id="scan-here" style="display:none"></div>
     </div>
     <!-- Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-polyfill/6.9.1/polyfill.min.js"></script>
