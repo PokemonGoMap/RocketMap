@@ -74,6 +74,85 @@ class BaseModel(flaskDb.Model):
         return results
 
 
+class Spawnpoints(BaseModel):
+    latitude = DoubleField()
+    longitude = DoubleField()
+    spawnpoint_id = CharField()
+    time = IntegerField()
+    count = IntegerField()
+    last_modified = DateTimeField(index=True, default=datetime.utcnow)
+
+    class Meta:
+        indexes = ((('latitude', 'longitude'), False),)
+        primary_key = CompositeKey('spawnpoint_id', 'time')
+
+    @classmethod
+    def upsert(cls, data):
+        bulk_upsert(cls, data)
+
+    @classmethod
+    def get_count(cls):
+        return len(Spawnpoints.select().limit(1).dicts())
+
+    @classmethod
+    def get_spawnpoints(cls, swLat, swLng, neLat, neLng, timestamp=0, oSwLat=None, oSwLng=None, oNeLat=None, oNeLng=None):
+        query = Spawnpoints.select(Spawnpoints.latitude, Spawnpoints.longitude, Spawnpoints.spawnpoint_id, Spawnpoints.time, Spawnpoints.count)
+
+        if timestamp > 0:
+            # If timestamp is known only load modified pokemon
+            results = (Spawnpoints.select(Spawnpoints.spawnpoint_id)
+                       .where(((Spawnpoints.last_modified > datetime.utcfromtimestamp(timestamp / 1000))) &
+                              ((Spawnpoints.latitude >= swLat) &
+                               (Spawnpoints.longitude >= swLng) &
+                               (Spawnpoints.latitude <= neLat) &
+                               (Spawnpoints.longitude <= neLng)))
+                       .dicts())
+
+            query = (query
+                     .where((Spawnpoints.spawnpoint_id << results)).dicts())
+
+        if oSwLat and oSwLng and oNeLat and oNeLng:
+            # Send spawnpoints in view but exclude those within old boundaries. Only send newly uncovered spawnpoints.
+            query = (query
+                     .where((((Spawnpoints.latitude >= swLat) &
+                              (Spawnpoints.longitude >= swLng) &
+                              (Spawnpoints.latitude <= neLat) &
+                              (Spawnpoints.longitude <= neLng))) &
+                            ~((Spawnpoints.latitude >= oSwLat) &
+                              (Spawnpoints.longitude >= oSwLng) &
+                              (Spawnpoints.latitude <= oNeLat) &
+                              (Spawnpoints.longitude <= oNeLng))))
+        elif swLat and swLng and neLat and neLng:
+            query = (query
+                     .where((Spawnpoints.latitude <= neLat) &
+                            (Spawnpoints.latitude >= swLat) &
+                            (Spawnpoints.longitude >= swLng) &
+                            (Spawnpoints.longitude <= neLng)
+                            ))
+
+        query = query.dicts()
+        spawnpoints = {}
+
+        for sp in query:
+            key = sp['spawnpoint_id']
+            appear_time = Pokemon.get_spawn_time(sp.pop('time'))
+            count = sp['count']
+
+            if key not in spawnpoints:
+                spawnpoints[key] = sp
+            else:
+                spawnpoints[key]['special'] = True
+
+            if 'time' not in spawnpoints[key] or count >= spawnpoints[key]['count']:
+                spawnpoints[key]['time'] = appear_time
+                spawnpoints[key]['count'] = count
+
+        for sp in spawnpoints.values():
+            del sp['count']
+
+        return list(spawnpoints.values())
+
+
 class Pokemon(BaseModel):
     # We are base64 encoding the ids delivered by the api,
     # because they are too big for sqlite to handle.
@@ -276,7 +355,7 @@ class Pokemon(BaseModel):
         return (disappear_time + 2700) % 3600
 
     @classmethod
-    def get_spawnpoints(cls, swLat, swLng, neLat, neLng, timestamp=0, oSwLat=None, oSwLng=None, oNeLat=None, oNeLng=None):
+    def get_spawnpoints(cls, swLat, swLng, neLat, neLng, timestamp=0, oSwLat=None, oSwLng=None, oNeLat=None, oNeLng=None, spawntbl=False):
         query = Pokemon.select(Pokemon.latitude, Pokemon.longitude, Pokemon.spawnpoint_id, ((Pokemon.disappear_time.minute * 60) + Pokemon.disappear_time.second).alias('time'), fn.Count(Pokemon.spawnpoint_id).alias('count'))
 
         if timestamp > 0:
@@ -312,22 +391,27 @@ class Pokemon(BaseModel):
         queryDict = query.dicts()
         spawnpoints = {}
 
-        for sp in queryDict:
-            key = sp['spawnpoint_id']
-            disappear_time = cls.get_spawn_time(sp.pop('time'))
-            count = int(sp['count'])
+        if spawntbl:
+            for sp in queryDict:
+                if not (sp['spawnpoint_id'] is None):
+                    spawnpoints[sp['spawnpoint_id'] + str(sp['time'])] = sp
+        else:
+            for sp in queryDict:
+                key = sp['spawnpoint_id']
+                disappear_time = cls.get_spawn_time(sp.pop('time'))
+                count = int(sp['count'])
 
-            if key not in spawnpoints:
-                spawnpoints[key] = sp
-            else:
-                spawnpoints[key]['special'] = True
+                if key not in spawnpoints:
+                    spawnpoints[key] = sp
+                else:
+                    spawnpoints[key]['special'] = True
 
-            if 'time' not in spawnpoints[key] or count >= spawnpoints[key]['count']:
-                spawnpoints[key]['time'] = disappear_time
-                spawnpoints[key]['count'] = count
+                if 'time' not in spawnpoints[key] or count >= spawnpoints[key]['count']:
+                    spawnpoints[key]['time'] = disappear_time
+                    spawnpoints[key]['count'] = count
 
-        for sp in spawnpoints.values():
-            del sp['count']
+            for sp in spawnpoints.values():
+                del sp['count']
 
         return list(spawnpoints.values())
 
@@ -752,6 +836,7 @@ def construct_pokemon_dict(pokemons, p, encounter_result, d_t):
 # todo: this probably shouldn't _really_ be in "models" anymore, but w/e ¯\_(ツ)_/¯
 def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, api):
     pokemons = {}
+    spawnpoints = {}
     pokestops = {}
     gyms = {}
     skipped = 0
@@ -790,6 +875,19 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
         # Store all encounter_ids and spawnpoint_id for the pokemon in query (all thats needed to make sure its unique).
         encountered_pokemon = [(p['encounter_id'], p['spawnpoint_id']) for p in query]
 
+        spawnpointids = [(p['spawnpoint_id']) for p in encountered_pokemon]
+
+        spawncounts = {}
+        if len(spawnpointids) > 0:
+
+            query = (Spawnpoints.select(Spawnpoints.spawnpoint_id, Spawnpoints.time, Spawnpoints.count)
+                                .where(Spawnpoints.spawnpoint_id << spawnpointids)
+                                .dicts())
+
+            spawncounts = {}
+            for s in query:
+                spawncounts[s['spawnpoint_id'] + str(s['time'])] = s['count']
+
         for p in wild_pokemon:
             if (b64encode(str(p['encounter_id'])), p['spawn_point_id']) in encountered_pokemon:
                 # If pokemon has been encountered before dont process it.
@@ -799,12 +897,13 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
             # time_till_hidden_ms was overflowing causing a negative integer.
             # It was also returning a value above 3.6M ms.
             if 0 < p['time_till_hidden_ms'] < 3600000:
-                d_t = datetime.utcfromtimestamp(
-                    (p['last_modified_timestamp_ms'] +
-                     p['time_till_hidden_ms']) / 1000.0)
+                d_t_stamp = (p['last_modified_timestamp_ms'] +
+                             p['time_till_hidden_ms']) / 1000.0
+                d_t = datetime.utcfromtimestamp(d_t_stamp)
             else:
                 # Set a value of 15 minutes because currently its unknown but larger than 15.
-                d_t = datetime.utcfromtimestamp((p['last_modified_timestamp_ms'] + 900000) / 1000.0)
+                d_t_stamp = (p['last_modified_timestamp_ms'] + 900000) / 1000.0
+                d_t = datetime.utcfromtimestamp(d_t_stamp)
 
             printPokemon(p['pokemon_data']['pokemon_id'], p['latitude'],
                          p['longitude'], d_t)
@@ -818,7 +917,22 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
                                                  spawn_point_id=p['spawn_point_id'],
                                                  player_latitude=step_location[0],
                                                  player_longitude=step_location[1])
+
             construct_pokemon_dict(pokemons, p, encounter_result, d_t)
+
+            if (p['spawn_point_id'] + str(d_t)) in spawncounts:
+                count = spawncounts[p['spawn_point_id'] + str(d_t)].value
+            else:
+                count = 0
+
+            spawnpoints[p['spawn_point_id']] = {
+                'spawnpoint_id': p['spawn_point_id'],
+                'latitude': p['latitude'],
+                'longitude': p['longitude'],
+                'count': count + 1,
+                'time': d_t_stamp % 3600
+            }
+
             if args.webhooks:
                 wh_update_queue.put(('pokemon', {
                     'encounter_id': b64encode(str(p['encounter_id'])),
@@ -930,6 +1044,8 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
 
     if len(pokemons):
         db_update_queue.put((Pokemon, pokemons))
+    if len(spawnpoints):
+        db_update_queue.put((Spawnpoints, spawnpoints))
     if len(pokestops):
         db_update_queue.put((Pokestop, pokestops))
     if len(gyms):
@@ -1169,13 +1285,13 @@ def bulk_upsert(cls, data):
 def create_tables(db):
     db.connect()
     verify_database_schema(db)
-    db.create_tables([Pokemon, Pokestop, Gym, ScannedLocation, GymDetails, GymMember, GymPokemon, Trainer, MainWorker, WorkerStatus], safe=True)
+    db.create_tables([Spawnpoints, Pokemon, Pokestop, Gym, ScannedLocation, GymDetails, GymMember, GymPokemon, Trainer, MainWorker, WorkerStatus], safe=True)
     db.close()
 
 
 def drop_tables(db):
     db.connect()
-    db.drop_tables([Pokemon, Pokestop, Gym, ScannedLocation, Versions, GymDetails, GymMember, GymPokemon, Trainer, MainWorker, WorkerStatus, Versions], safe=True)
+    db.drop_tables([Spawnpoints, Pokemon, Pokestop, Gym, ScannedLocation, Versions, GymDetails, GymMember, GymPokemon, Trainer, MainWorker, WorkerStatus, Versions], safe=True)
     db.close()
 
 
