@@ -103,6 +103,9 @@ def get_args():
     parser.add_argument('-mf', '--max-failures',
                         help='Maximum number of failures to parse locations before an account will go into a two hour sleep.',
                         type=int, default=5)
+    parser.add_argument('-me', '--max-empties',
+                        help='Maximum number of empties to parse locations before an account will go into a sleep',
+                        type=int, default=5)
     parser.add_argument('-msl', '--min-seconds-left',
                         help='Time that must be left on a spawn before considering it too late and skipping it. eg. 600 would skip anything with < 10 minutes remaining. Default 0.',
                         type=int, default=0)
