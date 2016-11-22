@@ -621,7 +621,7 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                     time.sleep(args.scan_delay)
                     continue
 
-                # Got the response, check for captcha, parse it out, send todo's to db/wh queues.
+                # Got the response, check for captcha, parse it out, then send todo's to db/wh queues.
                 try:
                     # Captcha check
                     if args.captcha_solving:
@@ -800,12 +800,19 @@ def map_request(api, position, jitter=False):
 def gym_request(api, position, gym):
     try:
         log.debug('Getting details for gym @ %f/%f (%fkm away)', gym['latitude'], gym['longitude'], calc_distance(position, [gym['latitude'], gym['longitude']]))
-        x = api.get_gym_details(gym_id=gym['gym_id'],
+        req = api.create_request()
+        x = req.get_gym_details(gym_id=gym['gym_id'],
                                 player_latitude=f2i(position[0]),
                                 player_longitude=f2i(position[1]),
                                 gym_latitude=gym['latitude'],
                                 gym_longitude=gym['longitude'])
-
+        x = req.check_challenge()
+        x = req.get_hatched_eggs()
+        x = req.get_inventory()
+        x = req.check_awarded_badges()
+        x = req.download_settings()
+        x = req.get_buddy_walked()
+        x = req.call()
         # Print pretty(x).
         return x
 
