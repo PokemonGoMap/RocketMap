@@ -1599,30 +1599,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
                 encounter_result = req.get_buddy_walked()
                 encounter_result = req.call()
 
-            pokemons[p['encounter_id']] = {
-                'encounter_id': b64encode(str(p['encounter_id'])),
-                'spawnpoint_id': p['spawn_point_id'],
-                'pokemon_id': p['pokemon_data']['pokemon_id'],
-                'latitude': p['latitude'],
-                'longitude': p['longitude'],
-                'disappear_time': disappear_time,
-                'individual_attack': None,
-                'individual_defense': None,
-                'individual_stamina': None,
-                'move_1': None,
-                'move_2': None
-            }
-
-            if encounter_result is not None and 'wild_pokemon' in encounter_result['responses']['ENCOUNTER']:
-                pokemon_info = encounter_result['responses']['ENCOUNTER']['wild_pokemon']['pokemon_data']
-                pokemons[p['encounter_id']].update({
-                    'individual_attack': pokemon_info.get('individual_attack', 0),
-                    'individual_defense': pokemon_info.get('individual_defense', 0),
-                    'individual_stamina': pokemon_info.get('individual_stamina', 0),
-                    'move_1': pokemon_info['move_1'],
-                    'move_2': pokemon_info['move_2'],
-                })
-
+            construct_pokemon_dict(pokemons, p, encounter_result, d_t)
             if args.webhooks:
 
                 wh_poke = pokemons[p['encounter_id']].copy()
