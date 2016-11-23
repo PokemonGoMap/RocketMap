@@ -84,6 +84,12 @@ def get_args():
     parser.add_argument('-cds', '--captcha-dsk',
                         help='PokemonGo captcha data-sitekey.',
                         default="6LeeTScTAAAAADqvhqVMhPpr_vB9D364Ia-1dSgK")
+    parser.add_argument('-mcsd', '--manual-captcha-solving-domain',
+                        help='PokemonGo manual captcha solving domain',
+                        default="http://127.0.0.1:5000")
+    parser.add_argument('-mcsat', '--manual-captcha-solving-allowance-time',
+                        help='PokemonGo manual captcha solving allowance time',
+                        type=int, default=60)
     parser.add_argument('-ed', '--encounter-delay',
                         help='Time delay between encounter pokemon in scan threads.',
                         type=float, default=1)
