@@ -227,7 +227,7 @@ def account_recycler(accounts_queue, account_failures, args):
                 accounts_queue.put(a['account'])
             else:
                 if 'notified' not in a:
-                    log.info('Account {} needs to cool off for {} minutes due to {}.'.format(a['account']['username'], round((a['last_fail_time'] - ok_time) / 60, 0), a['reason']))
+                    log.info('Account {} needs to cool off for {} minutes due to {}'.format(a['account']['username'], round((a['last_fail_time'] - ok_time) / 60, 0), a['reason']))
                     a['notified'] = True
 
 
