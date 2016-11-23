@@ -63,7 +63,9 @@ def get_args():
     parser.add_argument('-ari', '--account-rest-interval', type=int, default=7200,
                         help='Seconds for accounts to rest when they fail or are switched out.')
     parser.add_argument('-ac', '--accountcsv',
-                        help='Load accounts from CSV file containing "auth_service,username,passwd" lines.')
+                        help='Load accounts from CSV file containing "auth_service,username,passwd" lines')
+    parser.add_argument('-bh', '--beehive',
+                        help='Use beehive configuration for multiple accounts, one account per hex.  Make sure to keep -st under 5, and -w under the total amount of accounts available', action='store_true', default=False)
     parser.add_argument('-l', '--location', type=parse_unicode,
                         help='Location, can be an address or coordinates.')
     parser.add_argument('-j', '--jitter', help='Apply random -9m to +9m jitter to location.',
@@ -93,14 +95,17 @@ def get_args():
     encounter_list.add_argument('-eblk', '--encounter-blacklist', action='append', default=[],
                                 help='List of pokemon to NOT encounter for more stats.')
     parser.add_argument('-ld', '--login-delay',
-                        help='Time delay between each login attempt.',
-                        type=float, default=5)
+                        help='Time delay between each login attempt',
+                        type=float, default=6)
     parser.add_argument('-lr', '--login-retries',
                         help='Number of logins attempts before refreshing a thread.',
                         type=int, default=3)
     parser.add_argument('-mf', '--max-failures',
-                        help='Maximum number of failures to parse locations before an account will go into a two hour sleep.',
+                        help='Maximum number of failures to parse locations before an account will go into a sleep for -ari/--account-rest-interval seconds',
                         type=int, default=5)
+    parser.add_argument('-me', '--max-empty',
+                        help='Maximum number of empty scans before an account will go into a sleep for -ari/--account-rest-interval seconds. Reasonable to use with proxies',
+                        type=int, default=0)
     parser.add_argument('-msl', '--min-seconds-left',
                         help='Time that must be left on a spawn before considering it too late and skipping it. eg. 600 would skip anything with < 10 minutes remaining. Default 0.',
                         type=int, default=0)
@@ -160,12 +165,17 @@ def get_args():
                         action='store_true', default=False)
     parser.add_argument('-pd', '--purge-data',
                         help='Clear pokemon from database this many hours after they disappear \
-                        (0 to disable).', type=int, default=0)
-    parser.add_argument('-px', '--proxy', help='Proxy url (e.g. socks5://127.0.0.1:9050).', action='append')
-    parser.add_argument('-pxsc', '--proxy-skip-check', help='Disable checking of proxies before start.', action='store_true', default=False)
-    parser.add_argument('-pxt', '--proxy-timeout', help='Timeout settings for proxy checker in seconds.', type=int, default=5)
-    parser.add_argument('-pxd', '--proxy-display', help='Display info on which proxy beeing used (index or full) To be used with -ps.', type=str, default='index')
-    parser.add_argument('--db-type', help='Type of database to be used (default: sqlite).',
+                        (0 to disable)', type=int, default=0)
+    parser.add_argument('-px', '--proxy', help='Proxy url (e.g. socks5://127.0.0.1:9050)', action='append')
+    parser.add_argument('-pxsc', '--proxy-skip-check', help='Disable checking of proxies before start', action='store_true', default=False)
+    parser.add_argument('-pxt', '--proxy-timeout', help='Timeout settings for proxy checker in seconds ', type=int, default=5)
+    parser.add_argument('-pxd', '--proxy-display', help='Display info on which proxy beeing used (index or full). To be used with -ps', type=str, default='index')
+    parser.add_argument('-pxf', '--proxy-file', help='Load proxy list from text file (one proxy per line), overrides -px/--proxy')
+    parser.add_argument('-pxr', '--proxy-refresh', help='Period of proxy file reloading, in seconds. Works only with -pxf/--proxy-file. \
+                        (0 to disable)', type=int, default=0)
+    parser.add_argument('-pxo', '--proxy-rotation', help='Enable proxy rotation with account changing for search threads \
+                        (none/round/random)', type=str, default='none')
+    parser.add_argument('--db-type', help='Type of database to be used (default: sqlite)',
                         default='sqlite')
     parser.add_argument('--db-name', help='Name of the database to be used.')
     parser.add_argument('--db-user', help='Username for the database.')
@@ -182,7 +192,9 @@ def get_args():
                         action='store_true', default=False)
     parser.add_argument('--disable-clean', help='Disable clean db loop.',
                         action='store_true', default=False)
-    parser.add_argument('--webhook-updates-only', help='Only send updates (pokémon & lured pokéstops).',
+    parser.add_argument('-ctd', '--clean-timers-data', help='Set previous spawns as unvalid for new disappear_time prediction',
+                        action='store_true', default=False)
+    parser.add_argument('--webhook-updates-only', help='Only send updates (pokémon & lured pokéstops)',
                         action='store_true', default=False)
     parser.add_argument('--wh-threads', help='Number of webhook threads; increase if the webhook queue falls behind.',
                         type=int, default=1)

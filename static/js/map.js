@@ -360,7 +360,7 @@ function openMapDirections (lat, lng) { // eslint-disable-line no-unused-vars
   window.open(url, '_blank')
 }
 
-function pokemonLabel (name, rarity, types, disappearTime, id, latitude, longitude, encounterId, atk, def, sta, move1, move2) {
+function pokemonLabel (name, rarity, types, disappearTime, id, latitude, longitude, encounterId, atk, def, sta, move1, move2, timedetail) {
   var disappearDate = new Date(disappearTime)
   var rarityDisplay = rarity ? '(' + rarity + ')' : ''
   var typesDisplay = ''
@@ -379,6 +379,26 @@ function pokemonLabel (name, rarity, types, disappearTime, id, latitude, longitu
       </div>
       `
   }
+
+  var timecontent = ''
+
+  if (timedetail === 1) {
+    timecontent = `<div><span style="font-weight: bold; color: #3bb345">This time is secure. It has been received from the server.</span><br>
+    Disappears at ${pad(disappearDate.getHours())}:${pad(disappearDate.getMinutes())}:${pad(disappearDate.getSeconds())}
+    <span class='label-countdown' disappears-at='${disappearTime}'>(00m00s)</span>
+    </div>`
+  } else if (timedetail === 0) {
+    timecontent = `<div><span style="font-weight: bold; color: #bfbc27">This time is only a prediction. It may be wrong.</span><br>
+    Disappears at ${pad(disappearDate.getHours())}:${pad(disappearDate.getMinutes())}:${pad(disappearDate.getSeconds())}
+    <span class='label-countdown' disappears-at='${disappearTime}'>(00m00s)</span>
+    </div>`
+  } else if (timedetail === -1) {
+    timecontent = `<div><span style="font-weight: bold; color: #f1504e">Don't trust this time! It has been set manually to<br>15m when this pokemon has been encountered</span><br>
+    Disappears at ${pad(disappearDate.getHours())}:${pad(disappearDate.getMinutes())}:${pad(disappearDate.getSeconds())}
+    <span class='label-countdown' disappears-at='${disappearTime}'>(00m00s)</span>
+    </div>`
+  }
+
   var contentstring = `
     <div>
       <b>${name}</b>
@@ -389,11 +409,7 @@ function pokemonLabel (name, rarity, types, disappearTime, id, latitude, longitu
       <span> ${rarityDisplay}</span>
       <span> - </span>
       <small>${typesDisplay}</small>
-    </div>
-    <div>
-      Disappears at ${pad(disappearDate.getHours())}:${pad(disappearDate.getMinutes())}:${pad(disappearDate.getSeconds())}
-      <span class='label-countdown' disappears-at='${disappearTime}'>(00m00s)</span>
-    </div>
+    </div>` + timecontent + `
     <div>
       Location: ${latitude.toFixed(6)}, ${longitude.toFixed(7)}
     </div>
@@ -408,7 +424,20 @@ function pokemonLabel (name, rarity, types, disappearTime, id, latitude, longitu
 }
 
 function gymLabel (teamName, teamId, gymPoints, latitude, longitude, lastScanned = null, name = null, members = []) {
+  var gymPrestige = [2000, 4000, 8000, 12000, 16000, 20000, 30000, 40000, 50000]
+  var gymLevel = 1
+  while (gymPoints >= gymPrestige[gymLevel - 1]) {
+    gymLevel++
+  }
+
   var memberStr = ''
+  if (teamId && members.length > 0 && gymLevel > members.length) {
+    for (var j = 0; j < gymLevel - members.length; j++) {
+      memberStr +=
+        `<span class="gym-member free" title="Free slot">
+        </span>`
+    }
+  }
   for (var i = 0; i < members.length; i++) {
     memberStr += `
       <span class="gym-member" title="${members[i].pokemon_name} | ${members[i].trainer_name} (Lvl ${members[i].trainer_level})">
@@ -611,7 +640,7 @@ function customizePokemonMarker (marker, item, skipNotification) {
   }
 
   marker.infoWindow = new google.maps.InfoWindow({
-    content: pokemonLabel(item['pokemon_name'], item['pokemon_rarity'], item['pokemon_types'], item['disappear_time'], item['pokemon_id'], item['latitude'], item['longitude'], item['encounter_id'], item['individual_attack'], item['individual_defense'], item['individual_stamina'], item['move_1'], item['move_2']),
+    content: pokemonLabel(item['pokemon_name'], item['pokemon_rarity'], item['pokemon_types'], item['disappear_time'], item['pokemon_id'], item['latitude'], item['longitude'], item['encounter_id'], item['individual_attack'], item['individual_defense'], item['individual_stamina'], item['move_1'], item['move_2'], item['time_detail']),
     disableAutoPan: true
   })
 
@@ -720,6 +749,50 @@ function getColorByDate (value) {
 function setupScannedMarker (item) {
   var circleCenter = new google.maps.LatLng(item['latitude'], item['longitude'])
 
+  var zoom = map.getZoom()
+  var fontSize = '1m'
+  var text = item['username']
+  var color = getRandomColor(text)
+
+  var label = new google.maps.Marker({
+    position: circleCenter,
+    map: map,
+    icon: {
+      url: '',
+      size: new google.maps.Size(0, 0)
+    }
+  })
+
+  if (zoom >= 17) {
+    label.setLabel({
+      text: text,
+      fontSize: fontSize,
+      color: color
+    })
+  } else {
+    label.setLabel({
+      text: ' ',
+      fontSize: fontSize
+    })
+  }
+
+  google.maps.event.addListener(map, 'zoom_changed', function () {
+    zoom = map.getZoom()
+
+    if (zoom >= 16) {
+      label.setLabel({
+        text: text,
+        fontSize: fontSize,
+        color: color
+      })
+    } else {
+      label.setLabel({
+        text: ' ',
+        fontSize: fontSize
+      })
+    }
+  })
+
   var marker = new google.maps.Circle({
     map: map,
     clickable: false,
@@ -732,6 +805,31 @@ function setupScannedMarker (item) {
   })
 
   return marker
+}
+
+function getRandomColor (seed) {
+  var val = parseInt(seed, 10)
+
+  if (seed !== val) { // we don't have an integer.  Let's create a seed from the string
+    val = 0
+
+    for (var i = 0; i < seed.length; i++) {
+      val += seed.charCodeAt(i)
+    }
+  }
+
+  var hexChars = '0123456789ABCDEF'
+  var color = '#'
+  for (var ind = 0; ind < 6; ind++) {
+    color += hexChars[Math.floor(random(val + ind) * 16)]
+  }
+
+  return color
+}
+
+function random (seed) {
+  var x = Math.sin(seed) * 10000
+  return x - Math.floor(x)
 }
 
 function getColorBySpawnTime (value) {

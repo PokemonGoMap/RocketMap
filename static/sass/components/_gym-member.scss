@@ -1,7 +1,15 @@
 .gym-member {
-  
+
   display: inline-block;
   margin-left: 1px;
+  vertical-align: bottom;
+
+  &.free {
+    width: 30px;
+    height: 48px;
+    background-color: lightgray;
+    border-radius: 5px;
+  }
 
   .cp {
     display: block;
