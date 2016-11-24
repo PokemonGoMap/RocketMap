@@ -11,6 +11,7 @@ import pprint
 import time
 from geopy.distance import vincenty
 from s2sphere import CellId, LatLng
+from .manual_captcha import chrome_verifier
 
 from . import config
 
@@ -85,6 +86,9 @@ def get_args():
                         action='store_true', default=False)
     parser.add_argument('-cs', '--captcha-solving',
                         help='Enables captcha solving.',
+                        action='store_true', default=False)
+    parser.add_argument('-vc', '--validate-chrome',
+                        help='validates chrome installation.',
                         action='store_true', default=False)
     parser.add_argument('-ck', '--captcha-key',
                         help='2Captcha API key.')
@@ -214,6 +218,9 @@ def get_args():
     parser.set_defaults(DEBUG=False)
 
     args = parser.parse_args()
+    # validates chrome installation
+    if args.captcha_solving:
+        args.validate_chrome = chrome_verifier()
 
     if args.only_server:
         if args.location is None:
