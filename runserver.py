@@ -23,7 +23,8 @@ from pogom.app import Pogom
 from pogom.utils import get_args, now
 
 from pogom.search import search_overseer_thread
-from pogom.models import init_database, create_tables, drop_tables, Pokemon, db_updater, clean_db_loop
+from pogom.models import init_database, create_tables, drop_tables, Pokemon, db_updater, \
+    clean_db_loop, update_rarity_loop
 from pogom.webhook import wh_updater
 
 from pogom.proxy import check_proxies
@@ -228,6 +229,12 @@ def main():
     # db cleaner; really only need one ever.
     if not args.disable_clean:
         t = Thread(target=clean_db_loop, name='db-cleaner', args=(args,))
+        t.daemon = True
+        t.start()
+
+    # Thread to update rarities
+    if args.enable_rarity_update and not args.no_server:
+        t = Thread(target=update_rarity_loop, name='rarity-update', args=(args,))
         t.daemon = True
         t.start()
 

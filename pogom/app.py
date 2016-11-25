@@ -14,7 +14,7 @@ from datetime import timedelta
 from collections import OrderedDict
 
 from . import config
-from .models import Pokemon, Gym, Pokestop, ScannedLocation, MainWorker, WorkerStatus
+from .models import Pokemon, Gym, Pokestop, ScannedLocation, MainWorker, WorkerStatus, get_all_pokemon
 from .utils import now
 log = logging.getLogger(__name__)
 compress = Compress()
@@ -30,6 +30,7 @@ class Pogom(Flask):
         self.route("/loc", methods=['GET'])(self.loc)
         self.route("/next_loc", methods=['POST'])(self.next_loc)
         self.route("/mobile", methods=['GET'])(self.list_pokemon)
+        self.route("/pokemon_data", methods=['GET'])(get_all_pokemon)
         self.route("/search_control", methods=['GET'])(self.get_search_control)
         self.route("/search_control", methods=['POST'])(self.post_search_control)
         self.route("/stats", methods=['GET'])(self.get_stats)
@@ -309,8 +310,8 @@ class Pogom(Flask):
                                origin_lat=lat,
                                origin_lng=lon)
 
-    def get_valid_stat_input(self):
-        duration = request.args.get("duration", type=str)
+    def get_valid_stat_input(self, duration=None):
+        duration = duration or request.args.get("duration", type=str)
         sort = request.args.get("sort", type=str)
         order = request.args.get("order", type=str)
         valid_durations = OrderedDict()
