@@ -250,6 +250,49 @@ class Pokemon(BaseModel):
         return list(query)
 
     @classmethod
+    def get_history(cls, swLat, swLng, neLat, neLng):
+        if swLat is None or swLng is None or neLat is None or neLng is None:
+            query = (Pokemon
+                     .select()
+                     .where()
+                     .dicts())
+        else:
+            query = (Pokemon
+                     .select(fn.Count(Pokemon.pokemon_id).alias('count'), Pokemon.pokemon_id)
+                     .where((Pokemon.latitude >= swLat) &
+                            (Pokemon.longitude >= swLng) &
+                            (Pokemon.latitude <= neLat) &
+                            (Pokemon.longitude <= neLng))
+                     .group_by(Pokemon.pokemon_id)
+                     .order_by(Pokemon.pokemon_id)
+                     .dicts())
+
+        pokemons = []
+        for p in query:
+            p['pokemon_name'] = get_pokemon_name(p['pokemon_id'])
+            p['pokemon_rarity'] = get_pokemon_rarity(p['pokemon_id'])
+            pokemons.append(p)
+
+        return pokemons
+
+    @classmethod
+    def get_spawn_data(cls, spawnpoint_id):
+        query = (Pokemon
+                 .select(fn.Count(Pokemon.pokemon_id).alias('count'), Pokemon.pokemon_id, Pokemon.disappear_time)
+                 .where((Pokemon.spawnpoint_id == spawnpoint_id))
+                 .group_by(Pokemon.pokemon_id)
+                 .order_by(Pokemon.pokemon_id)
+                 .dicts())
+
+        spwawn_data = []
+        for p in query:
+            p['pokemon_name'] = get_pokemon_name(p['pokemon_id'])
+            p['pokemon_rarity'] = get_pokemon_rarity(p['pokemon_id'])
+            spwawn_data.append(p)
+
+        return spwawn_data
+
+    @classmethod
     def get_appearances_times_by_spawnpoint(cls, pokemon_id, spawnpoint_id, timediff):
         '''
         :param pokemon_id: id of pokemon that we need appearances times for

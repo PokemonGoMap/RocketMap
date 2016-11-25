@@ -86,6 +86,34 @@ function removePokemonMarker (encounterId) { // eslint-disable-line no-unused-va
   mapData.pokemons[encounterId].hidden = true
 }
 
+function getHistory () { // eslint-disable-line no-unused-vars
+  var bounds = map.getBounds()
+  var swPoint = bounds.getSouthWest()
+  var nePoint = bounds.getNorthEast()
+  var swLat = swPoint.lat()
+  var swLng = swPoint.lng()
+  var neLat = nePoint.lat()
+  var neLng = nePoint.lng()
+
+  $.ajax({
+    url: '/history',
+    dataType: 'json',
+    data: {
+      'swLat': swLat,
+      'swLng': swLng,
+      'neLat': neLat,
+      'neLng': neLng
+    },
+    async: true,
+    success: function (data) {
+      compileHistory(data)
+    },
+    error: function (jqXHR, status, error) {
+      console.log('Error loading stats: ' + error)
+    }
+  })
+}
+
 function initMap () { // eslint-disable-line no-unused-vars
   map = new google.maps.Map(document.getElementById('map'), {
     center: {
@@ -550,6 +578,13 @@ function spawnpointLabel (item) {
         May appear as early as ${formatSpawnTime(item.time - 1800)}
       </div>`
   }
+
+  str += `
+      <div>
+      <a href="javascript:getSpawnStats('${item.spawnpoint_id}')">Stats</a>&nbsp;&nbsp;
+              <ul class="statsHolder " name="${item.spawnpoint_id}" style="max-width: 240px; list-style: none"></ul>
+
+    </div>`
   return str
 }
 
@@ -1865,4 +1900,36 @@ $(function () {
       null
     ]
   }).order([1, 'asc'])
+
+  $('#historyList_table').DataTable({
+    paging: false,
+    searching: false,
+    info: false,
+    errMode: 'throw',
+    'language': {
+      'emptyTable': ''
+    },
+    'columns': [
+      { 'orderable': false },
+      null,
+      null,
+      null
+    ]
+  }).order([2, 'dsc'])
+
+  $('#spawnList_table').DataTable({
+    paging: false,
+    searching: false,
+    info: false,
+    errMode: 'throw',
+    'language': {
+      'emptyTable': ''
+    },
+    'columns': [
+      { 'orderable': false },
+      null,
+      null,
+      null
+    ]
+  }).order([2, 'dsc'])
 })
