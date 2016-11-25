@@ -761,6 +761,9 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
     pokesfound = False
     fortsfound = False
 
+    if len(map_dict['responses']['GET_MAP_OBJECTS']) < 1:
+        return False
+
     cells = map_dict['responses']['GET_MAP_OBJECTS']['map_cells']
     for cell in cells:
         if config['parse_pokemon']:
