@@ -36,6 +36,7 @@
 #proxy-display:         # Used with -ps, full = display complete proxy address. Index = displays just the index for that proxy (default index)
 #webhook:               # webhook URL (including http://)
 #webhook-updates-only:  # only send updates to webhooks, (excludes gyms & non-lured pokéstops)
+#maptitle:              # Title of the map, ex "City of Jeannete Pokemon Go Map"
 
 # Webserver settings
 #host:                  # address to listen on (default 127.0.0.1)
