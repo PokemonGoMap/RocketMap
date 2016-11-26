@@ -587,7 +587,7 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                 log.info(status['message'])
 
                 retries = 0  # reset the retry counter
-                While retries <= 2:
+                While (retries < 3):
                     # Make the actual request. (finally!)
                     response_dict = map_request(api, step_location, args.jitter)
 
