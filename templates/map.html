@@ -30,6 +30,7 @@
     <link rel="apple-touch-icon" href="{{ url_for('static', filename='appicons/180x180.png').lstrip('/') }}" sizes="180x180">
     <link rel="stylesheet" href="{{ url_for('static', filename='dist/css/app.min.css').lstrip('/') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.0/jquery-ui.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.10.12/css/jquery.dataTables.css">
     <script src="{{ url_for('static', filename='js/vendor/modernizr.custom.js').lstrip('/') }}"></script>
   </head>
   <body id="top">
@@ -101,6 +102,16 @@
                 </label>
               </div>
             </div>
+            <div class="form-control switch-container">
+              <h3>Ranges</h3>
+              <div class="onoffswitch">
+                <input id="ranges-switch" type="checkbox" name="ranges-switch" class="onoffswitch-checkbox">
+                <label class="onoffswitch-label" for="ranges-switch">
+                <span class="switch-label" data-on="On" data-off="Off"></span>
+                <span class="switch-handle"></span>
+                </label>
+              </div>
+            </div>
             <div class="form-control">
               <label for="exclude-pokemon">
               <h3>Hide Pokémon</h3>
@@ -111,16 +122,16 @@
             </div>
           </div>
 
-          <h3>Location Settings</h3>
+          <h3>Location &amp; Search Settings</h3>
           <div>
             <div class="form-control switch-container" style="display:{{is_fixed}}" >
               <label for="next-location">
-              <h3>Change scan location</h3>
-              <input id="next-location" type="text" name="next-location" placeholder="Change your location">
+              <h3>Change search location</h3>
+              <input id="next-location" type="text" name="next-location" placeholder="Change search location">
               </label>
             </div>
             <div class="form-control switch-container" style="display:{{is_fixed}}" >
-              <h3>Lock marker</h3>
+              <h3>Lock search marker</h3>
               <div class="onoffswitch">
                 <input id="lock-marker-switch" type="checkbox" name="lock-marker-switch" class="onoffswitch-checkbox" checked/>
                 <label class="onoffswitch-label" for="lock-marker-switch">
@@ -130,7 +141,7 @@
               </div>
             </div>
             <div class="form-control switch-container" style="display:{{is_fixed}}" >
-              <h3>Scan follows location</h3>
+              <h3>Search follows me</h3>
               <div class="onoffswitch">
                 <input id="geoloc-switch" type="checkbox" name="geoloc-switch" class="onoffswitch-checkbox" checked/>
                 <label class="onoffswitch-label" for="geoloc-switch">
@@ -140,7 +151,7 @@
               </div>
             </div>
             <div class="form-control switch-container" >
-              <h3>Start at user's location</h3>
+              <h3>Start map at me</h3>
               <div class="onoffswitch">
                 <input id="start-at-user-location-switch" type="checkbox" name="start-at-user-location-switch" class="onoffswitch-checkbox" checked/>
                 <label class="onoffswitch-label" for="start-at-user-location-switch">
@@ -154,6 +165,26 @@
               <div class="onoffswitch">
                 <input id="search-switch" type="checkbox" name="search-switch" class="onoffswitch-checkbox" checked/>
                 <label class="onoffswitch-label" for="search-switch">
+                <span class="switch-label" data-on="On" data-off="Off"></span>
+                <span class="switch-handle"></span>
+                </label>
+              </div>
+            </div>
+            <div class="form-control switch-container">
+              <h3>Follow me</h3>
+              <div class="onoffswitch">
+                <input id="follow-my-location-switch" type="checkbox" name="follow-my-location-switch" class="onoffswitch-checkbox" checked/>
+                <label class="onoffswitch-label" for="follow-my-location-switch">
+                <span class="switch-label" data-on="On" data-off="Off"></span>
+                <span class="switch-handle"></span>
+                </label>
+              </div>
+            </div>
+            <div class="form-control switch-container" style="display:{{show_scan}}">
+              <h3>Scan here button</h3>
+              <div class="onoffswitch">
+                <input id="scan-here-switch" type="checkbox" name="scan-here-switch" class="onoffswitch-checkbox" checked/>
+                <label class="onoffswitch-label" for="scan-here-switch">
                 <span class="switch-label" data-on="On" data-off="Off"></span>
                 <span class="switch-handle"></span>
                 </label>
@@ -177,6 +208,12 @@
                 <div style="max-height:165px;overflow-y:auto">
                   <select id="notify-rarity" multiple="multiple"></select>
                 </div>
+              </label>
+            </div>
+            <div class="form-control">
+              <label for="notify-perfection">
+                <h3>Notify of Perfection</h3>
+                <input id="notify-perfection" type="text" name="notify-perfection" placeholder="Minimum perfection %"/>
               </label>
             </div>
             <div class="form-control switch-container">
@@ -214,27 +251,52 @@
               <h3>Search Icon Marker</h3>
               <select name="iconmarker-style" id="iconmarker-style"></select>
             </div>
+            <div class="form-control switch-container">
+              <h3>Gym Marker Style</h3>
+              <select name="gym-marker-style" id="gym-marker-style">
+                <option value='ingame'>In-Game</option>
+                <option value='shield'>Shield</option>
+              </select>
+              <h3>Location Icon Marker</h3>
+              <select name="locationmarker-style" id="locationmarker-style"></select>
+            </div>
           </div>
         </div>
       </nav>
       <nav id="stats">
         <div class="switch-container">
           <div class="switch-container">
-            <center><h1 id="stats-pkmn-label">Loading...</h1></center>
+            <div><center><a href="stats">Full Stats</a></center></div>
           </div>
-          <div id="pokemonList" style="color: black;"></div>
-          <div><a href="stats">Full Stats</a></div>
           <div class="switch-container">
+            <center><h1 id="stats-ldg-label">Loading...</h1></center>
+          </div>
+          <div class="stats-label-container">
+            <center><h1 id="stats-pkmn-label"></h1></center>
+          </div>
+          <div id="pokemonList" style="color: black;">
+            <table id="pokemonList_table" class="display" cellspacing="0" width="100%">
+              <thead>
+                <tr>
+                  <th>Icon</th> <th>Name</th> <th>Count</th> <th>%</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+            <div id="pokeStatStatus" style="color: black;"></div>
+          </div>
+          <div class="stats-label-container">
             <center><h1 id="stats-gym-label"></h1></center>
           </div>
           <div id="arenaList" style="color: black;"></div>
-          <div class="switch-container">
+          <div class="stats-label-container">
             <center><h1 id="stats-pkstop-label"></h1></center>
           </div>
           <div id="pokestopList" style="color: black;"></div>
         </div>
       </nav>
       <div id="map"></div>
+      <div class="fab" id="scan-here" style="display:none"></div>
     </div>
     <!-- Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-polyfill/6.9.1/polyfill.min.js"></script>
@@ -242,12 +304,14 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.0/jquery-ui.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/skel/3.0.1/skel.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/js/select2.min.js"></script>
+    <script src="https://cdn.datatables.net/1.10.12/js/jquery.dataTables.min.js"></script>
     <script src="{{ url_for('static', filename='dist/js/app.min.js').lstrip('/') }}"></script>
     <script src="{{ url_for('static', filename='js/vendor/classie.js').lstrip('/') }}"></script>
     <script>
       var centerLat = {{lat}};
       var centerLng = {{lng}};
     </script>
+    <script src="{{ url_for('static', filename='dist/js/map.common.min.js').lstrip('/') }}"></script>
     <script src="{{ url_for('static', filename='dist/js/map.min.js').lstrip('/') }}"></script>
     <script src="{{ url_for('static', filename='dist/js/stats.min.js').lstrip('/') }}"></script>
     <script defer src="https://maps.googleapis.com/maps/api/js?key={{ gmaps_key }}&amp;callback=initMap&amp;libraries=places,geometry"></script>

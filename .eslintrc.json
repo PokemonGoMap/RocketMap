@@ -22,12 +22,17 @@
     "skel": true,
     "setupPokemonMarker": true,
 
+    "isTouchDevice": true,
+    "isMobileDevice": true,
+    "pokemonSprites": true,
     "noLabelsStyle": true,
     "darkStyle": true,
     "light2Style": true,
     "pGoStyle": true,
     "darkStyleNoLabels": true,
     "light2StyleNoLabels": true,
-    "pGoStyleNoLabels": true
+    "pGoStyleNoLabels": true,
+    "pGoStyleDay": true,
+    "pGoStyleNight": true
   }
 }
