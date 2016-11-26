@@ -493,32 +493,45 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                 status['message'] = 'Searching at {:6f},{:6f}'.format(step_location[0], step_location[1])
                 log.info(status['message'])
 
-                # Make the actual request (finally!)
-                response_dict = map_request(api, step_location, args.jitter)
+                retries = 0  # Reset our retry counter
+                While retries < 3:
+                    # Make the actual request (finally!)
+                    response_dict = map_request(api, step_location, args.jitter)
 
-                # G'damnit, nothing back. Mark it up, sleep, carry on
-                if not response_dict:
-                    status['fail'] += 1
-                    consecutive_fails += 1
-                    status['message'] = 'Invalid response at {:6f},{:6f}, abandoning location'.format(step_location[0], step_location[1])
-                    log.error(status['message'])
-                    time.sleep(args.scan_delay)
-                    continue
+                    # G'damnit, nothing back. Mark it up, sleep, carry on
+                    if not response_dict:
+                        status['fail'] += 1
+                        consecutive_fails += 1
+                        status['message'] = 'Invalid response at {:6f},{:6f}, abandoning location'.format(step_location[0], step_location[1])
+                        log.error(status['message'])
+                        retries += 1
+                        time.sleep(args.scan_delay)
+                        continue  # Restart the loop
 
-                # Got the response, parse it out, send todo's to db/wh queues
-                try:
-                    parsed = parse_map(args, response_dict, step_location, dbq, whq, api)
-                    search_items_queue.task_done()
-                    status[('success' if parsed['count'] > 0 else 'noitems')] += 1
-                    consecutive_fails = 0
-                    status['message'] = 'Search at {:6f},{:6f} completed with {} finds'.format(step_location[0], step_location[1], parsed['count'])
-                    log.debug(status['message'])
-                except KeyError:
-                    parsed = False
-                    status['fail'] += 1
-                    consecutive_fails += 1
-                    status['message'] = 'Map parse failed at {:6f},{:6f}, abandoning location. {} may be banned.'.format(step_location[0], step_location[1], account['username'])
-                    log.exception(status['message'])
+                    # Got the response, parse it out, send todo's to db/wh queues
+                    parsed = parse_map(args, response_dict, step_location, dbq, whq, api, work_num, rel_db)
+                    if parsed['count'] > 0:
+                        status['success'] += 1
+                        consecutive_empties = 0
+                        break  # Break out of retry loop, we got a good scan
+                    else:
+                        if parsed['nearby']:  # If we spot nearby pokemon, we're not speed limited
+                            status['success'] += 1
+                            consecutive_empties = 0
+                            break  # Break out of retry loop, we got a good scan, just no pokemon here
+                        else:
+                            retries += 1
+                            if retries >= 3:
+                                status['noitems'] += 1  # set this inside an if so it only counts up an empty for the last attempt, rather than racking up 3 every time it retries
+                                consecutive_empties += 1
+                            time.sleep(args.scan_delay * retries)
+                            if parsed['neargym']:
+                                status['message'] = 'Found a fort, but no pokemon. Either nothing around, or speed limited'
+                                log.debug(status['message'])
+                            else:
+                                status['message'] = 'No nearby pokemon and no nearby forts found. Either nothing around, or softbanned'
+                            log.debug(status['message'])
+                            continue  # wait, then try scanning again
 
                 # Get detailed information about gyms
                 if args.gym_info and parsed:
