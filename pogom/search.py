@@ -587,7 +587,7 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                 log.info(status['message'])
 
                 retries = 0  # reset the retry counter
-                While retries < 3:
+                While retries <= 2:
                     # Make the actual request. (finally!)
                     response_dict = map_request(api, step_location, args.jitter)
 
@@ -652,7 +652,7 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                                 log.warning(status['message'])
                                 time.sleep(args.scan_delay * retries)  # Wait a little longer on each retry to try and beat limiter
                                 continue  # Wait, then try scanning again
-                                
+
                         consecutive_fails = 0
                         status['message'] = 'Search at {:6f},{:6f} completed with {} finds'.format(step_location[0], step_location[1], parsed['count'])
                         log.debug(status['message'])
