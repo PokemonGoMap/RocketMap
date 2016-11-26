@@ -75,6 +75,9 @@ def get_args():
     parser.add_argument('-sd', '--scan-delay',
                         help='Time delay between requests in scan threads.',
                         type=float, default=10)
+    parser.add_argument('-sdi', '--scan-distance',
+                        help='Distance between scans locations in hex scan. Default 0.070',
+                        type=float, default=0.070)
     parser.add_argument('-enc', '--encounter',
                         help='Start an encounter to gather IVs and moves.',
                         action='store_true', default=False)
