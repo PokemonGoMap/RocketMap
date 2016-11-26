@@ -586,63 +586,82 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                 status['message'] = 'Searching at {:6f},{:6f}'.format(step_location[0], step_location[1])
                 log.info(status['message'])
 
-                # Make the actual request. (finally!)
-                response_dict = map_request(api, step_location, args.jitter)
+                retries = 0  # reset the retry counter
+                While retries < 3:
+                    # Make the actual request. (finally!)
+                    response_dict = map_request(api, step_location, args.jitter)
 
-                # G'damnit, nothing back. Mark it up, sleep, carry on.
-                if not response_dict:
-                    status['fail'] += 1
-                    consecutive_fails += 1
-                    status['message'] = 'Invalid response at {:6f},{:6f}, abandoning location'.format(step_location[0], step_location[1])
-                    log.error(status['message'])
-                    time.sleep(args.scan_delay)
-                    continue
+                    # G'damnit, nothing back. Mark it up, sleep, carry on.
+                    if not response_dict:
+                        status['fail'] += 1
+                        consecutive_fails += 1
+                        status['message'] = 'Invalid response at {:6f},{:6f}, abandoning location'.format(step_location[0], step_location[1])
+                        log.error(status['message'])
+                        time.sleep(args.scan_delay)
+                        continue
 
-                # Got the response, check for captcha, parse it out, then send todo's to db/wh queues.
-                try:
-                    # Captcha check
-                    if args.captcha_solving:
-                        captcha_url = response_dict['responses']['CHECK_CHALLENGE']['challenge_url']
-                        if len(captcha_url) > 1:
-                            status['message'] = 'Account {} is encountering a captcha, starting 2captcha sequence'.format(account['username'])
-                            log.warning(status['message'])
-                            captcha_token = token_request(args, status, captcha_url)
-                            if 'ERROR' in captcha_token:
-                                log.warning("Unable to resolve captcha, please check your 2captcha API key and/or wallet balance")
-                                account_failures.append({'account': account, 'last_fail_time': now(), 'reason': 'catpcha failed to verify'})
-                                break
-                            else:
-                                status['message'] = 'Retrieved captcha token, attempting to verify challenge for {}'.format(account['username'])
-                                log.info(status['message'])
-                                response = api.verify_challenge(token=captcha_token)
-                                if 'success' in response['responses']['VERIFY_CHALLENGE']:
-                                    status['message'] = "Account {} successfully uncaptcha'd".format(account['username'])
-                                    log.info(status['message'])
-                                    # Make another request for the same coordinate since the previous one was captcha'd
-                                    response_dict = map_request(api, step_location, args.jitter)
-                                else:
-                                    status['message'] = "Account {} failed verifyChallenge, putting away account for now".format(account['username'])
-                                    log.info(status['message'])
+                    # Got the response, check for captcha, parse it out, then send todo's to db/wh queues.
+                    try:
+                        # Captcha check
+                        if args.captcha_solving:
+                            captcha_url = response_dict['responses']['CHECK_CHALLENGE']['challenge_url']
+                            if len(captcha_url) > 1:
+                                status['message'] = 'Account {} is encountering a captcha, starting 2captcha sequence'.format(account['username'])
+                                log.warning(status['message'])
+                                captcha_token = token_request(args, status, captcha_url)
+                                if 'ERROR' in captcha_token:
+                                    log.warning("Unable to resolve captcha, please check your 2captcha API key and/or wallet balance")
                                     account_failures.append({'account': account, 'last_fail_time': now(), 'reason': 'catpcha failed to verify'})
                                     break
+                                else:
+                                    status['message'] = 'Retrieved captcha token, attempting to verify challenge for {}'.format(account['username'])
+                                    log.info(status['message'])
+                                    response = api.verify_challenge(token=captcha_token)
+                                    if 'success' in response['responses']['VERIFY_CHALLENGE']:
+                                        status['message'] = "Account {} successfully uncaptcha'd".format(account['username'])
+                                        log.info(status['message'])
+                                        # Make another request for the same coordinate since the previous one was captcha'd
+                                        response_dict = map_request(api, step_location, args.jitter)
+                                    else:
+                                        status['message'] = "Account {} failed verifyChallenge, putting away account for now".format(account['username'])
+                                        log.info(status['message'])
+                                        account_failures.append({'account': account, 'last_fail_time': now(), 'reason': 'catpcha failed to verify'})
+                                        break
 
-                    parsed = parse_map(args, response_dict, step_location, dbq, whq, api)
-                    search_items_queue.task_done()
-                    if parsed['count'] > 0:
-                        status['success'] += 1
-                        consecutive_empties = 0
-                    else:
-                        status['noitems'] += 1
-                        consecutive_empties += 1
-                    consecutive_fails = 0
-                    status['message'] = 'Search at {:6f},{:6f} completed with {} finds'.format(step_location[0], step_location[1], parsed['count'])
-                    log.debug(status['message'])
-                except KeyError:
-                    parsed = False
-                    status['fail'] += 1
-                    consecutive_fails += 1
-                    status['message'] = 'Map parse failed at {:6f},{:6f}, abandoning location. {} may be banned.'.format(step_location[0], step_location[1], account['username'])
-                    log.exception(status['message'])
+                        parsed = parse_map(args, response_dict, step_location, dbq, whq, api)
+                        search_items_queue.task_done()
+                        if parsed['count'] > 0:
+                            status['success'] += 1
+                            consecutive_empties = 0
+                            break  # Break out of the retry loop, we got a good scan
+                        else:
+                            if parsed['nearby']:  # If we spot a nearby pokemon, we're not speed limited
+                                status['success'] += 1
+                                consecutive_empties = 0
+                                break  # Break out of retry loop, good scan, just nothing here
+                            else:
+                                retries += 1
+                                if retries >= 3:
+                                    status['noitems'] += 1  # set this inside an if statement so we only count up after we give up
+                                    consecutive_empties += 1
+                                if parsed['neargym']:
+                                    status['message'] = 'Found a fort, but no pokemon. Either nothing around, or speed limited'
+                                    log.warning(status['message'])
+                                else:
+                                    status['message'] = 'No nearby pokemon or forts. Either nothing around, or softbanned'
+                                log.warning(status['message'])
+                                time.sleep(args.scan_delay * retries)  # Wait a little longer on each retry to try and beat limiter
+                                continue  # Wait, then try scanning again
+                                
+                        consecutive_fails = 0
+                        status['message'] = 'Search at {:6f},{:6f} completed with {} finds'.format(step_location[0], step_location[1], parsed['count'])
+                        log.debug(status['message'])
+                    except KeyError:
+                        parsed = False
+                        status['fail'] += 1
+                        consecutive_fails += 1
+                        status['message'] = 'Map parse failed at {:6f},{:6f}, abandoning location. {} may be banned.'.format(step_location[0], step_location[1], account['username'])
+                        log.exception(status['message'])
 
                 # Get detailed information about gyms.
                 if args.gym_info and parsed:
