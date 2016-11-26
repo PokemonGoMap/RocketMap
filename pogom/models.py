@@ -765,13 +765,10 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
     forts = None
     wild_pokemon = None
     pokesfound = False
-    nearbyfound = False
     fortsfound = False
 
     cells = map_dict['responses']['GET_MAP_OBJECTS']['map_cells']
     for cell in cells:
-        if len(cell.get('nearby_pokemons', [])) > 0:
-            nearbyfound = True
         if config['parse_pokemon']:
             if len(cell.get('wild_pokemons', [])) > 0:
                 pokesfound = True
@@ -981,8 +978,6 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
     return {
         'count': skipped + stopsskipped + len(pokemons) + len(pokestops) + len(gyms),
         'gyms': gyms,
-        'nearby': nearbyfound,
-        'neargym': fortsfound,
     }
 
 
