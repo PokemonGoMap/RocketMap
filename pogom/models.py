@@ -19,6 +19,8 @@ from base64 import b64encode
 from cachetools import TTLCache
 from cachetools import cached
 
+import cluster
+import clsmath
 from . import config
 from .utils import get_pokemon_name, get_pokemon_rarity, get_pokemon_types, get_args
 from .transform import transform_from_wgs_to_gcj, get_new_coords
@@ -375,7 +377,10 @@ class Pokemon(BaseModel):
             #           1800    (1800 + 2700) = 4500 % 3600 =  900 (30th minute, moved to arrive at 15th minute)
             # todo: this DOES NOT ACCOUNT for pokemons that appear sooner and live longer, but you'll _always_ have at least 15 minutes, so it works well enough
             location['time'] = cls.get_spawn_time(location['time'])
-
+        
+        if args.sscluster:
+            filtered = cluster.main(filtered)
+        
         return filtered
 
 
