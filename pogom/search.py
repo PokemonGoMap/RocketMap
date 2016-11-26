@@ -164,9 +164,23 @@ def status_printer(threadStatus, search_items_queue_array, db_updates_queue, wh_
             status = '{:10} | {:5} | {:' + str(userlen) + '} | {:' + str(proxylen) + '} | {:7} | {:6} | {:5} | {:7} | {:10}'
 
             # Print the worker status.
-            status_text.append(status.format('Worker ID', 'Start', 'User', 'Proxy', 'Success', 'Failed', 'Empty', 'Skipped', 'Message'))
+            status_text.append(status.format('Worker ID', 'Start', 'User', 'Proxy', 'Success', 'Failed', 'Empty', 'Skipped', 'Captcha', 'Message'))
+            usercount = 0
+            successcount = 0
+            failcount = 0
+            emptycount = 0
+            skipcount = 0
+            captchacount = 0
             for item in sorted(threadStatus):
                 if(threadStatus[item]['type'] == 'Worker'):
+                    usercount += 1
+                    successcount += threadStatus[item]['success']
+                    failcount += threadStatus[item]['fail']
+                    emptycount += threadStatus[item]['noitems']
+                    skipcount += threadStatus[item]['skip']
+                    captchacount += threadStatus[item]['captcha']
+                    if usercount <= 1:  # item is actually a string = 'Worker 000', so we use another counted variable
+                        elapsed = now() - threadStatus[item]['starttime']   # We only need to set the time once
                     current_line += 1
 
                     # Skip over items that don't belong on this page.
@@ -175,7 +189,7 @@ def status_printer(threadStatus, search_items_queue_array, db_updates_queue, wh_
                     if current_line > end_line:
                         break
 
-                    status_text.append(status.format(item, time.strftime('%H:%M', time.localtime(threadStatus[item]['starttime'])), threadStatus[item]['user'], threadStatus[item]['proxy_display'], threadStatus[item]['success'], threadStatus[item]['fail'], threadStatus[item]['noitems'], threadStatus[item]['skip'], threadStatus[item]['message']))
+                    status_text.append(status.format(item, time.strftime('%H:%M', time.localtime(threadStatus[item]['starttime'])), threadStatus[item]['user'], threadStatus[item]['proxy_display'], threadStatus[item]['success'], threadStatus[item]['fail'], threadStatus[item]['noitems'], threadStatus[item]['skip'], threadStatus[item]['captcha'], threadStatus[item]['message']))
 
         elif display_type[0] == 'failedaccounts':
             status_text.append('-----------------------------------------')
@@ -194,6 +208,12 @@ def status_printer(threadStatus, search_items_queue_array, db_updates_queue, wh_
                 status_text.append(status.format(account['account']['username'], time.strftime('%H:%M:%S', time.localtime(account['last_fail_time'])), account['reason']))
 
         # Print the status_text for the current screen.
+        sph = successcount * 3600 / elapsed
+        eph = emptycount * 3600 / elapsed
+        cph = captchacount * 3600 / elapsed
+        ccost = cph * 0.003
+        cmonth = ccost * 730
+        status_text.append('Total active: {}  |  Success: {} ({}/hr) | Fails: {} | Empties: {} ({}/hr) | Skips {} | Captchas: {} ({}/hr)|${:2}/hr|${:2}/mo'.format(usercount, successcount, sph, failcount, emptycount, eph, skipcount, captchacount, cph, ccost, cmonth))
         status_text.append('Page {}/{}. Page number to switch pages. F to show on hold accounts. <ENTER> alone to switch between status and log view'.format(current_page[0], total_pages))
         # Clear the screen.
         os.system('cls' if os.name == 'nt' else 'clear')
@@ -249,6 +269,7 @@ def worker_status_db_thread(threads_status, name, db_updates_queue):
                     'fail': status['fail'],
                     'no_items': status['noitems'],
                     'skip': status['skip'],
+                    'captcha': status['captcha'],
                     'last_modified': datetime.utcnow(),
                     'message': status['message']
                 }
@@ -345,6 +366,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb, db_updat
             'fail': 0,
             'noitems': 0,
             'skip': 0,
+            'captcha': 0,
             'user': '',
             'proxy_display': proxy_display,
             'proxy_url': proxy_url,
@@ -503,6 +525,7 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
             status['success'] = 0
             status['noitems'] = 0
             status['skip'] = 0
+            status['captcha'] = 0
             status['location'] = False
             status['last_scan_time'] = 0
 
@@ -606,6 +629,7 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                         if len(captcha_url) > 1:
                             status['message'] = 'Account {} is encountering a captcha, starting 2captcha sequence'.format(account['username'])
                             log.warning(status['message'])
+                            status['captcha'] += 1
                             captcha_token = token_request(args, status, captcha_url)
                             if 'ERROR' in captcha_token:
                                 log.warning("Unable to resolve captcha, please check your 2captcha API key and/or wallet balance")
