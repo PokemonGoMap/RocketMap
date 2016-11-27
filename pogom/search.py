@@ -629,15 +629,16 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                                         break
 
                         parsed = parse_map(args, response_dict, step_location, dbq, whq, api)
-                        search_items_queue.task_done()
                         if parsed['count'] > 0:
                             status['success'] += 1
                             consecutive_empties = 0
+                            search_items_queue.task_done()
                             break  # Break out of the retry loop, we got a good scan
                         else:
                             if parsed['nearby']:  # If we spot a nearby pokemon, we're not speed limited
                                 status['success'] += 1
                                 consecutive_empties = 0
+                                search_items_queue.task_done()
                                 break  # Break out of retry loop, good scan, just nothing here
                             else:
                                 retries += 1
@@ -646,7 +647,6 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                                     consecutive_empties += 1
                                 if parsed['neargym']:
                                     status['message'] = 'Found a fort, but no pokemon. Either nothing around, or speed limited'
-                                    log.warning(status['message'])
                                 else:
                                     status['message'] = 'No nearby pokemon or forts. Either nothing around, or softbanned'
                                 log.warning(status['message'])
