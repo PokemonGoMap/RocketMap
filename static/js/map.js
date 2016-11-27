@@ -89,8 +89,8 @@ function removePokemonMarker (encounterId) { // eslint-disable-line no-unused-va
 function initMap () { // eslint-disable-line no-unused-vars
   map = new google.maps.Map(document.getElementById('map'), {
     center: {
-      lat: centerLat,
-      lng: centerLng
+      lat: posLat,
+      lng: posLng
     },
     zoom: Store.get('zoomLevel'),
     fullscreenControl: true,
