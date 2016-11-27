@@ -161,7 +161,7 @@ def status_printer(threadStatus, search_items_queue_array, db_updates_queue, wh_
                         proxylen = max(proxylen, len(str(threadStatus[item]['proxy_display'])))
 
             # How pretty.
-            status = '{:10} | {:5} | {:' + str(userlen) + '} | {:' + str(proxylen) + '} | {:7} | {:6} | {:5} | {:7} | {:10}'
+            status = '{:10} | {:5} | {:' + str(userlen) + '} | {:' + str(proxylen) + '} | {:7} | {:6} | {:5} | {:7} | {:7} | {:10}'
 
             # Print the worker status.
             status_text.append(status.format('Worker ID', 'Start', 'User', 'Proxy', 'Success', 'Failed', 'Empty', 'Skipped', 'Captcha', 'Message'))
