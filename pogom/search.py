@@ -163,10 +163,10 @@ def status_printer(threadStatus, search_items_queue_array, db_updates_queue, wh_
                         proxylen = max(proxylen, len(str(threadStatus[item]['proxy_display'])))
 
             # How pretty.
-            status = '{:10} | {:5} | {:' + str(userlen) + '} | {:' + str(proxylen) + '} | {:7} | {:6} | {:5} | {:7} | {:10}'
+            status = '{:10} | {:5} | {:' + str(userlen) + '} | {:' + str(proxylen) + '} | {:7} | {:6} | {:5} | {:7} | {:8} | {:10}'
 
             # Print the worker status.
-            status_text.append(status.format('Worker ID', 'Start', 'User', 'Proxy', 'Success', 'Failed', 'Empty', 'Skipped', 'Message'))
+            status_text.append(status.format('Worker ID', 'Start', 'User', 'Proxy', 'Success', 'Failed', 'Empty', 'Skipped', 'Captchas', 'Message'))
             for item in sorted(threadStatus):
                 if(threadStatus[item]['type'] == 'Worker'):
                     current_line += 1
@@ -177,7 +177,7 @@ def status_printer(threadStatus, search_items_queue_array, db_updates_queue, wh_
                     if current_line > end_line:
                         break
 
-                    status_text.append(status.format(item, time.strftime('%H:%M', time.localtime(threadStatus[item]['starttime'])), threadStatus[item]['user'], threadStatus[item]['proxy_display'], threadStatus[item]['success'], threadStatus[item]['fail'], threadStatus[item]['noitems'], threadStatus[item]['skip'], threadStatus[item]['message']))
+                    status_text.append(status.format(item, time.strftime('%H:%M', time.localtime(threadStatus[item]['starttime'])), threadStatus[item]['user'], threadStatus[item]['proxy_display'], threadStatus[item]['success'], threadStatus[item]['fail'], threadStatus[item]['noitems'], threadStatus[item]['skip'], threadStatus[item]['captchas'], threadStatus[item]['message']))
 
         elif display_type[0] == 'failedaccounts':
             status_text.append('-----------------------------------------')
@@ -251,6 +251,7 @@ def worker_status_db_thread(threads_status, name, db_updates_queue):
                     'fail': status['fail'],
                     'no_items': status['noitems'],
                     'skip': status['skip'],
+                    'captchas' : status['captchas'],
                     'last_modified': datetime.utcnow(),
                     'message': status['message']
                 }
@@ -347,6 +348,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb, db_updat
             'fail': 0,
             'noitems': 0,
             'skip': 0,
+            'captchas': 0,
             'user': '',
             'proxy_display': proxy_display,
             'proxy_url': proxy_url,
@@ -510,6 +512,7 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
             status['success'] = 0
             status['noitems'] = 0
             status['skip'] = 0
+            status['captchas'] = 0
             status['location'] = False
             status['last_scan_time'] = 0
 
@@ -611,6 +614,7 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                     if args.captcha_solving:
                         captcha_url = response_dict['responses']['CHECK_CHALLENGE']['challenge_url']
                         if len(captcha_url) > 1:
+                            status['captchas'] += 1
                             status['message'] = 'Account {} is encountering a captcha, starting 2captcha sequence'.format(account['username'])
                             log.warning(status['message'])
                             captcha_token = token_request(args, status, captcha_url)
