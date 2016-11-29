@@ -27,7 +27,7 @@ import geopy.distance
 import requests
 
 from datetime import datetime
-from threading import Thread
+from threading import Thread, Lock
 from queue import Queue, Empty
 
 from pgoapi import PGoApi
@@ -46,6 +46,8 @@ import terminalsize
 log = logging.getLogger(__name__)
 
 TIMESTAMP = '\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000'
+
+loginDelayLock = Lock()
 
 
 # Apply a location jitter.
@@ -496,7 +498,12 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
             status['user'] = account['username']
             log.info(status['message'])
 
-            stagger_thread(args, account)
+            # Delay each thread start time so that logins occur after delay.
+            loginDelayLock.acquire()
+            delay = args.login_delay + ((random.random() - .5) / 2)
+            log.debug('Delaying thread startup for %.2f seconds', delay)
+            time.sleep(delay)
+            loginDelayLock.release()
 
             # New lease of life right here.
             status['fail'] = 0
@@ -832,15 +839,6 @@ def calc_distance(pos1, pos2):
     d = R * c
 
     return d
-
-
-# Delay each thread start time so that logins occur after delay.
-def stagger_thread(args, account):
-    if args.accounts.index(account) == 0:
-        return  # No need to delay the first one.
-    delay = args.accounts.index(account) * args.login_delay + ((random.random() - .5) / 2)
-    log.debug('Delaying thread startup for %.2f seconds', delay)
-    time.sleep(delay)
 
 
 class TooManyLoginAttempts(Exception):
