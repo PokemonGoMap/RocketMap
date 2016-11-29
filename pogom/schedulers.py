@@ -227,7 +227,10 @@ class HexSearchSpawnpoint(HexSearch):
     # Extend the generate_locations function to remove locations with no spawnpoints.
     def _generate_locations(self):
         n, e, s, w = hex_bounds(self.scan_location, self.step_limit)
-        spawnpoints = set((d['latitude'], d['longitude']) for d in Pokemon.get_spawnpoints(s, w, n, e))
+        if self.args.only_unvalid:
+            spawnpoints = set((d['latitude'], d['longitude']) for d in Pokemon.get_spawnpoints(s, w, n, e) if d['time_detail'] == -1)
+        else:
+            spawnpoints = set((d['latitude'], d['longitude']) for d in Pokemon.get_spawnpoints(s, w, n, e))
 
         if len(spawnpoints) == 0:
             log.warning('No spawnpoints found in the specified area!  (Did you forget to run a normal scan in this area first?)')
@@ -274,7 +277,7 @@ class SpawnScan(BaseScheduler):
         # No locations yet? Try the database!
         if not self.locations:
             log.debug('Loading spawn points from database')
-            self.locations = Pokemon.get_spawnpoints_in_hex(self.scan_location, self.args.step_limit)
+            self.locations = Pokemon.get_spawnpoints_in_hex(self.scan_location, self.args.step_limit, self.args.time_offset)
 
         # Well shit...
         # if not self.locations:

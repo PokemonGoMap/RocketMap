@@ -86,6 +86,15 @@ def get_args():
     parser.add_argument('-cds', '--captcha-dsk',
                         help='PokemonGo captcha data-sitekey.',
                         default="6LeeTScTAAAAADqvhqVMhPpr_vB9D364Ia-1dSgK")
+    parser.add_argument('-mcsd', '--manual-captcha-solving-domain',
+                        help='PokemonGo manual captcha solving domain',
+                        default="http://127.0.0.1:5000")
+    parser.add_argument('-mcsat', '--manual-captcha-solving-allowance-time',
+                        help='PokemonGo manual captcha solving allowance time',
+                        type=int, default=60)
+    parser.add_argument('-mcspw', '--manual-captcha-solving-password',
+                        help='PokemonGo manual captcha solving password',
+                        default='1234')
     parser.add_argument('-ed', '--encounter-delay',
                         help='Time delay between encounter pokemon in scan threads.',
                         type=float, default=1)
@@ -140,6 +149,8 @@ def get_args():
                         required=True)
     parser.add_argument('--skip-empty', help='Enables skipping of empty cells  in normal scans - requires previously populated database (not to be used with -ss)',
                         action='store_true', default=False)
+    parser.add_argument('-unv', '--only-unvalid', help='Skips spawnpoints with already a valid time. Use this to focus on remaining spawnpoints with unvalid time. (use with --skip-empty)',
+                        action='store_true', default=False)
     parser.add_argument('-C', '--cors', help='Enable CORS on web server.',
                         action='store_true', default=False)
     parser.add_argument('-D', '--db', help='Database filename for SQLite.',
@@ -158,6 +169,8 @@ def get_args():
                         action='store_true', default=False)
     parser.add_argument('-ss', '--spawnpoint-scanning',
                         help='Use spawnpoint scanning (instead of hex grid). Scans in a circle based on step_limit when on DB.', nargs='?', const='nofile', default=False)
+    parser.add_argument('-clss', '--sscluster',
+                        help='Cluster spawnpoints before use (with -ss and no .json)', action='store_true', default=False)
     parser.add_argument('--dump-spawnpoints', help='Dump the spawnpoints from the db to json (only for use with -ss).',
                         action='store_true', default=False)
     parser.add_argument('-pd', '--purge-data',
@@ -184,6 +197,8 @@ def get_args():
                         action='store_true', default=False)
     parser.add_argument('--disable-clean', help='Disable clean db loop.',
                         action='store_true', default=False)
+    parser.add_argument('-ctd', '--clean-timers-data', help='Set previous spawns as unvalid for new disappear_time prediction',
+                        action='store_true', default=False)
     parser.add_argument('--webhook-updates-only', help='Only send updates (pokémon & lured pokéstops).',
                         action='store_true', default=False)
     parser.add_argument('--wh-threads', help='Number of webhook threads; increase if the webhook queue falls behind.',
@@ -198,6 +213,7 @@ def get_args():
                         help='Set the status page password.')
     parser.add_argument('-el', '--encrypt-lib', help='Path to encrypt lib to be used instead of the shipped ones.')
     parser.add_argument('-odt', '--on-demand_timeout', help='Pause searching while web UI is inactive for this timeout(in seconds).', type=int, default=0)
+    parser.add_argument('-to', '--time-offset', help='Add this many seconds to spawn times when using spawnscanning', type=int, default=0)
     verbosity = parser.add_mutually_exclusive_group()
     verbosity.add_argument('-v', '--verbose', help='Show debug messages from PomemonGo-Map and pgoapi. Optionally specify file to log to.', nargs='?', const='nofile', default=False, metavar='filename.log')
     verbosity.add_argument('-vv', '--very-verbose', help='Like verbose, but show debug messages from all modules as well.  Optionally specify file to log to.', nargs='?', const='nofile', default=False, metavar='filename.log')
@@ -309,6 +325,10 @@ def get_args():
             errors.append('Missing `username` either as -u/--username, csv file using -ac, or in config.')
         else:
             num_usernames = len(args.username)
+
+        if args.sscluster:
+            if args.spawnpoint_scanning is False:
+                errors.append('You enabled spawnpoint clustering, but without using spawnpoints!')
 
         if args.location is None:
             errors.append('Missing `location` either as -l/--location or in config.')

@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Pokémon Go Map - Bookmarklet</title>
+</head>
+<body>
+<script>
+
+document.write("<a href=\"javascript:(function(){if(window.location.href!='http://pgorelease.nianticlabs.com/'){window.location.href='http://pgorelease.nianticlabs.com/'}else{document.getElementsByTagName('head')[0].appendChild(document.createElement('script')).src='"+window.location.protocol+"//"+window.location.hostname+":"+window.location.port+"/inject.js?'+Math.random();}}());\">Solve Recaptcha</a>")
+</script>
+</body>
+</html>

@@ -255,7 +255,7 @@ def main():
         if args.spawnpoint_scanning and args.spawnpoint_scanning != 'nofile' and args.dump_spawnpoints:
             with open(args.spawnpoint_scanning, 'w+') as file:
                 log.info('Saving spawn points to %s', args.spawnpoint_scanning)
-                spawns = Pokemon.get_spawnpoints_in_hex(position, args.step_limit)
+                spawns = Pokemon.get_spawnpoints_in_hex(position, args.step_limit, args.time_offset)
                 file.write(json.dumps(spawns))
                 log.info('Finished exporting spawn points')
 
