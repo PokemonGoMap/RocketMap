@@ -251,7 +251,7 @@ def worker_status_db_thread(threads_status, name, db_updates_queue):
                     'fail': status['fail'],
                     'no_items': status['noitems'],
                     'skip': status['skip'],
-                    'captchas' : status['captchas'],
+                    'captchas': status['captchas'],
                     'last_modified': datetime.utcnow(),
                     'message': status['message']
                 }
