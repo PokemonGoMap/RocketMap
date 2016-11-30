@@ -178,7 +178,7 @@ def status_printer(threadStatus, search_items_queue_array, db_updates_queue, wh_
 
             for item in sorted(threadStatus):
                 if(threadStatus[item]['type'] == 'Worker'):
-                    #count our hour variables
+                    # count our hour variables
                     countuser += 1
                     countsuccess += threadStatus[item]['success']
                     countfailed += threadStatus[item]['fail']
