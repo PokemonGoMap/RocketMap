@@ -68,6 +68,12 @@ def get_args():
                         help='Use beehive configuration for multiple accounts, one account per hex.  Make sure to keep -st under 5, and -w under the total amount of accounts available.', action='store_true', default=False)
     parser.add_argument('-l', '--location', type=parse_unicode,
                         help='Location, can be an address or coordinates.')
+    parser.add_argument('-alt', '--altitude',
+                        help='default altitude in meter',
+                        type=int, default=13)
+    parser.add_argument('-altr', '--altitude_range',
+                        help='additional range for --altitude in meter',
+                        type=int, default=1)
     parser.add_argument('-j', '--jitter', help='Apply random -9m to +9m jitter to location.',
                         action='store_true', default=False)
     parser.add_argument('-st', '--step-limit', help='Steps.', type=int,
