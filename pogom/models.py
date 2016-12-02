@@ -1133,8 +1133,24 @@ class SpawnpointDetectionData(BaseModel):
     scan_time = DateTimeField()
     tth_secs = IntegerField(null=True)
 
+    @staticmethod
+    def set_default_earliest_unseen(sp):
+        sp['earliest_unseen'] = (sp['latest_seen'] + 14 * 60) % 3600
+
     @classmethod
-    def classify(cls, sp, scan_loc, sighting=None):
+    def classify(cls, sp, scan_loc, now_secs, sighting=None):
+
+        # to reduce CPU usage, give an intial reading of 15 min spawns if not done with initial scan of location
+        if not scan_loc['done']:
+            sp['kind'] = 'hhhs'
+            if not sp['earliest_unseen']:
+                sp['latest_seen'] = now_secs
+                cls.set_default_earliest_unseen(sp)
+
+            elif clock_between(sp['latest_seen'], now_secs, sp['earliest_unseen']):
+                sp['latest_seen'] = now_secs
+
+            return
 
         # get past sightings
         query = list(cls.select()
@@ -1187,7 +1203,7 @@ class SpawnpointDetectionData(BaseModel):
                 # if we don't have a earliest_unseen yet or the kind of spawn has changed, reset
                 # set to latest_seen + 14 min
                 if not sp['earliest_unseen'] or sp['kind'] != old_kind:
-                    sp['earliest_unseen'] = (sp['latest_seen'] + 14 * 60) % 3600
+                    cls.set_default_earliest_unseen(sp)
 
             return
 
@@ -1450,7 +1466,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
                     ScannedLocation.reset_bands(scan_loc)
 
             if (not SpawnPoint.tth_found(sp) or sighting['tth_secs'] or not scan_loc['done']):
-                SpawnpointDetectionData.classify(sp, scan_loc, sighting)
+                SpawnpointDetectionData.classify(sp, scan_loc, now_secs, sighting)
                 sightings[p['encounter_id']] = sighting
 
             sp['last_scanned'] = datetime.utcfromtimestamp(p['last_modified_timestamp_ms'] / 1000.0)
@@ -1639,7 +1655,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
                         sp['id'], (sp['earliest_unseen'] - sp['latest_seen']) % 3600)
             log.info('Embiggening search for TTH by 15 minutes to try again')
             if sp_id not in sp_id_list:
-                SpawnpointDetectionData.classify(sp, scan_loc)
+                SpawnpointDetectionData.classify(sp, scan_loc, now_secs)
             sp['latest_seen'] = (sp['latest_seen'] - 60) % 3600
             sp['earliest_unseen'] = (sp['earliest_unseen'] + 14 * 60) % 3600
             spawn_points[sp_id] = sp
