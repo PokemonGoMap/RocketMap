@@ -1372,7 +1372,7 @@ def hex_bounds(center, steps=None, radius=None):
 
 
 # todo: this probably shouldn't _really_ be in "models" anymore, but w/e
-def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, api):
+def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, api, status):
     pokemons = {}
     pokestops = {}
     gyms = {}
@@ -1386,7 +1386,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
     sightings = {}
     new_spawn_points = []
     sp_id_list = []
-    now_date = datetime.utcnow()
+    now_date = status['last_scan_date']
     now_secs = date_secs(now_date)
 
     # consolidate the individual lists in each cell into one list of pokemon and a list of forts
@@ -1563,7 +1563,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
                 else:
                     lure_expiration, active_fort_modifier = None, None
 
-                # Send all pokéstops to webhooks.
+                # Send all pokestops to webhooks.
                 if args.webhooks and not args.webhook_updates_only:
                     # Explicitly set 'webhook_data', in case we want to change the information pushed to webhooks,
                     # similar to above and previous commits.
