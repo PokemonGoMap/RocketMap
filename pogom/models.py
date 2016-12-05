@@ -1372,7 +1372,7 @@ def hex_bounds(center, steps=None, radius=None):
 
 
 # todo: this probably shouldn't _really_ be in "models" anymore, but w/e
-def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, api, status):
+def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, api, now_date):
     pokemons = {}
     pokestops = {}
     gyms = {}
@@ -1386,7 +1386,6 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
     sightings = {}
     new_spawn_points = []
     sp_id_list = []
-    now_date = status['last_scan_date']
     now_secs = date_secs(now_date)
 
     # consolidate the individual lists in each cell into one list of pokemon and a list of forts
@@ -1478,6 +1477,9 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
 
             seconds_until_despawn = (SpawnPoint.start_end(sp)[1] - now_secs) % 3600
             disappear_time = now_date + timedelta(seconds=seconds_until_despawn)
+
+            if seconds_until_despawn < 5 * 60:
+                pass
 
             printPokemon(p['pokemon_data']['pokemon_id'], p['latitude'], p['longitude'], disappear_time)
 

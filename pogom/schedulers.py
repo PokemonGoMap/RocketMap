@@ -798,7 +798,7 @@ class SpeedScan(HexSearch):
             safety_buffer = item['end'] - seconds_within_band
 
             if safety_buffer < 0:
-                log.warning('Too late by %d sec', -safety_buffer)
+                log.warning('Too late by %d sec for a %s at step %d', -safety_buffer, item['kind'], item['step'])
 
             # If we had a 0/0/0 scan, then unmark as done so we can retry, and save for Statistics
             elif parsed['bad_scan']:

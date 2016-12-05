@@ -575,10 +575,10 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                 log.info(status['message'])
 
                 # Make the actual request. (finally!)
+                status['last_scan_date'] = datetime.utcnow()
                 response_dict = map_request(api, step_location, args.jitter)
 
                 # Record the time and place the worker made the request at
-                status['last_scan_date'] = datetime.utcnow()
                 status['latitude'] = step_location[0]
                 status['longitude'] = step_location[1]
                 dbq.put((WorkerStatus, {0: WorkerStatus.db_format(status)}))
@@ -621,7 +621,7 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                                     account_failures.append({'account': account, 'last_fail_time': now(), 'reason': 'catpcha failed to verify'})
                                     break
 
-                    parsed = parse_map(args, response_dict, step_location, dbq, whq, api, status)
+                    parsed = parse_map(args, response_dict, step_location, dbq, whq, api, status['last_scan_date'])
                     scheduler.task_done(status, parsed)
                     if parsed['count'] > 0:
                         status['success'] += 1
