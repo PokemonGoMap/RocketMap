@@ -34,6 +34,7 @@ from pgoapi import PGoApi
 from pgoapi.utilities import f2i
 from pgoapi import utilities as util
 from pgoapi.exceptions import AuthException
+from geopy.distance import vincenty
 
 from .models import parse_map, GymDetails, parse_gyms, MainWorker, WorkerStatus
 from .fakePogoApi import FakePogoApi
@@ -479,7 +480,7 @@ def _generate_locations(current_location, step_distance, step_limit, worker_coun
 
 
 def search_worker_thread(args, account_queue, account_failures, search_items_queue, pause_bit, status, dbq, whq):
-
+    step_location = []
     log.debug('Search worker thread starting')
 
     # The outer forever loop restarts only when the inner one is intentionally exited - which should only be done when the worker is failing too often, and probably banned.
@@ -509,6 +510,7 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
             # Only sleep when consecutive_fails reaches max_failures, overall fails for stat purposes.
             consecutive_fails = 0
             consecutive_empties = 0
+            firstrun = True
 
             # Create the API instance this will use.
             if args.mock != '':
@@ -544,7 +546,14 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
 
                 # Grab the next thing to search (when available).
                 status['message'] = 'Waiting for item from queue'
-                step, step_location, appears, leaves = search_items_queue.get()
+                step, next_location, appears, leaves = search_items_queue.get()
+
+                if not firstrun:  # no need to check distance upon login
+                    randomizer = random.uniform(0.7, 1)
+                    sdelay = vincenty(step_location, next_location).meters / ((args.speed_limit / 3.6) * randomizer)  # Classic basic physics formula: time = distance divided by velocity (in km/hr), plus a little randomness between 70 and 100% speed.
+                    status['message'] += ', sleeping {}s until {}'.format(max(sdelay, args.scan_delay), time.strftime('%H:%M:%S', time.localtime(time.time() + max(sdelay, args.scan_delay))))
+                    time.sleep(max(sdelay, args.scan_delay))  # lets sleep here for at least the scan delay time, or to keep us under the speed limiter, whichever is greatest.
+                step_location = next_location
 
                 # Too soon?
                 if appears and now() < appears + 10:  # Adding a 10 second grace period.
@@ -699,9 +708,8 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                 status['last_scan_time'] = now()
                 status['location'] = step_location
 
-                # Always delay the desired amount after "scan" completion.
-                status['message'] += ', sleeping {}s until {}'.format(args.scan_delay, time.strftime('%H:%M:%S', time.localtime(time.time() + args.scan_delay)))
-                time.sleep(args.scan_delay)
+                # finished our first run
+                firstrun = False
 
         # Catch any process exceptions, log them, and continue the thread.
         except Exception as e:
