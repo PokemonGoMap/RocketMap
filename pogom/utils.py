@@ -140,6 +140,8 @@ def get_args():
                         required=True)
     parser.add_argument('--skip-empty', help='Enables skipping of empty cells  in normal scans - requires previously populated database (not to be used with -ss)',
                         action='store_true', default=False)
+    parser.add_argument('-unv', '--only-unvalid', help='Skips spawnpoints with already a valid time. Use this to focus on remaining spawnpoints with unvalid time. (use with --skip-empty)',
+                        action='store_true', default=False)
     parser.add_argument('-C', '--cors', help='Enable CORS on web server.',
                         action='store_true', default=False)
     parser.add_argument('-D', '--db', help='Database filename for SQLite.',
@@ -183,6 +185,8 @@ def get_args():
     parser.add_argument('-gi', '--gym-info', help='Get all details about gyms (causes an additional API hit for every gym).',
                         action='store_true', default=False)
     parser.add_argument('--disable-clean', help='Disable clean db loop.',
+                        action='store_true', default=False)
+    parser.add_argument('-ctd', '--clean-timers-data', help='Set previous spawns as unvalid for new disappear_time prediction',
                         action='store_true', default=False)
     parser.add_argument('--webhook-updates-only', help='Only send updates (pokémon & lured pokéstops).',
                         action='store_true', default=False)
