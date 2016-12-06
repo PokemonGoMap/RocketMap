@@ -582,7 +582,7 @@ class SpeedScan(HexSearch):
         except Exception as e:
             log.error('Exception in band_status: Exception message: {}'.format(e))
 
-    # Update the queue, and provide a report on performance of last 9 minutes
+    # Update the queue, and provide a report on performance of last minutes
     def schedule(self):
         log.info('Refreshing queue')
         self.ready = False
@@ -629,6 +629,7 @@ class SpeedScan(HexSearch):
                 kinds[kind] = kinds.get(kind, 0) + 1
                 tth_range = str(int(round(((sp['earliest_unseen'] - sp['latest_seen']) % 3600) / 60.0)))
                 tth_ranges[tth_range] = tth_ranges.get(tth_range, 0) + 1
+
             tth_ranges['0'] = tth_ranges.get('0', 0) - tth_found
             len_spawnpoints = len(spawnpoints) + (not len(spawnpoints))
             log.info('Total Spawn Points found in hex: %d', len(spawnpoints))
@@ -636,6 +637,7 @@ class SpeedScan(HexSearch):
                      len(spawnpoints) - active_sp, (len(spawnpoints) - active_sp) * 100.0 / len_spawnpoints)
             log.info('Active Spawn Points found in hex: %d or %.1f%%',
                      active_sp, active_sp * 100.0 / len_spawnpoints)
+            active_sp += active_sp == 0
             for k in sorted(kinds.keys()):
                 log.info('%s kind spawns: %d or %.1f%%', k, kinds[k], kinds[k] * 100.0 / active_sp)
             log.info('Spawns with found TTH: %d or %.1f%%', tth_found, tth_found * 100.0 / active_sp)
