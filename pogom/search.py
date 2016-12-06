@@ -807,6 +807,9 @@ def token_request(args, status, url):
     try:
         captcha_id = s.post("http://2captcha.com/in.php?key={}&method=userrecaptcha&googlekey={}&pageurl={}".format(args.captcha_key, args.captcha_dsk, url)).text.split('|')[1]
         captcha_id = str(captcha_id)
+    # Gracefully handle 2captcha.com timeout
+    except requests.Timeout:
+        return 'TIMEOUT'
     # IndexError implies that the retuned response was a 2captcha error.
     except IndexError:
         return 'ERROR'
