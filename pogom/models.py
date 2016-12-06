@@ -13,7 +13,8 @@ import math
 from peewee import SqliteDatabase, InsertQuery, \
     Check, CompositeKey, ForeignKeyField, \
     IntegerField, CharField, DoubleField, BooleanField, \
-    DateTimeField, fn, DeleteQuery, FloatField, SQL, TextField, JOIN
+    DateTimeField, fn, DeleteQuery, CompositeKey, FloatField, SQL, TextField, JOIN
+
 from playhouse.flask_utils import FlaskDB
 from playhouse.pool import PooledMySQLDatabase
 from playhouse.shortcuts import RetryOperationalError
@@ -24,9 +25,7 @@ from cachetools import TTLCache
 from cachetools import cached
 
 from . import config
-from .utils import get_pokemon_name, get_pokemon_rarity, get_pokemon_types, get_args, \
-    cellid, in_radius, date_secs, clock_between, secs_between, get_move_name, get_move_damage, \
-    get_move_energy, get_move_type
+from .utils import get_pokemon_name, get_pokemon_rarity, get_pokemon_types, get_args, get_move_name, get_move_damage, get_move_energy, get_move_type
 from .transform import transform_from_wgs_to_gcj, get_new_coords
 from .customLog import printPokemon
 log = logging.getLogger(__name__)
