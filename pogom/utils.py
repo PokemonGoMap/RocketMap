@@ -158,6 +158,8 @@ def get_args():
                         action='store_true', default=False)
     parser.add_argument('-ss', '--spawnpoint-scanning',
                         help='Use spawnpoint scanning (instead of hex grid). Scans in a circle based on step_limit when on DB.', nargs='?', const='nofile', default=False)
+    parser.add_argument('-clss', '--sscluster',
+                        help='Cluster spawnpoints before use (with -ss and no .json)', action='store_true', default=False)
     parser.add_argument('--dump-spawnpoints', help='Dump the spawnpoints from the db to json (only for use with -ss).',
                         action='store_true', default=False)
     parser.add_argument('-pd', '--purge-data',
@@ -309,6 +311,10 @@ def get_args():
             errors.append('Missing `username` either as -u/--username, csv file using -ac, or in config.')
         else:
             num_usernames = len(args.username)
+
+        if args.sscluster:
+            if args.spawnpoint_scanning is False:
+                errors.append('You enabled spawnpoint clustering, but without using spawnpoints!')
 
         if args.location is None:
             errors.append('Missing `location` either as -l/--location or in config.')
