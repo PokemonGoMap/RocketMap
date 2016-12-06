@@ -27,7 +27,7 @@ import geopy.distance
 import requests
 
 from datetime import datetime
-from threading import Thread
+from threading import Thread, Lock
 from queue import Queue, Empty
 
 from pgoapi import PGoApi
@@ -47,6 +47,8 @@ log = logging.getLogger(__name__)
 
 TIMESTAMP = '\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000'
 
+
+loginDelayLock = Lock()
 
 # Apply a location jitter.
 def jitterLocation(location=None, maxMeters=10):
@@ -161,10 +163,10 @@ def status_printer(threadStatus, search_items_queue_array, db_updates_queue, wh_
                         proxylen = max(proxylen, len(str(threadStatus[item]['proxy_display'])))
 
             # How pretty.
-            status = '{:10} | {:5} | {:' + str(userlen) + '} | {:' + str(proxylen) + '} | {:7} | {:6} | {:5} | {:7} | {:10}'
+            status = '{:10} | {:5} | {:' + str(userlen) + '} | {:' + str(proxylen) + '} | {:7} | {:6} | {:5} | {:7} | {:8} | {:10}'
 
             # Print the worker status.
-            status_text.append(status.format('Worker ID', 'Start', 'User', 'Proxy', 'Success', 'Failed', 'Empty', 'Skipped', 'Message'))
+            status_text.append(status.format('Worker ID', 'Start', 'User', 'Proxy', 'Success', 'Failed', 'Empty', 'Skipped', 'Captchas', 'Message'))
             for item in sorted(threadStatus):
                 if(threadStatus[item]['type'] == 'Worker'):
                     current_line += 1
@@ -175,7 +177,7 @@ def status_printer(threadStatus, search_items_queue_array, db_updates_queue, wh_
                     if current_line > end_line:
                         break
 
-                    status_text.append(status.format(item, time.strftime('%H:%M', time.localtime(threadStatus[item]['starttime'])), threadStatus[item]['user'], threadStatus[item]['proxy_display'], threadStatus[item]['success'], threadStatus[item]['fail'], threadStatus[item]['noitems'], threadStatus[item]['skip'], threadStatus[item]['message']))
+                    status_text.append(status.format(item, time.strftime('%H:%M', time.localtime(threadStatus[item]['starttime'])), threadStatus[item]['user'], threadStatus[item]['proxy_display'], threadStatus[item]['success'], threadStatus[item]['fail'], threadStatus[item]['noitems'], threadStatus[item]['skip'], threadStatus[item]['captchas'], threadStatus[item]['message']))
 
         elif display_type[0] == 'failedaccounts':
             status_text.append('-----------------------------------------')
@@ -249,6 +251,7 @@ def worker_status_db_thread(threads_status, name, db_updates_queue):
                     'fail': status['fail'],
                     'no_items': status['noitems'],
                     'skip': status['skip'],
+                    'captchas': status['captchas'],
                     'last_modified': datetime.utcnow(),
                     'message': status['message']
                 }
@@ -345,6 +348,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb, db_updat
             'fail': 0,
             'noitems': 0,
             'skip': 0,
+            'captchas': 0,
             'user': '',
             'proxy_display': proxy_display,
             'proxy_url': proxy_url,
@@ -496,13 +500,19 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
             status['user'] = account['username']
             log.info(status['message'])
 
-            stagger_thread(args, account)
+            # Delay each thread start time so that logins occur after delay.
+            loginDelayLock.acquire()
+            delay = args.login_delay + ((random.random() - .5) / 2)
+            log.debug('Delaying thread startup for %.2f seconds', delay)
+            time.sleep(delay)
+            loginDelayLock.release()
 
             # New lease of life right here.
             status['fail'] = 0
             status['success'] = 0
             status['noitems'] = 0
             status['skip'] = 0
+            status['captchas'] = 0
             status['location'] = False
             status['last_scan_time'] = 0
 
@@ -530,6 +540,41 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                     account_failures.append({'account': account, 'last_fail_time': now(), 'reason': 'failures'})
                     break  # Exit this loop to get a new account and have the API recreated.
 
+<<<<<<< HEAD
+                if args.captcha_solving:
+
+                    if consecutive_empties >= 2:
+                        captcha_url = captcha_request(api)
+
+                        if len(captcha_url) > 1:
+                            status['captchas'] += 1
+                            status['message'] = 'Account {} is encountering a captcha, starting 2captcha sequence'.format(account['username'])
+                            log.warning(status['message'])
+                            captcha_token = token_request(args, status, captcha_url)
+
+                            if 'ERROR' in captcha_token:
+                                log.warning("Unable to resolve captcha, please check your 2captcha API key and/or wallet balance")
+                                account_failures.append({'account': account, 'last_fail_time': now(), 'reason': 'catpcha failed to verify'})
+                                break
+
+                            else:
+                                status['message'] = 'Retrieved captcha token, attempting to verify challenge for {}'.format(account['username'])
+                                log.info(status['message'])
+                                response = api.verify_challenge(token=captcha_token)
+
+                                if 'success' in response['responses']['VERIFY_CHALLENGE']:
+                                    status['message'] = "Account {} successfully uncaptcha'd".format(account['username'])
+                                    log.info(status['message'])
+
+                                else:
+                                    status['message'] = "Account {} failed verifyChallenge, putting away account for now".format(account['username'])
+                                    log.info(status['message'])
+                                    account_failures.append({'account': account, 'last_fail_time': now(), 'reason': 'catpcha failed to verify'})
+                                    break
+                                time.sleep(1)
+
+=======
+>>>>>>> upstream/develop
                 while pause_bit.is_set():
                     status['message'] = 'Scanning paused'
                     time.sleep(2)
@@ -834,6 +879,8 @@ def calc_distance(pos1, pos2):
     return d
 
 
+<<<<<<< HEAD
+=======
 # Delay each thread start time so that logins occur after delay.
 def stagger_thread(args, account):
     if args.accounts.index(account) == 0:
@@ -843,5 +890,6 @@ def stagger_thread(args, account):
     time.sleep(delay)
 
 
+>>>>>>> upstream/develop
 class TooManyLoginAttempts(Exception):
     pass
