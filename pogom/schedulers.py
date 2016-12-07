@@ -752,8 +752,8 @@ class SpeedScan(HexSearch):
         item = q[i]
         messages = {
             'wait': 'Nothing to scan',
-            'early': 'Early for step {}; waiting {}s...'.format(step, 'a few second'),
-            'late': 'Too late for step {}; skipping'.format(step),
+            'early': 'Early for step {}; waiting a few seconds...'.format(step),
+            'late': 'API response on step {} delayed by {} seconds. Possible causes: slow proxies, internet, or Niantic servers'.format(step, int((now_date - last_action).total_seconds())),
             'search': 'Searching at step {}'.format(step),
             'invalid': 'Invalid response at step {}, abandoning location'.format(step)
         }
