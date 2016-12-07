@@ -53,6 +53,13 @@ body{
   }
 }
 
+.status_cell:first-child {
+  padding: 6px 1px 1px 10px;
+  @media screen and (max-width: 580px) {
+    padding: 2px 1px 1px 2px;
+  }  
+}
+
 .status_container {
   width: 95%;
   margin-left: auto;

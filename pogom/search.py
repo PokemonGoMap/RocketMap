@@ -241,9 +241,11 @@ def worker_status_db_thread(threads_status, name, db_updates_queue):
                     'method': status['scheduler'],
                     'last_modified': datetime.utcnow()
                 }
+
             if status['type'] == 'Worker':
                 workers[status['user']] = {
                     'username': status['user'],
+                    'proxy': str(status['proxy_display']),
                     'worker_name': name,
                     'success': status['success'],
                     'fail': status['fail'],
@@ -335,7 +337,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb, db_updat
         if args.proxy:
             proxy_display = proxy_url = args.proxy[i % len(args.proxy)]
             if args.proxy_display.upper() != 'FULL':
-                proxy_display = i % len(args.proxy)
+                proxy_display = str(i % len(args.proxy))
 
         workerId = 'Worker {:03}'.format(i)
         threadStatus[workerId] = {
