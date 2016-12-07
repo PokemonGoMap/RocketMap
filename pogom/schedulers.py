@@ -460,6 +460,8 @@ class SpeedScan(HexSearch):
         log.info('Found %d spawn points within hex', len(spawnpoints))
 
         log.info('Assigning spawn points to scans')
+        log.info('Until the intial scan is complete, this step can take a long time for large -st.')
+        log.info('If wait is too long, reduce the -st size and complete intial scan before increasing -st again.')
         scan_spawn_point = {}
         ScannedLocation.link_spawn_points(scans, initial, spawnpoints, self.step_distance, scan_spawn_point)
         if len(scan_spawn_point):
