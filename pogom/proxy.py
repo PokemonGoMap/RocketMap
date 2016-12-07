@@ -33,6 +33,7 @@ def check_proxy(proxy_queue, timeout, proxies):
 
             elif proxy_response.status_code == 403:
                 log.error("Proxy %s is banned - got status code: %s", proxy[1], str(proxy_response.status_code))
+                proxy_queue.task_done()
                 return False
 
             else:
