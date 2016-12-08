@@ -22,6 +22,10 @@ Here's an example: `runserver.py -speed -st 25 -w 100 -ac accounts.csv`
 
 SpeedScan workers are independent and look for the best scans they reach under the speed limit. The priority is initial scans, TTH, and then spawns. If a worker can not reach an initial scan under the speed limit, it will do a TTH search. If it can't do an initial scan or a TTH search, it will scan for new pokemon spawns, so all workers are always doing their best to find pokemon. Always put -speed in the command line.
 
+> How long does the initial scan take?
+
+With sufficient workers, the initial scan to find all the spawnpoints should be completed in a little over an hour.
+
 > How does Speedscan find the time_til_hidden or TTH?
 
 At the last minute or so of a Pokemon spawn, the servers include a time stamp of when the pokemon will disappear, called the time_til_hidden (TTH). Until the TTH is found, spawns are scanned twice -- once when they first spawn and again at the end of their spawn window to find the time_til_hidden and get the exact spawn time. Speed Scan searches for the TTH by doing a search between the last seen time and 15 minutes after. If the spawn isn't there at this time, it searches again between that last seen time and earliest unseen time. Next check is between those times again, and so on. This reduces the time where the TTH could be by about half every search, so it should find the TTH within five or so searches.
@@ -32,9 +36,9 @@ There appear to be some rare spawns that are not simple 15, 30, or 60 minute spa
 
 > Does Speed Scan still find new spawns even if TTH complete is less than 100%?
 
-Yes. For the few spawns where the TTH still hasn't been found, there is usually only a few minutes when it could be, so Speed Scan still queues those new spawns, and is probably only late to scan them by a minute or two.
+Yes. For the few spawns where the TTH still hasn't been found, there is usually only a few minutes when it could be, so Speed Scan still queues those new spawns and is probably only late to scan them by a minute or two.
 
->How many workers will I need?
+>How many workers will I need for the initial scan?
 
 Here's a rough formula for how many workers:
 
@@ -45,7 +49,13 @@ With -st 26, you will have 1951 cells and need about 98 workers.
 
 To do the initial scan in an hour so, at -kph 35, it takes about half a minute to get to a the next location to scan, and you will want to be able to scan all cells in about 10 minutes, so the workers Cells / 20. If you reduce the -kph from 35 by half, increase the workers by double.
 
-SpeedScan will work with less workers, although it will take longer than an hour for the initial scan. After the initial scan, the number of workers is dependent on the spawn density. More or less workers may be required than during the initial scan to cover all new spawns.
+> How many workers will I need after the initial scan is done?
+
+This will depend on the spawn density of your area. If the Spawns Reached percentage is 100%, you should be able to reduce the number of workers.
+
+> What if I don't have enough workers?
+
+SpeedScan will work with less workers, although it will take longer than an hour for the initial scan and may take a while raise the TTH found percent.
 
 > What should I set scan delay (-sd) to?
 
@@ -57,7 +67,7 @@ Unless scanning a very large area (> -st 45?), SpeedScan does not require beehiv
 
 > Can I run multiple instances with Speed Scan with one DB?
 
-Yes. That works fine.
+Yes.
 
 > Can the instances overlap?
 
