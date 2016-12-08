@@ -1707,6 +1707,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
                 spawn_points[sp['id']] = sp
                 log.warning('%s kind spawnpoint %s has no pokemon %d times in a row',
                             sp['kind'], sp['id'], sp['missed_count'])
+                log.info('Possible causes: Still doing initial scan, or super rare double spawnpoint during hidden period, or Niantic has removed spawnpoint')
 
         if (not SpawnPoint.tth_found(sp) and scan_loc['done'] and
                 (sp['earliest_unseen'] - sp['latest_seen'] - args.spawn_delay) % 3600 < 60):
