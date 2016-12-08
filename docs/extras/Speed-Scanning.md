@@ -43,7 +43,7 @@ Cells = (((steps * (steps - 1)) * 3) + 1)
 
 With -st 26, you will have 1951 cells and need about 98 workers.
 
-To do the initial scan in an hour so, at -kph 35, it takes about half a minute to get to a the next location to scan, and you will want to be able to scan all 1951 cells in about 10 minutes, so the workers Cells / 20. If you reduce the -kph from 35 by half, increase the workers by double.
+To do the initial scan in an hour so, at -kph 35, it takes about half a minute to get to a the next location to scan, and you will want to be able to scan all cells in about 10 minutes, so the workers Cells / 20. If you reduce the -kph from 35 by half, increase the workers by double.
 
 SpeedScan will work with less workers, although it will take longer than an hour for the initial scan. After the initial scan, the number of workers is dependent on the spawn density. More or less workers may be required than during the initial scan to cover all new spawns.
 
