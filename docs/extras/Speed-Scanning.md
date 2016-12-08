@@ -30,7 +30,7 @@ At the last minute or so of a Pokemon spawn, the servers include a time stamp of
 
 There appear to be some rare spawns that are not simple 15, 30, or 60 minute spawns. These spawns may have hidden times or not end with a TTH period. Also, as the possible window for where the TTH could be gets smaller, the time for a worker to scan that location also becomes smaller, so it takes longer to hit the window and find the TTH.
 
-> Does Speed Scan still find new spawns even if TTH complete percent is less than 100%?
+> Does Speed Scan still find new spawns even if TTH complete is less than 100%?
 
 Yes. For the few spawns where the TTH still hasn't been found, there is usually only a few minutes when it could be, so Speed Scan still queues those new spawns, and is probably only late to scan them by a minute or two.
 
