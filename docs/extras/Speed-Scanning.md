@@ -1,4 +1,6 @@
-# Speed Scanning
+# Speed Scheduler
+
+Speed Scheduler is a new scheduler for PokemonGo-Map that is an alternative to Hex Scan or Spawnpoint Scan.
 
 ## Features
 
@@ -10,33 +12,59 @@ Add scans to complete identification for partially identified spawn points
 Dynamically identify and check duration of new spawn points without requiring return to Hex scanning
 Identify spawn points that have been removed and stop scanning them
 
-To use Speed Scan, always put -speed in the command line.
+To use Speed Scheduler, always put -speed in the command line or set `speed-scan` in your config file.
 
 ## FAQ
 
-> What command line args should I use for Speed Scan?
+> What command line args should I use for Speed Scheduler?
 
 Here's an example: `runserver.py -speed -st 25 -w 100 -ac accounts.csv`
 
+> How big should I make my -st?
+
+Speed Scheduler works best with -st between 20 and 30. For smaller -st, more instances will be required to handle a large area, and the workers will not be able to help each other because they are walled off into separate instances. -st larger than 30 work, but may cause longer script start up times and more CPU load depending on your system.
+
 > Is there a different command line option to tell SpeedScan to do an initial scan or to do -ss (spawnpoint based scanning)?
 
-SpeedScan workers are independent and look for the best scans they reach under the speed limit. The priority is initial scans, TTH, and then spawns. If a worker can not reach an initial scan under the speed limit, it will do a TTH search. If it can't do an initial scan or a TTH search, it will scan for new pokemon spawns, so all workers are always doing their best to find pokemon. Always put -speed in the command line.
+Speed workers are independent and look for the best scans they reach under the speed limit. The priority is initial scans, TTH, and then spawns. If a worker can not reach an initial scan under the speed limit, it will do a TTH search. If it can't do an initial scan or a TTH search, it will scan for new pokemon spawns, so all workers are always doing their best to find pokemon. Always put -speed in the command line or set `speed-scan` in your config file.
+
+> Does Speed Scheduler work with beehives (-bh argument)?
+
+Kind of. The logic of Speed Scheduler scheduler works with the beehives, but the strength of Speed Scheduler is it's ability to have multiple workers in a single hive working together to cover the closest spawns, and -bh currently limits each hive to only one worker.
+
+> I started up -speed, and the program seems frozen at 
+
+> Does Speed Scheduler work with jitter (-j)?
+
+Yes. Jitter adjusts only the location sent to the API, not the location used internally, so Speed Scheduler can still recognize the location.
+
+> Does Speed Scheduler work with spawn point json lists?
+
+No. I'm not aware of a method to populate the Spawnpoint DB table with a JSON list. Writing and testing and publishing such a method left as an exercise for the reader.
+
+> You mean I will need to do an initial scan again? Oh, the captchas! Oh, the humanity!
+
+I feel your pain. At least I can tell you that Speed Scheduler will do the initial scan and find the TTHs with less scans than any other Scheduler. A hex scheduler would take 60 scans to find spawn points and TTH, whereas Speed Scheduler will only take 5 scans per location to find the spawn points, and perhaps another 5 scans to find the TTH per spawn point, so it's about one fifth of the scans other schedulers require.
 
 > How long does the initial scan take?
 
 With sufficient workers, the initial scan to find all the spawnpoints should be completed in a little over an hour.
 
+> I'm doing the initial scan, and the spawns have a duration under 1 minute. Why?
+
+Speed Scheduler doesn't make assumptions about how long the spawns are, so when it first sees a spawn, if there's no TTH, all it can say is that the spawn will be there for at least 60 seconds. After the initial scan is done, the known durations will be longer.
+
 > How does Speedscan find the time_til_hidden or TTH?
 
-At the last minute or so of a Pokemon spawn, the servers include a time stamp of when the pokemon will disappear, called the time_til_hidden (TTH). Until the TTH is found, spawns are scanned twice -- once when they first spawn and again at the end of their spawn window to find the time_til_hidden and get the exact spawn time. Speed Scan searches for the TTH by doing a search between the last seen time and 15 minutes after. If the spawn isn't there at this time, it searches again between that last seen time and earliest unseen time. Next check is between those times again, and so on. This reduces the time where the TTH could be by about half every search, so it should find the TTH within five or so searches.
+At the last minute or so of a Pokemon spawn, the servers include a time stamp of when the pokemon will disappear, called the time_til_hidden (TTH). Until the TTH is found, spawns are scanned twice -- once when they first spawn and again at the end of their spawn window to find the time_til_hidden and get the exact spawn time. Speed Scheduler searches for the TTH by doing a search between the last seen time and 15 minutes after. If the spawn isn't there at this time, it searches again between that last seen time and earliest unseen time. Next check is between those times again, and so on. This reduces the time where the TTH could be by about half every search, so it should find the TTH within five or so searches.
 
 > SpeedScan has been running for days, but the TTH found is still about 99%. Why doesn't it find 100% of the TTH?
 
 There appear to be some rare spawns that are not simple 15, 30, or 60 minute spawns. These spawns may have hidden times or not end with a TTH period. Also, as the possible window for where the TTH could be gets smaller, the time for a worker to scan that location also becomes smaller, so it takes longer to hit the window and find the TTH.
 
-> Does Speed Scan still find new spawns even if TTH complete is less than 100%?
+> Does Speed Scheduler still find new spawns even if TTH complete is less than 100%?
 
-Yes. For the few spawns where the TTH still hasn't been found, there is usually only a few minutes when it could be, so Speed Scan still queues those new spawns and is probably only late to scan them by a minute or two.
+Yes. For the few spawns where the TTH still hasn't been found, there is usually only a few minutes when it could be, so Speed Scheduler still queues those new spawns and is probably only late to scan them by a minute or two.
 
 >How many workers will I need for the initial scan?
 
@@ -65,7 +93,7 @@ With the default speed limit of 35 kph, scan delay isn't needed. It takes about 
 
 Unless scanning a very large area (> -st 45?), SpeedScan does not require beehives. Each worker independently looks for the best scan it can do closest to it, so they work well together without fencing off workers into different hives.
 
-> Can I run multiple instances with Speed Scan with one DB?
+> Can I run multiple instances with Speed Scheduler with one DB?
 
 Yes.
 
@@ -87,7 +115,7 @@ After a spawn point is not seen as expected over five times in a row, it stops s
 
 > How does it handle web changes in the search location?
 
-For changing the location of the searcher, this should work, but with lots of rescanning of the initial scan. Each time you change the location of the server, Speed Scan will restart its initial scan. Since SpeedScan records data about each search location, it is sensitive to changes in the location, and has to start over with the initial scan every time it is changed. This is true even if you move back to an already scanned location, but the loc is only slightly different.
+For changing the location of the searcher, this should work, but with lots of rescanning of the initial scan. Each time you change the location of the server, Speed Scheduler will restart its initial scan. Since SpeedScan records data about each search location, it is sensitive to changes in the location, and has to start over with the initial scan every time it is changed. This is true even if you move back to an already scanned location, but the loc is only slightly different.
 
 > Is the speed limit also used when changing the scanner location?
 
@@ -112,15 +140,15 @@ Common causes:
 > I'm seeing a lot of "[ WARNING] hhhs kind spawnpoint 12341234123 has no pokemon 2 times in a row"
 
 Possible causes:
-* During initial scan, Speed Scan makes guesses for spawn duration. Should reduce after initial scan done.
+* During initial scan, Speed Scheduler makes guesses for spawn duration. Should reduce after initial scan done.
 * Spawnpoint is one of the extremely rare double spawnpoints, and was scanned during it's hidden period
-* Spawnpoint has been removed by Niantic. Speed Scan will no longer queue for scans after missing five times 
+* Spawnpoint has been removed by Niantic. Speed Scheduler will no longer queue for scans after missing five times 
 
-What does this line mean? `SpeedScan Overseer: Scanning status: 27 total waiting, 0 initial bands, 0 TTH searches, and 27 new spawns`
+> What does this line mean? `SpeedScan Overseer: Scanning status: 27 total waiting, 0 initial bands, 0 TTH searches, and 27 new spawns`
 
 Intial bands are the scans done to find the spawn points, TTH searches are looking for the time_til_hidden stamp to find the exact spawn time, and new spawn searches are scanning new spawns.
 
-How about this line? `Initial scan: 100.00%, TTH found: 100.00%, Spawns reached: 100.00%, Spawns found: 100.00%, Good scans 99.59%`
+> How about this line? `Initial scan: 100.00%, TTH found: 100.00%, Spawns reached: 100.00%, Spawns found: 100.00%, Good scans 99.59%`
 
 Initial scan is the search for spawn points and scans each location in five bands within an hour, about 12 minutes apart. This should take a little over an hour to reach 100% with sufficient workers.
 
@@ -128,4 +156,14 @@ TTH found is the percentage of spawn points for which the exact spawn time is kn
 
 Spawns reached is the percentage of spawns that are scanned before their timer runs out and they disappear. Will be low during the initial scan and possibly while still finding TTHs, but should reach 100% afterwards with sufficient workers.
 
-Good scans is scans that aren't 0/0/0. Should be over 99% generally. If not, see above note about 0/0/0 warnings.
+Good scans are scans that aren't 0/0/0. Should be over 99% generally. If not, see above note about 0/0/0 warnings.
+
+> On the print screen (-ps) or status page (-sn) what do the messages mean?
+
+'Not able to reach any scan under the speed limit' — Worker is not able to find anything to scan within range and stay under the speed limit.
+
+`Nothing to scan` — All initial scans, spawns, and TTHs searches have been done, and workers are waiting for next spawn. Usually a good sign that you have more than enough workers.
+
+> But my system has been saying `Nothing to scan` for several minutes, and I know there are pokemon that have spawned during that time.
+
+Ok, that's a bad sign. It means the Overseer thread has probably had an uncaught exception and died. Restart, and if you see an exception error in the logs, please report to @Artifice to fix.

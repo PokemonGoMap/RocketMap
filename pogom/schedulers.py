@@ -459,7 +459,8 @@ class SpeedScan(HexSearch):
             log.info('No spawnpoints in hex found in SpawnPoint table. Doing initial scan.')
         log.info('Found %d spawn points within hex', len(spawnpoints))
 
-        log.info('Assigning spawn points to scans')
+        log.info('Doing %s distance calcs to assign %d spawn points to %d scans',
+                 "{:,}".format(len(spawnpoints) * len(scans)), len(spawnpoints), len(scans))
         log.info('Until the intial scan is complete, this step can take a long time for large -st.')
         log.info('If wait is too long, reduce the -st size and complete intial scan before increasing -st again.')
         scan_spawn_point = {}
