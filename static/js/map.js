@@ -277,13 +277,16 @@ function createSearchMarker () {
 
   var oldLocation = null
   google.maps.event.addListener(searchMarker, 'dragstart', function () {
+    searchControl ('off');
     oldLocation = searchMarker.getPosition()
   })
 
   google.maps.event.addListener(searchMarker, 'dragend', function () {
     var newLocation = searchMarker.getPosition()
     changeSearchLocation(newLocation.lat(), newLocation.lng())
+    
       .done(function () {
+        searchControl ('on');
         oldLocation = null
       })
       .fail(function () {
