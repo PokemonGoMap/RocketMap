@@ -831,7 +831,7 @@ def captcha_handling_manual(args, api, status, account, whq, captcha_url, step_l
                                 captcha_token)
 
 
-def captcha_handling_2captcha(args, api, status, account, captcha_url, step_location, account_failures):
+def captcha_handling_2captcha(args, api, status, account, captcha_url, step_location):
     status['message'] = 'Manual uncaptcha failed, starting 2Captcha sequence'.format(
         account['username'])
     log.warning(status['message'])
