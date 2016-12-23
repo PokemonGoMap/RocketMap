@@ -605,7 +605,7 @@ function isRangeActive (map) {
   return Store.get('showRanges')
 }
 
-function getIv(item) {
+function getIv (item) {
   if (item['individual_attack'] !== null) {
     return 100.0 * (item['individual_attack'] + item['individual_defense'] + item['individual_stamina']) / 45
   }
@@ -613,36 +613,36 @@ function getIv(item) {
   return 0
 }
 
-function getTimeUntil(time) {
-  var now   = +new Date()
+function getTimeUntil (time) {
+  var now = +new Date()
   var tdiff = time - now
 
-  var sec   = Math.floor((tdiff/1000) % 60)
-  var min   = Math.floor((tdiff/1000/60) % 60)
-  var hour  = Math.floor((tdiff/(1000*60*60)) % 24)
+  var sec = Math.floor((tdiff / 1000) % 60)
+  var min = Math.floor((tdiff / 1000 / 60) % 60)
+  var hour = Math.floor((tdiff / (1000 * 60 * 60)) % 24)
 
   return {
-    'total' : tdiff,
-    'hour'  : hour,
-    'min'   : min,
-    'sec'   : sec
-  };
+    'total': tdiff,
+    'hour': hour,
+    'min': min,
+    'sec': sec
+  }
 }
 
-function notifyText(item) {
-  var perfection    = getIv(item)
-  var ivtext        = perfection.toFixed(1) + '% (' + item['individual_attack'] + '/' + item['individual_defense'] + '/' + item['individual_stamina'] + ')'
-  var dtime         = new Date(item['disappear_time'])
-  var distext       = dtime.getHours() + ':' + dtime.getMinutes() + ':' + dtime.getSeconds()
-  var until         = getTimeUntil(item['disappear_time'])
-  var untiltext      = '('
-      untiltext    += (until.hour > 0) ? until.hour + ':' : ''
-      untiltext    += ('0' + until.min).slice(-2) + 'm' + ('0' + until.sec).slice(-2) + 's' + ')'
+function notifyText (item) {
+  var perfection = getIv(item)
+  var ivtext = perfection.toFixed(1) + '% (' + item['individual_attack'] + '/' + item['individual_defense'] + '/' + item['individual_stamina'] + ')'
+  var dtime = new Date(item['disappear_time'])
+  var distext = dtime.getHours() + ':' + dtime.getMinutes() + ':' + dtime.getSeconds()
+  var until = getTimeUntil(item['disappear_time'])
+  var untiltext = '('
+  untiltext += (until.hour > 0) ? until.hour + ':' : ''
+  untiltext += ('0' + until.min).slice(-2) + 'm' + ('0' + until.sec).slice(-2) + 's' + ')'
 
   return {
-    'fav_title' : item['pokemon_name'] + ' ' + ivtext,
-    'fav_text'  : 'available until ' + distext + ' ' + untiltext
-  };
+    'fav_title': item['pokemon_name'] + ' ' + ivtext,
+    'fav_text': 'available until ' + distext + ' ' + untiltext
+  }
 }
 
 function customizePokemonMarker (marker, item, skipNotification) {
@@ -666,8 +666,6 @@ function customizePokemonMarker (marker, item, skipNotification) {
         audio.play()
       }
 
-
-
       sendNotification(notifyText(item).fav_title, notifyText(item).fav_text, 'static/icons/' + item['pokemon_id'] + '.png', item['latitude'], item['longitude'])
     }
     if (marker.animationDisabled !== true) {
@@ -676,13 +674,12 @@ function customizePokemonMarker (marker, item, skipNotification) {
   }
 
   if (item['individual_attack'] != null) {
-    var perfection    = getIv(item)
+    var perfection = getIv(item)
     if (notifiedMinPerfection > 0 && perfection >= notifiedMinPerfection) {
       if (!skipNotification) {
         if (Store.get('playSound')) {
           audio.play()
         }
- 
         sendNotification(notifyText(item).fav_title, notifyText(item).fav_text, 'static/icons/' + item['pokemon_id'] + '.png', item['latitude'], item['longitude'])
       }
       if (marker.animationDisabled !== true) {
