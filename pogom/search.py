@@ -709,50 +709,16 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                         captcha_url = response_dict['responses']['CHECK_CHALLENGE']['challenge_url']
                         if len(captcha_url) > 1:
                             status['captchas'] += 1
-                            # flag if we should send webhooks
-                            notify_webhook = args.webhooks and args.captcha_key is None
-
-                            if args.captcha_key is not None:
-                                status['message'] = 'Account {} is encountering a captcha, starting 2captcha sequence'.format(account['username'])
-                            else:
-                                status['message'] = 'Account {} is encountering a captcha, starting manual captcha solving'.format(account['username'])
-                                if notify_webhook:
-                                    whq.put(('captcha', {'account': account['username'], 'status': 'encounter', 'token_needed': token_needed}))
-                            log.warning(status['message'])
-                            captcha_token = token_request(args, status, captcha_url, whq)
-                            if 'ERROR' in captcha_token:
-                                log.warning("Unable to resolve captcha, please check your 2captcha API key and/or wallet balance")
-                                account_failures.append({'account': account, 'last_fail_time': now(), 'reason': 'invalid captcha token'})
-                                break
-                            elif 'TIMEOUT' in captcha_token:
-                                log.warning(
-                                    "Unable to resolve captcha, timeout waiting for manual captcha token.")
-                                account_failures.append({'account': account, 'last_fail_time': now(),
-                                                         'reason': 'timeout waiting for manual captcha token'})
-                                if notify_webhook:
-                                    whq.put(('captcha', {'account': account['username'], 'status': 'timeout',
-                                                         'token_needed': token_needed}))
-                                break
-                            else:
-                                status['message'] = 'Retrieved captcha token, attempting to verify challenge for {}'.format(account['username'])
-                                log.info(status['message'])
-                                response = api.verify_challenge(token=captcha_token)
-                                if 'success' in response['responses']['VERIFY_CHALLENGE']:
-                                    status['message'] = "Account {} successfully uncaptcha'd".format(account['username'])
-                                    log.info(status['message'])
-                                    scan_date = datetime.utcnow()
-                                    if notify_webhook:
-                                        whq.put(('captcha', {'account': account['username'], 'status': 'solved', 'token_needed': token_needed}))
-                                    # Make another request for the same coordinate since the previous one was captcha'd
-                                    response_dict, scan_date = perform_map_request(args, status, api, step_location)
-                                    status['last_scan_date'] = scan_date
-                                else:
-                                    status['message'] = "Account {} failed verifyChallenge, putting away account for now".format(account['username'])
-                                    log.info(status['message'])
-                                    if notify_webhook:
-                                        whq.put(('captcha', {'account': account['username'], 'status': 'failed', 'token_needed': token_needed}))
-                                    account_failures.append({'account': account, 'last_fail_time': now(), 'reason': 'catpcha failed to verify'})
-                                    break
+                            # first try manual solving
+                            captcha_error = manual_captcha_handling(args, api, status, account, whq, captcha_url,
+                                                                    step_location)
+                            # then try 2Captcha
+                            if captcha_error and args.captcha_key:
+                                captcha_error = automatic_captcha_handling(args, api, status, account, captcha_url,
+                                                                           step_location)
+                            if captcha_error:
+                                account_failures.append(
+                                    {'account': account, 'last_fail_time': now(), 'reason': captcha_error})
 
                     parsed = parse_map(args, response_dict, step_location, dbq, whq, api, scan_date)
                     scheduler.task_done(status, parsed)
@@ -838,6 +804,65 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
             traceback.print_exc(file=sys.stdout)
             account_failures.append({'account': account, 'last_fail_time': now(), 'reason': 'exception'})
             time.sleep(args.scan_delay)
+
+
+def manual_captcha_handling(args, api, status, account, whq, captcha_url, step_location):
+    status['message'] = 'Account {} is encountering a captcha, starting manual captcha solving'.format(
+        account['username'])
+    if args.webhooks:
+        whq.put(('captcha', {'account': account['username'], 'status': 'encounter', 'token_needed': token_needed}))
+    log.warning(status['message'])
+
+    captcha_token = token_request(args, status, captcha_url)
+
+    if 'TIMEOUT' in captcha_token:
+        log.warning(
+            "Unable to resolve captcha, timeout waiting for manual captcha token.")
+        if args.webhooks:
+            whq.put(('captcha', {'account': account['username'], 'status': 'timeout',
+                                 'token_needed': token_needed}))
+        return 'timeout waiting for manual captcha token'
+    else:
+        return verify_challenge(args, api, status, account, whq, step_location,
+                                captcha_token)
+
+
+def automatic_captcha_handling(args, api, status, account, captcha_url, step_location, account_failures):
+    status['message'] = 'Manual uncaptcha failed, starting 2Captcha sequence'.format(
+        account['username'])
+    log.warning(status['message'])
+
+    captcha_token = token_request(args, status, captcha_url)
+
+    if 'ERROR' in captcha_token:
+        log.warning("Unable to resolve captcha, please check your 2captcha API key and/or wallet balance")
+        return 'invalid captcha token'
+    else:
+        return verify_challenge(args, api, status, account, False, step_location,
+                                captcha_token)
+
+
+def verify_challenge(args, api, status, account, whq, step_location, captcha_token):
+    status['message'] = 'Retrieved captcha token, attempting to verify challenge for {}'.format(account['username'])
+    log.info(status['message'])
+    response = api.verify_challenge(token=captcha_token)
+    if 'success' in response['responses']['VERIFY_CHALLENGE']:
+        status['message'] = "Account {} successfully uncaptcha'd".format(account['username'])
+        log.info(status['message'])
+        scan_date = datetime.utcnow()
+        if whq and args.webhooks:
+            whq.put(('captcha', {'account': account['username'], 'status': 'solved', 'token_needed': token_needed}))
+        # Make another request for the same coordinate since the previous one was captcha'd
+        response_dict, scan_date = perform_map_request(args, status, api, step_location)
+        status['last_scan_date'] = scan_date
+        return False
+    else:
+        status['message'] = "Account {} failed verifyChallenge, putting away account for now".format(
+            account['username'])
+        log.info(status['message'])
+        if whq and args.webhooks:
+            whq.put(('captcha', {'account': account['username'], 'status': 'failed', 'token_needed': token_needed}))
+        return 'catpcha failed to verify'
 
 
 def check_login(args, account, api, position, proxy_url):
@@ -926,7 +951,7 @@ def gym_request(api, position, gym):
         return False
 
 
-def token_request(args, status, url, whq):
+def token_request(args, status, url):
 
     global token_needed
     request_time = datetime.utcnow()
