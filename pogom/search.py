@@ -719,6 +719,10 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                             if captcha_error:
                                 account_failures.append(
                                     {'account': account, 'last_fail_time': now(), 'reason': captcha_error})
+                            else:
+                                # Uncaptcha'd, but make another request for the same coordinate since the previous one was captcha'd
+                                response_dict, scan_date = perform_map_request(args, status, api, step_location)
+                                status['last_scan_date'] = scan_date
 
                     parsed = parse_map(args, response_dict, step_location, dbq, whq, api, scan_date)
                     scheduler.task_done(status, parsed)
@@ -852,9 +856,6 @@ def verify_challenge(args, api, status, account, whq, step_location, captcha_tok
         scan_date = datetime.utcnow()
         if whq and args.webhooks:
             whq.put(('captcha', {'account': account['username'], 'status': 'solved', 'token_needed': token_needed}))
-        # Make another request for the same coordinate since the previous one was captcha'd
-        response_dict, scan_date = perform_map_request(args, status, api, step_location)
-        status['last_scan_date'] = scan_date
         return False
     else:
         status['message'] = "Account {} failed verifyChallenge, putting away account for now".format(
