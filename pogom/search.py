@@ -710,12 +710,12 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                         if len(captcha_url) > 1:
                             status['captchas'] += 1
                             # first try manual solving
-                            captcha_error = manual_captcha_handling(args, api, status, account, whq, captcha_url,
+                            captcha_error = captcha_handling_manual(args, api, status, account, whq, captcha_url,
                                                                     step_location)
                             # then try 2Captcha
                             if captcha_error and args.captcha_key:
-                                captcha_error = automatic_captcha_handling(args, api, status, account, captcha_url,
-                                                                           step_location)
+                                captcha_error = captcha_handling_2captcha(args, api, status, account, captcha_url,
+                                                                          step_location)
                             if captcha_error:
                                 account_failures.append(
                                     {'account': account, 'last_fail_time': now(), 'reason': captcha_error})
@@ -806,14 +806,14 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
             time.sleep(args.scan_delay)
 
 
-def manual_captcha_handling(args, api, status, account, whq, captcha_url, step_location):
+def captcha_handling_manual(args, api, status, account, whq, captcha_url, step_location):
     status['message'] = 'Account {} is encountering a captcha, starting manual captcha solving'.format(
         account['username'])
     if args.webhooks:
         whq.put(('captcha', {'account': account['username'], 'status': 'encounter', 'token_needed': token_needed}))
     log.warning(status['message'])
 
-    captcha_token = token_request(args, status, captcha_url)
+    captcha_token = token_request_manual(args)
 
     if 'TIMEOUT' in captcha_token:
         log.warning(
@@ -827,12 +827,12 @@ def manual_captcha_handling(args, api, status, account, whq, captcha_url, step_l
                                 captcha_token)
 
 
-def automatic_captcha_handling(args, api, status, account, captcha_url, step_location, account_failures):
+def captcha_handling_2captcha(args, api, status, account, captcha_url, step_location, account_failures):
     status['message'] = 'Manual uncaptcha failed, starting 2Captcha sequence'.format(
         account['username'])
     log.warning(status['message'])
 
-    captcha_token = token_request(args, status, captcha_url)
+    captcha_token = token_request_2captcha(args, status, captcha_url)
 
     if 'ERROR' in captcha_token:
         log.warning("Unable to resolve captcha, please check your 2captcha API key and/or wallet balance")
@@ -951,35 +951,35 @@ def gym_request(api, position, gym):
         return False
 
 
-def token_request(args, status, url):
-
+def token_request_manual(args):
     global token_needed
     request_time = datetime.utcnow()
 
-    if args.captcha_key is None:
-        token_needed += 1
-        while request_time + timedelta(seconds=args.manual_captcha_solving_allowance_time) > datetime.utcnow():
-            tokenLock.acquire()
-            if args.no_server:
-                # multiple instances, use get_token in map
-                s = requests.Session()
-                url = "{}/get_token?request_time={}&password={}".format(args.manual_captcha_solving_domain, request_time, args.manual_captcha_solving_password)
-                token = str(s.get(url).text)
+    token_needed += 1
+    while request_time + timedelta(seconds=args.manual_captcha_solving_allowance_time) > datetime.utcnow():
+        tokenLock.acquire()
+        if args.no_server:
+            # multiple instances, use get_token in map
+            s = requests.Session()
+            url = "{}/get_token?request_time={}&password={}".format(args.manual_captcha_solving_domain, request_time, args.manual_captcha_solving_password)
+            token = str(s.get(url).text)
+        else:
+            # single instance, get Token directly
+            token = Token.get_match(request_time)
+            if token is not None:
+                token = token.token
             else:
-                # single instance, get Token directly
-                token = Token.get_match(request_time)
-                if token is not None:
-                    token = token.token
-                else:
-                    token = ""
-            tokenLock.release()
-            if token != "":
-                token_needed -= 1
-                return token
-            time.sleep(1)
-        token_needed -= 1
-        return 'TIMEOUT'
+                token = ""
+        tokenLock.release()
+        if token != "":
+            token_needed -= 1
+            return token
+        time.sleep(1)
+    token_needed -= 1
+    return 'TIMEOUT'
 
+
+def token_request_2captcha(args, status, url):
     s = requests.Session()
     # Fetch the CAPTCHA_ID from 2captcha.
     try:
