@@ -509,8 +509,12 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
             # Create the API instance this will use.
             if args.mock != '':
                 api = FakePogoApi(args.mock)
+                log.info('Created API instance using hash libs.')
             else:
                 api = PGoApi()
+                if args.hash_token:
+                    api.activate_hash_server(args.hash_key)
+                    log.info('Created API instance using hash server.')
 
             # New account - new proxy
             if args.proxy:
