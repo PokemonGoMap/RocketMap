@@ -512,7 +512,7 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                 log.info('Created API instance using hash libs.')
             else:
                 api = PGoApi()
-                if args.hash_token:
+                if args.hash_key:
                     api.activate_hash_server(args.hash_key)
                     log.info('Created API instance using hash server.')
 
