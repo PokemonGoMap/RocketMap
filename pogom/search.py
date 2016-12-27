@@ -68,7 +68,7 @@ def jitterLocation(location=None, maxMeters=10):
 
 
 # Thread to handle user input.
-def switch_status_printer(args, display_type, current_page):
+def switch_status_printer(args, display_type, current_page, pause_bit):
     # Get a reference to the root logger.
     mainlog = logging.getLogger()
     # Disable logging of the first handler - the stream handler, and disable it's output.
@@ -91,32 +91,39 @@ def switch_status_printer(args, display_type, current_page):
                 mainlog.handlers[0].setLevel(logging.CRITICAL)
                 display_type[0] = 'workers'
         elif command.isdigit():
-                current_page[0] = int(command)
-                mainlog.handlers[0].setLevel(logging.CRITICAL)
-                display_type[0] = 'workers'
+            current_page[0] = int(command)
+            mainlog.handlers[0].setLevel(logging.CRITICAL)
+            display_type[0] = 'workers'
         elif command.lower() == 'f':
-                mainlog.handlers[0].setLevel(logging.CRITICAL)
-                display_type[0] = 'failedaccounts'
+            mainlog.handlers[0].setLevel(logging.CRITICAL)
+            display_type[0] = 'failedaccounts'
         elif command.lower() == 'c':
-                if args.captcha_solving_strategy == 'manual-first':
-                    args.captcha_solving_strategy = 'manual-only'
-                elif args.captcha_solving_strategy == 'manual-only':
-                    args.captcha_solving_strategy = 'automatic'
-                elif args.captcha_solving_strategy == 'automatic':
-                    args.captcha_solving_strategy = 'manual-first'
-                log.info("Captcha solving strategy changed to '{}'".format(args.captcha_solving_strategy))
-
+            if args.captcha_solving_strategy == 'manual-first':
+                args.captcha_solving_strategy = 'manual-only'
+            elif args.captcha_solving_strategy == 'manual-only':
+                args.captcha_solving_strategy = 'automatic'
+            elif args.captcha_solving_strategy == 'automatic':
+                args.captcha_solving_strategy = 'manual-first'
+            log.info("Captcha solving strategy changed to '{}'".format(args.captcha_solving_strategy))
+        elif command.lower() == 'p':
+            if pause_bit.is_set:
+                pause_bit.clear()
+                log.info('Scanning resumed.')
+            else:
+                pause_bit.set()
+                log.info('Scanning paused.')
 
 
 # Thread to print out the status of each worker.
-def status_printer(args, threadStatus, search_items_queue_array, db_updates_queue, wh_queue, account_queue, account_failures):
+def status_printer(args, threadStatus, search_items_queue_array, db_updates_queue, wh_queue, account_queue,
+                   account_failures, pause_bit):
     display_type = ["workers"]
     current_page = [1]
 
     # Start another thread to get user input.
     t = Thread(target=switch_status_printer,
                name='switch_status_printer',
-               args=(args, display_type, current_page))
+               args=(args, display_type, current_page, pause_bit))
     t.daemon = True
     t.start()
 
@@ -325,7 +332,8 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb, db_updat
         log.info('Starting status printer thread')
         t = Thread(target=status_printer,
                    name='status_printer',
-                   args=(args, threadStatus, search_items_queue_array, db_updates_queue, wh_queue, account_queue, account_failures))
+                   args=(args, threadStatus, search_items_queue_array, db_updates_queue, wh_queue, account_queue,
+                         account_failures, pause_bit))
         t.daemon = True
         t.start()
 
