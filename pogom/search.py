@@ -106,7 +106,7 @@ def switch_status_printer(args, display_type, current_page, pause_bit):
                 args.captcha_solving_strategy = 'manual-first'
             log.info("Captcha solving strategy changed to '{}'".format(args.captcha_solving_strategy))
         elif command.lower() == 'p':
-            if pause_bit.is_set:
+            if pause_bit.is_set():
                 pause_bit.clear()
                 log.info('Scanning resumed.')
             else:
