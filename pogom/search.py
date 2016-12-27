@@ -68,7 +68,7 @@ def jitterLocation(location=None, maxMeters=10):
 
 
 # Thread to handle user input.
-def switch_status_printer(display_type, current_page):
+def switch_status_printer(args, display_type, current_page):
     # Get a reference to the root logger.
     mainlog = logging.getLogger()
     # Disable logging of the first handler - the stream handler, and disable it's output.
@@ -97,17 +97,26 @@ def switch_status_printer(display_type, current_page):
         elif command.lower() == 'f':
                 mainlog.handlers[0].setLevel(logging.CRITICAL)
                 display_type[0] = 'failedaccounts'
+        elif command.lower() == 'c':
+                if args.captcha_solving_strategy == 'manual-first':
+                    args.captcha_solving_strategy = 'manual-only'
+                elif args.captcha_solving_strategy == 'manual-only':
+                    args.captcha_solving_strategy = 'automatic'
+                elif args.captcha_solving_strategy == 'automatic':
+                    args.captcha_solving_strategy = 'manual-first'
+                log.info("Captcha solving strategy changed to '{}'".format(args.captcha_solving_strategy))
+
 
 
 # Thread to print out the status of each worker.
-def status_printer(threadStatus, search_items_queue_array, db_updates_queue, wh_queue, account_queue, account_failures):
+def status_printer(args, threadStatus, search_items_queue_array, db_updates_queue, wh_queue, account_queue, account_failures):
     display_type = ["workers"]
     current_page = [1]
 
     # Start another thread to get user input.
     t = Thread(target=switch_status_printer,
                name='switch_status_printer',
-               args=(display_type, current_page))
+               args=(args, display_type, current_page))
     t.daemon = True
     t.start()
 
@@ -316,7 +325,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb, db_updat
         log.info('Starting status printer thread')
         t = Thread(target=status_printer,
                    name='status_printer',
-                   args=(threadStatus, search_items_queue_array, db_updates_queue, wh_queue, account_queue, account_failures))
+                   args=(args, threadStatus, search_items_queue_array, db_updates_queue, wh_queue, account_queue, account_failures))
         t.daemon = True
         t.start()
 
@@ -532,6 +541,53 @@ def perform_map_request(args, status, api, step_location):
     return response_dict, scan_date
 
 
+def captcha_strategy_manual_first(args, api, status, account, whq, captcha_url,
+                                  step_location, account_failures):
+    # first try manual solving
+    captcha_error = captcha_handling_manual(args, api, status, account, whq, captcha_url,
+                                            step_location)
+    # then try 2Captcha
+    if captcha_error and args.captcha_key:
+        captcha_error = captcha_handling_2captcha(args, api, status, account, captcha_url,
+                                                  step_location)
+    if captcha_error:
+        account_failures.append(
+            {'account': account, 'last_fail_time': now(), 'reason': captcha_error})
+    else:
+        # Uncaptcha'd, but make another request for the same coordinate since the previous one was captcha'd
+        response_dict, scan_date = perform_map_request(args, status, api, step_location)
+        status['last_scan_date'] = scan_date
+
+
+def captcha_strategy_manual_only(args, api, status, account, whq, captcha_url,
+                                 step_location, account_failures):
+    # first try manual solving
+    captcha_error = captcha_handling_manual(args, api, status, account, whq, captcha_url,
+                                            step_location)
+    if captcha_error:
+        account_failures.append(
+            {'account': account, 'last_fail_time': now(), 'reason': captcha_error})
+    else:
+        # Uncaptcha'd, but make another request for the same coordinate since the previous one was captcha'd
+        response_dict, scan_date = perform_map_request(args, status, api, step_location)
+        status['last_scan_date'] = scan_date
+
+
+def captcha_strategy_automatic(args, api, status, account, captcha_url,
+                               step_location, account_failures):
+    # then try 2Captcha
+    if args.captcha_key:
+        captcha_error = captcha_handling_2captcha(args, api, status, account, captcha_url,
+                                                  step_location)
+    if captcha_error:
+        account_failures.append(
+            {'account': account, 'last_fail_time': now(), 'reason': captcha_error})
+    else:
+        # Uncaptcha'd, but make another request for the same coordinate since the previous one was captcha'd
+        response_dict, scan_date = perform_map_request(args, status, api, step_location)
+        status['last_scan_date'] = scan_date
+
+
 def search_worker_thread(args, account_queue, account_failures, search_items_queue, pause_bit, status, dbq, whq, scheduler):
 
     log.debug('Search worker thread starting')
@@ -709,20 +765,15 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                         captcha_url = response_dict['responses']['CHECK_CHALLENGE']['challenge_url']
                         if len(captcha_url) > 1:
                             status['captchas'] += 1
-                            # first try manual solving
-                            captcha_error = captcha_handling_manual(args, api, status, account, whq, captcha_url,
-                                                                    step_location)
-                            # then try 2Captcha
-                            if captcha_error and args.captcha_key:
-                                captcha_error = captcha_handling_2captcha(args, api, status, account, captcha_url,
-                                                                          step_location)
-                            if captcha_error:
-                                account_failures.append(
-                                    {'account': account, 'last_fail_time': now(), 'reason': captcha_error})
+                            if args.captcha_solving_strategy == 'manual_only':
+                                captcha_strategy_manual_only(args, api, status, account, whq, captcha_url,
+                                                             step_location, account_failures)
+                            elif args.captcha_solving_strategy == 'automatic':
+                                captcha_strategy_automatic(args, api, status, account, captcha_url, step_location,
+                                                           account_failures)
                             else:
-                                # Uncaptcha'd, but make another request for the same coordinate since the previous one was captcha'd
-                                response_dict, scan_date = perform_map_request(args, status, api, step_location)
-                                status['last_scan_date'] = scan_date
+                                captcha_strategy_manual_first(args, api, status, account, whq, captcha_url,
+                                                              step_location, account_failures)
 
                     parsed = parse_map(args, response_dict, step_location, dbq, whq, api, scan_date)
                     scheduler.task_done(status, parsed)
@@ -832,7 +883,7 @@ def captcha_handling_manual(args, api, status, account, whq, captcha_url, step_l
 
 
 def captcha_handling_2captcha(args, api, status, account, captcha_url, step_location):
-    status['message'] = 'Manual uncaptcha failed, starting 2Captcha sequence'.format(
+    status['message'] = 'Account {} is encountering a captcha, starting 2Captcha sequence'.format(
         account['username'])
     log.warning(status['message'])
 

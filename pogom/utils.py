@@ -88,6 +88,9 @@ def get_args():
     parser.add_argument('-cs', '--captcha-solving',
                         help='Enables captcha solving.',
                         action='store_true', default=False)
+    parser.add_argument('-css', '--captcha-solving-strategy',
+                        help='One of "manual-first", "manual-only", "automatic".',
+                        default="manual-first")
     parser.add_argument('-ck', '--captcha-key',
                         help='2Captcha API key.')
     parser.add_argument('-cds', '--captcha-dsk',
