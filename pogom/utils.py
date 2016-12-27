@@ -4,11 +4,13 @@
 import sys
 import configargparse
 import os
+import math
 import json
 import logging
 import shutil
 import pprint
 import time
+from s2sphere import CellId, LatLng
 
 from . import config
 
@@ -64,6 +66,10 @@ def get_args():
                         help='Seconds for accounts to rest when they fail or are switched out.')
     parser.add_argument('-ac', '--accountcsv',
                         help='Load accounts from CSV file containing "auth_service,username,passwd" lines.')
+    parser.add_argument('-bh', '--beehive',
+                        help='Use beehive configuration for multiple accounts, one account per hex.  Make sure to keep -st under 5, and -w under the total amount of accounts available.', action='store_true', default=False)
+    parser.add_argument('-wph', '--workers-per-hive',
+                        help='Only referenced when using --beehive. Sets number of workers per hive. Default value is 1', type=int, default=1)
     parser.add_argument('-l', '--location', type=parse_unicode,
                         help='Location, can be an address or coordinates.')
     parser.add_argument('-j', '--jitter', help='Apply random -9m to +9m jitter to location.',
@@ -72,6 +78,9 @@ def get_args():
                         default=12)
     parser.add_argument('-sd', '--scan-delay',
                         help='Time delay between requests in scan threads.',
+                        type=float, default=10)
+    parser.add_argument('--spawn-delay',
+                        help='Number of seconds after spawn time to wait before scanning to be sure the pokemon is there.',
                         type=float, default=10)
     parser.add_argument('-enc', '--encounter',
                         help='Start an encounter to gather IVs and moves.',
@@ -94,13 +103,16 @@ def get_args():
                                 help='List of pokemon to NOT encounter for more stats.')
     parser.add_argument('-ld', '--login-delay',
                         help='Time delay between each login attempt.',
-                        type=float, default=5)
+                        type=float, default=6)
     parser.add_argument('-lr', '--login-retries',
                         help='Number of logins attempts before refreshing a thread.',
                         type=int, default=3)
     parser.add_argument('-mf', '--max-failures',
-                        help='Maximum number of failures to parse locations before an account will go into a two hour sleep.',
+                        help='Maximum number of failures to parse locations before an account will go into a sleep for -ari/--account-rest-interval seconds',
                         type=int, default=5)
+    parser.add_argument('-me', '--max-empty',
+                        help='Maximum number of empty scans before an account will go into a sleep for -ari/--account-rest-interval seconds. Reasonable to use with proxies',
+                        type=int, default=0)
     parser.add_argument('-msl', '--min-seconds-left',
                         help='Time that must be left on a spawn before considering it too late and skipping it. eg. 600 would skip anything with < 10 minutes remaining. Default 0.',
                         type=int, default=0)
@@ -155,17 +167,27 @@ def get_args():
                         help='Disables PokeStops from the map (including parsing them into local db).',
                         action='store_true', default=False)
     parser.add_argument('-ss', '--spawnpoint-scanning',
-                        help='Use spawnpoint scanning (instead of hex grid). Scans in a circle based on step_limit when on DB.', nargs='?', const='nofile', default=False)
-    parser.add_argument('--dump-spawnpoints', help='Dump the spawnpoints from the db to json (only for use with -ss).',
+                        help='Use spawnpoint scanning (instead of hex grid). Scans in a circle based on step_limit when on DB', nargs='?', const='nofile', default=False)
+    parser.add_argument('-speed', '--speed-scan',
+                        help='Use speed scanning to identify spawn points and then scan closest spawns.',
+                        action='store_true', default=False)
+    parser.add_argument('-kph', '--kph',
+                        help='Set a maximum speed in km/hour for scanner movement', type=int, default=35)
+    parser.add_argument('--dump-spawnpoints', help='dump the spawnpoints from the db to json (only for use with -ss)',
                         action='store_true', default=False)
     parser.add_argument('-pd', '--purge-data',
                         help='Clear pokemon from database this many hours after they disappear \
-                        (0 to disable).', type=int, default=0)
-    parser.add_argument('-px', '--proxy', help='Proxy url (e.g. socks5://127.0.0.1:9050).', action='append')
-    parser.add_argument('-pxsc', '--proxy-skip-check', help='Disable checking of proxies before start.', action='store_true', default=False)
-    parser.add_argument('-pxt', '--proxy-timeout', help='Timeout settings for proxy checker in seconds.', type=int, default=5)
-    parser.add_argument('-pxd', '--proxy-display', help='Display info on which proxy beeing used (index or full) To be used with -ps.', type=str, default='index')
-    parser.add_argument('--db-type', help='Type of database to be used (default: sqlite).',
+                        (0 to disable)', type=int, default=0)
+    parser.add_argument('-px', '--proxy', help='Proxy url (e.g. socks5://127.0.0.1:9050)', action='append')
+    parser.add_argument('-pxsc', '--proxy-skip-check', help='Disable checking of proxies before start', action='store_true', default=False)
+    parser.add_argument('-pxt', '--proxy-timeout', help='Timeout settings for proxy checker in seconds ', type=int, default=5)
+    parser.add_argument('-pxd', '--proxy-display', help='Display info on which proxy beeing used (index or full). To be used with -ps', type=str, default='index')
+    parser.add_argument('-pxf', '--proxy-file', help='Load proxy list from text file (one proxy per line), overrides -px/--proxy')
+    parser.add_argument('-pxr', '--proxy-refresh', help='Period of proxy file reloading, in seconds. Works only with -pxf/--proxy-file. \
+                        (0 to disable)', type=int, default=0)
+    parser.add_argument('-pxo', '--proxy-rotation', help='Enable proxy rotation with account changing for search threads \
+                        (none/round/random)', type=str, default='none')
+    parser.add_argument('--db-type', help='Type of database to be used (default: sqlite)',
                         default='sqlite')
     parser.add_argument('--db-name', help='Name of the database to be used.')
     parser.add_argument('--db-user', help='Username for the database.')
@@ -370,6 +392,8 @@ def get_args():
             args.scheduler = 'SpawnScan'
         elif args.skip_empty:
             args.scheduler = 'HexSearchSpawnpoint'
+        elif args.speed_scan:
+            args.scheduler = 'SpeedScan'
         else:
             args.scheduler = 'HexSearch'
 
@@ -381,9 +405,44 @@ def now():
     return int(time.time())
 
 
-# Gets the current time past the hour.
+# gets the time past the hour
 def cur_sec():
     return (60 * time.gmtime().tm_min) + time.gmtime().tm_sec
+
+
+# gets the total seconds past the hour for a given date
+def date_secs(d):
+    return d.minute * 60 + d.second
+
+
+# checks to see if test is between start and end assuming roll over like a clock
+def clock_between(start, test, end):
+    return (start <= test <= end and start < end) or (not (end <= test <= start) and start > end)
+
+
+# return amount of seconds between two times on the clock
+def secs_between(time1, time2):
+    return min((time1 - time2) % 3600, (time2 - time1) % 3600)
+
+
+# Return the s2sphere cellid token from a location
+def cellid(loc):
+    return CellId.from_lat_lng(LatLng.from_degrees(loc[0], loc[1])).to_token()
+
+
+# Return equirectangular approximation distance in km
+def equi_rect_distance(loc1, loc2):
+    R = 6371  # radius of the earth in km
+    lat1 = math.radians(loc1[0])
+    lat2 = math.radians(loc2[0])
+    x = (math.radians(loc2[1]) - math.radians(loc1[1])) * math.cos(0.5 * (lat2 + lat1))
+    y = lat2 - lat1
+    return R * math.sqrt(x * x + y * y)
+
+
+# Return True if distance between two locs is less than distance in km
+def in_radius(loc1, loc2, distance):
+    return equi_rect_distance(loc1, loc2) < distance
 
 
 def i8ln(word):
@@ -430,6 +489,34 @@ def get_pokemon_rarity(pokemon_id):
 def get_pokemon_types(pokemon_id):
     pokemon_types = get_pokemon_data(pokemon_id)['types']
     return map(lambda x: {"type": i8ln(x['type']), "color": x['color']}, pokemon_types)
+
+
+def get_moves_data(move_id):
+    if not hasattr(get_moves_data, 'moves'):
+        file_path = os.path.join(
+            config['ROOT_PATH'],
+            config['DATA_DIR'],
+            'moves.min.json')
+
+        with open(file_path, 'r') as f:
+            get_moves_data.moves = json.loads(f.read())
+    return get_moves_data.moves[str(move_id)]
+
+
+def get_move_name(move_id):
+    return i8ln(get_moves_data(move_id)['name'])
+
+
+def get_move_damage(move_id):
+    return i8ln(get_moves_data(move_id)['damage'])
+
+
+def get_move_energy(move_id):
+    return i8ln(get_moves_data(move_id)['energy'])
+
+
+def get_move_type(move_id):
+    return i8ln(get_moves_data(move_id)['type'])
 
 
 class Timer():

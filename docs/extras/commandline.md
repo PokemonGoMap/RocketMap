@@ -5,13 +5,15 @@
                         [-p PASSWORD] [-w WORKERS] [-asi ACCOUNT_SEARCH_INTERVAL]
                         [-ari ACCOUNT_REST_INTERVAL] [-ac ACCOUNTCSV]
                         [-l LOCATION] [-j] [-st STEP_LIMIT] [-sd SCAN_DELAY]
-                        [-enc] [-ed ENCOUNTER_DELAY]
+                        [-enc] [-cs] [-ck CAPTCHA-KEY] [-cds CAPTCHA-DSK] [-ed ENCOUNTER_DELAY]
                         [-ewht ENCOUNTER_WHITELIST | -eblk ENCOUNTER_BLACKLIST]
                         [-ld LOGIN_DELAY] [-lr LOGIN_RETRIES] [-mf MAX_FAILURES]
                         [-msl MIN_SECONDS_LEFT] [-dc] [-H HOST] [-P PORT]
                         [-L LOCALE] [-c] [-m MOCK] [-ns] [-os] [-nsc] [-fl] -k
                         GMAPS_KEY [--skip-empty] [-C] [-D DB] [-cd] [-np]
                         [-ng] [-nk] [-ss [SPAWNPOINT_SCANNING]]
+                        [-kph KPH] [-speed [SPEED_SCANNING]]
+                        [-bh Beehives] [-wph Workers Per Hive]
                         [--dump-spawnpoints] [-pd PURGE_DATA] [-px PROXY]
                         [-pxt PROXY_TIMEOUT] [-pxd PROXY_DISPLAY]
                         [--db-type DB_TYPE] [--db-name DB_NAME]
@@ -76,6 +78,13 @@
                             POGOMAP_SCAN_DELAY]
       -enc, --encounter     Start an encounter to gather IVs and moves [env var:
                             POGOMAP_ENCOUNTER]
+      -cs, --captcha-solving
+                            Enables captcha solving [env var:
+                            POGOMAP_CAPTCHA_SOLVING]
+      -ck, --captcha-key    2Captcha API Key [env var:
+                            POGOMAP_CAPTCHA_KEY]
+      -cds, --captcha-dsk   PokemonGo Captcha data-sitekey [env var:
+                            POGOMAP_CAPTCHA_DSK]
       -ed ENCOUNTER_DELAY, --encounter-delay ENCOUNTER_DELAY
                             Time delay between encounter pokemon in scan threads
                             [env var: POGOMAP_ENCOUNTER_DELAY]
@@ -144,6 +153,14 @@
                             Use spawnpoint scanning (instead of hex grid). Scans
                             in a circle based on step_limit when on DB [env var:
                             POGOMAP_SPAWNPOINT_SCANNING]
+      -speed [SPEED_SCANNING], Use hex scanning with 5 passes per hour to identify
+                            spawns, and then transition to spawn scanning based on
+                            closest spawn to the worker.
+      -kph                  Set speed limit in kilometers/hour. Default is 35 kp/h
+                            For use with -speed scanning.
+      -bh                   Use beehive with -wph workers per hive until
+                            hives * -wph > -w
+      -wph                  Workers per hive
       --dump-spawnpoints    dump the spawnpoints from the db to json (only for use
                             with -ss) [env var: POGOMAP_DUMP_SPAWNPOINTS]
       -pd PURGE_DATA, --purge-data PURGE_DATA
