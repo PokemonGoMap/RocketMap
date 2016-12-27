@@ -1,4 +1,4 @@
-﻿//
+//
 // Global map.js variables
 //
 
@@ -110,7 +110,10 @@ function initMap () { // eslint-disable-line no-unused-vars
         'style_pgo',
         'dark_style_nl',
         'style_light2_nl',
-        'style_pgo_nl'
+        'style_pgo_nl',
+        'style_pgo_day',
+        'style_pgo_night',
+        'style_pgo_dynamic'
       ]
     }
   })
@@ -149,6 +152,22 @@ function initMap () { // eslint-disable-line no-unused-vars
     name: 'PokemonGo (No Labels)'
   })
   map.mapTypes.set('style_pgo_nl', stylePgoNl)
+
+  var stylePgoDay = new google.maps.StyledMapType(pGoStyleDay, {
+    name: 'PokemonGo Day'
+  })
+  map.mapTypes.set('style_pgo_day', stylePgoDay)
+
+  var stylePgoNight = new google.maps.StyledMapType(pGoStyleNight, {
+    name: 'PokemonGo Night'
+  })
+  map.mapTypes.set('style_pgo_night', stylePgoNight)
+
+  // dynamic map style chooses stylePgoDay or stylePgoNight depending on client time
+  var currentDate = new Date()
+  var currentHour = currentDate.getHours()
+  var stylePgoDynamic = (currentHour >= 6 && currentHour < 19) ? stylePgoDay : stylePgoNight
+  map.mapTypes.set('style_pgo_dynamic', stylePgoDynamic)
 
   map.addListener('maptypeid_changed', function (s) {
     Store.set('map_style', this.mapTypeId)
@@ -304,20 +323,18 @@ function initSidebar () {
   $('#spawnpoints-switch').prop('checked', Store.get('showSpawnpoints'))
   $('#ranges-switch').prop('checked', Store.get('showRanges'))
   $('#sound-switch').prop('checked', Store.get('playSound'))
-  var searchBox = new google.maps.places.SearchBox(document.getElementById('next-location'))
+  var searchBox = new google.maps.places.Autocomplete(document.getElementById('next-location'))
   $('#next-location').css('background-color', $('#geoloc-switch').prop('checked') ? '#e0e0e0' : '#ffffff')
 
   updateSearchStatus()
   setInterval(updateSearchStatus, 5000)
 
-  searchBox.addListener('places_changed', function () {
-    var places = searchBox.getPlaces()
+  searchBox.addListener('place_changed', function () {
+    var place = searchBox.getPlace()
 
-    if (places.length === 0) {
-      return
-    }
+    if (!place.geometry) return
 
-    var loc = places[0].geometry.location
+    var loc = place.geometry.location
     changeLocation(loc.lat(), loc.lng())
   })
 
