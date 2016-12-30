@@ -1691,8 +1691,9 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
                         f['last_modified_timestamp_ms'] / 1000.0),
                 }
 
-    log.info('Parsing found %d pokemons, %d pokestops, and %d gyms.',
+    log.info('Parsing found %d pokemons, %d nearby, %d pokestops, and %d gyms.',
              len(pokemons) + skipped,
+             len(nearby_pokemons),
              len(pokestops) + stopsskipped,
              len(gyms))
 
