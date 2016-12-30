@@ -28,8 +28,8 @@ import geopy
 import geopy.distance
 import requests
 
-from datetime import datetime
-from threading import Thread
+from datetime import datetime, timedelta
+from threading import Thread, Lock
 from queue import Queue, Empty
 
 from pgoapi import PGoApi
@@ -37,7 +37,7 @@ from pgoapi.utilities import f2i
 from pgoapi import utilities as util
 from pgoapi.exceptions import AuthException
 
-from .models import parse_map, GymDetails, parse_gyms, MainWorker, WorkerStatus
+from .models import parse_map, GymDetails, parse_gyms, MainWorker, WorkerStatus, Token
 from .fakePogoApi import FakePogoApi
 from .utils import now
 from .transform import get_new_coords
@@ -50,6 +50,10 @@ import terminalsize
 log = logging.getLogger(__name__)
 
 TIMESTAMP = '\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000'
+
+token_needed = 0
+
+tokenLock = Lock()
 
 
 # Apply a location jitter.
@@ -137,8 +141,8 @@ def status_printer(threadStatus, search_items_queue_array, db_updates_queue, wh_
             for i in range(0, len(search_items_queue_array)):
                 search_items_queue_size += search_items_queue_array[i].qsize()
 
-            status_text.append('Queues: {} search items, {} db updates, {} webhook.  Total skipped items: {}. Spare accounts available: {}. Accounts on hold: {}'
-                               .format(search_items_queue_size, db_updates_queue.qsize(), wh_queue.qsize(), skip_total, account_queue.qsize(), len(account_failures)))
+            status_text.append('Queues: {} search items, {} db updates, {} webhook.  Total skipped items: {}. Spare accounts available: {}. Accounts on hold: {}. Token needed: {}'
+                               .format(search_items_queue_size, db_updates_queue.qsize(), wh_queue.qsize(), skip_total, account_queue.qsize(), len(account_failures), token_needed))
 
             # Print status of overseer.
             status_text.append('{} Overseer: {}'.format(threadStatus['Overseer']['scheduler'], threadStatus['Overseer']['message']))
@@ -168,21 +172,37 @@ def status_printer(threadStatus, search_items_queue_array, db_updates_queue, wh_
                         proxylen = max(proxylen, len(str(threadStatus[item]['proxy_display'])))
 
             # How pretty.
-            status = '{:10} | {:5} | {:' + str(userlen) + '} | {:' + str(proxylen) + '} | {:7} | {:6} | {:5} | {:7} | {:10}'
+            status = '{:10} | {:5} | {:' + str(userlen) + '} | {:' + str(proxylen) + '} | {:7} | {:6} | {:5} | {:7} | {:8} | {:10}'
 
             # Print the worker status.
-            status_text.append(status.format('Worker ID', 'Start', 'User', 'Proxy', 'Success', 'Failed', 'Empty', 'Skipped', 'Message'))
+            status_text.append(status.format('Worker ID', 'Start', 'User', 'Proxy', 'Success', 'Failed', 'Empty', 'Skipped', 'Captchas', 'Message'))
+
+            # set our hour variables.
+            countuser = 0
+            countsuccess = 0
+            countfailed = 0
+            countempty = 0
+            countskipped = 0
+            countcaptchas = 0
+
             for item in sorted(threadStatus):
                 if(threadStatus[item]['type'] == 'Worker'):
+                    # Count our hour variables
+                    countuser += 1
+                    countsuccess += threadStatus[item]['success']
+                    countfailed += threadStatus[item]['fail']
+                    countempty += threadStatus[item]['noitems']
+                    countskipped += threadStatus[item]['skip']
+                    countcaptchas += threadStatus[item]['captchas']
+                    if countuser <= 1:
+                        elapsed = now() - threadStatus[item]['starttime']
                     current_line += 1
 
                     # Skip over items that don't belong on this page.
                     if current_line < start_line:
                         continue
-                    if current_line > end_line:
-                        break
-
-                    status_text.append(status.format(item, time.strftime('%H:%M', time.localtime(threadStatus[item]['starttime'])), threadStatus[item]['username'], threadStatus[item]['proxy_display'], threadStatus[item]['success'], threadStatus[item]['fail'], threadStatus[item]['noitems'], threadStatus[item]['skip'], threadStatus[item]['message']))
+                    if current_line < end_line:
+                        status_text.append(status.format(item, time.strftime('%H:%M', time.localtime(threadStatus[item]['starttime'])), threadStatus[item]['username'], threadStatus[item]['proxy_display'], threadStatus[item]['success'], threadStatus[item]['fail'], threadStatus[item]['noitems'], threadStatus[item]['skip'], threadStatus[item]['captchas'], threadStatus[item]['message']))
 
         elif display_type[0] == 'failedaccounts':
             status_text.append('-----------------------------------------')
@@ -201,6 +221,15 @@ def status_printer(threadStatus, search_items_queue_array, db_updates_queue, wh_
                 status_text.append(status.format(account['account']['username'], time.strftime('%H:%M:%S', time.localtime(account['last_fail_time'])), account['reason']))
 
         # Print the status_text for the current screen.
+        # determine hourly rates
+        sph = countsuccess * 3600 / elapsed
+        fph = countfailed * 3600 / elapsed
+        eph = countempty * 3600 / elapsed
+        skph = countskipped * 3600 / elapsed
+        cph = countcaptchas * 3600 / elapsed
+        ccost = cph * 0.003
+        cmonth = ccost * 730
+        status_text.append('Total active: {}  |  Success: {} ({}/hr) | Fails: {} ({}/hr) | Empties: {} ({}/hr) | Skips {} ({}/hr) | Captchas: {} ({}/hr)|${:2}/hr|${:2}/mo'.format(countuser, countsuccess, sph, countfailed, fph, countempty, eph, countskipped, skph, countcaptchas, cph, ccost, cmonth))
         status_text.append('Page {}/{}. Page number to switch pages. F to show on hold accounts. <ENTER> alone to switch between status and log view'.format(current_page[0], total_pages))
         # Clear the screen.
         os.system('cls' if os.name == 'nt' else 'clear')
@@ -329,6 +358,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb, db_updat
             'fail': 0,
             'noitems': 0,
             'skip': 0,
+            'captchas': 0,
             'username': '',
             'proxy_display': proxy_display,
             'proxy_url': proxy_url
@@ -484,6 +514,7 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
             status['success'] = 0
             status['noitems'] = 0
             status['skip'] = 0
+            status['captchas'] = 0
 
             # sleep when consecutive_fails reaches max_failures, overall fails for stat purposes
             consecutive_fails = 0
@@ -626,12 +657,29 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                     if args.captcha_solving:
                         captcha_url = response_dict['responses']['CHECK_CHALLENGE']['challenge_url']
                         if len(captcha_url) > 1:
-                            status['message'] = 'Account {} is encountering a captcha, starting 2captcha sequence'.format(account['username'])
+                            # flag if we should notify via webhooks
+                            notify_webhook = args.webhooks and args.captcha_key is None and args.manual_captcha_webhook
+
+                            if args.captcha_key is not None:
+                                status['message'] = 'Account {} is encountering a captcha, starting 2captcha sequence'.format(account['username'])
+                            else:
+                                status['message'] = 'Account {} is encountering a captcha, starting manual captcha solving'.format(account['username'])
+                                if notify_webhook:
+                                    whq.put(('captcha', {'account': account['username'], 'status': 'encounter', 'token_needed': token_needed}))
                             log.warning(status['message'])
-                            captcha_token = token_request(args, status, captcha_url)
+                            captcha_token = token_request(args, status, captcha_url, whq)
                             if 'ERROR' in captcha_token:
                                 log.warning("Unable to resolve captcha, please check your 2captcha API key and/or wallet balance")
                                 account_failures.append({'account': account, 'last_fail_time': now(), 'reason': 'catpcha failed to verify'})
+                                break
+                            elif 'TIMEOUT' in captcha_token:
+                                log.warning(
+                                    "Unable to resolve captcha, timeout waiting for manual captcha token.")
+                                account_failures.append({'account': account, 'last_fail_time': now(),
+                                                         'reason': 'timeout waiting for manual captcha token'})
+                                if notify_webhook:
+                                    whq.put(('captcha', {'account': account['username'], 'status': 'timeout',
+                                                         'token_needed': token_needed}))
                                 break
                             else:
                                 status['message'] = 'Retrieved captcha token, attempting to verify challenge for {}'.format(account['username'])
@@ -641,12 +689,16 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                                     status['message'] = "Account {} successfully uncaptcha'd".format(account['username'])
                                     log.info(status['message'])
                                     scan_date = datetime.utcnow()
+                                    if notify_webhook:
+                                        whq.put(('captcha', {'account': account['username'], 'status': 'solved', 'token_needed': token_needed}))
                                     # Make another request for the same coordinate since the previous one was captcha'd
                                     response_dict = map_request(api, step_location, args.jitter)
                                     status['last_scan_date'] = datetime.utcnow()
                                 else:
                                     status['message'] = "Account {} failed verifyChallenge, putting away account for now".format(account['username'])
                                     log.info(status['message'])
+                                    if notify_webhook:
+                                        whq.put(('captcha', {'account': account['username'], 'status': 'failed', 'token_needed': token_needed}))
                                     account_failures.append({'account': account, 'last_fail_time': now(), 'reason': 'catpcha failed to verify'})
                                     break
 
@@ -822,7 +874,35 @@ def gym_request(api, position, gym):
         return False
 
 
-def token_request(args, status, url):
+def token_request(args, status, url, whq):
+
+    global token_needed
+    request_time = datetime.utcnow()
+
+    if args.captcha_key is None:
+        token_needed += 1
+        while request_time + timedelta(seconds=args.manual_captcha_solving_allowance_time) > datetime.utcnow():
+            tokenLock.acquire()
+            if args.no_server:
+                # multiple instances, use get_token in map
+                s = requests.Session()
+                url = "{}/get_token?request_time={}&password={}".format(args.manual_captcha_solving_domain, request_time, args.manual_captcha_solving_password)
+                token = str(s.get(url).text)
+            else:
+                # single instance, get Token directly
+                token = Token.get_match(request_time)
+                if token is not None:
+                    token = token.token
+                else:
+                    token = ""
+            tokenLock.release()
+            if token != "":
+                token_needed -= 1
+                return token
+            time.sleep(1)
+        token_needed -= 1
+        return 'TIMEOUT'
+
     s = requests.Session()
     # Fetch the CAPTCHA_ID from 2captcha.
     try:
