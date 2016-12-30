@@ -66,6 +66,26 @@ var audio = new Audio('static/sounds/ding.mp3')
 // Functions
 //
 
+function set_default_value(exclude, notify) {
+  if (exclude) { 
+    Store.set('remember_select_exclude', get_localstore_value('remember_select_exclude')) 
+  }
+  if (notify) { 
+    Store.set('remember_select_notify', get_localstore_value('remember_select_notify')) 
+  }
+}
+
+function get_localstore_value(name) {
+  if (Store.get(name) !== null) {
+    var value = Store.get(name)
+    if (value.length !== 0) {
+      return value
+    }
+
+    return (name == 'remember_select_exclude') ? excludedPokemon : notifiedPokemon
+  }
+}
+
 function excludePokemon (id) { // eslint-disable-line no-unused-vars
   $selectExclude.val(
     $selectExclude.val().concat(id)
@@ -192,6 +212,7 @@ function initMap () { // eslint-disable-line no-unused-vars
   locationMarker = createLocationMarker()
   createMyLocationButton()
   initSidebar()
+  set_default_value(1,1)
 
   $('#scan-here').on('click', function () {
     var loc = map.getCenter()
