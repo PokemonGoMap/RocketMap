@@ -1454,18 +1454,6 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
         if config['parse_pokestops'] or config['parse_gyms']:
             forts += cell.get('forts', [])
 
-    # Check for a 0/0/0 bad scan
-    # If we saw nothing and there should be visible forts, it's bad
-    if not len(wild_pokemon) and not len(forts) and ScannedLocation.visible_forts(step_location):
-        log.warning('Bad scan. Parsing found 0/0/0 pokemons/pokestops/gyms')
-        log.info('Common causes: captchas, IP bans, or using -ng and -nk arguments')
-        return {
-            'count': 0,
-            'gyms': gyms,
-            'spawn_points': spawn_points,
-            'bad_scan': True
-        }
-
     if not len(nearby_pokemons) and not len(wild_pokemon):
         log.warning('Nothing on nearby_pokemons or wild. Speed violation?')
         log.info("Common causes: not using -speed, deleting or dropping the WorkerStatus table without waiting before restarting, or there really aren't any pokemon in 200m")
