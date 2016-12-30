@@ -272,7 +272,10 @@ class HexSearchSpawnpoint(HexSearch):
     # Extend the generate_locations function to remove locations with no spawnpoints.
     def _generate_locations(self):
         n, e, s, w = hex_bounds(self.scan_location, self.step_limit)
-        spawnpoints = set((d['latitude'], d['longitude']) for d in Pokemon.get_spawnpoints(s, w, n, e))
+        if self.args.only_unvalid:
+            spawnpoints = set((d['latitude'], d['longitude']) for d in Pokemon.get_spawnpoints(s, w, n, e) if d['time_detail'] == -1)
+        else:
+            spawnpoints = set((d['latitude'], d['longitude']) for d in Pokemon.get_spawnpoints(s, w, n, e))
 
         if len(spawnpoints) == 0:
             log.warning('No spawnpoints found in the specified area!  (Did you forget to run a normal scan in this area first?)')
@@ -815,11 +818,6 @@ class SpeedScan(HexSearch):
             if safety_buffer < 0:
                 log.warning('Too late by %d sec for a %s at step %d', -safety_buffer, item['kind'], item['step'])
 
-            # If we had a 0/0/0 scan, then unmark as done so we can retry, and save for Statistics
-            elif parsed['bad_scan']:
-                self.scans_missed_list.append(cellid(item['loc']))
-                item['done'] = None
-                log.info('Putting back step %d in queue', item['step'])
             else:
                 # Scan returned data
                 self.scans_done += 1
