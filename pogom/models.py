@@ -1477,7 +1477,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
 
     if len(wild_pokemon):
         encounter_ids = [b64encode(str(p['encounter_id'])) for p in wild_pokemon]
-        # For all the wild Pokémon we found check if an active Pokémonn is in the database.
+        # For all the wild Pokémon we found check if an active Pokémon is in the database.
         query = (Pokemon
                  .select(Pokemon.encounter_id, Pokemon.spawnpoint_id)
                  .where((Pokemon.disappear_time > datetime.utcnow()) & (Pokemon.encounter_id << encounter_ids))
