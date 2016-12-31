@@ -1482,13 +1482,13 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
             #
             # If we're not parsing pokestops or gyms and we want a probable speed violation to be
             # marked as a bad scan then we could use the following code to exit here.
-            # 
+            #
             # if not (config['parse_pokestops'] or config['parse_gyms']):
-                # return {
-                # 'count': 0,
-                # 'gyms': gyms,
-                # 'spawn_points': spawn_points,
-                # 'bad_scan': True
+            #     return {
+            #     'count': 0,
+            #     'gyms': gyms,
+            #     'spawn_points': spawn_points,
+            #     'bad_scan': True
             # }
 
     scan_loc = ScannedLocation.get_by_loc(step_location)
