@@ -1444,38 +1444,59 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
     sp_id_list = []
     now_secs = date_secs(now_date)
 
-    # consolidate the individual lists in each cell into one list of Pokémon and a list of forts
+    # Consolidate the individual lists in each cell into one list of Pokémon and a list of forts.
     cells = map_dict['responses']['GET_MAP_OBJECTS']['map_cells']
     for cell in cells:
         nearby_pokemons += cell.get('nearby_pokemons', [])
-        if config['parse_pokemon']:
-            wild_pokemon += cell.get('wild_pokemons', [])
+        # Parse everything for stats (counts).  Future enhancement -- we don't necessarily
+        # need to know *how many* forts/wild/nearby were found but we'd like to know whether
+        # or not *any* were found to help determine if a scan was actually bad.
+        #
+        # Previously only parsed wild_pokemon if parse_pokemon.
+        # if config['parse_pokemon']:
+        wild_pokemon += cell.get('wild_pokemons', [])
 
-        if config['parse_pokestops'] or config['parse_gyms']:
-            forts += cell.get('forts', [])
+        # Previously only parsed forts if parsing gyms or pokestops was configured.
+        # if config['parse_pokestops'] or config['parse_gyms']:
+        forts += cell.get('forts', [])
 
-    # Check for a 0/0/0 bad scan
-    # If we saw nothing and there should be visible forts, it's bad
-    if not len(wild_pokemon) and not len(forts) and ScannedLocation.visible_forts(step_location):
-        log.warning('Bad scan. Parsing found 0/0/0 Pokémon/pokestops/gyms')
-        log.info('Common causes: captchas, IP bans, or using -ng and -nk arguments')
-        return {
-            'count': 0,
-            'gyms': gyms,
-            'spawn_points': spawn_points,
-            'bad_scan': True
-        }
-
-    if not len(nearby_pokemons) and not len(wild_pokemon):
-        log.warning('No nearby or wild Pokémon. Speed violation?')
-        log.info("Common causes: not using -speed, deleting or dropping the WorkerStatus table without waiting before restarting, or there really aren't any Pokémon in 200m")
+    # If there are no wild or nearby Pokémon . . .
+    if not len(wild_pokemon) and not len(nearby_pokemons):
+        # . . . and there are no gyms/pokestops then it's unusable/bad.
+        # I removed the dependency on ScannedLocation.visible_forts(step_location) because
+        # I don't really think it matters whether there should have been forts or not.  If
+        # there aren't any forts or Pokémon then the scan isn't really usable either way.
+        if not len(forts):
+            log.warning('Bad scan. Parsing found absolutely nothing.')
+            log.info('Common causes: captchas or IP bans.')
+            return {
+                'count': 0,
+                'gyms': gyms,
+                'spawn_points': spawn_points,
+                'bad_scan': True
+            }
+        else:
+            # No wild or nearby Pokémon but there are forts.  It's probably
+            # a speed violation.
+            log.warning('No nearby or wild Pokémon but there are visible gyms or pokestops. Probable speed violation.')
+            #
+            # If we're not parsing pokestops or gyms and we want a probably speed violation to be
+            # marked as a bad scan then we could use the following code to exit here.
+            # 
+            # if not (config['parse_pokestops'] or config['parse_gyms']):
+                # return {
+                # 'count': 0,
+                # 'gyms': gyms,
+                # 'spawn_points': spawn_points,
+                # 'bad_scan': True
+            # }
 
     scan_loc = ScannedLocation.get_by_loc(step_location)
     done_already = scan_loc['done']
     ScannedLocation.update_band(scan_loc)
     just_completed = not done_already and scan_loc['done']
 
-    if len(wild_pokemon):
+    if len(wild_pokemon) and config['parse_pokemon']:
         encounter_ids = [b64encode(str(p['encounter_id'])) for p in wild_pokemon]
         # For all the wild Pokémon we found check if an active Pokémon is in the database.
         query = (Pokemon
@@ -1599,7 +1620,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
                 })
                 wh_update_queue.put(('pokemon', wh_poke))
 
-    if len(forts):
+    if len(forts) and (config['parse_pokestops'] or config['parse_gyms']):
         if config['parse_pokestops']:
             stop_ids = [f['id'] for f in forts if f.get('type') == 1]
             if len(stop_ids) > 0:
@@ -1738,6 +1759,18 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
         db_update_queue.put((ScanSpawnPoint, scan_spawn_points))
         if len(sightings):
             db_update_queue.put((SpawnpointDetectionData, sightings))
+
+    # At this point, the scan is considered good even if there was probably
+    # a speed violation.  If we want a likely speed violation to be considered
+    # bad we could add the following code.
+    #
+    # if len(forts) and not len(nearby_pokemons) and not len(wild_pokemon):
+        # return {
+            # 'count': len(wild_pokemon) + len(forts),
+            # 'gyms': gyms,
+            # 'sp_id_list': sp_id_list,
+            # 'bad_scan': True
+        # }
 
     return {
         'count': len(wild_pokemon) + len(forts),
