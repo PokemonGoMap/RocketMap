@@ -1480,7 +1480,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
             # a speed violation.
             log.warning('No nearby or wild Pokémon but there are visible gyms or pokestops. Probable speed violation.')
             #
-            # If we're not parsing pokestops or gyms and we want a probably speed violation to be
+            # If we're not parsing pokestops or gyms and we want a probable speed violation to be
             # marked as a bad scan then we could use the following code to exit here.
             # 
             # if not (config['parse_pokestops'] or config['parse_gyms']):
