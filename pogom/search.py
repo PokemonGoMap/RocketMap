@@ -538,7 +538,7 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                 if (args.proxy) and (not status['proxy_url'] in args.proxy):
                     status['message'] = 'Account {} proxy {} is not in a live list any more. Switching accounts...'.format(account['username'], status['proxy_url'])
                     log.warning(status['message'])
-                    account_queue.put(account)  # Experimantal, nobody did this before.
+                    account_queue.put(account)  # Experimental, nobody did this before.
                     break  # Exit this loop to get a new account and have the API recreated.
 
                 # If this account has been running too long, let it rest.
