@@ -684,12 +684,14 @@ function setupGymMarker (item) {
       marker.persist = null
     })
 
-    marker.addListener('mouseover', function () {
-      marker.infoWindow.open(map, marker)
-      clearSelection()
-      updateLabelDiffTime()
-    })
-
+    if ( ! isTouchDevice() && ! isMobileDevice()) {
+      marker.addListener('mouseover', function () {
+        marker.infoWindow.open(map, marker)
+        clearSelection()
+        updateLabelDiffTime()
+      })
+    }
+    
     marker.addListener('mouseout', function () {
       if (!marker.persist) {
         marker.infoWindow.close()
@@ -877,13 +879,14 @@ function addListeners (marker) {
   google.maps.event.addListener(marker.infoWindow, 'closeclick', function () {
     marker.persist = null
   })
-
-  marker.addListener('mouseover', function () {
-    marker.infoWindow.open(map, marker)
-    clearSelection()
-    updateLabelDiffTime()
-  })
-
+  
+  if ( ! isTouchDevice() && ! isMobileDevice()) {
+    marker.addListener('mouseover', function () {
+      marker.infoWindow.open(map, marker)
+      clearSelection()
+      updateLabelDiffTime()
+    })
+  }
   marker.addListener('mouseout', function () {
     if (!marker.persist) {
       marker.infoWindow.close()
