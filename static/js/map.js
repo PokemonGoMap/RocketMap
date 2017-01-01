@@ -683,13 +683,16 @@ function setupGymMarker (item) {
     google.maps.event.addListener(marker.infoWindow, 'closeclick', function () {
       marker.persist = null
     })
-
+	
+	if ( ! isTouchDevice() && ! isMobileDevice()) {
     marker.addListener('mouseover', function () {
       marker.infoWindow.open(map, marker)
       clearSelection()
       updateLabelDiffTime()
     })
-
+	}
+	
+	
     marker.addListener('mouseout', function () {
       if (!marker.persist) {
         marker.infoWindow.close()
@@ -878,12 +881,14 @@ function addListeners (marker) {
     marker.persist = null
   })
 
+  if ( ! isTouchDevice() && ! isMobileDevice()) {
   marker.addListener('mouseover', function () {
     marker.infoWindow.open(map, marker)
     clearSelection()
     updateLabelDiffTime()
   })
-
+  }
+  
   marker.addListener('mouseout', function () {
     if (!marker.persist) {
       marker.infoWindow.close()
