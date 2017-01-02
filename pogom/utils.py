@@ -113,6 +113,9 @@ def get_args():
     parser.add_argument('-me', '--max-empty',
                         help='Maximum number of empty scans before an account will go into a sleep for -ari/--account-rest-interval seconds. Reasonable to use with proxies.',
                         type=int, default=0)
+    parser.add_argument('-ib', '--ignore-bad-scans',
+                        help='Disable bad scan check. Intended to be used with -speed in rural areas where there may be a scarcity of stops and gyms, and workers get trapped trying to rescan dead locations. The tradeoff here is naturally some spawns may get missed.',
+                        action='store_true', default=False)
     parser.add_argument('-msl', '--min-seconds-left',
                         help='Time that must be left on a spawn before considering it too late and skipping it. For example 600 would skip anything with < 10 minutes remaining. Default 0.',
                         type=int, default=0)
