@@ -350,7 +350,7 @@ def get_args():
             if num_passwords > 1 and num_usernames != num_passwords:
                 errors.append('The number of provided passwords ({}) must match the username count ({})'.format(num_passwords, num_usernames))
             if num_auths > 1 and num_usernames != num_auths:
-                errors.append('The number of provided auth ({}) must match the username count ({}).'.format(num_auths, nnum_usernames))
+                errors.append('The number of provided auth ({}) must match the username count ({}).'.format(num_auths, num_usernames))
 
         if len(errors) > 0:
             parser.print_usage()
