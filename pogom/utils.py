@@ -217,7 +217,7 @@ def get_args():
     parser.add_argument('-spp', '--status-page-password', default=None,
                         help='Set the status page password.')
     parser.add_argument('-el', '--encrypt-lib', help='Path to encrypt lib to be used instead of the shipped ones.')
-    parser.add_argument('-hk', '--hash-key', default=None, help='Key for hash server')
+    parser.add_argument('-hk', '--hash-key', default=None, action='append', help='Key for hash server')
     parser.add_argument('-odt', '--on-demand_timeout', help='Pause searching while web UI is inactive for this timeout(in seconds).', type=int, default=0)
     verbosity = parser.add_mutually_exclusive_group()
     verbosity.add_argument('-v', '--verbose', help='Show debug messages from PomemonGo-Map and pgoapi. Optionally specify file to log to.', nargs='?', const='nofile', default=False, metavar='filename.log')

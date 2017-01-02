@@ -262,6 +262,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb, db_updat
     scheduler_array = []
     account_queue = Queue()
     threadStatus = {}
+    key_scheduler = None
 
     '''
     Create a queue of accounts for workers to pull from. When a worker has failed too many times,
@@ -302,6 +303,10 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb, db_updat
                    args=(threadStatus, args.status_name, db_updates_queue))
         t.daemon = True
         t.start()
+    
+    # Create the hash server key scheduler (only if the keys are passed as a list)
+    if args.hash_key:
+        key_scheduler = schedulers.KeyScheduler(args.hash_key).scheduler()
 
     # Create specified number of search_worker_thread.
     log.info('Starting search worker threads')
@@ -337,7 +342,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb, db_updat
                    name='search-worker-{}'.format(i),
                    args=(args, account_queue, account_failures, search_items_queue, pause_bit,
                          threadStatus[workerId],
-                         db_updates_queue, wh_queue, scheduler))
+                         db_updates_queue, wh_queue, scheduler, key_scheduler))
         t.daemon = True
         t.start()
 
@@ -454,7 +459,7 @@ def generate_hive_locations(current_location, step_distance, step_limit, hive_co
     return results
 
 
-def search_worker_thread(args, account_queue, account_failures, search_items_queue, pause_bit, status, dbq, whq, scheduler):
+def search_worker_thread(args, account_queue, account_failures, search_items_queue, pause_bit, status, dbq, whq, scheduler, key_scheduler):
 
     log.debug('Search worker thread starting')
 
@@ -493,12 +498,8 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
             # Create the API instance this will use.
             if args.mock != '':
                 api = FakePogoApi(args.mock)
-                log.info('Created API instance using hash libs.')
             else:
                 api = PGoApi()
-                if args.hash_key:
-                    api.activate_hash_server(args.hash_key)
-                    log.info('Created API instance using hash server.')
 
             # New account - new proxy
             if args.proxy:
@@ -595,6 +596,11 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                 # doing this before check_login so it does not also have to be done there
                 # when the auth token is refreshed
                 api.set_position(*step_location)
+
+                if args.hash_key:
+                    key = key_scheduler.next()
+                    api.activate_hash_server(key)
+                    log.info('Using key {} for this scan.'.format(key))
 
                 # Ok, let's get started -- check our login status
                 status['message'] = 'Logging in...'
