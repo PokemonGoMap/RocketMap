@@ -680,9 +680,9 @@ class SpeedScan(HexSearch):
                     log.info('History: %s', str(self.spawn_percent).strip('[]'))
 
                 sum = self.scans_done + len(self.scans_missed_list)
-                if args.ignore_bad_scans:
+                if self.args.ignore_bad_scans:
                     good_percent = 'No check '
-                else:  
+                else:
                     good_percent = self.scans_done * 100.0 / sum if sum else 0
                 log.info('%d scans successful and %d scans missed for %.1f%% found',
                          self.scans_done, len(self.scans_missed_list), good_percent)
