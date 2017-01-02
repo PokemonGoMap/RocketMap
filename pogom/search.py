@@ -630,7 +630,7 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                             captcha_token = token_request(args, status, captcha_url)
                             if 'ERROR' in captcha_token:
                                 log.warning("Unable to resolve captcha, please check your 2captcha API key and/or wallet balance.")
-                                account_failures.append({'account': account, 'last_fail_time': now(), 'reason': 'catpcha failed to verify'})
+                                account_failures.append({'account': account, 'last_fail_time': now(), 'reason': 'captcha failed to verify'})
                                 break
                             else:
                                 status['message'] = 'Retrieved captcha token, attempting to verify challenge for {}.'.format(account['username'])
@@ -646,7 +646,7 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                                 else:
                                     status['message'] = "Account {} failed verifyChallenge, putting away account for now.".format(account['username'])
                                     log.info(status['message'])
-                                    account_failures.append({'account': account, 'last_fail_time': now(), 'reason': 'catpcha failed to verify'})
+                                    account_failures.append({'account': account, 'last_fail_time': now(), 'reason': 'captcha failed to verify'})
                                     break
 
                     parsed = parse_map(args, response_dict, step_location, dbq, whq, api, scan_date)
