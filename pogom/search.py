@@ -597,16 +597,12 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                 # when the auth token is refreshed.
                 api.set_position(*step_location)
 
-<<<<<<< HEAD
                 if args.hash_key:
                     key = key_scheduler.next()
                     api.activate_hash_server(key)
                     log.info('Using key {} for this scan.'.format(key))
 
                 # Ok, let's get started -- check our login status
-=======
-                # Ok, let's get started -- check our login status.
->>>>>>> refs/remotes/PokemonGoMap/develop
                 status['message'] = 'Logging in...'
                 check_login(args, account, api, step_location, status['proxy_url'])
 
