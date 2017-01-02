@@ -64,6 +64,8 @@ def get_args():
                         help='Seconds for accounts to search before switching to a new account. 0 to disable.')
     parser.add_argument('-ari', '--account-rest-interval', type=int, default=7200,
                         help='Seconds for accounts to rest when they fail or are switched out.')
+    parser.add_argument('-cri', '--captcha-rest-interval', type=int, default=600,
+                        help='Seconds for accounts to rest when failing to verify captcha due to 2captcha server timeout.')
     parser.add_argument('-ac', '--accountcsv',
                         help='Load accounts from CSV file containing "auth_service,username,passwd" lines.')
     parser.add_argument('-bh', '--beehive',
