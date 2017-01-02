@@ -18,6 +18,10 @@ def send_to_webhook(message_type, message):
         log.warning('Called send_to_webhook() without webhooks.')
         return
 
+    # Config / arg parser
+    num_retries = args.wh_retries
+    req_timeout = args.wh_timeout
+
     # Use requests & urllib3 to auto-retry.
     # If the backoff_factor is 0.1, then sleep() will sleep for [0.1s, 0.2s,
     # 0.4s, ...] between retries. It will also force a retry if the status
@@ -27,7 +31,7 @@ def send_to_webhook(message_type, message):
     # If any regular response is generated, no retry is done. Without using
     # the status_forcelist, even a response with status 500 will not be
     # retried.
-    retries = Retry(total=5, backoff_factor=0.25,
+    retries = Retry(total=num_retries, backoff_factor=0.25,
                     status_forcelist=[500, 502, 503, 504])
 
     # Mount handler on both HTTP & HTTPS.
@@ -41,7 +45,7 @@ def send_to_webhook(message_type, message):
 
     for w in args.webhooks:
         try:
-            session.post(w, json=data, timeout=(None, 2))
+            session.post(w, json=data, timeout=(None, req_timeout))
         except requests.exceptions.ReadTimeout:
             log.exception('Response timeout on webhook endpoint %s.', w)
         except requests.exceptions.RequestException as e:
