@@ -727,16 +727,14 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                         if len(captcha_url) > 1:
                             status['captchas'] += 1
                             if args.captcha_solving_strategy == 'manual-only':
-                                captcha_error = captcha_handling_manual(args, api, status, account, whq, captcha_url,
-                                                                        step_location)
+                                captcha_error = captcha_handling_manual(args, api, status, account, whq, step_location)
                             elif args.captcha_solving_strategy == 'automatic':
                                 captcha_error = captcha_handling_2captcha(args, api, status, account, captcha_url,
                                                                           step_location)
                             else:
                                 # default: manual-first
                                 # first try manual solving
-                                captcha_error = captcha_handling_manual(args, api, status, account, whq, captcha_url,
-                                                                        step_location)
+                                captcha_error = captcha_handling_manual(args, api, status, account, whq, step_location)
                                 # then try 2Captcha
                                 if captcha_error and args.captcha_key:
                                     captcha_error = captcha_handling_2captcha(args, api, status, account, captcha_url,
@@ -836,11 +834,13 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
             time.sleep(args.scan_delay)
 
 
-def captcha_handling_manual(args, api, status, account, whq, captcha_url, step_location):
+def captcha_handling_manual(args, api, status, account, whq, step_location):
     status['message'] = 'Account {} is encountering a captcha, starting manual captcha solving'.format(
         account['username'])
     if args.webhooks:
-        whq.put(('captcha', {'account': account['username'], 'status': 'encounter', 'token_needed': token_needed}))
+        bookmarklet_url = url = "{}/bookmarklet".format(args.manual_captcha_solving_domain)
+        whq.put(('captcha', {'account': account['username'], 'status': 'encounter', 'token_needed': token_needed,
+                             'bookmarklet_url': bookmarklet_url}))
     log.warning(status['message'])
 
     captcha_token = token_request_manual(args)
