@@ -504,24 +504,24 @@ def generate_hive_locations(current_location, step_distance, step_limit, hive_co
 
 
 def perform_map_request(args, status, api, step_location):
-    retries = 0
-    max_retries = 3
+    attempt = 0
+    max_attempts = 1 + args.scan_retries
     scan_date = datetime.utcnow()
     response_dict = False
 
-    while retries < max_retries:
+    while attempt < max_attempts:
         # actually increase the retry counter
-        retries += 1
-        is_last_retry = retries == max_retries
+        attempt += 1
+        is_last_retry = attempt == max_attempts
 
         scan_date = datetime.utcnow()
         response_dict = map_request(api, step_location, args.jitter)
 
         if not response_dict:
             if is_last_retry:
-                status['message'] = 'Invalid response. Retried {} times. Giving up.'.format(max_retries)
+                status['message'] = 'Invalid response. Retried {} times. Giving up.'.format(max_attempts)
             else:
-                status['message'] = 'Invalid response. Retrying {} more times.'.format(max_retries - retries)
+                status['message'] = 'Invalid response. Retrying {} more times.'.format(max_attempts - attempt)
             log.error(status['message'])
         else:
             # if captcha we don't need to retry
@@ -537,9 +537,9 @@ def perform_map_request(args, status, api, step_location):
                     return response_dict, scan_date
 
             if is_last_retry:
-                status['message'] = 'Got empty response. Retried {} times. Giving up.'.format(max_retries)
+                status['message'] = 'Got empty response. Retried {} times. Giving up.'.format(max_attempts)
             else:
-                status['message'] = 'Got empty response. Retrying {} more times.'.format(max_retries - retries)
+                status['message'] = 'Got empty response. Retrying {} more times.'.format(max_attempts - attempt)
             log.warning(status['message'])
 
         # wait constant time (ignoring scan-delay)

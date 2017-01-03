@@ -79,6 +79,9 @@ def get_args():
     parser.add_argument('-sd', '--scan-delay',
                         help='Time delay between requests in scan threads.',
                         type=float, default=10)
+    parser.add_argument('-sr', '--scan-retries',
+                        help='Number of additional attempts to scan a location when getting empty results. Use to minimize empty results.',
+                        type=int, default=2)
     parser.add_argument('--spawn-delay',
                         help='Number of seconds after spawn time to wait before scanning to be sure the pokemon is there.',
                         type=float, default=10)
