@@ -726,7 +726,7 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                         captcha_url = response_dict['responses']['CHECK_CHALLENGE']['challenge_url']
                         if len(captcha_url) > 1:
                             status['captchas'] += 1
-                            if args.captcha_solving_strategy == 'manual_only':
+                            if args.captcha_solving_strategy == 'manual-only':
                                 captcha_error = captcha_handling_manual(args, api, status, account, whq, captcha_url,
                                                                         step_location)
                             elif args.captcha_solving_strategy == 'automatic':
