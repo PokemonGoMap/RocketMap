@@ -44,6 +44,7 @@
 #webhook-updates-only:  # Only send updates to webhooks (excludes gyms & non-lured pokéstops).
 #wh-retries:            # Number of times to retry sending webhook data on failure (default: 5).
 #wh-timeout:            # Timeout (in seconds) for webhook requests (default: 2).
+#wh-backoff-factor:     # Factor (in seconds) by which the delay until next retry will increase (default: 0.25).
 
 # Webserver settings
 #host:                  # address to listen on (default 127.0.0.1)

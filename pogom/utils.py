@@ -221,6 +221,8 @@ def get_args():
                         help='Number of times to retry sending webhook data on failure.', type=int, default=5)
     parser.add_argument('-wht', '--wh-timeout',
                         help='Timeout (in seconds) for webhook requests.', type=int, default=2)
+    parser.add_argument('-whbf', '--wh-backoff-factor',
+                        help='Factor (in seconds) by which the delay until next retry will increase.', type=int, default=2)
     parser.add_argument('--ssl-certificate',
                         help='Path to SSL certificate file.')
     parser.add_argument('--ssl-privatekey',

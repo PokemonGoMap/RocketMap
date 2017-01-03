@@ -21,6 +21,7 @@ def send_to_webhook(message_type, message):
     # Config / arg parser
     num_retries = args.wh_retries
     req_timeout = args.wh_timeout
+    backoff_factor = args.wh_backoff_factor
 
     # Use requests & urllib3 to auto-retry.
     # If the backoff_factor is 0.1, then sleep() will sleep for [0.1s, 0.2s,
@@ -31,7 +32,7 @@ def send_to_webhook(message_type, message):
     # If any regular response is generated, no retry is done. Without using
     # the status_forcelist, even a response with status 500 will not be
     # retried.
-    retries = Retry(total=num_retries, backoff_factor=0.25,
+    retries = Retry(total=num_retries, backoff_factor=backoff_factor,
                     status_forcelist=[500, 502, 503, 504])
 
     # Mount handler on both HTTP & HTTPS.
