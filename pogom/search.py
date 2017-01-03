@@ -833,14 +833,15 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
             account_failures.append({'account': account, 'last_fail_time': now(), 'reason': 'exception'})
             time.sleep(args.scan_delay)
 
+def get_bookmarklet_url(args):
+    return "{}/bookmarklet".format(args.manual_captcha_solving_domain)
 
 def captcha_handling_manual(args, api, status, account, whq, step_location):
     status['message'] = 'Account {} is encountering a captcha, starting manual captcha solving'.format(
         account['username'])
     if args.webhooks:
-        bookmarklet_url = url = "{}/bookmarklet".format(args.manual_captcha_solving_domain)
-        whq.put(('captcha', {'account': account['username'], 'status': 'encounter', 'token_needed': token_needed,
-                             'bookmarklet_url': bookmarklet_url}))
+        whq.put(('captcha', {'account': account['username'], 'status': 'encounter',
+                             'bookmarklet_url': get_bookmarklet_url(args), 'status_name': args.status_name}))
     log.warning(status['message'])
 
     captcha_token = token_request_manual(args)
@@ -850,7 +851,7 @@ def captcha_handling_manual(args, api, status, account, whq, step_location):
             "Unable to resolve captcha, timeout waiting for manual captcha token.")
         if args.webhooks:
             whq.put(('captcha', {'account': account['username'], 'status': 'timeout',
-                                 'token_needed': token_needed}))
+                                 'bookmarklet_url': get_bookmarklet_url(args), 'status_name': args.status_name}))
         return 'timeout waiting for manual captcha token'
     else:
         return verify_challenge(args, api, status, account, whq, step_location,
@@ -881,14 +882,18 @@ def verify_challenge(args, api, status, account, whq, step_location, captcha_tok
         log.info(status['message'])
         scan_date = datetime.utcnow()
         if whq and args.webhooks:
-            whq.put(('captcha', {'account': account['username'], 'status': 'solved', 'token_needed': token_needed}))
+            whq.put(('captcha',
+                     {'account': account['username'], 'status': 'solved', 'bookmarklet_url': get_bookmarklet_url(args),
+                      'status_name': args.status_name}))
         return False
     else:
         status['message'] = "Account {} failed verifyChallenge, putting away account for now".format(
             account['username'])
         log.info(status['message'])
         if whq and args.webhooks:
-            whq.put(('captcha', {'account': account['username'], 'status': 'failed', 'token_needed': token_needed}))
+            whq.put(('captcha',
+                     {'account': account['username'], 'status': 'failed', 'bookmarklet_url': get_bookmarklet_url(args),
+                      'status_name': args.status_name}))
         return 'catpcha failed to verify'
 
 
