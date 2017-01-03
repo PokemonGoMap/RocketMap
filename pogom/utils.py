@@ -222,7 +222,7 @@ def get_args():
     parser.add_argument('-wht', '--wh-timeout',
                         help='Timeout (in seconds) for webhook requests.', type=int, default=2)
     parser.add_argument('-whbf', '--wh-backoff-factor',
-                        help='Factor (in seconds) by which the delay until next retry will increase.', type=int, default=2)
+                        help='Factor (in seconds) by which the delay until next retry will increase.', type=float, default=0.25)
     parser.add_argument('--ssl-certificate',
                         help='Path to SSL certificate file.')
     parser.add_argument('--ssl-privatekey',
