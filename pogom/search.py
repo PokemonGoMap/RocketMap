@@ -52,15 +52,7 @@ log = logging.getLogger(__name__)
 TIMESTAMP = '\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000'
 
 
-# Apply a location jitter.
-#def jitterLocation(location=None, maxMeters=10):
-#    origin = geopy.Point(location[0], location[1])
-#    b = random.randint(0, 360)
-#    d = math.sqrt(random.random()) * (float(maxMeters) / 1000)
-#    destination = geopy.distance.distance(kilometers=d).destination(origin, b)
-#    return (destination.latitude, destination.longitude, location[2])
-
-
+# Handle Jittering if it is configured.
 def jitterLocation(location=None, jitter=False, maxMeters=5 ):
     
         # create scan_location to send to the api based off of position, because tuples aren't mutable
