@@ -53,9 +53,9 @@ TIMESTAMP = '\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\00
 
 
 # Handle Jittering if it is configured.
-def jitterLocation(location=None, jitter=False, maxMeters=5 ):
-    
-        # create scan_location to send to the api based off of position, because tuples aren't mutable
+def jitterLocation(location=None, jitter=False, maxMeters=10):
+
+    # create scan_location to send to the api based off of position, because tuples aren't mutable
     if jitter:
         # jitter it, just a little bit.
         origin = geopy.Point(location[0], location[1])
@@ -69,10 +69,8 @@ def jitterLocation(location=None, jitter=False, maxMeters=5 ):
     else:
         # Just use the original coordinates
         scan_location = location
-    
 
     return scan_location
-
 
 # Thread to handle user input.
 def switch_status_printer(display_type, current_page, mainlog, loglevel):
@@ -603,11 +601,10 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                 # Let the api know where we intend to be for this loop.
                 # Doing this before check_login so it does not also have to be done
                 # when the auth token is refreshed.
-                
-                scan_location = jitterLocation(step_location, args.jitter)
-                
-                api.set_position(*scan_location)            
 
+                scan_location = jitterLocation(step_location, args.jitter)
+
+                api.set_position(*scan_location)
 
                 # Ok, let's get started -- check our login status.
                 status['message'] = 'Logging in...'
