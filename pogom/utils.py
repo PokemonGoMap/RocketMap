@@ -114,7 +114,7 @@ def get_args():
                         help='Maximum number of empty scans before an account will go into a sleep for -ari/--account-rest-interval seconds. Reasonable to use with proxies.',
                         type=int, default=0)
     parser.add_argument('-bsr', '--bad-scan-retry',
-                        help='Number of bad scans before giving up on a step', type=int, default=5)
+                        help='Number of bad scans before giving up on a step. Default 5, 0 to disable.', type=int, default=5)
     parser.add_argument('-msl', '--min-seconds-left',
                         help='Time that must be left on a spawn before considering it too late and skipping it. For example 600 would skip anything with < 10 minutes remaining. Default 0.',
                         type=int, default=0)
