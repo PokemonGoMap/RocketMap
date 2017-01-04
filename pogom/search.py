@@ -53,12 +53,33 @@ TIMESTAMP = '\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\00
 
 
 # Apply a location jitter.
-def jitterLocation(location=None, maxMeters=10):
-    origin = geopy.Point(location[0], location[1])
-    b = random.randint(0, 360)
-    d = math.sqrt(random.random()) * (float(maxMeters) / 1000)
-    destination = geopy.distance.distance(kilometers=d).destination(origin, b)
-    return (destination.latitude, destination.longitude, location[2])
+#def jitterLocation(location=None, maxMeters=10):
+#    origin = geopy.Point(location[0], location[1])
+#    b = random.randint(0, 360)
+#    d = math.sqrt(random.random()) * (float(maxMeters) / 1000)
+#    destination = geopy.distance.distance(kilometers=d).destination(origin, b)
+#    return (destination.latitude, destination.longitude, location[2])
+
+
+def jitterLocation(location=None, jitter=False, maxMeters=5 ):
+    
+        # create scan_location to send to the api based off of position, because tuples aren't mutable
+    if jitter:
+        # jitter it, just a little bit.
+        origin = geopy.Point(location[0], location[1])
+        b = random.randint(0, 360)
+        d = ((math.sqrt(random.random()) * float(maxMeters)) + 5) / 1000
+        tmp_scan_location = geopy.distance.distance(kilometers=d).destination(origin, b)
+
+        scan_location = [tmp_scan_location.latitude, tmp_scan_location.longitude, location[2]]
+        log.info('Jittered to: %f/%f/%f', tmp_scan_location[0], tmp_scan_location[1], location[2])
+
+    else:
+        # Just use the original coordinates
+        scan_location = location
+    
+
+    return scan_location
 
 
 # Thread to handle user input.
@@ -590,11 +611,15 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                 # Let the api know where we intend to be for this loop.
                 # Doing this before check_login so it does not also have to be done
                 # when the auth token is refreshed.
-                api.set_position(*step_location)
+                
+                scan_location = jitterLocation(step_location, args.jitter)
+                
+                api.set_position(*scan_location)            
+
 
                 # Ok, let's get started -- check our login status.
                 status['message'] = 'Logging in...'
-                check_login(args, account, api, step_location, status['proxy_url'])
+                check_login(args, account, api, scan_location, status['proxy_url'])
 
                 # Putting this message after the check_login so the messages aren't out of order.
                 status['message'] = messages['search']
@@ -602,7 +627,7 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
 
                 # Make the actual request.
                 scan_date = datetime.utcnow()
-                response_dict = map_request(api, step_location, args.jitter)
+                response_dict = map_request(api, scan_location, args.jitter)
                 status['last_scan_date'] = datetime.utcnow()
 
                 # Record the time and the place that the worker made the request.
@@ -764,15 +789,7 @@ def check_login(args, account, api, position, proxy_url):
     time.sleep(20)
 
 
-def map_request(api, position, jitter=False):
-    # Create scan_location to send to the api based off of position, because tuples aren't mutable.
-    if jitter:
-        # Jitter it, just a little bit.
-        scan_location = jitterLocation(position)
-        log.debug('Jittered to: %f/%f/%f', scan_location[0], scan_location[1], scan_location[2])
-    else:
-        # Just use the original coordinates.
-        scan_location = position
+def map_request(api, scan_location, jitter=False):
 
     try:
         cell_ids = util.get_cell_ids(scan_location[0], scan_location[1])
