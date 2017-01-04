@@ -72,6 +72,7 @@ def jitterLocation(location=None, jitter=False, maxMeters=10):
 
     return scan_location
 
+
 # Thread to handle user input.
 def switch_status_printer(display_type, current_page, mainlog, loglevel):
     # Disable logging of the first handler - the stream handler, and disable it's output.
