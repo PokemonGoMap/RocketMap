@@ -60,7 +60,7 @@ def jitterLocation(location=None, jitter=False, maxMeters=10):
         # jitter it, just a little bit.
         origin = geopy.Point(location[0], location[1])
         b = random.randint(0, 360)
-        d = ((math.sqrt(random.random()) * float(maxMeters)) + 5) / 1000
+        d = ((math.sqrt(random.random()) * float(maxMeters))) / 1000
         tmp_scan_location = geopy.distance.distance(kilometers=d).destination(origin, b)
 
         scan_location = [tmp_scan_location.latitude, tmp_scan_location.longitude, location[2]]
