@@ -36,6 +36,7 @@ from pgoapi import PGoApi
 from pgoapi.utilities import f2i
 from pgoapi import utilities as util
 from pgoapi.exceptions import AuthException
+from pgoapi.hash_server import HashServer
 
 from .models import parse_map, GymDetails, parse_gyms, MainWorker, WorkerStatus
 from .fakePogoApi import FakePogoApi
@@ -609,11 +610,12 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                 # Putting this message after the check_login so the messages aren't out of order.
                 status['message'] = messages['search']
                 log.info(status['message'])
-
+		
                 # Make the actual request.
                 scan_date = datetime.utcnow()
                 response_dict = map_request(api, step_location, args.jitter)
                 status['last_scan_date'] = datetime.utcnow()
+		
 
                 # Record the time and the place that the worker made the request.
                 status['latitude'] = step_location[0]
@@ -669,6 +671,13 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                         consecutive_noitems += 1
                     consecutive_fails = 0
                     status['message'] = 'Search at {:6f},{:6f} completed with {} finds.'.format(step_location[0], step_location[1], parsed['count'])
+		    auth_token = HashServer.status.get('auth_token')
+		    period = HashServer.status.get('period')
+		    log.info('{} Key Period.'.format(period))
+		    maximum = HashServer.status.get('maximum')
+                    log.info('{} Maximum RPM.'.format(maximum))
+		    remaining = HashServer.status.get('remaining')
+		    log.info('{} RPM left on this Key.'.format(remaining))
                     log.debug(status['message'])
                 except Exception as e:
                     parsed = False
