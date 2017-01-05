@@ -235,6 +235,7 @@ def account_recycler(accounts_queue, account_failures, args):
 
 
 def worker_status_db_thread(threads_status, name, db_updates_queue):
+
     while True:
         workers = {}
         overseer = None
@@ -305,7 +306,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb, db_updat
         t.daemon = True
         t.start()
 
-        # Create the hash server key scheduler (only if the keys are passed as a list)
+    # Create the hash server key scheduler (only if the keys are passed as a list)
     if args.hash_key:
         key_scheduler = schedulers.KeyScheduler(args.hash_key).scheduler()
 
@@ -629,11 +630,11 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                     time.sleep(scheduler.delay(status['last_scan_date']))
                     continue
 
-                    # Got the response, check for captcha, parse it out, then send todo's to db/wh queues.
-                    try:
-                        # Captcha check
-                        if args.captcha_solving:
-                            captcha_url = response_dict['responses']['CHECK_CHALLENGE']['challenge_url']
+                # Got the response, check for captcha, parse it out, then send todo's to db/wh queues.
+                try:
+                    # Captcha check.
+                    if args.captcha_solving:
+                        captcha_url = response_dict['responses']['CHECK_CHALLENGE']['challenge_url']
                         if len(captcha_url) > 1:
                             status['message'] = 'Account {} is encountering a captcha, starting 2captcha sequence.'.format(account['username'])
                             log.warning(status['message'])
