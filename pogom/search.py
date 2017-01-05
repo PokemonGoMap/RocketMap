@@ -669,8 +669,6 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                         consecutive_noitems += 1
                     consecutive_fails = 0
                     status['message'] = 'Search at {:6f},{:6f} completed with {} finds.'.format(step_location[0], step_location[1], parsed['count'])
-                    period = HashServer.status.get('period')
-                    log.info('{} Key Period.'.format(period))
                     maximum = HashServer.status.get('maximum')
                     log.info('{} Maximum RPM.'.format(maximum))
                     remaining = HashServer.status.get('remaining')
