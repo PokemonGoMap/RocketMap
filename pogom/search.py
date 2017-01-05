@@ -235,8 +235,7 @@ def account_recycler(accounts_queue, account_failures, args):
 
 
 def worker_status_db_thread(threads_status, name, db_updates_queue):
-
-  while True:
+    while True:
         workers = {}
         overseer = None
         for status in threads_status.values():
@@ -305,8 +304,8 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb, db_updat
                    args=(threadStatus, args.status_name, db_updates_queue))
         t.daemon = True
         t.start()
-		
-    # Create the hash server key scheduler (only if the keys are passed as a list)
+
+        # Create the hash server key scheduler (only if the keys are passed as a list)
     if args.hash_key:
         key_scheduler = schedulers.KeyScheduler(args.hash_key).scheduler()
 
@@ -610,13 +609,13 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                 # Putting this message after the check_login so the messages aren't out of order.
                 status['message'] = messages['search']
                 log.info(status['message'])
-				
-				# Make the actual request.
+
+                # Make the actual request.
                 scan_date = datetime.utcnow()
                 response_dict = map_request(api, step_location, args.jitter)
                 status['last_scan_date'] = datetime.utcnow()
-				
-				# Record the time and the place that the worker made the request.
+
+                # Record the time and the place that the worker made the request.
                 status['latitude'] = step_location[0]
                 status['longitude'] = step_location[1]
                 dbq.put((WorkerStatus, {0: WorkerStatus.db_format(status)}))
@@ -630,12 +629,11 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                     time.sleep(scheduler.delay(status['last_scan_date']))
                     continue
 
-					
-                # Got the response, check for captcha, parse it out, then send todo's to db/wh queues.
-                try:
-                    # Captcha check.
-                    if args.captcha_solving:
-                        captcha_url = response_dict['responses']['CHECK_CHALLENGE']['challenge_url']
+                    # Got the response, check for captcha, parse it out, then send todo's to db/wh queues.
+                    try:
+                        # Captcha check
+                        if args.captcha_solving:
+                            captcha_url = response_dict['responses']['CHECK_CHALLENGE']['challenge_url']
                         if len(captcha_url) > 1:
                             status['message'] = 'Account {} is encountering a captcha, starting 2captcha sequence.'.format(account['username'])
                             log.warning(status['message'])
@@ -671,13 +669,13 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                         consecutive_noitems += 1
                     consecutive_fails = 0
                     status['message'] = 'Search at {:6f},{:6f} completed with {} finds.'.format(step_location[0], step_location[1], parsed['count'])
-					period = HashServer.status.get('period')
-					log.info('{} Key Period.'.format(period))
-					maximum = HashServer.status.get('maximum')
-					log.info('{} Maximum RPM.'.format(maximum))
-					remaining = HashServer.status.get('remaining')
-					log.info('{} RPM left on this Key.'.format(remaining))
-					log.debug(status['message'])
+                    period = HashServer.status.get('period')
+                    log.info('{} Key Period.'.format(period))
+                    maximum = HashServer.status.get('maximum')
+                    log.info('{} Maximum RPM.'.format(maximum))
+                    remaining = HashServer.status.get('remaining')
+                    log.info('{} RPM left on this Key.'.format(remaining))
+                    log.debug(status['message'])
                 except Exception as e:
                     parsed = False
                     status['fail'] += 1

@@ -867,11 +867,11 @@ class SchedulerFactory():
         raise NotImplementedError("The requested scheduler has not been implemented")
 
 # The KeyScheduler returns a scheduler that cycles through the given hash server keys
-class KeyScheduler(object):
+ class KeyScheduler(object):
 
-	def __init__(self, keys):
-	self.keys = keys
-		
-		def scheduler(self):
-        cycle = itertools.cycle(self.keys)
-        return cycle
+     def __init__(self, keys):
+         self.keys = keys
+
+         def scheduler(self):
+             cycle = itertools.cycle(self.keys)
+             return cycle
