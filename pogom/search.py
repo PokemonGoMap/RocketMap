@@ -304,8 +304,8 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb, db_updat
                    args=(threadStatus, args.status_name, db_updates_queue))
         t.daemon = True
         t.start()
-    
-    # Create the hash server key scheduler (only if the keys are passed as a list)
+
+    # Create the key scheduler
     if args.hash_key:
         key_scheduler = schedulers.KeyScheduler(args.hash_key).scheduler()
 
