@@ -611,7 +611,7 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                 status['message'] = messages['search']
                 log.info(status['message'])
 
-				# Make the actual request.
+                # Make the actual request.
                 scan_date = datetime.utcnow()
                 response_dict = map_request(api, step_location, args.jitter)
                 status['last_scan_date'] = datetime.utcnow()
