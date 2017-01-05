@@ -235,6 +235,7 @@ def account_recycler(accounts_queue, account_failures, args):
 
 
 def worker_status_db_thread(threads_status, name, db_updates_queue):
+
     while True:
         workers = {}
         overseer = None
@@ -629,11 +630,14 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                     time.sleep(scheduler.delay(status['last_scan_date']))
                     continue
 
-                    # Got the response, check for captcha, parse it out, then send todo's to db/wh queues.
-                    try:
-                        # Captcha check
-                        if args.captcha_solving:
-                            captcha_url = response_dict['responses']['CHECK_CHALLENGE']['challenge_url']
+                # Got the response, check for captcha, parse it out, then send todo's to db/wh queues.
+
+                try:
+
+                    # Captcha check.
+
+                    if args.captcha_solving:
+                        captcha_url = response_dict['responses']['CHECK_CHALLENGE']['challenge_url']
                         if len(captcha_url) > 1:
                             status['message'] = 'Account {} is encountering a captcha, starting 2captcha sequence.'.format(account['username'])
                             log.warning(status['message'])
@@ -667,13 +671,15 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                     else:
                         status['noitems'] += 1
                         consecutive_noitems += 1
-                    consecutive_fails = 0
-                    status['message'] = 'Search at {:6f},{:6f} completed with {} finds.'.format(step_location[0], step_location[1], parsed['count'])
-                    maximum = HashServer.status.get('maximum')
-                    log.info('{} Maximum RPM.'.format(maximum))
-                    remaining = HashServer.status.get('remaining')
-                    log.info('{} RPM left on this Key.'.format(remaining))
-                    log.debug(status['message'])
+                        consecutive_fails = 0
+                        status['message'] = 'Search at {:6f},{:6f} completed with {} finds.'.format(step_location[0], step_location[1], parsed['count'])
+                        period = HashServer.status.get('period')
+                        log.info('{} Key Period.'.format(period))
+                        maximum = HashServer.status.get('maximum')
+                        log.info('{} Maximum RPM.'.format(maximum))
+                        remaining = HashServer.status.get('remaining')
+                        log.info('{} RPM left on this Key.'.format(remaining))
+                        log.debug(status['message'])
                 except Exception as e:
                     parsed = False
                     status['fail'] += 1
