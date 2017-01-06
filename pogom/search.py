@@ -678,18 +678,16 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                     else:
                         status['noitems'] += 1
                         consecutive_noitems += 1
-                    consecutive_fails = 0
-                    status['message'] = 'Search at {:6f},{:6f} completed with {} finds.'.format(step_location[0], step_location[1], parsed['count'])
-                    # Get Maximum RPM.
-                    maximum = HashServer.status.get('maximum')
-                    log.info('{} Maximum RPM.'.format(maximum))
-                    # Get remaining RPM.
-                    remaining = HashServer.status.get('remaining')
-                    log.info('{} RPM left on this Key.'.format(remaining))
-                    log.debug(status['message'])
+                        consecutive_fails = 0
+                        status['message'] = 'Search at {:6f},{:6f} completed with {} finds.'.format(step_location[0], step_location[1], parsed['count'])
+                        # Get maximum RPM.
+                        maximum = HashServer.status.get('maximum')
+                        log.info('{} Maximum RPM.'.format(maximum))
+                        # Get remaining RPM.
+                        remaining = HashServer.status.get('remaining')
+                        log.info('{} RPM left on this Key.'.format(remaining))
+                        log.debug(status['message'])
 
-                # except KeyError as e:
-                    log.debug(status['message'])
                 except Exception as e:
                     parsed = False
                     status['fail'] += 1
