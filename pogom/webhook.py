@@ -74,7 +74,7 @@ def wh_updater(args, queue, key_cache):
                     'Trying to send webhook item of invalid type: %s.', whtype)
             elif ident not in key_cache:
                 key_cache[ident] = 1
-                log.debug('Sending %s to webhook: %s', whtype, ident)
+                log.debug('Sending %s to webhook: %s.', whtype, ident)
                 send_to_webhook(whtype, message)
             else:
                 # Make sure to call key_cache[ident] so it updates the LFU
