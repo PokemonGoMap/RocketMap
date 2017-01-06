@@ -53,22 +53,17 @@ TIMESTAMP = '\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\00
 
 
 # Handle Jittering if it is configured.
-def jitterLocation(location=None, jitter=False, maxMeters=10):
+def jitterLocation(location=None, maxMeters=10):
 
     # create scan_location to send to the api based off of position, because tuples aren't mutable
-    if jitter:
-        # jitter it, just a little bit.
-        origin = geopy.Point(location[0], location[1])
-        b = random.randint(0, 360)
-        d = ((math.sqrt(random.random()) * float(maxMeters))) / 1000
-        tmp_scan_location = geopy.distance.distance(kilometers=d).destination(origin, b)
+    # jitter it, just a little bit.
+    origin = geopy.Point(location[0], location[1])
+    b = random.randint(0, 360)
+    d = ((math.sqrt(random.random()) * float(maxMeters))) / 1000
+    tmp_scan_location = geopy.distance.distance(kilometers=d).destination(origin, b)
 
-        scan_location = [tmp_scan_location.latitude, tmp_scan_location.longitude, location[2]]
-        log.info('Jittered to: %f/%f/%f', tmp_scan_location[0], tmp_scan_location[1], location[2])
-
-    else:
-        # Just use the original coordinates
-        scan_location = location
+    scan_location = [tmp_scan_location.latitude, tmp_scan_location.longitude, location[2]]
+    log.info('Jittered to: %f/%f/%f', tmp_scan_location[0], tmp_scan_location[1], location[2])
 
     return scan_location
 
@@ -603,7 +598,9 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                 # Doing this before check_login so it does not also have to be done
                 # when the auth token is refreshed.
 
-                scan_location = jitterLocation(step_location, args.jitter)
+                scan_location = step_location
+                if args.jitter:
+                    scan_location = jitterLocation(step_location)
 
                 api.set_position(*scan_location)
 
@@ -617,7 +614,7 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
 
                 # Make the actual request.
                 scan_date = datetime.utcnow()
-                response_dict = map_request(api, scan_location, args.jitter)
+                response_dict = map_request(api, scan_location)
                 status['last_scan_date'] = datetime.utcnow()
 
                 # Record the time and the place that the worker made the request.
@@ -656,7 +653,7 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                                     log.info(status['message'])
                                     scan_date = datetime.utcnow()
                                     # Make another request for the same location since the previous one was captcha'd.
-                                    response_dict = map_request(api, step_location, args.jitter)
+                                    response_dict = map_request(api, scan_location)
                                     status['last_scan_date'] = datetime.utcnow()
                                 else:
                                     status['message'] = "Account {} failed verifyChallenge, putting away account for now.".format(account['username'])
@@ -779,7 +776,7 @@ def check_login(args, account, api, position, proxy_url):
     time.sleep(20)
 
 
-def map_request(api, scan_location, jitter=False):
+def map_request(api, scan_location):
 
     try:
         cell_ids = util.get_cell_ids(scan_location[0], scan_location[1])
