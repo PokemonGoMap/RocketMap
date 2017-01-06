@@ -19,12 +19,12 @@ def get_terminal_size():
         tuple_xy = _get_terminal_size_windows()
         if tuple_xy is None:
             tuple_xy = _get_terminal_size_tput()
-            # Needed for window's python in cygwin's xterm!
+            # needed for window's python in cygwin's xterm!
     if current_os in ['Linux', 'Darwin'] or current_os.startswith('CYGWIN'):
         tuple_xy = _get_terminal_size_linux()
     if tuple_xy is None:
         print "default"
-        tuple_xy = (80, 25)      # Default value.
+        tuple_xy = (80, 25)      # default value
     return tuple_xy
 
 
@@ -49,7 +49,7 @@ def _get_terminal_size_windows():
 
 
 def _get_terminal_size_tput():
-    # Get terminal width.
+    # get terminal width
     # src: http://stackoverflow.com/questions/263890/how-do-i-find-the-width-height-of-a-terminal-window
     try:
         cols = int(subprocess.check_call(shlex.split('tput cols')))

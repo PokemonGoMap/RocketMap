@@ -1,4 +1,4 @@
-# Spawnpoint Scanning Scheduler
+# Spawnpoint Scanning
 
 If you already have a large number of known spawnpoints it may be worth looking into Spawnpoint Scanning
 
