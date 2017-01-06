@@ -40,8 +40,11 @@ import logging
 import math
 import geopy
 import json
-import requests
-
+import time
+import sys
+from copy import deepcopy
+import traceback
+from collections import Counter
 from queue import Empty
 from operator import itemgetter
 from datetime import datetime, timedelta
@@ -82,7 +85,6 @@ class BaseScheduler(object):
 
     def getsize(self):
         return self.size
-
 
     def get_overseer_message(self):
         nextitem = self.queues[0].queue[0]
@@ -146,7 +148,6 @@ class HexSearch(BaseScheduler):
             self.step_distance = 0.070
 
         self.step_limit = args.step_limit
-        self.key = args.gmaps_key
 
         # This will hold the list of locations to scan so it can be reused, instead of recalculating on each loop.
         self.locations = False
@@ -242,14 +243,7 @@ class HexSearch(BaseScheduler):
         # Add the required appear and disappear times.
         locationsZeroed = []
         for step, location in enumerate(results, 1):
-            try:
-                r = requests.Session()
-                response = r.get("https://maps.googleapis.com/maps/api/elevation/json?locations={},{}&key={}".format(location[0], location[1], self.key))
-                response = response.json()
-                altitude = response["results"][0]["elevation"]
-            except:
-                altitude = 0.0
-            locationsZeroed.append((step, (location[0], location[1], altitude), 0, 0))
+            locationsZeroed.append((step, (location[0], location[1], 0), 0, 0))
         return locationsZeroed
 
     # Schedule the work to be done.
@@ -609,7 +603,6 @@ class SpeedScan(HexSearch):
         self.queues[0] = queue
         self.ready = True
         log.info('New queue created with %d entries', len(queue))
-
         if len(old_q):
             try:  # Enclosing in try: to avoid divide by zero exceptions from killing overseer
 
@@ -741,7 +734,6 @@ class SpeedScan(HexSearch):
                 break
 
             loc = item['loc']
-
             distance = equi_rect_distance(loc, worker_loc)
             secs_to_arrival = distance / self.args.kph * 3600
 
@@ -766,7 +758,6 @@ class SpeedScan(HexSearch):
         loc = best.get('loc', [])
         step = best.get('step', 0)
         i = best.get('i', 0)
-
         messages = {
             'wait': 'Nothing to scan',
             'early': 'Early for step {}; waiting a few seconds...'.format(step),
@@ -875,11 +866,12 @@ class SchedulerFactory():
 
         raise NotImplementedError("The requested scheduler has not been implemented")
 
+
 # The KeyScheduler returns a scheduler that cycles through the given hash server keys
 class KeyScheduler(object):
     def __init__(self, keys):
         self.keys = keys
-        
+
     def scheduler(self):
         cycle = itertools.cycle(self.keys)
         return cycle

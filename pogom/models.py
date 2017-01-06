@@ -12,7 +12,6 @@ import geopy
 import math
 
 from peewee import SqliteDatabase, InsertQuery, \
-
     Check, CompositeKey, ForeignKeyField, \
     IntegerField, CharField, DoubleField, BooleanField, \
     DateTimeField, fn, DeleteQuery, FloatField, SQL, TextField, JOIN
@@ -1469,7 +1468,6 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
             'spawn_points': spawn_points,
             'bad_scan': True
         }
-
 
     if not len(nearby_pokemons) and not len(wild_pokemon):
         log.warning('No nearby or wild Pokemon. Speed violation?')
