@@ -221,6 +221,7 @@ class Pokemon(BaseModel):
                  .join(pokemon_count_query, on=(Pokemon.pokemon_id == pokemon_count_query.c.pokemon_id))
                  .distinct()
                  .where(Pokemon.disappear_time == pokemon_count_query.c.lastappeared)
+                 .group_by(Pokemon.pokemon_id)
                  .dicts()
                  )
 
