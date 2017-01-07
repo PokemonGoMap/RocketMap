@@ -121,7 +121,7 @@ def __wh_object_changed(whtype, old, new):
         log.critical('Received an object of unknown type %s.', whtype)
         return False
 
-    return __dict_fields_equal(fields, old, new)
+    return not __dict_fields_equal(fields, old, new)
 
 
 # Determine if two dicts have equal values for all keys in a list.
