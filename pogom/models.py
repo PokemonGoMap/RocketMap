@@ -787,7 +787,7 @@ class ScannedLocation(BaseModel):
     @staticmethod
     def visible_forts(step_location):
         distance = 0.9
-        n, e, s, w = hex_bounds(step_location, radius=distance * 1000)
+        n, e, s, w = hex_bounds(step_location, radius=distance * 500)
         for g in Gym.get_gyms(s, w, n, e).values():
             if in_radius((g['latitude'], g['longitude']), step_location, distance):
                 return True
@@ -1456,7 +1456,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
 
     # Check for a 0/0/0 bad scan
     # If we saw nothing and there should be visible forts, it's bad
-    if not len(wild_pokemon) and not len(forts) and ScannedLocation.visible_forts(step_location):
+    if not len(nearby_pokemons) and not len(wild_pokemon) and not len(forts) and ScannedLocation.visible_forts(step_location):
         log.warning('Bad scan. Parsing found 0/0/0 Pokemon/pokestops/gyms')
         log.info('Common causes: captchas, IP bans, or using -ng and -nk arguments')
         return {
