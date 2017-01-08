@@ -36,6 +36,7 @@ from pgoapi import PGoApi
 from pgoapi.utilities import f2i
 from pgoapi import utilities as util
 from pgoapi.exceptions import AuthException
+from pgoapi.hash_server import HashServer
 
 from .models import parse_map, GymDetails, parse_gyms, MainWorker, WorkerStatus
 from .fakePogoApi import FakePogoApi
@@ -263,6 +264,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb, db_updat
     scheduler_array = []
     account_queue = Queue()
     threadStatus = {}
+    key_scheduler = None
 
     '''
     Create a queue of accounts for workers to pull from. When a worker has failed too many times,
@@ -304,6 +306,10 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb, db_updat
         t.daemon = True
         t.start()
 
+    # Create the hash server key scheduler (only if the keys are passed as a list)
+    if args.hash_key:
+        key_scheduler = schedulers.KeyScheduler(args.hash_key).scheduler()
+
     # Create specified number of search_worker_thread.
     log.info('Starting search worker threads...')
     for i in range(0, args.workers):
@@ -338,7 +344,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb, db_updat
                    name='search-worker-{}'.format(i),
                    args=(args, account_queue, account_failures, search_items_queue, pause_bit,
                          threadStatus[workerId],
-                         db_updates_queue, wh_queue, scheduler))
+                         db_updates_queue, wh_queue, scheduler, key_scheduler))
         t.daemon = True
         t.start()
 
@@ -455,7 +461,7 @@ def generate_hive_locations(current_location, step_distance, step_limit, hive_co
     return results
 
 
-def search_worker_thread(args, account_queue, account_failures, search_items_queue, pause_bit, status, dbq, whq, scheduler):
+def search_worker_thread(args, account_queue, account_failures, search_items_queue, pause_bit, status, dbq, whq, scheduler, key_scheduler):
 
     log.debug('Search worker thread starting...')
 
@@ -592,7 +598,12 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                 # when the auth token is refreshed.
                 api.set_position(*step_location)
 
-                # Ok, let's get started -- check our login status.
+                if args.hash_key:
+                    key = key_scheduler.next()
+                    api.activate_hash_server(key)
+                    log.info('Using key {} for this scan.'.format(key))
+
+                # Ok, let's get started -- check our login status
                 status['message'] = 'Logging in...'
                 check_login(args, account, api, step_location, status['proxy_url'])
 
@@ -659,6 +670,12 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                         consecutive_noitems += 1
                     consecutive_fails = 0
                     status['message'] = 'Search at {:6f},{:6f} completed with {} finds.'.format(step_location[0], step_location[1], parsed['count'])
+                    # Get maximum RPM.
+                    maximum = HashServer.status.get('maximum')
+                    log.info('{} Maximum RPM.'.format(maximum))
+                    # Get remaining RPM.
+                    remaining = HashServer.status.get('remaining')
+                    log.info('{} RPM left on this Key.'.format(remaining))
                     log.debug(status['message'])
                 except Exception as e:
                     parsed = False

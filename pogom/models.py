@@ -1,4 +1,4 @@
-#!/usr/bin/python
+﻿#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
 import logging
@@ -10,10 +10,12 @@ import gc
 import time
 import geopy
 import math
+
 from peewee import SqliteDatabase, InsertQuery, \
     Check, CompositeKey, ForeignKeyField, \
     IntegerField, CharField, DoubleField, BooleanField, \
     DateTimeField, fn, DeleteQuery, FloatField, SQL, TextField, JOIN
+
 from playhouse.flask_utils import FlaskDB
 from playhouse.pool import PooledMySQLDatabase
 from playhouse.shortcuts import RetryOperationalError
@@ -34,6 +36,7 @@ log = logging.getLogger(__name__)
 args = get_args()
 flaskDb = FlaskDB()
 cache = TTLCache(maxsize=100, ttl=60 * 5)
+
 
 db_schema_version = 11
 
@@ -1074,7 +1077,6 @@ class SpawnPoint(BaseModel):
     def start_end(cls, sp, spawn_delay=0, links=False):
         links_arg = links
         links = links if links else str(sp['links'])
-
         if links == '????':  # clean up for old data
             links = str(sp['kind'].replace('s', '?'))
 
@@ -1429,6 +1431,7 @@ def hex_bounds(center, steps=None, radius=None):
 
 # todo: this probably shouldn't _really_ be in "models" anymore, but w/e
 def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, api, now_date):
+
     pokemons = {}
     pokestops = {}
     gyms = {}
@@ -1867,6 +1870,7 @@ def parse_gyms(args, gym_responses, wh_update_queue, db_update_queue):
 
 
 def db_updater(args, q, db):
+
     # The forever loop.
     while True:
         try:
