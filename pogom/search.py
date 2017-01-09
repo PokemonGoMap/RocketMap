@@ -776,7 +776,7 @@ def check_login(args, account, api, position, proxy_url):
     time.sleep(20)
 
 
-def map_request(api, position, jitter=False, scan_radius):
+def map_request(api, position, jitter=False, scan_radius=500):
     # Create scan_location to send to the api based off of position, because tuples aren't mutable.
     if jitter:
         # Jitter it, just a little bit.
