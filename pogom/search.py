@@ -100,7 +100,7 @@ def status_printer(threadStatus, search_items_queue_array, db_updates_queue, wh_
         display_type = ["logs"]
     else:
         display_type = ["workers"]
-		
+
     current_page = [1]
     # Grab current log / level.
     mainlog = logging.getLogger()
@@ -290,7 +290,6 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb, db_updat
         'scheduler': args.scheduler
     }
 
-	
     if(args.print_status) or (args.print_status_logs):
         log.info('Starting status printer thread...')
         t = Thread(target=status_printer,
