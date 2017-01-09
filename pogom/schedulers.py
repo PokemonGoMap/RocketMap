@@ -990,6 +990,6 @@ class KeyScheduler(object):
     def current_key(self):
         return self.curr_key
 
-    def next_key(self):
+    def next(self):
         self.curr_key = self.key_cycle.next()
         return self.curr_key

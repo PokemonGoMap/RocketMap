@@ -99,8 +99,8 @@ def switch_status_printer(display_type, current_page, mainlog, loglevel, logmode
             mainlog.handlers[0].setLevel(logging.CRITICAL)
             display_type[0] = 'failedaccounts'
         elif command.lower() == 'h':
-                mainlog.handlers[0].setLevel(logging.CRITICAL)
-                display_type[0] = 'hashstatus'
+            mainlog.handlers[0].setLevel(logging.CRITICAL)
+            display_type[0] = 'hashstatus'
 
 
 # Thread to print out the status of each worker.
@@ -242,9 +242,8 @@ def status_printer(threadStatus, search_items_queue_array, db_updates_queue, wh_
                 mx = 'N/A'
 
                 if (key_scheduler):
-                    if (key == key_scheduler.current_key()):
-                        rm = HashServer.status.get('remaining')
-                        mx = HashServer.status.get('maximum')
+                    rm = HashServer.status.get('remaining', 'N/A')
+                    mx = HashServer.status.get('maximum', 'N/A')
 
                 status_text.append(status.format(key, rm, mx))
 
@@ -807,7 +806,7 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                 api.set_position(*step_location)
 
                 if args.hash_key:
-                    key = key_scheduler.next_key()
+                    key = key_scheduler.next()
                     log.debug('Using key {} for this scan.'.format(key))
                     api.activate_hash_server(key)
 
