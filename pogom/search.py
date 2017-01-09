@@ -307,6 +307,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb, db_updat
 
     # Create the key scheduler.
     if args.hash_key:
+        log.info('Enabling hashing key scheduler...')
         key_scheduler = schedulers.KeyScheduler(args.hash_key).scheduler()
 
     # Create specified number of search_worker_thread.
@@ -599,8 +600,8 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
 
                 if args.hash_key:
                     key = key_scheduler.next()
+                    log.debug('Using key {} for this scan.'.format(key))
                     api.activate_hash_server(key)
-                    log.info('Using key {} for this scan.'.format(key))
 
                 # Ok, let's get started -- check our login status.
                 status['message'] = 'Logging in...'
