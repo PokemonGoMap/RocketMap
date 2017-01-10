@@ -14,7 +14,6 @@ var $selectTeamGymsOnly
 var $selectLastUpdateGymsOnly
 var $selectMinGymLevel
 var $selectMaxGymLevel
-var $selectTrainerGymsOnly
 var $selectLuredPokestopsOnly
 var $selectSearchIconMarker
 var $selectGymMarkerStyle
@@ -319,7 +318,6 @@ function initSidebar () {
   $('#gym-sidebar-switch').prop('checked', Store.get('useGymSidebar'))
   $('#gym-sidebar-wrapper').toggle(Store.get('showGyms'))
   $('#gyms-filter-wrapper').toggle(Store.get('showGyms'))
-  $('#trainer-gyms-only').val(Store.get('showTrainerGymsOnly'))
   $('#team-gyms-only-switch').val(Store.get('showTeamGymsOnly'))
   $('#min-level-gyms-filter-switch').val(Store.get('minGymLevel'))
   $('#max-level-gyms-filter-switch').val(Store.get('maxGymLevel'))
@@ -1202,19 +1200,6 @@ function processGyms (i, item) {
     return true
   }
 
-  var trainerFound = false
-
-  for (var j = 0; j < item.pokemon.length; j++) {
-    if (item['pokemon'][j].trainer_name.toUpperCase() == Store.get('showTrainerGymsOnly').toUpperCase()) {
-	  trainerFound = true
-	}
-  }
-
-  if (!trainerFound && Store.get('showTrainerGymsOnly') !== '') {
-    removeGymFromMap(item['gym_id'])
-	return true
-  }
-
   if (item['gym_id'] in mapData.gyms) {
     item.marker = updateGymMarker(item, mapData.gyms[item['gym_id']].marker)
   } else { // add marker to map and item to dict
@@ -1852,7 +1837,7 @@ $(function () {
 
   $selectOpenGymsOnly.on('change', function () {
     Store.set('showOpenGymsOnly', this.value)
-	lastgyms = false
+    lastgyms = false
     updateMap()
   })
 
@@ -1865,7 +1850,7 @@ $(function () {
 
   $selectTeamGymsOnly.on('change', function () {
     Store.set('showTeamGymsOnly', this.value)
-	lastgyms = false
+    lastgyms = false
     updateMap()
   })
 
@@ -1878,7 +1863,7 @@ $(function () {
 
   $selectLastUpdateGymsOnly.on('change', function () {
     Store.set('showLastUpdatedGymsOnly', this.value)
-	lastgyms = false
+    lastgyms = false
     updateMap()
   })
 
@@ -1891,7 +1876,7 @@ $(function () {
 
   $selectMinGymLevel.on('change', function () {
     Store.set('minGymLevel', this.value)
-	lastgyms = false
+    lastgyms = false
     updateMap()
   })
 
@@ -1904,15 +1889,7 @@ $(function () {
 
   $selectMaxGymLevel.on('change', function () {
     Store.set('maxGymLevel', this.value)
-	lastgyms = false
-    updateMap()
-  })
-
-  $selectTrainerGymsOnly = $('#trainer-gyms-only')
-
-  $selectTrainerGymsOnly.on('change', function () {
-    Store.set('showTrainerGymsOnly', this.value)
-	lastgyms = false
+    lastgyms = false
     updateMap()
   })
 
@@ -2171,7 +2148,7 @@ $(function () {
       lastgyms = false
       wrapper.hide(options)
     }
-	var wrapper2 = $('#gyms-filter-wrapper')
+    var wrapper2 = $('#gyms-filter-wrapper')
     if (this.checked) {
       lastgyms = false
       wrapper2.show(options)
