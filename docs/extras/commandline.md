@@ -215,8 +215,8 @@
       -ps [logs], --print-status [logs]  
                             Show a status screen instead of log messages. Can
                             switch between status and logs by pressing enter. 
-							Optionally specify 'logs' to enable feature yet
-							start in log view [env var: POGOMAP_PRINT_STATUS]
+                            Optionally specify 'logs' to enable feature yet
+                            start in log view [env var: POGOMAP_PRINT_STATUS]
       -sn STATUS_NAME, --status-name STATUS_NAME
                             Enable status page database update using STATUS_NAME
                             as main worker name [env var: POGOMAP_STATUS_NAME]
