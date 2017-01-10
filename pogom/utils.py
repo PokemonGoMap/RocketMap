@@ -229,6 +229,7 @@ def get_args():
                         help='Path to SSL certificate file.')
     parser.add_argument('--ssl-privatekey',
                         help='Path to SSL private key file.')
+    parser.add_argument('-ps', '--print-status',
                         help='Show a status screen instead of log messages. Can switch between status and logs by pressing enter.  Optionally specify "2" to startup in logging mode.', nargs='?', const='status', default=False)
     parser.add_argument('-sn', '--status-name', default=None,
                         help='Enable status page database update using STATUS_NAME as main worker name.')

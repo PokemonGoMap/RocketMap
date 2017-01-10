@@ -65,6 +65,7 @@ def jitterLocation(location=None, maxMeters=10):
 def switch_status_printer(display_type, current_page, mainlog, loglevel, logmode):
     # Disable logging of the first handler - the stream handler, and disable it's output.
 
+    if (logmode != 'logs'):
         mainlog.handlers[0].setLevel(logging.CRITICAL)
 
     while True:
@@ -95,6 +96,7 @@ def switch_status_printer(display_type, current_page, mainlog, loglevel, logmode
 # Thread to print out the status of each worker.
 def status_printer(threadStatus, search_items_queue_array, db_updates_queue, wh_queue, account_queue, account_failures, logmode):
 
+    if (logmode == 'logs'):
         display_type = ["logs"]
     else:
         display_type = ["workers"]
@@ -292,6 +294,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb, db_updat
         log.info('Starting status printer thread...')
         t = Thread(target=status_printer,
                    name='status_printer',
+                   args=(threadStatus, search_items_queue_array, db_updates_queue, wh_queue, account_queue, account_failures, args.print_status))
         t.daemon = True
         t.start()
 
