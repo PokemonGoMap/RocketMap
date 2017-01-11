@@ -398,7 +398,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb, db_updat
             except Empty:
                 pass
 
-            step_distance = 0.9 if args.no_pokemon else 0.07
+            step_distance = 0.5 if args.no_pokemon else 0.07
 
             locations = generate_hive_locations(
                 current_location, step_distance, args.step_limit, len(scheduler_array))

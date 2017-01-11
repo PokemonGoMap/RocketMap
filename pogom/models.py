@@ -813,7 +813,7 @@ class ScannedLocation(BaseModel):
     # return list of dicts for upcoming valid band times
     @staticmethod
     def visible_forts(step_location):
-        distance = 0.9
+        distance = 0.5
         n, e, s, w = hex_bounds(step_location, radius=distance * 1000)
         for g in Gym.get_gyms(s, w, n, e).values():
             if in_radius((g['latitude'], g['longitude']), step_location, distance):
