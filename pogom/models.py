@@ -1468,7 +1468,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
         else:
             log.warning('Possible speed violation or simply nothing around.')
             if scan_loc['cellid'] in scans_empty_list:
-                log.info('Step returned empty twice. Marking as done.')
+                log.info('Step returned empty again. Marking as done.')
             else:
                 return {
                     'count': -1,
