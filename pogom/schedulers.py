@@ -645,7 +645,7 @@ class SpeedScan(HexSearch):
                 active_sp += active_sp == 0
                 for k in sorted(kinds.keys()):
                     log.info('%s kind spawns: %d or %.1f%%', k, kinds[k], kinds[k] * 100.0 / active_sp)
-                log.info('Spawns with found TTH: %d or %.1f%%', tth_found, tth_found * 100.0 / active_sp)
+                log.info('Spawns with found TTH: %d or %.1f%% [%d unknown]', tth_found, tth_found * 100.0 / active_sp, active_sp - tth_found)
                 for k in sorted(tth_ranges.keys(), key=int):
                     log.info('Spawnpoints with a %sm range to find TTH: %d', k, tth_ranges[k])
                 log.info('Over last %d minutes: %d new bands, %d Pokemon found',
@@ -688,7 +688,7 @@ class SpeedScan(HexSearch):
                 if self.scans_missed_list:
                     log.warning('Missed scans: %s', Counter(self.scans_missed_list).most_common(3))
                     log.info('History: %s', str(self.scan_percent).strip('[]'))
-                self.status_message = 'Initial scan: {:.2f}%, TTH found: {:.2f}%, '.format(band_percent, tth_found * 100.0 / active_sp)
+                self.status_message = 'Initial scan: {:.2f}%, TTH found: {:.2f}% [{}], '.format(band_percent, tth_found * 100.0 / active_sp, active_sp - tth_found)
                 self.status_message += 'Spawns reached: {:.2f}%, Spawns found: {:.2f}%, Good scans {:.2f}%'\
                     .format(spawns_reached, found_percent, good_percent)
                 self._stat_init()
