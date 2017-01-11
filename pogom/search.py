@@ -660,7 +660,7 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                                     account_failures.append({'account': account, 'last_fail_time': now(), 'reason': 'captcha failed to verify'})
                                     break
 
-                    parsed = parse_map(args, response_dict, step_location, dbq, whq, api, scan_date)
+                    parsed = parse_map(args, response_dict, step_location, dbq, whq, api, scan_date, scheduler.scans_empty_list)
                     scheduler.task_done(status, parsed)
                     if parsed['count'] > 0:
                         status['success'] += 1

@@ -421,6 +421,7 @@ class SpeedScan(HexSearch):
         self.scans_done = 0
         self.scans_missed = 0
         self.scans_missed_list = []
+        self.scans_empty_list = []
         self.minutes = 5  # Minutes between queue refreshes. Should be less than 10 to allow for new bands during Initial scan
         self.found_percent = []
         self.scan_percent = []
@@ -816,11 +817,16 @@ class SpeedScan(HexSearch):
             if safety_buffer < 0:
                 log.warning('Too late by %d sec for a %s at step %d', -safety_buffer, item['kind'], item['step'])
 
-            # If we had a 0/0/0 scan, then unmark as done so we can retry, and save for Statistics
+            # If we had an empty scan, then unmark as done so we can retry, and save for Statistics
             elif parsed['bad_scan']:
-                self.scans_missed_list.append(cellid(item['loc']))
                 item['done'] = None
-                log.info('Putting back step %d in queue', item['step'])
+                log.info('Putting step %d back in queue', item['step'])
+
+                if parsed['count'] == 0:
+                    self.scans_missed_list.append(cellid(item['loc']))
+                else:
+                    self.scans_empty_list.append(cellid(item['loc']))
+
             else:
                 # Scan returned data
                 self.scans_done += 1
