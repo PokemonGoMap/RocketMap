@@ -75,6 +75,12 @@ def get_args():
                         help='Only referenced when using --beehive. Sets number of workers per hive. Default value is 1.', type=int, default=1)
     parser.add_argument('-l', '--location', type=parse_unicode,
                         help='Location, can be an address or coordinates.')
+    parser.add_argument('-alt', '--altitude',
+                        help='default altitude in meter',
+                        type=int, default=13)
+    parser.add_argument('-altr', '--altitude_range',
+                        help='additional range for --altitude in meter',
+                        type=int, default=1)
     parser.add_argument('-j', '--jitter', help='Apply random -9m to +9m jitter to location.',
                         action='store_true', default=False)
     parser.add_argument('-st', '--step-limit', help='Steps.', type=int,
