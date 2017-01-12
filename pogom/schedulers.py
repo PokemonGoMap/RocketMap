@@ -688,7 +688,7 @@ class SpeedScan(HexSearch):
                 if self.scans_missed_list:
                     log.warning('Missed scans: %s', Counter(self.scans_missed_list).most_common(3))
                     log.info('History: %s', str(self.scan_percent).strip('[]'))
-                self.status_message = 'Initial scan: {:.2f}%, TTH found: {:.2f}% [{}], '.format(band_percent, tth_found * 100.0 / active_sp, active_sp - tth_found)
+                self.status_message = 'Initial scan: {:.2f}%, TTH found: {:.2f}% [{} unknown], '.format(band_percent, tth_found * 100.0 / active_sp, active_sp - tth_found)
                 self.status_message += 'Spawns reached: {:.2f}%, Spawns found: {:.2f}%, Good scans {:.2f}%'\
                     .format(spawns_reached, found_percent, good_percent)
                 self._stat_init()
