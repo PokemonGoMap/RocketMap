@@ -147,9 +147,9 @@ class HexSearch(BaseScheduler):
         BaseScheduler.__init__(self, queues, status, args)
 
         # If we are only scanning for pokestops/gyms, the scan radius can be
-        # 500m.  Otherwise 70m.
+        # 450m.  Otherwise 70m.
         if self.args.no_pokemon:
-            self.step_distance = 0.500
+            self.step_distance = 0.450
         else:
             self.step_distance = 0.070
 
@@ -321,9 +321,9 @@ class SpawnScan(BaseScheduler):
         self.firstscan = True
 
         # If we are only scanning for pokestops/gyms, the scan radius can be
-        # 500m.  Otherwise 70m.
+        # 450m.  Otherwise 70m.
         if self.args.no_pokemon:
-            self.step_distance = 0.500
+            self.step_distance = 0.450
         else:
             self.step_distance = 0.070
 
