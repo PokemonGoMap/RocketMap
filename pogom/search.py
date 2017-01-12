@@ -613,7 +613,8 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
 
                 # Make the actual request.
                 scan_date = datetime.utcnow()
-                response_dict = map_request(api, step_location, args.jitter)
+                scan_radius = 1000 if args.no_pokemon else 500
+                response_dict = map_request(api, step_location, args.jitter, scan_radius)
                 status['last_scan_date'] = datetime.utcnow()
 
                 # Record the time and the place that the worker made the request.
@@ -652,7 +653,7 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                                     log.info(status['message'])
                                     scan_date = datetime.utcnow()
                                     # Make another request for the same location since the previous one was captcha'd.
-                                    response_dict = map_request(api, step_location, args.jitter)
+                                    response_dict = map_request(api, step_location, args.jitter, scan_radius)
                                     status['last_scan_date'] = datetime.utcnow()
                                 else:
                                     status['message'] = "Account {} failed verifyChallenge, putting away account for now.".format(account['username'])
@@ -775,7 +776,7 @@ def check_login(args, account, api, position, proxy_url):
     time.sleep(20)
 
 
-def map_request(api, position, jitter=False):
+def map_request(api, position, jitter=False, scan_radius=500):
     # Create scan_location to send to the api based off of position, because tuples aren't mutable.
     if jitter:
         # Jitter it, just a little bit.
@@ -786,7 +787,7 @@ def map_request(api, position, jitter=False):
         scan_location = position
 
     try:
-        cell_ids = util.get_cell_ids(scan_location[0], scan_location[1])
+        cell_ids = util.get_cell_ids(scan_location[0], scan_location[1], radius=scan_radius)
         timestamps = [0, ] * len(cell_ids)
         req = api.create_request()
         response = req.get_map_objects(latitude=f2i(scan_location[0]),
