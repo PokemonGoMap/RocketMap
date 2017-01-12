@@ -786,7 +786,7 @@ class ScannedLocation(BaseModel):
     # return list of dicts for upcoming valid band times
     @staticmethod
     def visible_forts(step_location):
-        distance = 0.9
+        distance = 0.5
         n, e, s, w = hex_bounds(step_location, radius=distance * 1000)
         for g in Gym.get_gyms(s, w, n, e).values():
             if in_radius((g['latitude'], g['longitude']), step_location, distance):
@@ -1428,7 +1428,7 @@ def hex_bounds(center, steps=None, radius=None):
 
 
 # todo: this probably shouldn't _really_ be in "models" anymore, but w/e
-def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, api, now_date):
+def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, api, now_date, scans_empty_list):
     pokemons = {}
     pokestops = {}
     gyms = {}
@@ -1448,34 +1448,40 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
     cells = map_dict['responses']['GET_MAP_OBJECTS']['map_cells']
     for cell in cells:
         nearby_pokemons += cell.get('nearby_pokemons', [])
-        if config['parse_pokemon']:
-            wild_pokemon += cell.get('wild_pokemons', [])
-
-        if config['parse_pokestops'] or config['parse_gyms']:
-            forts += cell.get('forts', [])
-
-    # Check for a 0/0/0 bad scan
-    # If we saw nothing and there should be visible forts, it's bad
-    if not len(wild_pokemon) and not len(forts) and ScannedLocation.visible_forts(step_location):
-        log.warning('Bad scan. Parsing found 0/0/0 Pokemon/pokestops/gyms')
-        log.info('Common causes: captchas, IP bans, or using -ng and -nk arguments')
-        return {
-            'count': 0,
-            'gyms': gyms,
-            'spawn_points': spawn_points,
-            'bad_scan': True
-        }
-
-    if not len(nearby_pokemons) and not len(wild_pokemon):
-        log.warning('No nearby or wild Pokemon. Speed violation?')
-        log.info("Common causes: not using -speed, deleting or dropping the WorkerStatus table without waiting before restarting, or there really aren't any Pokemon in 200m")
+        wild_pokemon += cell.get('wild_pokemons', [])
+        forts += cell.get('forts', [])
 
     scan_loc = ScannedLocation.get_by_loc(step_location)
+
+    # If there are no wild or nearby Pokemon...
+    if not len(wild_pokemon) and not len(nearby_pokemons):
+        # ...and there are no gyms/pokestops, although one should be visible, then it's unusable/bad. Keep retrying.
+        if not len(forts) and ScannedLocation.visible_forts(step_location):
+            log.warning('No nearby or wild Pokemon and no gyms or pokestops although at least one should be visible.')
+            return {
+                'count': 0,
+                'gyms': gyms,
+                'spawn_points': spawn_points,
+                'bad_scan': True
+            }
+        # Either nothing around or no wild or nearby Pokemon but there are forts.  Possible speed violation or maybe just empty. Retry once.
+        else:
+            log.warning('Possible speed violation or simply nothing around.')
+            if scan_loc['cellid'] in scans_empty_list:
+                log.info('Step returned empty again. Marking as done.')
+            else:
+                return {
+                    'count': -1,
+                    'gyms': gyms,
+                    'spawn_points': spawn_points,
+                    'bad_scan': True
+                }
+
     done_already = scan_loc['done']
     ScannedLocation.update_band(scan_loc)
     just_completed = not done_already and scan_loc['done']
 
-    if len(wild_pokemon):
+    if len(wild_pokemon) and config['parse_pokemon']:
         encounter_ids = [b64encode(str(p['encounter_id'])) for p in wild_pokemon]
         # For all the wild Pokemon we found check if an active Pokemon is in the database.
         query = (Pokemon
@@ -1599,7 +1605,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
                 })
                 wh_update_queue.put(('pokemon', wh_poke))
 
-    if len(forts):
+    if len(forts) and (config['parse_pokestops'] or config['parse_gyms']):
         if config['parse_pokestops']:
             stop_ids = [f['id'] for f in forts if f.get('type') == 1]
             if len(stop_ids) > 0:

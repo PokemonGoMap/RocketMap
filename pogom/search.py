@@ -373,7 +373,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb, db_updat
             except Empty:
                 pass
 
-            step_distance = 0.9 if args.no_pokemon else 0.07
+            step_distance = 0.5 if args.no_pokemon else 0.07
 
             locations = generate_hive_locations(current_location, step_distance, args.step_limit, len(scheduler_array))
 
@@ -660,7 +660,7 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                                     account_failures.append({'account': account, 'last_fail_time': now(), 'reason': 'captcha failed to verify'})
                                     break
 
-                    parsed = parse_map(args, response_dict, step_location, dbq, whq, api, scan_date)
+                    parsed = parse_map(args, response_dict, step_location, dbq, whq, api, scan_date, scheduler.scans_empty_list)
                     scheduler.task_done(status, parsed)
                     if parsed['count'] > 0:
                         status['success'] += 1
