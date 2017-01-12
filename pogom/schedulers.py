@@ -143,7 +143,7 @@ class HexSearch(BaseScheduler):
 
         # If we are only scanning for pokestops/gyms, the scan radius can be 900m.  Otherwise 70m.
         if self.args.no_pokemon:
-            self.step_distance = 0.900
+            self.step_distance = 0.500
         else:
             self.step_distance = 0.070
 
