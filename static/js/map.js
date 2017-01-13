@@ -330,7 +330,7 @@ function initSidebar () {
   $('#next-location').css('background-color', $('#geoloc-switch').prop('checked') ? '#e0e0e0' : '#ffffff')
 
   updateSearchStatus()
-  setInterval(updateSearchStatus, 5000)
+  setInterval(updateSearchStatus, 10000)
 
   searchBox.addListener('place_changed', function () {
     var place = searchBox.getPlace()
@@ -417,6 +417,9 @@ function gymLabel (teamName, teamId, gymPoints, latitude, longitude, lastScanned
       <span class="gym-member" title="${members[i].pokemon_name} | ${members[i].trainer_name} (Lvl ${members[i].trainer_level})">
         <i class="pokemon-sprite n${members[i].pokemon_id}"></i>
         <span class="cp team-${teamId}">${members[i].pokemon_cp}</span>
+        <span class="cp team-${teamId}"> ${members[i].pokemon_name} </span>
+        <span class="cp team-${teamId}"> ${members[i].trainer_name} </span>
+        <span class="cp team-${teamId}"> Lvl ${members[i].trainer_level} </span>
       </span>`
   }
 
@@ -1474,7 +1477,7 @@ function createUpdateWorker () {
       var updateBlob = new Blob([`onmessage = function(e) {
         var data = e.data
         if (data.name === 'backgroundUpdate') {
-          self.setInterval(function () {self.postMessage({name: 'backgroundUpdate'})}, 5000)
+          self.setInterval(function () {self.postMessage({name: 'backgroundUpdate'})}, 10000)
         }
       }`])
 
@@ -1952,7 +1955,7 @@ $(function () {
 
   // run interval timers to regularly update map and timediffs
   window.setInterval(updateLabelDiffTime, 1000)
-  window.setInterval(updateMap, 5000)
+  window.setInterval(updateMap, 10000)
   window.setInterval(updateGeoLocation, 1000)
 
   createUpdateWorker()
