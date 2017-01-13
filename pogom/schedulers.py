@@ -35,6 +35,7 @@ Where:
 If implementing a new scheduler, place it before SchedulerFactory, and add it to __scheduler_classes
 '''
 
+import itertools
 import logging
 import math
 import geopy
@@ -146,9 +147,9 @@ class HexSearch(BaseScheduler):
         BaseScheduler.__init__(self, queues, status, args)
 
         # If we are only scanning for pokestops/gyms, the scan radius can be
-        # 900m.  Otherwise 70m.
+        # 450m.  Otherwise 70m.
         if self.args.no_pokemon:
-            self.step_distance = 0.900
+            self.step_distance = 0.450
         else:
             self.step_distance = 0.070
 
@@ -320,9 +321,9 @@ class SpawnScan(BaseScheduler):
         self.firstscan = True
 
         # If we are only scanning for pokestops/gyms, the scan radius can be
-        # 900m.  Otherwise 70m.
+        # 450m.  Otherwise 70m.
         if self.args.no_pokemon:
-            self.step_distance = 0.900
+            self.step_distance = 0.450
         else:
             self.step_distance = 0.070
 
@@ -959,3 +960,15 @@ class SchedulerFactory():
 
         raise NotImplementedError(
             "The requested scheduler has not been implemented")
+
+
+# The KeyScheduler returns a scheduler that cycles through the given hash
+# server keys.
+class KeyScheduler(object):
+
+    def __init__(self, keys):
+        self.keys = keys
+
+    def scheduler(self):
+        cycle = itertools.cycle(self.keys)
+        return cycle

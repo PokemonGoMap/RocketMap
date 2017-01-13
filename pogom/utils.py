@@ -219,6 +219,14 @@ def get_args():
                         action='store_true', default=False)
     parser.add_argument('--wh-threads', help='Number of webhook threads; increase if the webhook queue falls behind.',
                         type=int, default=1)
+    parser.add_argument('-whr', '--wh-retries',
+                        help='Number of times to retry sending webhook data on failure.', type=int, default=5)
+    parser.add_argument('-wht', '--wh-timeout',
+                        help='Timeout (in seconds) for webhook requests.', type=int, default=2)
+    parser.add_argument('-whbf', '--wh-backoff-factor',
+                        help='Factor (in seconds) by which the delay until next retry will increase.', type=float, default=0.25)
+    parser.add_argument('-whlfu', '--wh-lfu-size',
+                        help='Webhook LFU cache max size.', type=int, default=1000)
     parser.add_argument('--ssl-certificate',
                         help='Path to SSL certificate file.')
     parser.add_argument('--ssl-privatekey',
@@ -229,6 +237,8 @@ def get_args():
                         help='Enable status page database update using STATUS_NAME as main worker name.')
     parser.add_argument('-spp', '--status-page-password', default=None,
                         help='Set the status page password.')
+    parser.add_argument('-hk', '--hash-key', default=None, action='append',
+                        help='Key for hash server')
     parser.add_argument('-el', '--encrypt-lib',
                         help='Path to encrypt lib to be used instead of the shipped ones.')
     parser.add_argument('-odt', '--on-demand_timeout',
