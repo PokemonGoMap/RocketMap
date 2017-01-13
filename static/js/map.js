@@ -319,6 +319,7 @@ function initSidebar () {
   $('#gym-sidebar-wrapper').toggle(Store.get('showGyms'))
   $('#gyms-filter-wrapper').toggle(Store.get('showGyms'))
   $('#team-gyms-only-switch').val(Store.get('showTeamGymsOnly'))
+  $('#open-gyms-only-switch').val(Store.get('showOpenGymsOnly'))
   $('#min-level-gyms-filter-switch').val(Store.get('minGymLevel'))
   $('#max-level-gyms-filter-switch').val(Store.get('maxGymLevel'))
   $('#last-update-gyms-switch').val(Store.get('showLastUpdatedGymsOnly'))
