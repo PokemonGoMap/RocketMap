@@ -76,7 +76,7 @@ def wh_updater(args, queue, key_cache):
                 if ident is None:
                     # We don't know what it is, so let's just log and send
                     # as-is.
-                    log.warning(
+                    log.debug(
                         'Sending webhook item of unknown type: %s.', whtype)
                     send_to_webhook(whtype, message)
                 elif ident not in key_cache:
@@ -110,23 +110,31 @@ def wh_updater(args, queue, key_cache):
 
 # Helpers
 
+def __get_key_fields(whtype):
+    key_fields = {
+        # lure_expiration is a UTC timestamp so it's good (Y).
+        'pokestop': ['enabled', 'latitude',
+                     'longitude', 'lure_expiration', 'active_fort_modifier'],
+        'pokemon': ['spawnpoint_id', 'pokemon_id', 'latitude', 'longitude',
+                    'disappear_time', 'move_1', 'move_2',
+                    'individual_stamina', 'individual_defense',
+                    'individual_attack'],
+        'gym': ['team_id', 'guard_pokemon_id',
+                'gym_points', 'enabled', 'latitude', 'longitude']
+    }
+
+    return key_fields.get(whtype, [])
+
+
 # Determine if a webhook object has changed in any important way (and
 # requires a resend).
 def __wh_object_changed(whtype, old, new):
     # Only test for important fields: don't trust last_modified fields.
-    if whtype == 'pokestop':
-        # lure_expiration is a UTC timestamp so it's good (Y).
-        fields = ['enabled', 'latitude', 'longitude',
-                  'lure_expiration', 'active_fort_modifier']
-    elif whtype == 'pokemon':
-        fields = ['spawnpoint_id', 'pokemon_id', 'latitude', 'longitude', 'disappear_time',
-                  'move_1', 'move_2', 'individual_stamina', 'individual_defense', 'individual_attack']
-    elif whtype == 'gym':
-        fields = ['team_id', 'guard_pokemon_id',
-                  'gym_points', 'enabled', 'latitude', 'longitude']
-    else:
-        log.critical('Received an object of unknown type %s.', whtype)
-        return False
+    fields = __get_key_fields(whtype)
+
+    if not fields:
+        log.debug('Received an object of unknown type %s.', whtype)
+        return True
 
     return not __dict_fields_equal(fields, old, new)
 
