@@ -1171,7 +1171,7 @@ function processGyms (i, item) {
         break
     }
 
-    if ((!gymHasOpenSpot(gymLevel, item.pokemon.length) && gymPrestige[gymLevel - 1] > closePrestige + item.gym_points) || gymLevel === 10) {
+    if (!gymHasOpenSpot(gymLevel, item.pokemon.length) && (gymPrestige[gymLevel - 1] > closePrestige + item.gym_points || gymLevel === 10)) {
       removeGymFromMap(item['gym_id'])
       return true
     }
