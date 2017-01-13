@@ -330,7 +330,7 @@ function initSidebar () {
   $('#next-location').css('background-color', $('#geoloc-switch').prop('checked') ? '#e0e0e0' : '#ffffff')
 
   updateSearchStatus()
-  setInterval(updateSearchStatus, 5000)
+  setInterval(updateSearchStatus, 10000)
 
   searchBox.addListener('place_changed', function () {
     var place = searchBox.getPlace()
@@ -1474,7 +1474,7 @@ function createUpdateWorker () {
       var updateBlob = new Blob([`onmessage = function(e) {
         var data = e.data
         if (data.name === 'backgroundUpdate') {
-          self.setInterval(function () {self.postMessage({name: 'backgroundUpdate'})}, 5000)
+          self.setInterval(function () {self.postMessage({name: 'backgroundUpdate'})}, 10000)
         }
       }`])
 
@@ -1952,7 +1952,7 @@ $(function () {
 
   // run interval timers to regularly update map and timediffs
   window.setInterval(updateLabelDiffTime, 1000)
-  window.setInterval(updateMap, 5000)
+  window.setInterval(updateMap, 10000)
   window.setInterval(updateGeoLocation, 1000)
 
   createUpdateWorker()
