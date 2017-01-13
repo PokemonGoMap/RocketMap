@@ -1885,7 +1885,7 @@ $(function () {
 
   $selectMaxGymLevel.select2({
     placeholder: 'Maximum Gym Level',
-    maximumResultsForSearch: Infinity
+    minimumResultsForSearch: Infinity
   })
 
   $selectMaxGymLevel.on('change', function () {
