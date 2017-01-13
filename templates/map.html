@@ -2,7 +2,7 @@
 <html lang="{{lang}}">
   <head>
     <meta charset="utf-8">
-    <title>Pokémon Go Map</title>
+    <title>Hompfull's Pokémon Go Map</title>
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
@@ -38,8 +38,9 @@
       <!-- Header -->
       <header id="header">
         <a href="#nav"><span class="label">Options</span></a>
-        <h1><a href="#">Pokémon Go Map</a></h1>
+        <h1><a href="#">Hompfull's Pokémon Go Map</a></h1>
         <a href="#stats" id="statsToggle" class="statsNav" style="float: right;"><span class="label">Stats</span></a>
+        <a href="https://paypal.me/AlekseiKomarov" style="float: right;">donate</a>
       </header>
       <!-- NAV -->
       <nav id="nav">
@@ -97,16 +98,6 @@
               <div class="onoffswitch">
                 <input id="scanned-switch" type="checkbox" name="scanned-switch" class="onoffswitch-checkbox">
                 <label class="onoffswitch-label" for="scanned-switch">
-                <span class="switch-label" data-on="On" data-off="Off"></span>
-                <span class="switch-handle"></span>
-                </label>
-              </div>
-            </div>
-            <div class="form-control switch-container">
-              <h3>Spawn Points</h3>
-              <div class="onoffswitch">
-                <input id="spawnpoints-switch" type="checkbox" name="spawnpoints-switch" class="onoffswitch-checkbox">
-                <label class="onoffswitch-label" for="spawnpoints-switch">
                 <span class="switch-label" data-on="On" data-off="Off"></span>
                 <span class="switch-handle"></span>
                 </label>
@@ -328,5 +319,15 @@
     <script src="{{ url_for('static', filename='dist/js/map.min.js').lstrip('/') }}"></script>
     <script src="{{ url_for('static', filename='dist/js/stats.min.js').lstrip('/') }}"></script>
     <script defer src="https://maps.googleapis.com/maps/api/js?key={{ gmaps_key }}&amp;callback=initMap&amp;libraries=places,geometry"></script>
+    <script>
+   (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+   (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+   m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+   })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+ 
+   ga('create', 'UA-83227315-1', 'auto');
+   ga('send', 'pageview');
+ 
+     </script>
   </body>
 </html>
