@@ -807,6 +807,24 @@ var pokemonSprites = {
     filename: 'static/icons-large-sprite.png',
     name: 'High-Res'
   },
+  artificial64: {
+    columns: 7,
+    iconWidth: 64,
+    iconHeight: 64,
+    spriteWidth: 448,
+    spriteHeight: 1408,
+    filename: 'static/icons-artificial64-sprite.png',
+    name: 'Artificial.nl'
+  },
+  viciousblue64: {
+    columns: 7,
+    iconWidth: 64,
+    iconHeight: 64,
+    spriteWidth: 448,
+    spriteHeight: 1408,
+    filename: 'static/icons-viciousblue64-sprite.png',
+    name: 'Vicious-Blue'
+  },
   shuffle: {
     columns: 7,
     iconWidth: 65,
