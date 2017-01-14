@@ -24,8 +24,6 @@ import sys
 import traceback
 import random
 import time
-import geopy
-import geopy.distance
 import requests
 
 from datetime import datetime
@@ -55,17 +53,13 @@ TIMESTAMP = '\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\00
 # Handle Jittering if it is configured.
 def jitterLocation(location=None, maxMeters=10):
 
-    # create scan_location to send to the api based off of position, because tuples aren't mutable
-    # jitter it, just a little bit.
-    origin = geopy.Point(location[0], location[1])
-    b = random.randint(0, 360)
-    d = ((math.sqrt(random.random()) * float(maxMeters))) / 1000
-    tmp_scan_location = geopy.distance.distance(kilometers=d).destination(origin, b)
-
-    scan_location = [tmp_scan_location.latitude, tmp_scan_location.longitude, location[2]]
-    log.info('Jittered to: %f/%f/%f', tmp_scan_location[0], tmp_scan_location[1], location[2])
-
-    return scan_location
+    bearing = random.randint(0, 360)
+    distance = ((math.sqrt(random.random()) * float(maxMeters))) / 1000
+    
+    destination = get_new_coords(location, distance, bearing)
+    log.info('Jittered to: %f, %f', destination[0], destination[1])
+    
+    return (destination[0], destination[1], location[2])
 
 
 # Thread to handle user input.
