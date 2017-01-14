@@ -702,12 +702,10 @@ class SpeedScan(HexSearch):
                          active_sp, active_sp * 100.0 / len_spawnpoints)
                 active_sp += active_sp == 0
                 for k in sorted(kinds.keys()):
-
-                    log.info('%s kind spawns: %d or %.1f%%', k, 
+                    log.info('%s kind spawns: %d or %.1f%%', k,
                              kinds[k], kinds[k] * 100.0 / active_sp)
-                log.info('Spawns with found TTH: %d or %.1f%% [%d unknown]', 
+                log.info('Spawns with found TTH: %d or %.1f%% [%d unknown]',
                          tth_found, tth_found * 100.0 / active_sp, active_sp - tth_found)
-
                 for k in sorted(tth_ranges.keys(), key=int):
                     log.info(
                         'Spawnpoints with a %sm range to find TTH: %d', k, tth_ranges[k])
