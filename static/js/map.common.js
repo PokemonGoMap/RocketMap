@@ -825,6 +825,15 @@ var pokemonSprites = {
     filename: 'static/icons-viciousblue64-sprite.png',
     name: 'Vicious-Blue'
   },
+  Rumble64: {
+    columns: 7,
+    iconWidth: 64,
+    iconHeight: 64,
+    spriteWidth: 448,
+    spriteHeight: 1408,
+    filename: 'static/icons-rumble64-sprite.png',
+    name: 'Rumble'
+  },
   shuffle: {
     columns: 7,
     iconWidth: 65,
