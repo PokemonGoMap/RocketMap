@@ -684,7 +684,7 @@ function setupGymMarker (item) {
       marker.persist = null
     })
 
-	if (!isMobileDevice() && !isTouchDevice()) {
+    if (!isMobileDevice() && !isTouchDevice()) {
       marker.addListener('mouseover', function () {
         marker.infoWindow.open(map, marker)
         clearSelection()
