@@ -95,7 +95,7 @@ def switch_status_printer(display_type, current_page, mainlog, loglevel):
 
 
 # Thread to print out the status of each worker.
-def status_printer(threadStatus, search_items_queue_array, db_updates_queue, wh_queue, account_queue, account_failures):
+def status_printer(threadStatus, search_items_queue_array, db_updates_queue, wh_queue, account_queue, account_failures, args):
     display_type = ["workers"]
     current_page = [1]
     # Grab current log / level.
@@ -150,9 +150,11 @@ def status_printer(threadStatus, search_items_queue_array, db_updates_queue, wh_
             status_text.append('{} Overseer: {}'.format(threadStatus['Overseer'][
                                'scheduler'], threadStatus['Overseer']['message']))
 
+            status_text.append('2Captcha wallet balance: {}'.format(str(balance) + '$' if args.captcha_key else 'N/A'))
+
             # Calculate the total number of pages.  Subtracting for the
-            # overseer.
-            total_pages = math.ceil((len(threadStatus) - 1 - threadStatus['Overseer']['message'].count('\n')) /
+            # overseer and 2Captcha balance
+            total_pages = math.ceil((len(threadStatus) - 2 - threadStatus['Overseer']['message'].count('\n')) /
                                     float(usable_height))
 
             # Prevent moving outside the valid range of pages.
@@ -257,10 +259,12 @@ def account_recycler(accounts_queue, account_failures, args):
 def captcha(args, pause_bit):
     while True:
         # Pause scanning if 2captcha balance reach under limit
-        if args.captcha_key and captcha_balance(args.captcha_key) <= args.captcha_balance_limit:
+        global balance
+        balance = captcha_balance(args.captcha_key)
+        if balance <= args.captcha_balance_limit:
             pause_bit.set()
             log.info('Searching paused due to 2captcha balance is under limit!')
-        time.sleep(30)
+        time.sleep(300)
 
 
 def worker_status_db_thread(threads_status, name, db_updates_queue):
@@ -318,7 +322,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb, db_updat
         log.info('Starting status printer thread...')
         t = Thread(target=status_printer,
                    name='status_printer',
-                   args=(threadStatus, search_items_queue_array, db_updates_queue, wh_queue, account_queue, account_failures))
+                   args=(threadStatus, search_items_queue_array, db_updates_queue, wh_queue, account_queue, account_failures, args))
         t.daemon = True
         t.start()
 
