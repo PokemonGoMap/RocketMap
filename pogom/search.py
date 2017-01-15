@@ -35,7 +35,7 @@ from queue import Queue, Empty
 from pgoapi import PGoApi
 from pgoapi.utilities import f2i
 from pgoapi import utilities as util
-from pgoapi.exceptions import AuthException
+from pgoapi.exceptions import AuthException, HashingQuotaExceededException
 from pgoapi.hash_server import HashServer
 
 from .models import parse_map, GymDetails, parse_gyms, MainWorker, WorkerStatus
@@ -764,20 +764,25 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                         consecutive_noitems = 0
                         if (key_scheduler):
                             if (key == key_scheduler.current_key()):
-                                maximum = HashServer.status.get('maximum')
-                                remaining = HashServer.status.get('remaining')
                                 status['hash_key'] = key_scheduler.current_key()
+                                maximum = HashServer.status.get('maximum')
                                 status['maximum_rpm'] = maximum
-                                status['rpm_left'] = remaining
-                                log.info('Hash Key {} with Maximum {} RPM has {} RPM left.'.format(key, maximum, remaining))
-                    else:
-                        status['noitems'] += 1
-                        consecutive_noitems += 1
-                    consecutive_fails = 0
-                    status['message'] = 'Search at {:6f},{:6f} completed with {} finds.'.format(
-                        step_location[0], step_location[1], parsed['count'])
-                    log.debug(status['message'])
-                    log.info(status['message'])
+                                try:
+                                    request = api.create_request()
+                                    remaining = HashServer.status.get('remaining')
+                                    request.call()
+                                    status['rpm_left'] = remaining
+                                    log.info('Hash Key {} with Maximum {} RPM has {} RPM left.'.format(key, maximum, remaining))
+                                except HashingQuotaExceededException as e:
+                                    log.warning('Hash Key {} exceeded RPM! Try again in 60 seconds!'.format(key))
+                        else:
+                            status['noitems'] += 1
+                            consecutive_noitems += 1
+                            consecutive_fails = 0
+                            status['message'] = 'Search at {:6f},{:6f} completed with {} finds.'.format(
+                                step_location[0], step_location[1], parsed['count'])
+                            log.debug(status['message'])
+                            log.info(status['message'])
                 except Exception as e:
                     parsed = False
                     status['fail'] += 1
