@@ -11,6 +11,7 @@ import shutil
 import pprint
 import time
 import random
+import requests
 from s2sphere import CellId, LatLng
 
 from . import config
@@ -97,6 +98,9 @@ def get_args():
     parser.add_argument('-cds', '--captcha-dsk',
                         help='PokemonGo captcha data-sitekey.',
                         default="6LeeTScTAAAAADqvhqVMhPpr_vB9D364Ia-1dSgK")
+    parser.add_argument('-cbl', '--captcha-balance-limit',
+                        help='Pause scanning when 2captcha balance reaches below this limit (default 0.01)',
+                        type=float, default=0.01)
     parser.add_argument('-ed', '--encounter-delay',
                         help='Time delay between encounter pokemon in scan threads.',
                         type=float, default=1)
@@ -714,3 +718,12 @@ def complete_tutorial(api, account, tutorial_state):
 
     time.sleep(0.2)
     return True
+
+
+# Check 2captcha balance
+def captcha_balance(key):
+    payload = {'key': key, 'action': 'getbalance'}
+    r = requests.get('https://2captcha.com/res.php', params=payload)
+    balance = float(r.text)
+    log.info('2captcha balance is %f$', balance)
+    return balance
