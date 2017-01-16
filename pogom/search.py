@@ -35,7 +35,7 @@ from queue import Queue, Empty
 from pgoapi import PGoApi
 from pgoapi.utilities import f2i
 from pgoapi import utilities as util
-from pgoapi.exceptions import AuthException, HashingQuotaExceededException
+from pgoapi.exceptions import AuthException
 from pgoapi.hash_server import HashServer
 
 from .models import parse_map, GymDetails, parse_gyms, MainWorker, WorkerStatus
@@ -762,6 +762,7 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                     if parsed['count'] > 0:
                         status['success'] += 1
                         consecutive_noitems = 0
+                        # Check for used Hash Key and request Header from api
                         if (key_scheduler):
                             if (key == key_scheduler.current_key()):
                                 status['hash_key'] = key_scheduler.current_key()
@@ -773,8 +774,9 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                                     request.call()
                                     status['rpm_left'] = remaining
                                     log.info('Hash Key {} with Maximum {} RPM has {} RPM left.'.format(key, maximum, remaining))
-                                except HashingQuotaExceededException as e:
-                                    log.warning('Hash Key {} exceeded RPM! Try again in 60 seconds!'.format(key))
+                                except Exception as e:
+                                    log.error('Hash Key {} exceeded RPM! {}.'.format(key, e))
+
                         else:
                             status['noitems'] += 1
                             consecutive_noitems += 1
