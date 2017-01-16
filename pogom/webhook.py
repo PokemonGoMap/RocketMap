@@ -3,13 +3,11 @@
 
 import logging
 import requests
-import threading
 from .utils import get_args
 from requests.packages.urllib3.util.retry import Retry
 from requests.adapters import HTTPAdapter
 
 log = logging.getLogger(__name__)
-wh_lock = threading.Lock()
 
 
 def send_to_webhook(message_type, message, scheduler_name, tth_found):
@@ -72,8 +70,10 @@ def wh_updater(args, queue, key_cache):
             }
             ident = message.get(ident_fields.get(whtype), None)
 
-            # cachetools in Python2.7 isn't thread safe, so we add a lock.
-            with wh_lock:
+            # cachetools in Python2.7 isn't thread safe, but adding a Lock
+            # slows down the queue immensely. Rather than being entirely
+            # thread safe, we catch the rare exception and re-add to queue.
+            try:
                 # Only send if identifier isn't already in cache.
                 if ident is None:
                     # We don't know what it is, so let's just log and send
@@ -100,6 +100,10 @@ def wh_updater(args, queue, key_cache):
                     else:
                         log.debug('Not resending %s to webhook: %s.',
                                   whtype, ident)
+            except Exception as ex:
+                log.debug(
+                    'LFUCache thread unsafe exception: %s. Requeuing.', repr(ex))
+                queue.put((whtype, message, scheduler_name, tth_found))
 
             # Webhook queue moving too slow.
             if queue.qsize() > 50:
