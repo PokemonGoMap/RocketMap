@@ -1515,7 +1515,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
             'bad_scan': True
         }
 
-    if not len(nearby_pokemons) and not len(wild_pokemon):
+    if not len(nearby_pokemons) and not len(wild_pokemon) and not args.no_pokemon:
         log.warning('No nearby or wild Pokemon. Speed violation?')
         log.info("Common causes: not using -speed, deleting or dropping the WorkerStatus table without waiting before restarting, or there really aren't any Pokemon in 200m")
 
