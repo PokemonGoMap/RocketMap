@@ -12,7 +12,7 @@ log = logging.getLogger(__name__)
 wh_lock = threading.Lock()
 
 
-def send_to_webhook(message_type, message):
+def send_to_webhook(message_type, message, scheduler_name, tth_found):
     args = get_args()
 
     if not args.webhooks:
@@ -43,7 +43,9 @@ def send_to_webhook(message_type, message):
 
     data = {
         'type': message_type,
-        'message': message
+        'message': message,
+        'scheduler_name': scheduler_name,
+        'tth_found': tth_found
     }
 
     for w in args.webhooks:
@@ -60,7 +62,7 @@ def wh_updater(args, queue, key_cache):
     while True:
         try:
             # Loop the queue.
-            whtype, message = queue.get()
+            whtype, message, scheduler_name, tth_found = queue.get()
 
             # Extract the proper identifier.
             ident_fields = {
@@ -78,11 +80,11 @@ def wh_updater(args, queue, key_cache):
                     # as-is.
                     log.debug(
                         'Sending webhook item of unknown type: %s.', whtype)
-                    send_to_webhook(whtype, message)
+                    send_to_webhook(whtype, message, scheduler_name, tth_found)
                 elif ident not in key_cache:
                     key_cache[ident] = message
                     log.debug('Sending %s to webhook: %s.', whtype, ident)
-                    send_to_webhook(whtype, message)
+                    send_to_webhook(whtype, message, scheduler_name, tth_found)
                 else:
                     # Make sure to call key_cache[ident] in all branches so it
                     # updates the LFU usage count.
@@ -91,7 +93,8 @@ def wh_updater(args, queue, key_cache):
                     # data to webhooks.
                     if __wh_object_changed(whtype, key_cache[ident], message):
                         key_cache[ident] = message
-                        send_to_webhook(whtype, message)
+                        send_to_webhook(whtype, message,
+                                        scheduler_name, tth_found)
                         log.debug('Sending updated %s to webhook: %s.',
                                   whtype, ident)
                     else:
