@@ -916,7 +916,7 @@ class ScannedLocation(BaseModel):
     def select_in_hex(cls, center, steps):
         # should be a way to delegate this to SpawnPoint.select_in_hex, but w/e
 
-        R = 6378.1  # km radius of the earth
+        R = 6371.009  # IUGG mean earth radius in kilometers.
         hdist = ((steps * 120.0) - 50.0) / 1000.0
         n, e, s, w = hex_bounds(center, steps)
 
@@ -1167,7 +1167,7 @@ class SpawnPoint(BaseModel):
 
     @classmethod
     def select_in_hex(cls, center, steps):
-        R = 6378.1  # km radius of the earth
+        R = 6371.009  # IUGG mean earth radius in kilometers.
         hdist = ((steps * 120.0) - 50.0) / 1000.0
         n, e, s, w = hex_bounds(center, steps)
 

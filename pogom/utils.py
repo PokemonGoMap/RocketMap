@@ -485,7 +485,7 @@ def cellid(loc):
 
 # Return equirectangular approximation distance in km.
 def equi_rect_distance(loc1, loc2):
-    R = 6378.1  # Radius of the earth in km.
+    R = 6371.009  # IUGG mean earth radius in kilometers.
     lat1 = math.radians(loc1[0])
     lat2 = math.radians(loc2[0])
     x = (math.radians(loc2[1]) - math.radians(loc1[1])

@@ -46,11 +46,12 @@ def transform_long(x, y):
 
 
 # Returns destination coords given origin coords, distance and bearing.
-def get_new_coords(init_loc, d, b):
-    R = 6378.1  # Radius of the earth in km.
+def get_new_coords(init_loc, d, bearing):
+    R = 6371.009  # IUGG mean earth radius in kilometers.
 
     oLat = math.radians(init_loc[0])
     oLon = math.radians(init_loc[1])
+    b = math.radians(bearing)
 
     Lat = math.asin(math.sin(oLat) * math.cos(d / R) +
                     math.cos(oLat) * math.sin(d / R) * math.cos(b))
