@@ -1,5 +1,4 @@
 import math
-import geopy
 
 a = 6378245.0
 ee = 0.00669342162296594323
@@ -46,11 +45,17 @@ def transform_long(x, y):
     return lon
 
 
-def get_new_coords(init_loc, distance, bearing):
-    """
-    Given an initial lat/lng, a distance(in kms), and a bearing (degrees),
-    this will calculate the resulting lat/lng coordinates.
-    """
-    origin = geopy.Point(init_loc[0], init_loc[1])
-    destination = geopy.distance.distance(kilometers=distance).destination(origin, bearing)
-    return (destination.latitude, destination.longitude)
+# Returns destination coords given origin coords, distance and bearing.
+def get_new_coords(init_loc, d, b):
+    R = 6378.1  # Radius of the earth in km.
+
+    oLat = math.radians(init_loc[0])
+    oLon = math.radians(init_loc[1])
+
+    Lat = math.asin(math.sin(oLat) * math.cos(d / R) +
+                    math.cos(oLat) * math.sin(d / R) * math.cos(b))
+
+    Lon = oLon + math.atan2(math.sin(b) * math.sin(d / R) * math.cos(oLat),
+                            math.cos(d / R) - math.sin(oLat) * math.sin(Lat))
+
+    return math.degrees(Lat), math.degrees(Lon)

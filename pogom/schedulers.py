@@ -38,7 +38,6 @@ If implementing a new scheduler, place it before SchedulerFactory, and add it to
 import itertools
 import logging
 import math
-import geopy
 import json
 import time
 import sys
@@ -289,7 +288,7 @@ class HexSearch(BaseScheduler):
 class HexSearchSpawnpoint(HexSearch):
 
     def _any_spawnpoints_in_range(self, coords, spawnpoints):
-        return any(geopy.distance.distance(coords, x).meters <= 70 for x in spawnpoints)
+        return any(equi_rect_distance(coords, x) <= 0.07 for x in spawnpoints)
 
     # Extend the generate_locations function to remove locations with no
     # spawnpoints.

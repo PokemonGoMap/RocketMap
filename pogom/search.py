@@ -24,8 +24,6 @@ import sys
 import traceback
 import random
 import time
-import geopy
-import geopy.distance
 import requests
 
 from datetime import datetime
@@ -39,7 +37,7 @@ from pgoapi.exceptions import AuthException
 
 from .models import parse_map, GymDetails, parse_gyms, MainWorker, WorkerStatus
 from .fakePogoApi import FakePogoApi
-from .utils import now, get_tutorial_state, complete_tutorial
+from .utils import now, equi_rect_distance, get_tutorial_state, complete_tutorial
 from .transform import get_new_coords
 import schedulers
 
@@ -54,11 +52,12 @@ TIMESTAMP = '\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\00
 
 # Apply a location jitter.
 def jitterLocation(location=None, maxMeters=10):
-    origin = geopy.Point(location[0], location[1])
-    b = random.randint(0, 360)
-    d = math.sqrt(random.random()) * (float(maxMeters) / 1000)
-    destination = geopy.distance.distance(kilometers=d).destination(origin, b)
-    return (destination.latitude, destination.longitude, location[2])
+
+    bearing = random.randint(0, 360)
+    distance = math.sqrt(random.random()) * (float(maxMeters) / 1000)
+    destination = get_new_coords(location, distance, bearing)
+
+    return (destination[0], destination[1], location[2])
 
 
 # Thread to handle user input.
@@ -778,10 +777,10 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                     # Build a list of gyms to update.
                     gyms_to_update = {}
                     for gym in parsed['gyms'].values():
-                        # Can only get gym details within 1km of our position.
-                        distance = calc_distance(
+                        # Can only get gym details within 0.45km of our position.
+                        distance = equi_rect_distance(
                             step_location, [gym['latitude'], gym['longitude']])
-                        if distance < 1:
+                        if distance <= 0.45:
                             # Check if we already have details on this gym.
                             # Get them if not.
                             try:
@@ -926,7 +925,7 @@ def map_request(api, position, no_jitter=False):
 def gym_request(api, position, gym):
     try:
         log.debug('Getting details for gym @ %f/%f (%fkm away)', gym['latitude'], gym[
-                  'longitude'], calc_distance(position, [gym['latitude'], gym['longitude']]))
+                  'longitude'], equi_rect_distance(position, [gym['latitude'], gym['longitude']]))
         req = api.create_request()
         x = req.get_gym_details(gym_id=gym['gym_id'],
                                 player_latitude=f2i(position[0]),
@@ -971,22 +970,6 @@ def token_request(args, status, url):
             "http://2captcha.com/res.php?key={}&action=get&id={}".format(args.captcha_key, captcha_id)).text
     token = str(recaptcha_response.split('|')[1])
     return token
-
-
-def calc_distance(pos1, pos2):
-    R = 6378.1  # KM radius of the earth.
-
-    dLat = math.radians(pos1[0] - pos2[0])
-    dLon = math.radians(pos1[1] - pos2[1])
-
-    a = math.sin(dLat / 2) * math.sin(dLat / 2) + \
-        math.cos(math.radians(pos1[0])) * math.cos(math.radians(pos2[0])) * \
-        math.sin(dLon / 2) * math.sin(dLon / 2)
-
-    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-    d = R * c
-
-    return d
 
 
 # Delay each thread start time so that logins occur after delay.

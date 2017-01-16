@@ -8,7 +8,6 @@ import sys
 import traceback
 import gc
 import time
-import geopy
 import math
 from peewee import SqliteDatabase, InsertQuery, \
     Check, CompositeKey, ForeignKeyField, \
@@ -26,7 +25,7 @@ from cachetools import cached
 from . import config
 from .utils import get_pokemon_name, get_pokemon_rarity, get_pokemon_types, get_args, \
     cellid, in_radius, date_secs, clock_between, secs_between, get_move_name, get_move_damage, \
-    get_move_energy, get_move_type
+    get_move_energy, get_move_type, equi_rect_distance
 from .transform import transform_from_wgs_to_gcj, get_new_coords
 from .customLog import printPokemon
 log = logging.getLogger(__name__)
@@ -378,15 +377,13 @@ class Pokemon(BaseModel):
 
         s = list(query.dicts())
 
-        # The distance between scan circles of radius 70 in a hex is 121.2436
-        # steps - 1 to account for the center circle then add 70 for the edge.
-        step_distance = ((steps - 1) * 121.2436) + 70
+        # The distance between scan circles of radius 70 in a hex is 120
+        step_distance = ((steps * 120.0) - 50.0) / 1000.0
         # Compare spawnpoint list to a circle with radius steps * 120.
-        # Uses the direct geopy distance between the center and the spawnpoint.
         filtered = []
 
         for idx, sp in enumerate(s):
-            if geopy.distance.distance(center, (sp['lat'], sp['lng'])).meters <= step_distance:
+            if equi_rect_distance(center, (sp['lat'], sp['lng'])) <= step_distance:
                 filtered.append(s[idx])
 
         # At this point, 'time' is DISAPPEARANCE time, we're going to morph it
