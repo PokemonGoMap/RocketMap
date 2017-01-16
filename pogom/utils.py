@@ -233,7 +233,7 @@ def get_args():
     parser.add_argument('--ssl-privatekey',
                         help='Path to SSL private key file.')
     parser.add_argument('-ps', '--print-status',
-                        help='Show a status screen instead of log messages. Can switch between status and logs by pressing enter.  Optionally specify "logs" to startup in logging mode.',nargs='?', const='status', default=False, metavar='logs')
+                        help='Show a status screen instead of log messages. Can switch between status and logs by pressing enter.  Optionally specify "logs" to startup in logging mode.', nargs='?', const='status', default=False, metavar='logs')
     parser.add_argument('-slt', '--stats-log-timer',
                         help='In log view, list per hr stats every X seconds', type=int, default=0)
     parser.add_argument('-sn', '--status-name', default=None,
