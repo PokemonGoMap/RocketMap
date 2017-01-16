@@ -402,7 +402,7 @@ class Pokemon(BaseModel):
 
         for idx, sp in enumerate(s):
             if geopy.distance.distance(center, (sp['lat'],
-                                       sp['lng'])).meters <= step_distance:
+                                                sp['lng'])).meters <= step_distance:
                 filtered.append(s[idx])
 
         # At this point, 'time' is DISAPPEARANCE time, we're going to morph it
@@ -2301,5 +2301,6 @@ def database_migrate(db, old_ver):
     if old_ver < 12:
         db.drop_tables([MainWorker])
         migrate(
-            migrator.add_column('workerstatus', 'captcha', IntegerField(default=0))
+            migrator.add_column('workerstatus', 'captcha',
+                                IntegerField(default=0))
         )
