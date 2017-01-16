@@ -1462,6 +1462,23 @@ class GymDetails(BaseModel):
     last_scanned = DateTimeField(default=datetime.utcnow)
 
 
+class Token(flaskDb.Model):
+    token = TextField()
+    last_updated = DateTimeField(default=datetime.utcnow)
+
+    @staticmethod
+    def get_match(request_time):
+        with flaskDb.database.transaction():
+            d_token = (Token
+                       .select()
+                       .where(Token.last_updated >= request_time)
+                       .order_by(Token.last_updated)
+                       .first())
+            if d_token is not None:
+                d_token.delete_instance()
+        return d_token
+
+
 def hex_bounds(center, steps=None, radius=None):
     # Make a box that is (70m * step_limit * 2) + 70m away from the center point
     # Rationale is that you need to travel
@@ -2050,14 +2067,14 @@ def create_tables(db):
     db.connect()
     verify_database_schema(db)
     db.create_tables([Pokemon, Pokestop, Gym, ScannedLocation, GymDetails, GymMember, GymPokemon,
-                      Trainer, MainWorker, WorkerStatus, SpawnPoint, ScanSpawnPoint, SpawnpointDetectionData], safe=True)
+                      Trainer, MainWorker, WorkerStatus, SpawnPoint, ScanSpawnPoint, SpawnpointDetectionData, Token], safe=True)
     db.close()
 
 
 def drop_tables(db):
     db.connect()
     db.drop_tables([Pokemon, Pokestop, Gym, ScannedLocation, Versions, GymDetails, GymMember, GymPokemon,
-                    Trainer, MainWorker, WorkerStatus, SpawnPoint, ScanSpawnPoint, SpawnpointDetectionData, Versions], safe=True)
+                    Trainer, MainWorker, WorkerStatus, SpawnPoint, ScanSpawnPoint, SpawnpointDetectionData, Token, Versions], safe=True)
     db.close()
 
 

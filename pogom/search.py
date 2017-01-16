@@ -28,8 +28,8 @@ import geopy
 import geopy.distance
 import requests
 
-from datetime import datetime
-from threading import Thread
+from datetime import datetime, timedelta
+from threading import Thread, Lock
 from queue import Queue, Empty
 
 from pgoapi import PGoApi
@@ -37,7 +37,7 @@ from pgoapi.utilities import f2i
 from pgoapi import utilities as util
 from pgoapi.exceptions import AuthException
 
-from .models import parse_map, GymDetails, parse_gyms, MainWorker, WorkerStatus
+from .models import parse_map, GymDetails, parse_gyms, MainWorker, WorkerStatus, Token
 from .fakePogoApi import FakePogoApi
 from .utils import now, get_tutorial_state, complete_tutorial
 from .transform import get_new_coords
@@ -50,6 +50,10 @@ import terminalsize
 log = logging.getLogger(__name__)
 
 TIMESTAMP = '\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000'
+
+token_needed = 0
+
+tokenLock = Lock()
 
 
 # Apply a location jitter.
@@ -143,8 +147,8 @@ def status_printer(threadStatus, search_items_queue_array, db_updates_queue, wh_
             for i in range(0, len(search_items_queue_array)):
                 search_items_queue_size += search_items_queue_array[i].qsize()
 
-            status_text.append('Queues: {} search items, {} db updates, {} webhook.  Total skipped items: {}. Spare accounts available: {}. Accounts on hold: {}'
-                               .format(search_items_queue_size, db_updates_queue.qsize(), wh_queue.qsize(), skip_total, account_queue.qsize(), len(account_failures)))
+            status_text.append('Queues: {} search items, {} db updates, {} webhook.  Total skipped items: {}. Spare accounts available: {}. Accounts on hold: {}. Token needed: {}'
+                               .format(search_items_queue_size, db_updates_queue.qsize(), wh_queue.qsize(), skip_total, account_queue.qsize(), len(account_failures), token_needed))
 
             # Print status of overseer.
             status_text.append('{} Overseer: {}'.format(threadStatus['Overseer'][
@@ -713,11 +717,15 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                         captcha_url = response_dict['responses'][
                             'CHECK_CHALLENGE']['challenge_url']
                         if len(captcha_url) > 1:
-                            status['message'] = 'Account {} is encountering a captcha, starting 2captcha sequence.'.format(account[
-                                                                                                                           'username'])
+                            if args.captcha_key is not None:
+                                status['message'] = 'Account {} is encountering a captcha, starting 2captcha sequence.'.format(account[
+                                                                                                                               'username'])
+                            else:
+                                status['message'] = 'Account {} is encountering a captcha, starting manual captcha solving.'.format(account[
+                                                                                                                                    'username'])
                             log.warning(status['message'])
                             captcha_token = token_request(
-                                args, status, captcha_url)
+                                args, status, captcha_url, whq)
                             if 'ERROR' in captcha_token:
                                 log.warning(
                                     "Unable to resolve captcha, please check your 2captcha API key and/or wallet balance.")
@@ -948,7 +956,41 @@ def gym_request(api, position, gym):
         return False
 
 
-def token_request(args, status, url):
+def token_request(args, status, url, whq):
+
+    global token_needed
+    request_time = datetime.utcnow()
+
+    if args.captcha_key is None:
+        token_needed += 1
+        if args.webhooks:
+            whq.put(('token_needed', {"num": token_needed}))
+        while request_time + timedelta(seconds=args.manual_captcha_solving_allowance_time) > datetime.utcnow():
+            tokenLock.acquire()
+            if args.no_server:
+                # multiple instances, use get_token in map
+                s = requests.Session()
+                url = "{}/get_token?request_time={}&password={}".format(args.manual_captcha_solving_domain, request_time, args.manual_captcha_solving_password)
+                token = str(s.get(url).text)
+            else:
+                # single instance, get Token directly
+                token = Token.get_match(request_time)
+                if token is not None:
+                    token = token.token
+                else:
+                    token = ""
+            tokenLock.release()
+            if token != "":
+                token_needed -= 1
+                if args.webhooks:
+                    whq.put(('token_needed', {"num": token_needed}))
+                return token
+            time.sleep(1)
+        token_needed -= 1
+        if args.webhooks:
+            whq.put(('token_needed', {"num": token_needed}))
+        return 'ERROR'
+
     s = requests.Session()
     # Fetch the CAPTCHA_ID from 2captcha.
     try:
