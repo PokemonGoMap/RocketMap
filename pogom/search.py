@@ -345,6 +345,11 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb, db_updat
         'scheduler': args.scheduler,
         'scheduler_status': {'tth_found': 0}
     }
+    
+    # Create the key scheduler.
+    if args.hash_key:
+        log.info('Enabling hashing key scheduler...')
+        key_scheduler = schedulers.KeyScheduler(args.hash_key)
 
     # Create the key scheduler.
     if args.hash_key:
@@ -806,7 +811,7 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                 api.set_position(*step_location)
 
                 if args.hash_key:
-                    key = key_scheduler.next()
+                    key = key_scheduler.next_key()
                     log.debug('Using key {} for this scan.'.format(key))
                     api.activate_hash_server(key)
 
