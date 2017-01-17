@@ -83,6 +83,7 @@ function addTable (hash) {
         </div>
         <div class="status_cell">
           RPM Left
+          Captchas
         </div>
         <div class="status_cell">
           Last Modified
@@ -121,7 +122,7 @@ function processMainWorker (i, worker) {
 
   $('#name_' + hash).html(worker['worker_name'])
   $('#method_' + hash).html('(' + worker['method'] + ')')
-  $('#message_' + hash).html(worker['message'].replace('\n', '<br>'))
+  $('#message_' + hash).html(worker['message'].replace(/\n/g, '<br>'))
 }
 
 function addWorker (mainWorkerHash, workerHash) {
@@ -135,6 +136,7 @@ function addWorker (mainWorkerHash, workerHash) {
       <div id="hash_key_${workerHash}" class="status_cell"/>
       <div id="maximum_rpm_${workerHash}" class="status_cell"/>
       <div id="rpm_left_${workerHash}" class="status_cell"/>
+      <div id="captchas_${workerHash}" class="status_cell"/>
       <div id="lastmod_${workerHash}"  class="status_cell"/>
       <div id="message_${workerHash}"  class="status_cell"/>
     </div>
@@ -178,6 +180,7 @@ function processWorker (i, worker) {
   $('#hash_key_' + hash).html(worker['hash_key'])
   $('#maximum_rpm_' + hash).html(worker['maximum_rpm'])
   $('#rpm_left_' + hash).html(worker['rpm_left'])
+  $('#captchas_' + hash).html(worker['captcha'])
   $('#lastmod_' + hash).html(lastModified)
   $('#message_' + hash).html(worker['message'])
 }
@@ -195,6 +198,10 @@ function updateStatus (firstRun) {
   })
 }
 
+$(document).ready(function () {
+  $('#password').focus()
+})
+
 $('#password_form').submit(function (event) {
   event.preventDefault()
   statusPagePassword = $('#password').val()
@@ -205,6 +212,7 @@ $('#password_form').submit(function (event) {
       parseResult(result)
     } else {
       $('.status_form').effect('bounce')
+      $('#password').focus()
     }
   })
 })
