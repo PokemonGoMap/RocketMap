@@ -1549,7 +1549,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
     tth_found = getattr(scheduler, 'tth_found', -1)
 
     if tth_found > -1:
-        tth_found = tth_found * 100 / getattr(scheduler, 'active_sp', 100)
+        tth_found = tth_found * 100.0 / getattr(scheduler, 'active_sp', 100.0)
 
     # Consolidate the individual lists in each cell into two lists of Pokemon
     # and a list of forts.
@@ -1936,7 +1936,7 @@ def parse_gyms(args, gym_responses, wh_update_queue, db_update_queue, scheduler)
     tth_found = getattr(scheduler, 'tth_found', -1)
 
     if tth_found > -1:
-        tth_found = tth_found * 100 / getattr(scheduler, 'active_sp', 100)
+        tth_found = tth_found * 100.0 / getattr(scheduler, 'active_sp', 100.0)
 
     i = 0
     for g in gym_responses.values():

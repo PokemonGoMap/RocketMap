@@ -100,7 +100,7 @@ def wh_updater(args, queue, key_cache):
                     else:
                         log.debug('Not resending %s to webhook: %s.',
                                   whtype, ident)
-            except Exception as ex:
+            except KeyError as ex:
                 log.debug(
                     'LFUCache thread unsafe exception: %s. Requeuing.', repr(ex))
                 queue.put((whtype, message, scheduler_name, tth_found))
