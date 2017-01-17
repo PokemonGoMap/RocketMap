@@ -27,10 +27,12 @@ import time
 import geopy
 import geopy.distance
 import requests
+import copy
 
 from datetime import datetime
 from threading import Thread
 from queue import Queue, Empty
+from sets import Set
 
 from pgoapi import PGoApi
 from pgoapi.utilities import f2i
@@ -62,10 +64,11 @@ def jitterLocation(location=None, maxMeters=10):
 
 
 # Thread to handle user input.
-def switch_status_printer(display_type, current_page, mainlog, loglevel):
+def switch_status_printer(display_type, current_page, mainlog, loglevel, logmode):
     # Disable logging of the first handler - the stream handler, and disable
     # it's output.
-    mainlog.handlers[0].setLevel(logging.CRITICAL)
+    if (logmode != 'logs'):
+        mainlog.handlers[0].setLevel(logging.CRITICAL)
 
     while True:
         # Wait for the user to press a key.
@@ -95,8 +98,13 @@ def switch_status_printer(display_type, current_page, mainlog, loglevel):
 
 
 # Thread to print out the status of each worker.
-def status_printer(threadStatus, search_items_queue_array, db_updates_queue, wh_queue, account_queue, account_failures):
-    display_type = ["workers"]
+def status_printer(threadStatus, search_items_queue_array, db_updates_queue, wh_queue, account_queue, account_failures, logmode):
+
+    if (logmode == 'logs'):
+        display_type = ["logs"]
+    else:
+        display_type = ["workers"]
+
     current_page = [1]
     # Grab current log / level.
     mainlog = logging.getLogger()
@@ -105,7 +113,7 @@ def status_printer(threadStatus, search_items_queue_array, db_updates_queue, wh_
     # Start another thread to get user input.
     t = Thread(target=switch_status_printer,
                name='switch_status_printer',
-               args=(display_type, current_page, mainlog, loglevel))
+               args=(display_type, current_page, mainlog, loglevel, logmode))
     t.daemon = True
     t.start()
 
@@ -132,23 +140,19 @@ def status_printer(threadStatus, search_items_queue_array, db_updates_queue, wh_
             if usable_height < 1:
                 usable_height = 1
 
-            # Calculate total skipped items.
-            skip_total = 0
-            for item in threadStatus:
-                if 'skip' in threadStatus[item]:
-                    skip_total += threadStatus[item]['skip']
-
             # Print the queue length.
             search_items_queue_size = 0
             for i in range(0, len(search_items_queue_array)):
                 search_items_queue_size += search_items_queue_array[i].qsize()
 
+            skip_total = threadStatus['Overseer']['skip_total']
             status_text.append('Queues: {} search items, {} db updates, {} webhook.  Total skipped items: {}. Spare accounts available: {}. Accounts on hold: {}'
                                .format(search_items_queue_size, db_updates_queue.qsize(), wh_queue.qsize(), skip_total, account_queue.qsize(), len(account_failures)))
 
             # Print status of overseer.
-            status_text.append('{} Overseer: {}'.format(threadStatus['Overseer'][
-                               'scheduler'], threadStatus['Overseer']['message']))
+            status_text.append('{} Overseer: {}'.format(
+                threadStatus['Overseer']['scheduler'],
+                threadStatus['Overseer']['message']))
 
             # Calculate the total number of pages.  Subtracting for the
             # overseer.
@@ -178,11 +182,12 @@ def status_printer(threadStatus, search_items_queue_array, db_updates_queue, wh_
 
             # How pretty.
             status = '{:10} | {:5} | {:' + str(userlen) + '} | {:' + str(
-                proxylen) + '} | {:7} | {:6} | {:5} | {:7} | {:10}'
+                proxylen) + '} | {:7} | {:6} | {:5} | {:7} | {:8} | {:10}'
 
             # Print the worker status.
             status_text.append(status.format('Worker ID', 'Start', 'User',
-                                             'Proxy', 'Success', 'Failed', 'Empty', 'Skipped', 'Message'))
+                                             'Proxy', 'Success', 'Failed', 'Empty',
+                                             'Skipped', 'Captchas', 'Message'))
             for item in sorted(threadStatus):
                 if(threadStatus[item]['type'] == 'Worker'):
                     current_line += 1
@@ -193,8 +198,11 @@ def status_printer(threadStatus, search_items_queue_array, db_updates_queue, wh_
                     if current_line > end_line:
                         break
 
-                    status_text.append(status.format(item, time.strftime('%H:%M', time.localtime(threadStatus[item]['starttime'])), threadStatus[item]['username'], threadStatus[item][
-                                       'proxy_display'], threadStatus[item]['success'], threadStatus[item]['fail'], threadStatus[item]['noitems'], threadStatus[item]['skip'], threadStatus[item]['message']))
+                    status_text.append(
+                        status.format(item, time.strftime('%H:%M', time.localtime(threadStatus[item]['starttime'])),
+                                      threadStatus[item]['username'], threadStatus[item]['proxy_display'],
+                                      threadStatus[item]['success'], threadStatus[item]['fail'], threadStatus[item]['noitems'],
+                                      threadStatus[item]['skip'], threadStatus[item]['captcha'], threadStatus[item]['message']))
 
         elif display_type[0] == 'failedaccounts':
             status_text.append('-----------------------------------------')
@@ -213,7 +221,6 @@ def status_printer(threadStatus, search_items_queue_array, db_updates_queue, wh_
                 status_text.append(status.format(account['account']['username'], time.strftime(
                     '%H:%M:%S', time.localtime(account['last_fail_time'])), account['reason']))
 
-        # Print the status_text for the current screen.
         status_text.append(
             'Page {}/{}. Page number to switch pages. F to show on hold accounts. <ENTER> alone to switch between status and log view'.format(current_page[0], total_pages))
         # Clear the screen.
@@ -302,6 +309,13 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb, db_updat
     threadStatus['Overseer'] = {
         'message': 'Initializing',
         'type': 'Overseer',
+        'starttime': now(),
+        'active_accounts': 0,
+        'skip_total': 0,
+        'captcha_total': 0,
+        'success_total': 0,
+        'fail_total': 0,
+        'empty_total': 0,
         'scheduler': args.scheduler
     }
 
@@ -309,7 +323,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb, db_updat
         log.info('Starting status printer thread...')
         t = Thread(target=status_printer,
                    name='status_printer',
-                   args=(threadStatus, search_items_queue_array, db_updates_queue, wh_queue, account_queue, account_failures))
+                   args=(threadStatus, search_items_queue_array, db_updates_queue, wh_queue, account_queue, account_failures, args.print_status))
         t.daemon = True
         t.start()
 
@@ -360,6 +374,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb, db_updat
             'fail': 0,
             'noitems': 0,
             'skip': 0,
+            'captcha': 0,
             'username': '',
             'proxy_display': proxy_display,
             'proxy_url': proxy_url
@@ -375,6 +390,12 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb, db_updat
 
     # A place to track the current location.
     current_location = False
+
+    # Keep track of the last status for accounts so we can calculate
+    # what have changed since the last check
+    last_account_status = {}
+
+    stats_timer = 0
 
     # The real work starts here but will halt on pause_bit.set().
     while True:
@@ -426,8 +447,79 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb, db_updat
                 threadStatus['Overseer']['message'] = scheduler_array[
                     i].get_overseer_message()
 
+        # Let's update the total stats and add that info to message
+        update_total_stats(threadStatus, last_account_status)
+        threadStatus['Overseer']['message'] += '\n' + get_stats_message(
+            threadStatus)
+
+        # If enabled, display statistics information into logs on a
+        # periodic basis.
+        if args.stats_log_timer:
+            stats_timer += 1
+            if stats_timer == args.stats_log_timer:
+                log.info(get_stats_message(threadStatus))
+                stats_timer = 0
+
         # Now we just give a little pause here.
         time.sleep(1)
+
+
+def get_stats_message(threadStatus):
+    overseer = threadStatus['Overseer']
+    starttime = overseer['starttime']
+    elapsed = now() - starttime
+    if elapsed == 0:
+        elapsed = 1  # Just to prevent division by 0 errors, set elapsed to 1 millisecond
+
+    sph = overseer['success_total'] * 3600 / elapsed
+    fph = overseer['fail_total'] * 3600 / elapsed
+    eph = overseer['empty_total'] * 3600 / elapsed
+    skph = overseer['skip_total'] * 3600 / elapsed
+    cph = overseer['captcha_total'] * 3600 / elapsed
+    ccost = cph * 0.00299
+    cmonth = ccost * 730
+
+    message = ('Total active: {}  |  Success: {} ({}/hr) | ' +
+               'Fails: {} ({}/hr) | Empties: {} ({}/hr) | ' +
+               'Skips {} ({}/hr) | ' +
+               'Captchas: {} ({}/hr)|${:2}/hr|${:2}/mo').format(
+                   overseer['active_accounts'],
+                   overseer['success_total'], sph,
+                   overseer['fail_total'], fph,
+                   overseer['empty_total'], eph,
+                   overseer['skip_total'], skph,
+                   overseer['captcha_total'], cph,
+                   ccost, cmonth)
+
+    return message
+
+
+def update_total_stats(threadStatus, last_account_status):
+    overseer = threadStatus['Overseer']
+
+    # Calculate totals.
+    usercount = 0
+    current_accounts = Set()
+    for tstatus in threadStatus.itervalues():
+        if tstatus.get('type', '') == 'Worker':
+            usercount += 1
+            username = tstatus.get('username', '')
+            current_accounts.add(username)
+            last_status = last_account_status.get(username, {})
+            overseer['skip_total'] += stat_delta(tstatus, last_status, 'skip')
+            overseer['captcha_total'] += stat_delta(tstatus, last_status, 'captcha')
+            overseer['empty_total'] += stat_delta(tstatus, last_status, 'noitems')
+            overseer['fail_total'] += stat_delta(tstatus, last_status, 'fail')
+            overseer['success_total'] += stat_delta(tstatus, last_status, 'success')
+            last_account_status[username] = copy.deepcopy(tstatus)
+
+    overseer['active_accounts'] = usercount
+
+    # Remove last status for accounts that workers
+    # are not using anymore
+    for username in last_account_status.keys():
+        if username not in current_accounts:
+            del last_account_status[username]
 
 
 # Generates the list of locations to scan.
@@ -519,13 +611,14 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                                                                   'username'])
             log.info(status['message'])
 
-            stagger_thread(args, account)
-
             # New lease of life right here.
             status['fail'] = 0
             status['success'] = 0
             status['noitems'] = 0
             status['skip'] = 0
+            status['captcha'] = 0
+
+            stagger_thread(args, account)
 
             # Sleep when consecutive_fails reaches max_failures, overall fails
             # for stat purposes.
@@ -713,6 +806,7 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                         captcha_url = response_dict['responses'][
                             'CHECK_CHALLENGE']['challenge_url']
                         if len(captcha_url) > 1:
+                            status['captcha'] += 1
                             status['message'] = 'Account {} is encountering a captcha, starting 2captcha sequence.'.format(account[
                                                                                                                            'username'])
                             log.warning(status['message'])
@@ -997,6 +1091,11 @@ def stagger_thread(args, account):
         account) * args.login_delay + ((random.random() - .5) / 2)
     log.debug('Delaying thread startup for %.2f seconds...', delay)
     time.sleep(delay)
+
+
+# The delta from last stat to current stat
+def stat_delta(current_status, last_status, stat_name):
+    return current_status.get(stat_name, 0) - last_status.get(stat_name, 0)
 
 
 class TooManyLoginAttempts(Exception):
