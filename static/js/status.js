@@ -75,6 +75,9 @@ function addTable (hash) {
         <div class="status_cell">
           Skipped
         </div>
+          <div class="status_cell">
+          Captchas
+        </div>
         <div class="status_cell">
           Hash Key
         </div>
@@ -83,8 +86,7 @@ function addTable (hash) {
         </div>
         <div class="status_cell">
           RPM Left
-          Captchas
-        </div>
+          </div>
         <div class="status_cell">
           Last Modified
         </div>
@@ -133,10 +135,10 @@ function addWorker (mainWorkerHash, workerHash) {
       <div id="fail_${workerHash}"     class="status_cell"/>
       <div id="no_items_${workerHash}"  class="status_cell"/>
       <div id="skip_${workerHash}"     class="status_cell"/>
+      <div id="captchas_${workerHash}" class="status_cell"/>
       <div id="hash_key_${workerHash}" class="status_cell"/>
       <div id="maximum_rpm_${workerHash}" class="status_cell"/>
       <div id="rpm_left_${workerHash}" class="status_cell"/>
-      <div id="captchas_${workerHash}" class="status_cell"/>
       <div id="lastmod_${workerHash}"  class="status_cell"/>
       <div id="message_${workerHash}"  class="status_cell"/>
     </div>
@@ -177,10 +179,10 @@ function processWorker (i, worker) {
   $('#fail_' + hash).html(worker['fail'])
   $('#no_items_' + hash).html(worker['no_items'])
   $('#skip_' + hash).html(worker['skip'])
+  $('#captchas_' + hash).html(worker['captcha'])
   $('#hash_key_' + hash).html(worker['hash_key'])
   $('#maximum_rpm_' + hash).html(worker['maximum_rpm'])
   $('#rpm_left_' + hash).html(worker['rpm_left'])
-  $('#captchas_' + hash).html(worker['captcha'])
   $('#lastmod_' + hash).html(lastModified)
   $('#message_' + hash).html(worker['message'])
 }
