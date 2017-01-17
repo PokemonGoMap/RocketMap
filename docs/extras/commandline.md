@@ -73,6 +73,14 @@
                             Load accounts from CSV file containing
                             "auth_service,username,passwd" lines [env var:
                             POGOMAP_ACCOUNTCSV]
+      -bh, --beehive        Use beehive configuration for multiple accounts, one
+                            account per hex. Make sure to keep -st under 5, and -w
+                            under the total amount of accounts available. [env
+                            var: POGOMAP_BEEHIVE]
+      -wph WORKERS_PER_HIVE, --workers-per-hive WORKERS_PER_HIVE
+                            Only referenced when using --beehive. Sets number of
+                            workers per hive. Default value is 1. [env var:
+                            POGOMAP_WORKERS_PER_HIVE]
       -l LOCATION, --location LOCATION
                             Location, can be an address or coordinates [env var:
                             POGOMAP_LOCATION]
