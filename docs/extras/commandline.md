@@ -44,7 +44,7 @@
 	override defaults.
  
 	optional arguments:
-	-h, --help          	show this help message and exit [env var:
+	-h, --help          				show this help message and exit [env var:
 							POGOMAP_HELP]
 	-cf CONFIG, --config CONFIG
 							Configuration file
@@ -73,7 +73,7 @@
 							Load accounts from CSV file containing
 							"auth_service,username,passwd" lines. [env var:
 							POGOMAP_ACCOUNTCSV]
-	-bh, --beehive      	Use beehive configuration for multiple accounts, one
+	-bh, --beehive      				Use beehive configuration for multiple accounts, one
 							account per hex. Make sure to keep -st under 5, and -w
 							under the total amount of accounts available. [env
 							var: POGOMAP_BEEHIVE]
@@ -84,7 +84,7 @@
 	-l LOCATION, --location LOCATION
 							Location, can be an address or coordinates. [env var:
 							POGOMAP_LOCATION]
-	-nj, --no-jitter     	Don't apply random -9m to +9m jitter to location. [env
+	-nj, --no-jitter     				Don't apply random -9m to +9m jitter to location. [env
 							var: POGOMAP_NO_JITTER]
 	-st STEP_LIMIT, --step-limit STEP_LIMIT
 							Steps. [env var: POGOMAP_STEP_LIMIT]
@@ -95,7 +95,7 @@
 							Number of seconds after spawn time to wait before
 							scanning to be sure the Pokemon is there. [env var:
 							POGOMAP_SPAWN_DELAY]
-	-enc, --encounter   	Start an encounter to gather IVs and moves. [env var:
+	-enc, --encounter   				Start an encounter to gather IVs and moves. [env var:
 							POGOMAP_ENCOUNTER]
 	-cs, --captcha-solving
 							Enables captcha solving. [env var:
@@ -147,14 +147,14 @@
 							Locale for Pokemon names (default: en, check
 							static/dist/locales for more). [env var:
 							POGOMAP_LOCALE]
-	-c, --china          	Coordinates transformer for China. [env var:
+	-c, --china          				Coordinates transformer for China. [env var:
 							POGOMAP_CHINA]
-	-m MOCK, --mock MOCK  	Mock mode - point to a fpgo endpoint instead of using
+	-m MOCK, --mock MOCK  				Mock mode - point to a fpgo endpoint instead of using
 							the real PogoApi, ec: http://127.0.0.1:9090 [env var:
 							POGOMAP_MOCK]
-	-ns, --no-server      	No-Server Mode. Starts the searcher but not the
+	-ns, --no-server      				No-Server Mode. Starts the searcher but not the
 							Webserver. [env var: POGOMAP_NO_SERVER]
-	-os, --only-server    	Server-Only Mode. Starts only the Webserver without
+	-os, --only-server    				Server-Only Mode. Starts only the Webserver without
 							the searcher. [env var: POGOMAP_ONLY_SERVER]
 	-nsc, --no-search-control
 							Disables search control. [env var:
@@ -165,28 +165,28 @@
 	-k GMAPS_KEY, --gmaps-key GMAPS_KEY
 							Google Maps Javascript API Key. [env var:
 							POGOMAP_GMAPS_KEY]
-	--skip-empty          	Enables skipping of empty cells in normal scans -
+	--skip-empty          				Enables skipping of empty cells in normal scans -
 							requires previously populated database (not to be used
 							with -ss) [env var: POGOMAP_SKIP_EMPTY]
-	-C, --cors				Enable CORS on web server. [env var: POGOMAP_CORS]
-	-D DB, --db DB       	Database filename for SQLite. [env var: POGOMAP_DB]
-	-cd, --clear-db       	Deletes the existing database before starting the
+	-C, --cors					Enable CORS on web server. [env var: POGOMAP_CORS]
+	-D DB, --db DB       				Database filename for SQLite. [env var: POGOMAP_DB]
+	-cd, --clear-db       				Deletes the existing database before starting the
 							Webserver. [env var: POGOMAP_CLEAR_DB]
-	-np, --no-pokemon     	Disables Pokemon from the map (including parsing them
+	-np, --no-pokemon     				Disables Pokemon from the map (including parsing them
 							into local db.) [env var: POGOMAP_NO_POKEMON]
-	-ng, --no-gyms        	Disables Gyms from the map (including parsing them
+	-ng, --no-gyms        				Disables Gyms from the map (including parsing them
 							into local db). [env var: POGOMAP_NO_GYMS]
-	-nk, --no-pokestops   	Disables PokeStops from the map (including parsing
+	-nk, --no-pokestops   				Disables PokeStops from the map (including parsing
 							them into local db). [env var: POGOMAP_NO_POKESTOPS]
 	-ss [SPAWNPOINT_SCANNING], --spawnpoint-scanning [SPAWNPOINT_SCANNING]
 							Use spawnpoint scanning (instead of hex grid). Scans
 							in a circle based on step_limit when on DB. [env var:
 							POGOMAP_SPAWNPOINT_SCANNING]
-	-speed, --speed-scan 	 Use speed scanning to identify spawn points and then
+	-speed, --speed-scan 	 			Use speed scanning to identify spawn points and then
 							scan closest spawns. [env var: POGOMAP_SPEED_SCAN]
-	-kph KPH, --kph KPH  	 Set a maximum speed in km/hour for scanner movement.
+	-kph KPH, --kph KPH  	 			Set a maximum speed in km/hour for scanner movement.
 							[env var: POGOMAP_KPH]
-	--dump-spawnpoints   	 Dump the spawnpoints from the db to json (only for use
+	--dump-spawnpoints   	 			Dump the spawnpoints from the db to json (only for use
 							with -ss). [env var: POGOMAP_DUMP_SPAWNPOINTS]
 	-pd PURGE_DATA, --purge-data PURGE_DATA
 							Clear Pokemon from database this many hours after they
@@ -216,15 +216,15 @@
 							Enable proxy rotation with account changing for search
 							threads (none/round/random). [env var:
 							POGOMAP_PROXY_ROTATION]
-	--db-type DB_TYPE    	Type of database to be used (default: sqlite). [env
+	--db-type DB_TYPE    				Type of database to be used (default: sqlite). [env
 							var: POGOMAP_DB_TYPE]
-	--db-name DB_NAME    	Name of the database to be used. [env var:
+	--db-name DB_NAME    				Name of the database to be used. [env var:
 							POGOMAP_DB_NAME]
-	--db-user DB_USER    	Username for the database. [env var: POGOMAP_DB_USER]
-	--db-pass DB_PASS     	Password for the database. [env var: POGOMAP_DB_PASS]
-	--db-host DB_HOST     	IP or hostname for the database. [env var:
+	--db-user DB_USER    				Username for the database. [env var: POGOMAP_DB_USER]
+	--db-pass DB_PASS     				Password for the database. [env var: POGOMAP_DB_PASS]
+	--db-host DB_HOST     				IP or hostname for the database. [env var:
 							POGOMAP_DB_HOST]
-	--db-port DB_PORT     	Port for the database. [env var: POGOMAP_DB_PORT]
+	--db-port DB_PORT     				Port for the database. [env var: POGOMAP_DB_PORT]
 	--db-max_connections DB_MAX_CONNECTIONS
 							Max connections (per thread) for the database. [env
 							var: POGOMAP_DB_MAX_CONNECTIONS]
@@ -234,9 +234,9 @@
 	-wh WEBHOOKS, --webhook WEBHOOKS
 							Define URL(s) to POST webhook information to. [env
 							var: POGOMAP_WEBHOOK]
-	-gi, --gym-info       	Get all details about gyms (causes an additional API
+	-gi, --gym-info       				Get all details about gyms (causes an additional API
 							hit for every gym). [env var: POGOMAP_GYM_INFO]
-	--disable-clean       	Disable clean db loop. [env var:
+	--disable-clean       				Disable clean db loop. [env var:
 							POGOMAP_DISABLE_CLEAN]
 	--webhook-updates-only
 							Only send updates (Pokemon & lured pokestops). [env
