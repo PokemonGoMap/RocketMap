@@ -802,11 +802,10 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                 # todo's to db/wh queues.
                 try:
                     # Captcha check.
-                    if args.captcha_solving:
-                        captcha_url = response_dict['responses'][
-                            'CHECK_CHALLENGE']['challenge_url']
-                        if len(captcha_url) > 1:
-                            status['captcha'] += 1
+                    captcha_url = response_dict['responses']['CHECK_CHALLENGE']['challenge_url']
+                    if len(captcha_url) > 1:
+                        status['captcha'] += 1
+                        if args.captcha_solving:
                             status['message'] = 'Account {} is encountering a captcha, starting 2captcha sequence.'.format(account[
                                                                                                                            'username'])
                             log.warning(status['message'])
@@ -842,6 +841,11 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                                     account_failures.append({'account': account, 'last_fail_time': now(
                                     ), 'reason': 'captcha failed to verify'})
                                     break
+                        else:
+                            status['message'] = "Account {} has encountered a captcha, putting away account for now.".format(account['username'])
+                            log.info(status['message'])
+                            account_failures.append({'account': account, 'last_fail_time': now(), 'reason': 'captcha found'})
+                            break
 
                     parsed = parse_map(args, response_dict,
                                        step_location, dbq, whq, api, scan_date)
