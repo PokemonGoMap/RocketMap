@@ -200,8 +200,10 @@ def status_printer(threadStatus, search_items_queue_array, db_updates_queue, wh_
 
                     status_text.append(
                         status.format(item, time.strftime('%H:%M', time.localtime(threadStatus[item]['starttime'])),
-                                      threadStatus[item]['username'], threadStatus[item]['proxy_display'],
-                                      threadStatus[item]['success'], threadStatus[item]['fail'], threadStatus[item]['noitems'],
+                                      threadStatus[item]['username'], threadStatus[
+                                          item]['proxy_display'],
+                                      threadStatus[item]['success'], threadStatus[
+                                          item]['fail'], threadStatus[item]['noitems'],
                                       threadStatus[item]['skip'], threadStatus[item]['captcha'], threadStatus[item]['message']))
 
         elif display_type[0] == 'failedaccounts':
@@ -507,10 +509,13 @@ def update_total_stats(threadStatus, last_account_status):
             current_accounts.add(username)
             last_status = last_account_status.get(username, {})
             overseer['skip_total'] += stat_delta(tstatus, last_status, 'skip')
-            overseer['captcha_total'] += stat_delta(tstatus, last_status, 'captcha')
-            overseer['empty_total'] += stat_delta(tstatus, last_status, 'noitems')
+            overseer[
+                'captcha_total'] += stat_delta(tstatus, last_status, 'captcha')
+            overseer[
+                'empty_total'] += stat_delta(tstatus, last_status, 'noitems')
             overseer['fail_total'] += stat_delta(tstatus, last_status, 'fail')
-            overseer['success_total'] += stat_delta(tstatus, last_status, 'success')
+            overseer[
+                'success_total'] += stat_delta(tstatus, last_status, 'success')
             last_account_status[username] = copy.deepcopy(tstatus)
 
     overseer['active_accounts'] = usercount
