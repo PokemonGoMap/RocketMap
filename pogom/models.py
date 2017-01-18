@@ -800,8 +800,7 @@ class ScannedLocation(BaseModel):
 
     @classmethod
     def get_by_locs(cls, locs):
-        lats = [loc[0] for loc in locs]
-        lons = [loc[1] for loc in locs]
+        lats, lons = zip(*locs)
         query = (cls
                  .select()
                  .where((ScannedLocation.latitude << lats) &
