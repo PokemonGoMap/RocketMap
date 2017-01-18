@@ -816,7 +816,7 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                     # Captcha check.
                     captcha_url = response_dict['responses'][
                         'CHECK_CHALLENGE']['challenge_url']
-                    if captcha_url:
+                    if len(captcha_url) > 1:
                         status['captcha'] += 1
                         if args.captcha_solving:
                             status['message'] = 'Account {} is encountering a captcha, starting 2captcha sequence.'.format(account[
@@ -848,7 +848,7 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                                         api, step_location, args.no_jitter)
                                     status['last_scan_date'] = datetime.utcnow()
                                 else:
-                                    status['message'] = "Account {} failed verifyChallenge, putting away account for now.".format(account[
+                                    status['message'] = 'Account {} failed verifyChallenge, putting away account for now.'.format(account[
                                                                                                                                   'username'])
                                     log.info(status['message'])
                                     account_failures.append({'account': account, 'last_fail_time': now(
@@ -862,8 +862,8 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                                 {'account': account, 'last_fail_time': now(), 'reason': 'captcha found'})
                             break
 
-                    parsed = parse_map(args, response_dict,
-                                       step_location, dbq, whq, api, scan_date)
+                    parsed = parse_map(
+                        args, response_dict, step_location, dbq, whq, api, scan_date, scheduler)
                     scheduler.task_done(status, parsed)
                     if parsed['count'] > 0:
                         status['success'] += 1
@@ -963,7 +963,8 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                         log.debug(status['message'])
 
                         if gym_responses:
-                            parse_gyms(args, gym_responses, whq, dbq)
+                            parse_gyms(args, gym_responses,
+                                       whq, dbq, scheduler)
 
                 # Delay the desired amount after "scan" completion.
                 delay = scheduler.delay(status['last_scan_date'])
