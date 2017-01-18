@@ -983,7 +983,7 @@ class SchedulerFactory():
 class KeyScheduler(object):
 
     def __init__(self, keys):
-        self.keys = []
+        self.keys = {}
         for key in keys:
             # Initialize dict with key and defealt peak value (0)
             self.keys[key] = 0
