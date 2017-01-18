@@ -620,9 +620,43 @@ function isRangeActive(map) {
 function getIv (item) {
     if (item['individual_attack'] !== null) {
         return 100.0 * (item['individual_attack'] + item['individual_defense'] + item['individual_stamina']) / 45
+}
+
+function lpad (str, len, padstr) {
+    return Array(Math.max(len - String(str).length + 1, 0)).join(padstr) + str
+}
+
+function repArray (text, find, replace) {
+    for (var i = 0; i < find.length; i++) {
+        text = text.replace(find[i], replace[i])
     }
 
-    return 0
+    return text
+}
+
+function notifyText (item) {
+    var iv = getIv(item)
+    var find = ['<prc>', '<pkm>', '<atk>', '<def>', '<sta>']
+    var replace = [iv.toFixed(1), item['pokemon_name'], item['individual_attack'],
+        item['individual_defense'], item['individual_stamina']]
+    var ntitle = repArray(Store.get('notify_title'), find, replace)
+    var dtime = new Date(item['disappear_time'])
+    var dist = lpad(dtime.getHours(), 2, 0)
+    dist += ':'
+    dist += lpad(dtime.getMinutes(), 2, 0)
+    dist += ':'
+    dist += lpad(dtime.getSeconds(), 2, 0)
+    var until = getTimeUntil(item['disappear_time'])
+    var udist = (until.hour > 0) ? until.hour + ':' : ''
+    udist += lpad(until.min, 2, 0) + 'm' + lpad(until.sec, 2, 0) + 's'
+    find = ['<dist>', '<udist>']
+    replace = [dist, udist]
+    var ntext = repArray(Store.get('notify_text'), find, replace)
+
+    return {
+        'fav_title': ntitle,
+        'fav_text': ntext
+    }
 }
 
 function getTimeUntil (time) {
@@ -638,26 +672,6 @@ function getTimeUntil (time) {
         'hour': hour,
         'min': min,
         'sec': sec
-    }
-}
-
-function notifyText (item) {
-    var perfection = getIv(item)
-    var ivtext = perfection.toFixed(1) + '% (' + item['individual_attack'] + '/' + item['individual_defense'] + '/' + item['individual_stamina'] + ')'
-    var dtime = new Date(item['disappear_time'])
-    var distext = ('0' + dtime.getHours()).slice(-2)
-    distext += ':'
-    distext += ('0' + dtime.getMinutes()).slice(-2)
-    distext += ':'
-    distext += ('0' + dtime.getSeconds()).slice(-2)
-    var until = getTimeUntil(item['disappear_time'])
-    var untiltext = '('
-    untiltext += (until.hour > 0) ? until.hour + ':' : ''
-    untiltext += ('0' + until.min).slice(-2) + 'm' + ('0' + until.sec).slice(-2) + 's' + ')'
-
-    return {
-        'fav_title': item['pokemon_name'] + ' ' + ivtext,
-        'fav_text': 'available until ' + distext + ' ' + untiltext
     }
 }
 
