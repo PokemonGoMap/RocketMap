@@ -415,6 +415,17 @@ class Pokemon(BaseModel):
 
         return filtered
 
+    @classmethod
+    def get_spawn_history(cls, spawnpoint_id):
+        query = (Pokemon
+                 .select(fn.Count(Pokemon.pokemon_id).alias('count'), Pokemon.pokemon_id)
+                 .where((Pokemon.spawnpoint_id == spawnpoint_id))
+                 .group_by(Pokemon.pokemon_id)
+                 .order_by(Pokemon.pokemon_id)
+                 .dicts())
+
+        return list(query)
+
 
 class Pokestop(BaseModel):
     pokestop_id = CharField(primary_key=True, max_length=50)
