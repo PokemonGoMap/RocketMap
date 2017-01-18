@@ -983,11 +983,18 @@ class SchedulerFactory():
 class KeyScheduler(object):
 
     def __init__(self, keys):
-        self.keys = keys
-        self.key_cycle = itertools.cycle(self.keys)
+        self.keys = []
+        for key in keys:
+            # Initialize dict with key and defealt peak value (0)
+            self.keys[key] = 0
+
+        self.key_cycle = itertools.cycle(keys)
         self.curr_key = ''
 
-    def current_key(self):
+    def keys(self):
+        return self.keys
+
+    def current(self):
         return self.curr_key
 
     def next(self):

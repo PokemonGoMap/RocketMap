@@ -104,7 +104,7 @@ def switch_status_printer(display_type, current_page, mainlog, loglevel, logmode
 
 
 # Thread to print out the status of each worker.
-def status_printer(threadStatus, search_items_queue_array, db_updates_queue, wh_queue, account_queue, account_failures, logmode, args, key_scheduler):
+def status_printer(threadStatus, search_items_queue_array, db_updates_queue, wh_queue, account_queue, account_failures, logmode, hash_key, key_scheduler):
 
     if (logmode == 'logs'):
         display_type = ["logs"]
@@ -234,18 +234,19 @@ def status_printer(threadStatus, search_items_queue_array, db_updates_queue, wh_
             status_text.append('Hash key status:')
             status_text.append('-----------------------------------------')
 
-            status = '{:20} | {:9} | {:7}'
-            status_text.append(status.format('Key', 'Remaining', 'Maximum'))
+            status = '{:20} | {:9} | {:9} | {:9}'
+            status_text.append(status.format('Key', 'Remaining', 'Maximum', 'Peak'))
 
-            for key in args.hash_key:
-                rm = 'N/A'
-                mx = 'N/A'
+            for key in hash_key:
+                rm = HashServer.status.get('remaining', 'N/A')
+                mx = HashServer.status.get('maximum', 'N/A')
 
-                if (key_scheduler):
-                    rm = HashServer.status.get('remaining', 'N/A')
-                    mx = HashServer.status.get('maximum', 'N/A')
+                total_used = mx - rm
 
-                status_text.append(status.format(key, rm, mx))
+                if key_scheduler.keys[key] < total_used:
+                    key_scheduler.keys[key] = total_used
+
+                status_text.append(status.format(key, rm, mx, key_scheduler.keys[key]))
 
         status_text.append(
             'Page {}/{}. Page number to switch pages. F to show on hold accounts. H to show hash status. <ENTER> alone to switch between status and log view'.format(current_page[0], total_pages))
@@ -351,26 +352,11 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb, db_updat
         log.info('Enabling hashing key scheduler...')
         key_scheduler = schedulers.KeyScheduler(args.hash_key)
 
-    # Create the key scheduler.
-    if args.hash_key:
-        log.info('Enabling hashing key scheduler...')
-        key_scheduler = schedulers.KeyScheduler(args.hash_key)
-
-    # Create the key scheduler.
-    if args.hash_key:
-        log.info('Enabling hashing key scheduler...')
-        key_scheduler = schedulers.KeyScheduler(args.hash_key)
-
-    # Create the key scheduler.
-    if args.hash_key:
-        log.info('Enabling hashing key scheduler...')
-        key_scheduler = schedulers.KeyScheduler(args.hash_key)
-
     if(args.print_status):
         log.info('Starting status printer thread...')
         t = Thread(target=status_printer,
                    name='status_printer',
-                   args=(threadStatus, search_items_queue_array, db_updates_queue, wh_queue, account_queue, account_failures, args.print_status, args, key_scheduler))
+                   args=(threadStatus, search_items_queue_array, db_updates_queue, wh_queue, account_queue, account_failures, args.print_status, args.hash_key, key_scheduler))
         t.daemon = True
         t.start()
 
