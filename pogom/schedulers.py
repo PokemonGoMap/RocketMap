@@ -322,7 +322,6 @@ class SpawnScan(BaseScheduler):
 
         # If we are only scanning for pokestops/gyms, the scan radius can be
         # 450m.  Otherwise 70m.
->>>>>>> Rework + .next() for consistency.
         if self.args.no_pokemon:
             self.step_distance = 0.450
         else:
