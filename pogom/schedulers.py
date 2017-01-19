@@ -986,7 +986,10 @@ class KeyScheduler(object):
         self.keys = {}
         for key in keys:
             # Initialize dict with key and defealt peak value (0)
-            self.keys[key] = 0
+            self.keys[key] = {
+                'maximum': 0,
+                'peak': 0
+            }
 
         self.key_cycle = itertools.cycle(keys)
         self.curr_key = ''

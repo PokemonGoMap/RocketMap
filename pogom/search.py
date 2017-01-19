@@ -230,23 +230,37 @@ def status_printer(threadStatus, search_items_queue_array, db_updates_queue, wh_
                     '%H:%M:%S', time.localtime(account['last_fail_time'])), account['reason']))
 
         elif display_type[0] == 'hashstatus':
-            status_text.append('-----------------------------------------')
+            status_text.append('----------------------------------------------------------')
             status_text.append('Hash key status:')
-            status_text.append('-----------------------------------------')
+            status_text.append('----------------------------------------------------------')
 
             status = '{:20} | {:9} | {:9} | {:9}'
             status_text.append(status.format('Key', 'Remaining', 'Maximum', 'Peak'))
 
             for key in hash_key:
-                rm = HashServer.status.get('remaining', 'N/A')
-                mx = HashServer.status.get('maximum', 'N/A')
+                key_instance = key_scheduler.keys[key]
 
-                total_used = mx - rm
+                rm = 'N/A'
+                mx = key_instance['maximum']
+                pk = key_instance['peak']
 
-                if key_scheduler.keys[key] < total_used:
-                    key_scheduler.keys[key] = total_used
+                if key_scheduler.current() == key:
+                    rm = HashServer.status.get('remaining', 'N/A')
 
-                status_text.append(status.format(key, rm, mx, key_scheduler.keys[key]))
+                    if mx == 0:
+                        mx = HashServer.status.get('maximum', 0)
+
+                    if isinstance(rm, int) and isinstance(mx, int):
+                        pk = mx - rm
+
+                if key_instance['maximum'] < mx:
+                    key_instance['maximum'] = mx
+
+                if isinstance(pk, int):
+                    if key_instance['peak'] < pk:
+                        key_instance['peak'] = pk
+
+                status_text.append(status.format(key, rm, mx, key_instance['peak']))
 
         status_text.append(
             'Page {}/{}. Page number to switch pages. F to show on hold accounts. H to show hash status. <ENTER> alone to switch between status and log view'.format(current_page[0], total_pages))
@@ -269,6 +283,7 @@ def account_recycler(accounts_queue, account_failures, args):
         # Create a new copy of the failure list to search through, so we can
         # iterate through it without it changing.
         failed_temp = list(account_failures)
+
 
         # Search through the list for any item that last failed before
         # -ari/--account-rest-interval seconds.
@@ -688,7 +703,17 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                 api = FakePogoApi(args.mock)
             else:
                 api = PGoApi()
-
+            #Wrap device info around API
+            device = {
+                "device_id": '3d65919ca1c2fc3a8e2bd7cc3f974c34',
+                "device_brand": 'Apple',
+                "device_model": 'iPhone',
+                "hardware_manufacturer": 'Apple',
+                "hardware_model": 'N66AP',
+                "firmware_brand": 'iPhone OS',
+                "firmware_type": '9.3.3'
+            }
+            response = api.__init__(device_info=device)
             # New account - new proxy.
             if args.proxy:
                 # If proxy is not assigned yet or if proxy-rotation is defined
