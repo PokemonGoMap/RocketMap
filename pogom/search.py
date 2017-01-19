@@ -879,7 +879,7 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                                     remaining = HashServer.status.get('remaining')
                                     request.call()
                                     status['rpm_left'] = remaining
-                                    log.info('Hash Key {} with Maximum {} RPM has {} RPM left.'.format(key, maximum, remaining))
+                                    log.info('Hash Key {} has {}/{} RPM left.'.format(key, remaining, maximum))
                                 except Exception as e:
                                     log.error('Hash Key {} exceeded RPM! {}.'.format(key, e))
 
