@@ -284,7 +284,6 @@ def account_recycler(accounts_queue, account_failures, args):
         # iterate through it without it changing.
         failed_temp = list(account_failures)
 
-
         # Search through the list for any item that last failed before
         # -ari/--account-rest-interval seconds.
         ok_time = now() - args.account_rest_interval
