@@ -866,27 +866,6 @@ var StoreOptions = {
         default: '',
         type: StoreTypes.Number
     },
-    /*
-        text place holders:
-        <pkm> - pokemon name
-        <prc> - iv in percent without percent symbol
-        <atk> - attack as number
-        <def> - defense as number
-        <sta> - stamnia as number
-    */
-    'notify_title': {
-        default: '<pkm> <prc>% (<atk>/<def>/<sta>)',
-        type: StoreTypes.String
-    },
-    /*
-        text place holders:
-        <dist>  - disappear time
-        <udist> - time until disappear
-    */
-    'notify_text': {
-        default: 'disappear at <dist> (<udist>)',
-        type: StoreTypes.String
-    },
     'showGyms': {
         default: false,
         type: StoreTypes.Boolean
