@@ -985,8 +985,8 @@ class KeyScheduler(object):
     def __init__(self, keys):
         self.keys = {}
         for key in keys:
-            # Initialize dict with key and defealt peak value (0)
             self.keys[key] = {
+                'remaining': 0,
                 'maximum': 0,
                 'peak': 0
             }

@@ -234,33 +234,17 @@ def status_printer(threadStatus, search_items_queue_array, db_updates_queue, wh_
             status_text.append('Hash key status:')
             status_text.append('----------------------------------------------------------')
 
-            status = '{:20} | {:9} | {:9} | {:9}'
+            status = '{:21} | {:9} | {:9} | {:9}'
             status_text.append(status.format('Key', 'Remaining', 'Maximum', 'Peak'))
 
             for key in hash_key:
                 key_instance = key_scheduler.keys[key]
-
-                rm = 'N/A'
-                mx = key_instance['maximum']
-                pk = key_instance['peak']
+                key_text = key
 
                 if key_scheduler.current() == key:
-                    rm = HashServer.status.get('remaining', 'N/A')
+                    key_text += '*'
 
-                    if mx == 0:
-                        mx = HashServer.status.get('maximum', 0)
-
-                    if isinstance(rm, int) and isinstance(mx, int):
-                        pk = mx - rm
-
-                if key_instance['maximum'] < mx:
-                    key_instance['maximum'] = mx
-
-                if isinstance(pk, int):
-                    if key_instance['peak'] < pk:
-                        key_instance['peak'] = pk
-
-                status_text.append(status.format(key, rm, mx, key_instance['peak']))
+                status_text.append(status.format(key_text, key_instance['remaining'], key_instance['maximum'], key_instance['peak']))
 
         status_text.append(
             'Page {}/{}. Page number to switch pages. F to show on hold accounts. H to show hash status. <ENTER> alone to switch between status and log view'.format(current_page[0], total_pages))
@@ -1011,6 +995,18 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                         if gym_responses:
                             parse_gyms(args, gym_responses,
                                        whq, dbq)
+
+                if args.hash_key:
+                    key_instance = key_scheduler.keys[key_scheduler.current()]
+                    key_instance['remaining'] = HashServer.status.get('remaining', 'N/A')
+                    
+                    if key_instance['maximum'] == 0:
+                        key_instance['maximum'] = HashServer.status.get('maximum', 0)
+
+                    peak = key_instance['maximum'] - key_instance['remaining']
+
+                    if key_instance['peak'] < peak:
+                        key_instance['peak'] = peak
 
                 # Delay the desired amount after "scan" completion.
                 delay = scheduler.delay(status['last_scan_date'])
