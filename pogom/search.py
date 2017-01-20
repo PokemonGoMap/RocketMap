@@ -1023,6 +1023,18 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                     if key_instance['peak'] < peak:
                         key_instance['peak'] = peak
 
+                if args.hash_key:
+                    key_instance = key_scheduler.keys[key_scheduler.current()]
+                    key_instance['remaining'] = HashServer.status.get('remaining', 'N/A')
+                    
+                    if key_instance['maximum'] == 0:
+                        key_instance['maximum'] = HashServer.status.get('maximum', 0)
+
+                    peak = key_instance['maximum'] - key_instance['remaining']
+
+                    if key_instance['peak'] < peak:
+                        key_instance['peak'] = peak
+
                 # Delay the desired amount after "scan" completion.
                 delay = scheduler.delay(status['last_scan_date'])
                 status['message'] += ', sleeping {}s until {}.'.format(
