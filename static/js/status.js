@@ -239,36 +239,35 @@ function loadRawData() {
  * Document ready
  */
 $(document).ready(function () {
-// Set focus on password field.
-$('#password').focus()
+    // Set focus on password field.
+    $('#password').focus()
 
-// Register to events.
-$('#password_form').submit(function (event) {
-    event.preventDefault()
+    // Register to events.
+    $('#password_form').submit(function (event) {
+        event.preventDefault()
 
-    statusPagePassword = $('#password').val()
+        statusPagePassword = $('#password').val()
 
-    loadRawData().done(function (result) {
-        if (result.login === 'ok') {
-            $('.status_form').remove()
-            parseResult(result)
-            window.setTimeout(updateStatus, 1000)
-        } else {
-            $('.status_form').effect('bounce')
-            $('#password').focus()
+        loadRawData().done(function (result) {
+            if (result.login === 'ok') {
+                $('.status_form').remove()
+                parseResult(result)
+                window.setTimeout(updateStatus, 1000)
+            } else {
+                $('.status_form').effect('bounce')
+                $('#password').focus()
+            }
+        })
+    })
+
+    $('#groupbyworker-switch').change(function () {
+        groupByWorker = this.checked
+
+        $('#status_container .status_table').remove()
+        $('#status_container .worker').remove()
+
+        if (statusPagePassword) {
+            updateStatus()
         }
     })
 })
-
-$('#groupbyworker-switch').change(function () {
-    groupByWorker = this.checked
-
-    $('#status_container .status_table').remove()
-    $('#status_container .worker').remove()
-
-    if (statusPagePassword) {
-        updateStatus()
-    }
-})
-})
-)
