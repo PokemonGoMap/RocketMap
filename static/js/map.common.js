@@ -894,12 +894,32 @@ var StoreOptions = {
     default: false,
     type: StoreTypes.Boolean
   },
+  'showOpenGymsOnly': {
+    default: 0,
+    type: StoreTypes.Number
+  },
+  'showTeamGymsOnly': {
+    default: 0,
+    type: StoreTypes.Number
+  },
+  'showLastUpdatedGymsOnly': {
+    default: 0,
+    type: StoreTypes.Number
+  },
+  'minGymLevel': {
+    default: 0,
+    type: StoreTypes.Number
+  },
+  'maxGymLevel': {
+    default: 10,
+    type: StoreTypes.Number
+  },
   'showPokemon': {
     default: true,
     type: StoreTypes.Boolean
   },
   'showPokestops': {
-    default: true,
+    default: false,
     type: StoreTypes.Boolean
   },
   'showLuredPokestopsOnly': {
@@ -931,7 +951,7 @@ var StoreOptions = {
     type: StoreTypes.Boolean
   },
   'startAtUserLocation': {
-    default: false,
+    default: true,
     type: StoreTypes.Boolean
   },
   'followMyLocation': {
@@ -956,6 +976,14 @@ var StoreOptions = {
   },
   'iconSizeModifier': {
     default: 0,
+    type: StoreTypes.Number
+  },
+  'showTimers': {
+    default: true,
+    type: StoreTypes.Boolean
+  },
+  'hideTimersAtZoomLevel': {
+    default: 18,
     type: StoreTypes.Number
   },
   'searchMarkerStyle': {
@@ -1040,22 +1068,42 @@ function setupPokemonMarker (item, map, isBounceDisabled) {
   var pokemonIndex = item['pokemon_id'] - 1
   var sprite = pokemonSprites[Store.get('pokemonIcons')] || pokemonSprites['highres']
   var icon = getGoogleSprite(pokemonIndex, sprite, iconSize)
+  var hideTimersAtZoomLevel = Store.get('hideTimersAtZoomLevel')
+  var showTimers = Store.get('showTimers')
 
   var animationDisabled = false
   if (isBounceDisabled === true) {
     animationDisabled = true
   }
 
-  var marker = new google.maps.Marker({
-    position: {
-      lat: item['latitude'],
-      lng: item['longitude']
-    },
-    zIndex: 9999,
-    map: map,
-    icon: icon,
-    animationDisabled: animationDisabled
-  })
+  var marker
+
+  if (showTimers && map.getZoom() >= hideTimersAtZoomLevel) {
+    marker = new MarkerWithLabel({ // eslint-disable-line no-undef
+      position: {
+        lat: item['latitude'],
+        lng: item['longitude']
+      },
+      zIndex: 9999,
+      map: map,
+      icon: icon,
+      labelAnchor: new google.maps.Point(13, -iconSize / 2.4),
+      labelContent: '<span class=\'label-countdown\' disappears-at=\'' + item['disappear_time'] + '\'> </span>',
+      labelClass: 'pokemonlabel',
+      animationDisabled: animationDisabled
+    })
+  } else {
+    marker = new google.maps.Marker({
+      position: {
+        lat: item['latitude'],
+        lng: item['longitude']
+      },
+      zIndex: 9999,
+      map: map,
+      icon: icon,
+      animationDisabled: animationDisabled
+    })
+  }
 
   return marker
 }

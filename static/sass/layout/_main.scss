@@ -57,3 +57,14 @@ html, body {
     opacity: 0.5;
   }
 }
+
+.pokemonlabel {
+  background: rgba(0, 0, 0, 0.44) none repeat scroll 0% 0%;
+  padding: 1px 4px 1px 4px;
+  border-radius: 25px;
+  font-size: 8px;
+  font-weight: 800;
+  color: #ffffff;
+  position: absolute;
+  z-index: 1000 !important;
+}
