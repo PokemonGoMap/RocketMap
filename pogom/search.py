@@ -401,6 +401,16 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb, db_updat
 
     # The real work starts here but will halt on pause_bit.set().
     while True:
+        # TODO: send regular updates when tth_found changes
+        '''
+        scheduler_name = scheduler.__class__.__name__
+        tth_found = getattr(scheduler, 'tth_found', -1)
+
+        if tth_found > -1:
+        # Avoid division by zero. Keep 0.0 default for consistency.
+        active_sp = max(getattr(scheduler, 'active_sp', 0.0), 1.0)
+        tth_found = tth_found * 100.0 / active_sp
+        '''
 
         if args.on_demand_timeout > 0 and (now() - args.on_demand_timeout) > heartb[0]:
             pause_bit.set()
@@ -861,7 +871,7 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                             break
 
                     parsed = parse_map(
-                        args, response_dict, step_location, dbq, whq, api, scan_date, scheduler)
+                        args, response_dict, step_location, dbq, whq, api, scan_date)
                     scheduler.task_done(status, parsed)
                     if parsed['count'] > 0:
                         status['success'] += 1
@@ -946,7 +956,7 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
 
                         if gym_responses:
                             parse_gyms(args, gym_responses,
-                                       whq, dbq, scheduler)
+                                       whq, dbq)
 
                 # Delay the desired amount after "scan" completion.
                 delay = scheduler.delay(status['last_scan_date'])

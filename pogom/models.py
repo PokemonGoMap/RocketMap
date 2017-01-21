@@ -1529,7 +1529,7 @@ def hex_bounds(center, steps=None, radius=None):
 
 # todo: this probably shouldn't _really_ be in "models" anymore, but w/e.
 def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
-              api, now_date, scheduler):
+              api, now_date):
     pokemon = {}
     pokestops = {}
     gyms = {}
@@ -1544,14 +1544,6 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
     new_spawn_points = []
     sp_id_list = []
     now_secs = date_secs(now_date)
-
-    scheduler_name = scheduler.__class__.__name__
-    tth_found = getattr(scheduler, 'tth_found', -1)
-
-    if tth_found > -1:
-        # Avoid division by zero. Keep 0.0 default for consistency.
-        active_sp = max(getattr(scheduler, 'active_sp', 0.0), 1.0)
-        tth_found = tth_found * 100.0 / active_sp
 
     # Consolidate the individual lists in each cell into two lists of Pokemon
     # and a list of forts.
@@ -1751,7 +1743,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                     'time_until_hidden_ms': p['time_till_hidden_ms']
                 })
                 wh_update_queue.put(
-                    ('pokemon', wh_poke, scheduler_name, tth_found))
+                    ('pokemon', wh_poke))
 
     if forts and (config['parse_pokestops'] or config['parse_gyms']):
         if config['parse_pokestops']:
@@ -1783,7 +1775,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                             'lure_expiration': calendar.timegm(
                                 lure_expiration.timetuple()),
                             'active_fort_modifier': active_fort_modifier
-                        }, scheduler_name, tth_found))
+                        }))
                 else:
                     lure_expiration, active_fort_modifier = None, None
 
@@ -1805,7 +1797,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                         'last_modified_time': f['last_modified_timestamp_ms'],
                         'lure_expiration': l_e,
                         'active_fort_modifier': active_fort_modifier
-                    }, scheduler_name, tth_found))
+                    }))
 
                 if ((f['id'], int(f['last_modified_timestamp_ms'] / 1000.0))
                         in encountered_pokestops):
@@ -1841,7 +1833,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                         'latitude': f['latitude'],
                         'longitude': f['longitude'],
                         'last_modified': f['last_modified_timestamp_ms']
-                    }, scheduler_name, tth_found))
+                    }))
 
                 gyms[f['id']] = {
                     'gym_id': f['id'],
@@ -1928,19 +1920,11 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
     }
 
 
-def parse_gyms(args, gym_responses, wh_update_queue, db_update_queue, scheduler):
+def parse_gyms(args, gym_responses, wh_update_queue, db_update_queue):
     gym_details = {}
     gym_members = {}
     gym_pokemon = {}
     trainers = {}
-
-    scheduler_name = scheduler.__class__.__name__
-    tth_found = getattr(scheduler, 'tth_found', -1)
-
-    if tth_found > -1:
-        # Avoid division by zero. Keep 0.0 default for consistency.
-        active_sp = max(getattr(scheduler, 'active_sp', 0.0), 1.0)
-        tth_found = tth_found * 100.0 / active_sp
 
     i = 0
     for g in gym_responses.values():
@@ -2033,7 +2017,7 @@ def parse_gyms(args, gym_responses, wh_update_queue, db_update_queue, scheduler)
             i += 1
         if args.webhooks:
             wh_update_queue.put(
-                ('gym_details', webhook_data, scheduler_name, tth_found))
+                ('gym_details', webhook_data))
 
     # All this database stuff is synchronous (not using the upsert queue) on
     # purpose.  Since the search workers load the GymDetails model from the

@@ -60,7 +60,7 @@ def wh_updater(args, queue, key_cache):
     while True:
         try:
             # Loop the queue.
-            whtype, message, scheduler_name, tth_found = queue.get()
+            whtype, message = queue.get()
 
             # Extract the proper identifier.
             ident_fields = {
@@ -80,11 +80,11 @@ def wh_updater(args, queue, key_cache):
                     # as-is.
                     log.debug(
                         'Sending webhook item of unknown type: %s.', whtype)
-                    send_to_webhook(whtype, message, scheduler_name, tth_found)
+                    send_to_webhook(whtype, message)
                 elif ident not in key_cache:
                     key_cache[ident] = message
                     log.debug('Sending %s to webhook: %s.', whtype, ident)
-                    send_to_webhook(whtype, message, scheduler_name, tth_found)
+                    send_to_webhook(whtype, message)
                 else:
                     # Make sure to call key_cache[ident] in all branches so it
                     # updates the LFU usage count.
@@ -93,8 +93,7 @@ def wh_updater(args, queue, key_cache):
                     # data to webhooks.
                     if __wh_object_changed(whtype, key_cache[ident], message):
                         key_cache[ident] = message
-                        send_to_webhook(whtype, message,
-                                        scheduler_name, tth_found)
+                        send_to_webhook(whtype, message)
                         log.debug('Sending updated %s to webhook: %s.',
                                   whtype, ident)
                     else:
@@ -103,7 +102,7 @@ def wh_updater(args, queue, key_cache):
             except KeyError as ex:
                 log.debug(
                     'LFUCache thread unsafe exception: %s. Requeuing.', repr(ex))
-                queue.put((whtype, message, scheduler_name, tth_found))
+                queue.put((whtype, message))
 
             # Webhook queue moving too slow.
             if queue.qsize() > 50:
