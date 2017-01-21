@@ -6,6 +6,10 @@ var rawDataIsLoading = false
 var statusPagePassword = false
 var groupByWorker = true
 
+// Raw data updating
+var minUpdateDelay = 1000 // Minimum delay between updates (in ms).
+var lastRawUpdateTime = new Date()
+
 
 /*
  * Workers
@@ -165,9 +169,18 @@ function compare(index) {
     }
 }
 
-function updateStatus(firstRun) {
+function updateStatus() {
     loadRawData().done(function (result) {
+        // Parse result on success.
         parseResult(result)
+    }).always(function () {
+        // Only queue next request when previous is over.
+        // Minimum delay of minUpdateDelay.
+        var diff = new Date() - lastRawUpdateTime
+        var delay = Math.max(minUpdateDelay - diff, 1) // Don't go below 1.
+
+        // Don't use interval.
+        window.setTimeout(updateStatus, delay)
     })
 }
 
@@ -226,35 +239,36 @@ function loadRawData() {
  * Document ready
  */
 $(document).ready(function () {
-    // Set focus on password field.
-    $('#password').focus()
+// Set focus on password field.
+$('#password').focus()
 
-    // Register to events.
-    $('#password_form').submit(function (event) {
-        event.preventDefault()
+// Register to events.
+$('#password_form').submit(function (event) {
+    event.preventDefault()
 
-        statusPagePassword = $('#password').val()
+    statusPagePassword = $('#password').val()
 
-        loadRawData().done(function (result) {
-            if (result.login === 'ok') {
-                $('.status_form').remove()
-                window.setInterval(updateStatus, 5000)
-                parseResult(result)
-            } else {
-                $('.status_form').effect('bounce')
-                $('#password').focus()
-            }
-        })
-    })
-
-    $('#groupbyworker-switch').change(function () {
-        groupByWorker = this.checked
-
-        $('#status_container .status_table').remove()
-        $('#status_container .worker').remove()
-
-        if (statusPagePassword) {
-            updateStatus()
+    loadRawData().done(function (result) {
+        if (result.login === 'ok') {
+            $('.status_form').remove()
+            parseResult(result)
+            window.setTimeout(updateStatus, 1000)
+        } else {
+            $('.status_form').effect('bounce')
+            $('#password').focus()
         }
     })
 })
+
+$('#groupbyworker-switch').change(function () {
+    groupByWorker = this.checked
+
+    $('#status_container .status_table').remove()
+    $('#status_container .worker').remove()
+
+    if (statusPagePassword) {
+        updateStatus()
+    }
+})
+})
+)
