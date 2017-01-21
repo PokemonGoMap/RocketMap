@@ -252,7 +252,7 @@ $(document).ready(function () {
             if (result.login === 'ok') {
                 $('.status_form').remove()
                 parseResult(result)
-                window.setTimeout(updateStatus, 1000)
+                window.setTimeout(updateStatus, minUpdateDelay)
             } else {
                 $('.status_form').effect('bounce')
                 $('#password').focus()
