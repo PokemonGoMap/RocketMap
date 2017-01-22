@@ -317,7 +317,7 @@ function initSidebar() {
     $('#gyms-switch').prop('checked', Store.get('showGyms'))
     $('#gym-sidebar-switch').prop('checked', Store.get('useGymSidebar'))
     $('#gym-sidebar-wrapper').toggle(Store.get('showGyms'))
-	$('#gyms-filter-wrapper').toggle(Store.get('showGyms'))
+    $('#gyms-filter-wrapper').toggle(Store.get('showGyms'))
     $('#team-gyms-only-switch').val(Store.get('showTeamGymsOnly'))
     $('#open-gyms-only-switch').val(Store.get('showOpenGymsOnly'))
     $('#min-level-gyms-filter-switch').val(Store.get('minGymLevel'))
@@ -1138,6 +1138,17 @@ function updatePokestops() {
 function processGyms(i, item) {
     if (!Store.get('showGyms')) {
         return false // in case the checkbox was unchecked in the meantime.
+    }
+
+    var gymLevel = getGymLevel(item.gym_points)
+    var removeGymFromMap = function (gymid) {
+        if (mapData.gyms[gymid] && mapData.gyms[gymid].marker) {
+            if (mapData.gyms[gymid].marker.rangeCircle) {
+                mapData.gyms[gymid].marker.rangeCircle.setMap(null)
+            }
+            mapData.gyms[gymid].marker.setMap(null)
+            delete mapData.gyms[gymid]
+        }
     }
 
     var gymHasOpenSpot = function (gymLevel, pokemonInGym) {

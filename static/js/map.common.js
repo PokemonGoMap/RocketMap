@@ -909,7 +909,7 @@ var StoreOptions = {
     'minGymLevel': {
         default: 0,
         type: StoreTypes.Number
-      },
+    },
     'maxGymLevel': {
         default: 10,
         type: StoreTypes.Number
