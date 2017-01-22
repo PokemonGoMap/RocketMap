@@ -629,7 +629,7 @@ def complete_tutorial(api, account, tutorial_state):
             'shirt': random.randint(1, 3),
             'pants': random.randint(1, 2),
             'shoes': random.randint(1, 6),
-            'gender': random.randint(0, 1),
+            'avatar': random.randint(0, 1),
             'eyes': random.randint(1, 4),
             'backpack': random.randint(1, 5)
         })
@@ -714,5 +714,6 @@ def complete_tutorial(api, account, tutorial_state):
         request.call()
         time.sleep(random.uniform(0.8, 1.8))
 
-    time.sleep(0.2)
+    # Sleeping before we start scanning to avoid Niantic throttling.
+    time.sleep(random.uniform(2, 4))
     return True
