@@ -471,11 +471,11 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb, db_updat
             if tth_found > -1:
                 # Avoid division by zero. Keep 0.0 default for consistency.
                 active_sp = max(getattr(scheduler_array[0], 'active_sp',
-                    0.0), 1.0)
+                                        0.0), 1.0)
                 tth_found = tth_found * 100.0 / float(active_sp)
 
             if scheduler_tth_found < tth_found:
-                wh_queue.put(('speed-scan', { 'tth_found': tth_found }))
+                wh_queue.put(('speed-scan', {'tth_found': tth_found}))
                 scheduler_tth_found = tth_found
 
         # Now we just give a little pause here.
