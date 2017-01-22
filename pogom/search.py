@@ -37,7 +37,7 @@ from sets import Set
 from pgoapi import PGoApi
 from pgoapi.utilities import f2i
 from pgoapi import utilities as util
-from pgoapi.exceptions import AuthException
+from pgoapi.exceptions import AuthException, HashingQuotaExceededException
 from pgoapi.hash_server import HashServer
 
 from .models import parse_map, GymDetails, parse_gyms, MainWorker, WorkerStatus
@@ -880,8 +880,9 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                                     request.call()
                                     status['rpm_left'] = remaining
                                     log.info('Hash Key {} has {}/{} RPM left.'.format(key, remaining, maximum))
-                                except Exception as e:
-                                    log.error('Hash Key {} exceeded RPM! {}.'.format(key, e))
+                                except HashingQuotaExceededException:
+                                    staus['message'] = 'Hash Key {} exceeded RPM! {}.'.format(key)
+                                    log.info(status['message'])
 
                         else:
                             status['noitems'] += 1
