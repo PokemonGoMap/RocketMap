@@ -10,7 +10,7 @@ from requests.adapters import HTTPAdapter
 log = logging.getLogger(__name__)
 
 
-def send_to_webhook(message_type, message, scheduler_name, tth_found):
+def send_to_webhook(message_type, message):
     args = get_args()
 
     if not args.webhooks:
@@ -41,9 +41,7 @@ def send_to_webhook(message_type, message, scheduler_name, tth_found):
 
     data = {
         'type': message_type,
-        'message': message,
-        'scheduler_name': scheduler_name,
-        'tth_found': tth_found
+        'message': message
     }
 
     for w in args.webhooks:

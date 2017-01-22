@@ -399,18 +399,10 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb, db_updat
 
     stats_timer = 0
 
+    scheduler_tth_found = 0
+
     # The real work starts here but will halt on pause_bit.set().
     while True:
-        # TODO: send regular updates when tth_found changes
-        '''
-        scheduler_name = scheduler.__class__.__name__
-        tth_found = getattr(scheduler, 'tth_found', -1)
-
-        if tth_found > -1:
-        # Avoid division by zero. Keep 0.0 default for consistency.
-        active_sp = max(getattr(scheduler, 'active_sp', 0.0), 1.0)
-        tth_found = tth_found * 100.0 / active_sp
-        '''
 
         if args.on_demand_timeout > 0 and (now() - args.on_demand_timeout) > heartb[0]:
             pause_bit.set()
@@ -471,6 +463,20 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb, db_updat
             if stats_timer == args.stats_log_timer:
                 log.info(get_stats_message(threadStatus))
                 stats_timer = 0
+
+        # Send webhook updates when scheduler status changes.
+        if args.speed_scan:
+            tth_found = getattr(scheduler_array[0], 'tth_found', -1)
+
+            if tth_found > -1:
+                # Avoid division by zero. Keep 0.0 default for consistency.
+                active_sp = max(getattr(scheduler_array[0], 'active_sp',
+                    0.0), 1.0)
+                tth_found = tth_found * 100.0 / float(active_sp)
+
+            if scheduler_tth_found < tth_found:
+                wh_queue.put(('speed-scan', { 'tth_found': tth_found }))
+                scheduler_tth_found = tth_found
 
         # Now we just give a little pause here.
         time.sleep(1)

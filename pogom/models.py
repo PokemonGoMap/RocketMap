@@ -1785,8 +1785,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                     'last_modified_time': p['last_modified_timestamp_ms'],
                     'time_until_hidden_ms': p['time_till_hidden_ms']
                 })
-                wh_update_queue.put(
-                    ('pokemon', wh_poke))
+                wh_update_queue.put(('pokemon', wh_poke))
 
     if forts and (config['parse_pokestops'] or config['parse_gyms']):
         if config['parse_pokestops']:
@@ -2059,8 +2058,7 @@ def parse_gyms(args, gym_responses, wh_update_queue, db_update_queue):
 
             i += 1
         if args.webhooks:
-            wh_update_queue.put(
-                ('gym_details', webhook_data))
+            wh_update_queue.put(('gym_details', webhook_data))
 
     # All this database stuff is synchronous (not using the upsert queue) on
     # purpose.  Since the search workers load the GymDetails model from the
@@ -2115,7 +2113,7 @@ def db_updater(args, q, db):
                 bulk_upsert(model, data, db)
                 q.task_done()
                 log.debug('Upserted to %s, %d records (upsert queue '
-                          'remaining: %d.)',
+                          'remaining: %d).',
                           model.__name__,
                           len(data),
                           q.qsize())
