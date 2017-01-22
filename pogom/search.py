@@ -692,6 +692,18 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
             else:
                 api = PGoApi()
 
+            #Wrap device info around API
+            device = {
+                "device_id": '3d65919ca1c2fc3a8e2bd7cc3f974c34',
+                "device_brand": 'Apple',
+                "device_model": 'iPhone',
+                "hardware_manufacturer": 'Apple',
+                "hardware_model": 'N66AP',
+                "firmware_brand": 'iPhone OS',
+                "firmware_type": '9.3.3'
+            }
+            response = api.__init__(device_info=device)
+
             # New account - new proxy.
             if args.proxy:
                 # If proxy is not assigned yet or if proxy-rotation is defined
