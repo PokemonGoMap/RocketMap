@@ -232,8 +232,10 @@ def get_args():
                         help='Path to SSL certificate file.')
     parser.add_argument('--ssl-privatekey',
                         help='Path to SSL private key file.')
-    parser.add_argument('-ps', '--print-status', action='store_true',
-                        help='Show a status screen instead of log messages. Can switch between status and logs by pressing enter.', default=False)
+    parser.add_argument('-ps', '--print-status',
+                        help='Show a status screen instead of log messages. Can switch between status and logs by pressing enter.  Optionally specify "logs" to startup in logging mode.', nargs='?', const='status', default=False, metavar='logs')
+    parser.add_argument('-slt', '--stats-log-timer',
+                        help='In log view, list per hr stats every X seconds', type=int, default=0)
     parser.add_argument('-sn', '--status-name', default=None,
                         help='Enable status page database update using STATUS_NAME as main worker name.')
     parser.add_argument('-spp', '--status-page-password', default=None,
@@ -627,7 +629,7 @@ def complete_tutorial(api, account, tutorial_state):
             'shirt': random.randint(1, 3),
             'pants': random.randint(1, 2),
             'shoes': random.randint(1, 6),
-            'gender': random.randint(0, 1),
+            'avatar': random.randint(0, 1),
             'eyes': random.randint(1, 4),
             'backpack': random.randint(1, 5)
         })
@@ -712,5 +714,6 @@ def complete_tutorial(api, account, tutorial_state):
         request.call()
         time.sleep(random.uniform(0.8, 1.8))
 
-    time.sleep(0.2)
+    # Sleeping before we start scanning to avoid Niantic throttling.
+    time.sleep(random.uniform(2, 4))
     return True
