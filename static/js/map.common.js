@@ -875,7 +875,7 @@ var StoreOptions = {
         type: StoreTypes.JSON
     },
     'remember_select_notify': {
-        default: [3,6,9,45,62,71,80,87,89,91,94,130,131,134,143,147,148,149],
+        default: [],
         type: StoreTypes.JSON
     },
     'remember_select_rarity_notify': {
@@ -883,7 +883,7 @@ var StoreOptions = {
         type: StoreTypes.JSON
     },
     'remember_text_perfection_notify': {
-        default: '93',
+        default: '',
         type: StoreTypes.Number
     },
     'showGyms': {
