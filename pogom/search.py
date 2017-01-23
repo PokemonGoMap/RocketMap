@@ -38,6 +38,7 @@ from pgoapi import PGoApi
 from pgoapi.utilities import f2i
 from pgoapi import utilities as util
 from pgoapi.exceptions import AuthException
+from pgoapi.hash_server import HashServer
 
 from .models import parse_map, GymDetails, parse_gyms, MainWorker, WorkerStatus
 from .fakePogoApi import FakePogoApi
@@ -97,10 +98,13 @@ def switch_status_printer(display_type, current_page, mainlog, loglevel, logmode
         elif command.lower() == 'f':
             mainlog.handlers[0].setLevel(logging.CRITICAL)
             display_type[0] = 'failedaccounts'
+        elif command.lower() == 'h':
+            mainlog.handlers[0].setLevel(logging.CRITICAL)
+            display_type[0] = 'hashstatus'
 
 
 # Thread to print out the status of each worker.
-def status_printer(threadStatus, search_items_queue_array, db_updates_queue, wh_queue, account_queue, account_failures, logmode):
+def status_printer(threadStatus, search_items_queue_array, db_updates_queue, wh_queue, account_queue, account_failures, logmode, hash_key, key_scheduler):
 
     if (logmode == 'logs'):
         display_type = ["logs"]
@@ -225,8 +229,25 @@ def status_printer(threadStatus, search_items_queue_array, db_updates_queue, wh_
                 status_text.append(status.format(account['account']['username'], time.strftime(
                     '%H:%M:%S', time.localtime(account['last_fail_time'])), account['reason']))
 
+        elif display_type[0] == 'hashstatus':
+            status_text.append('----------------------------------------------------------')
+            status_text.append('Hash key status:')
+            status_text.append('----------------------------------------------------------')
+
+            status = '{:21} | {:9} | {:9} | {:9}'
+            status_text.append(status.format('Key', 'Remaining', 'Maximum', 'Peak'))
+
+            for key in hash_key:
+                key_instance = key_scheduler.keys[key]
+                key_text = key
+
+                if key_scheduler.current() == key:
+                    key_text += '*'
+
+                status_text.append(status.format(key_text, key_instance['remaining'], key_instance['maximum'], key_instance['peak']))
+
         status_text.append(
-            'Page {}/{}. Page number to switch pages. F to show on hold accounts. <ENTER> alone to switch between status and log view'.format(current_page[0], total_pages))
+            'Page {}/{}. Page number to switch pages. F to show on hold accounts. H to show hash status. <ENTER> alone to switch between status and log view'.format(current_page[0], total_pages))
         # Clear the screen.
         os.system('cls' if os.name == 'nt' else 'clear')
         # Print status.
@@ -324,11 +345,16 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb, db_updat
         'scheduler_status': {'tth_found': 0}
     }
 
+    # Create the key scheduler.
+    if args.hash_key:
+        log.info('Enabling hashing key scheduler...')
+        key_scheduler = schedulers.KeyScheduler(args.hash_key)
+
     if(args.print_status):
         log.info('Starting status printer thread...')
         t = Thread(target=status_printer,
                    name='status_printer',
-                   args=(threadStatus, search_items_queue_array, db_updates_queue, wh_queue, account_queue, account_failures, args.print_status))
+                   args=(threadStatus, search_items_queue_array, db_updates_queue, wh_queue, account_queue, account_failures, args.print_status, args.hash_key, key_scheduler))
         t.daemon = True
         t.start()
 
@@ -346,11 +372,6 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb, db_updat
                    args=(threadStatus, args.status_name, db_updates_queue))
         t.daemon = True
         t.start()
-
-    # Create the key scheduler.
-    if args.hash_key:
-        log.info('Enabling hashing key scheduler...')
-        key_scheduler = schedulers.KeyScheduler(args.hash_key).scheduler()
 
     # Create specified number of search_worker_thread.
     log.info('Starting search worker threads...')
@@ -666,6 +687,18 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
             else:
                 api = PGoApi()
 
+            #Wrap device info around API
+            device = {
+                "device_id": '3d65919ca1c2fc3a8e2bd7cc3f974c34',
+                "device_brand": 'Apple',
+                "device_model": 'iPhone',
+                "hardware_manufacturer": 'Apple',
+                "hardware_model": 'N66AP',
+                "firmware_brand": 'iPhone OS',
+                "firmware_type": '9.3.3'
+            }
+            response = api.__init__(device_info=device)
+
             # New account - new proxy.
             if args.proxy:
                 # If proxy is not assigned yet or if proxy-rotation is defined
@@ -974,6 +1007,30 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                         if gym_responses:
                             parse_gyms(args, gym_responses,
                                        whq, dbq)
+
+                if args.hash_key:
+                    key_instance = key_scheduler.keys[key_scheduler.current()]
+                    key_instance['remaining'] = HashServer.status.get('remaining', 'N/A')
+
+                    if key_instance['maximum'] == 0:
+                        key_instance['maximum'] = HashServer.status.get('maximum', 0)
+
+                    peak = key_instance['maximum'] - key_instance['remaining']
+
+                    if key_instance['peak'] < peak:
+                        key_instance['peak'] = peak
+
+                if args.hash_key:
+                    key_instance = key_scheduler.keys[key_scheduler.current()]
+                    key_instance['remaining'] = HashServer.status.get('remaining', 'N/A')
+                    
+                    if key_instance['maximum'] == 0:
+                        key_instance['maximum'] = HashServer.status.get('maximum', 0)
+
+                    peak = key_instance['maximum'] - key_instance['remaining']
+
+                    if key_instance['peak'] < peak:
+                        key_instance['peak'] = peak
 
                 # Delay the desired amount after "scan" completion.
                 delay = scheduler.delay(status['last_scan_date'])
