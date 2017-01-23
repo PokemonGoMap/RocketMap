@@ -817,7 +817,7 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                 api.set_position(*step_location)
 
                 if args.hash_key:
-                    key = key_scheduler.next_key()
+                    key = key_scheduler.next()
                     log.debug('Using key {} for this scan.'.format(key))
                     api.activate_hash_server(key)
 
