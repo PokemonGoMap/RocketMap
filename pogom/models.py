@@ -1047,7 +1047,7 @@ class WorkerStatus(BaseModel):
     hash_key = CharField(index=True, max_length=50, null=True)
     maximum_rpm = IntegerField(default=0)
     rpm_left = IntegerField(default=0)
-    total_rpm = IntegerField(default=0
+    total_rpm = IntegerField(default=0)
     last_modified = DateTimeField(index=True)
     message = CharField(max_length=255)
     last_scan_date = DateTimeField(index=True)
