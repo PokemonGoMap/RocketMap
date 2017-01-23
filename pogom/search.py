@@ -30,7 +30,7 @@ import requests
 import copy
 
 from datetime import datetime
-from threading import Thread
+from threading import Thread, Lock
 from queue import Queue, Empty
 from sets import Set
 
@@ -38,7 +38,6 @@ from pgoapi import PGoApi
 from pgoapi.utilities import f2i
 from pgoapi import utilities as util
 from pgoapi.exceptions import AuthException
-from pgoapi.hash_server import HashServer
 
 from .models import parse_map, GymDetails, parse_gyms, MainWorker, WorkerStatus
 from .fakePogoApi import FakePogoApi
@@ -53,6 +52,8 @@ import terminalsize
 log = logging.getLogger(__name__)
 
 TIMESTAMP = '\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000'
+
+loginDelayLock = Lock()
 
 
 # Apply a location jitter.
@@ -348,7 +349,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb, db_updat
     # Create the key scheduler.
     if args.hash_key:
         log.info('Enabling hashing key scheduler...')
-        key_scheduler = schedulers.KeyScheduler(args.hash_key)
+        key_scheduler = schedulers.KeyScheduler(args.hash_key).scheduler()
 
     # Create specified number of search_worker_thread.
     log.info('Starting search worker threads...')
@@ -377,11 +378,11 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb, db_updat
             'fail': 0,
             'noitems': 0,
             'skip': 0,
+            'captcha': 0,
             'hash_key': 0,
             'maximum_rpm': 0,
             'rpm_left': 0,
             'total_rpm': 0,
-            'captcha': 0,
             'username': '',
             'proxy_display': proxy_display,
             'proxy_url': proxy_url
@@ -626,13 +627,13 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
             status['success'] = 0
             status['noitems'] = 0
             status['skip'] = 0
+            status['captcha'] = 0
             status['hash_key'] = 0
             status['maximum_rpm'] = 0
             status['rpm_left'] = 0
-            status['captcha'] = 0
             status['total_rpm'] = 0
 
-            stagger_thread(args, account)
+            stagger_thread(args)
 
             # Sleep when consecutive_fails reaches max_failures, overall fails
             # for stat purposes.
@@ -890,15 +891,13 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                                     log.info('Hash Key {} has {}/{} RPM left.'.format(key, remaining, maximum))
                                 except Exception as e:
                                     log.error('Hash Key {} exceeded RPM! {}.'.format(key, e))
-
-                        else:
-                            status['noitems'] += 1
-                            consecutive_noitems += 1
-                            consecutive_fails = 0
-                            status['message'] = 'Search at {:6f},{:6f} completed with {} finds.'.format(
-                                step_location[0], step_location[1], parsed['count'])
-                            log.debug(status['message'])
-                            log.info(status['message'])
+                    else:
+                        status['noitems'] += 1
+                        consecutive_noitems += 1
+                    consecutive_fails = 0
+                    status['message'] = 'Search at {:6f},{:6f} completed with {} finds.'.format(
+                        step_location[0], step_location[1], parsed['count'])
+                    log.debug(status['message'])
                 except Exception as e:
                     parsed = False
                     status['fail'] += 1
@@ -1128,13 +1127,12 @@ def calc_distance(pos1, pos2):
 
 
 # Delay each thread start time so that logins occur after delay.
-def stagger_thread(args, account):
-    if args.accounts.index(account) == 0:
-        return  # No need to delay the first one.
-    delay = args.accounts.index(
-        account) * args.login_delay + ((random.random() - .5) / 2)
-    log.debug('Delaying thread startup for %.2f seconds...', delay)
+def stagger_thread(args):
+    loginDelayLock.acquire()
+    delay = args.login_delay + ((random.random() - .5) / 2)
+    log.debug('Delaying thread startup for %.2f seconds', delay)
     time.sleep(delay)
+    loginDelayLock.release()
 
 
 # The delta from last stat to current stat

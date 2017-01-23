@@ -96,7 +96,7 @@ function processWorker(i, worker) {
     $('#hash_key_' + hash).html(worker['hash_key'])
     $('#maximum_rpm_' + hash).html(worker['maximum_rpm'])
     $('#rpm_left_' + hash).html(worker['rpm_left'])
-    $('#total_rpm_' + hash).html(worker['total_rpm'])
+    $('#total_rpm_' + hash).html(worker['total_rpm_'])
     $('#lastmod_' + hash).html(lastModified)
     $('#message_' + hash).html(worker['message'])
 }
@@ -134,7 +134,7 @@ function addTable(hash) {
          <div class="status_cell">
            Captchas
          </div>
-        <div class="status_cell">
+         <div class="status_cell">
           Hash Key
         </div>
         <div class="status_cell">

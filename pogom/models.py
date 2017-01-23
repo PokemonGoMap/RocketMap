@@ -35,7 +35,7 @@ args = get_args()
 flaskDb = FlaskDB()
 cache = TTLCache(maxsize=100, ttl=60 * 5)
 
-db_schema_version = 13
+db_schema_version = 12
 
 
 class MyRetryDB(RetryOperationalError, PooledMySQLDatabase):
@@ -1047,7 +1047,7 @@ class WorkerStatus(BaseModel):
     hash_key = CharField(index=True, max_length=50, null=True)
     maximum_rpm = IntegerField(default=0)
     rpm_left = IntegerField(default=0)
-    total_rpm = IntegerField(default=0)
+    total_rpm = IntegerField(default=0
     last_modified = DateTimeField(index=True)
     message = CharField(max_length=255)
     last_scan_date = DateTimeField(index=True)
@@ -2132,6 +2132,7 @@ def db_updater(args, q, db):
                     break
                 except Exception as e:
                     log.warning('%s... Retrying...', e)
+                    time.sleep(5)
 
             # Loop the queue.
             while True:
@@ -2150,6 +2151,7 @@ def db_updater(args, q, db):
 
         except Exception as e:
             log.exception('Exception in db_updater: %s', e)
+            time.sleep(5)
 
 
 def clean_db_loop(args):
@@ -2368,11 +2370,11 @@ def database_migrate(db, old_ver):
         db.drop_tables([ScanSpawnPoint])
 
     if old_ver < 12:
+        db.drop_tables([MainWorker])
         migrate(
             migrator.add_column('workerstatus', 'captcha',
                                 IntegerField(default=0))
         )
-
     if old_ver < 13:
         migrate(
             migrator.add_column('workerstatus', 'hash_key',
@@ -2383,4 +2385,5 @@ def database_migrate(db, old_ver):
                                 IntegerField(default=0)),
             migrator.add_column('workerstatus', 'total_rpm',
                                 IntegerField(default=0))
+
         )
