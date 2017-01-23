@@ -228,6 +228,9 @@ def get_args():
                         help='Factor (in seconds) by which the delay until next retry will increase.', type=float, default=0.25)
     parser.add_argument('-whlfu', '--wh-lfu-size',
                         help='Webhook LFU cache max size.', type=int, default=1000)
+    parser.add_argument('-whsu', '--webhook-scheduler-updates',
+                        help='Send webhook updates with scheduler status.',
+                        action='store_true', default=False)
     parser.add_argument('--ssl-certificate',
                         help='Path to SSL certificate file.')
     parser.add_argument('--ssl-privatekey',

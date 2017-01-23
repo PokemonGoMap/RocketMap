@@ -320,7 +320,8 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb, db_updat
         'success_total': 0,
         'fail_total': 0,
         'empty_total': 0,
-        'scheduler': args.scheduler
+        'scheduler': args.scheduler,
+        'scheduler_status': {'tth_found': 0}
     }
 
     if(args.print_status):
@@ -401,8 +402,6 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb, db_updat
 
     stats_timer = 0
 
-    scheduler_tth_found = 0
-
     # The real work starts here but will halt on pause_bit.set().
     while True:
 
@@ -467,21 +466,31 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb, db_updat
                 stats_timer = 0
 
         # Send webhook updates when scheduler status changes.
-        if args.speed_scan:
-            tth_found = getattr(scheduler_array[0], 'tth_found', -1)
-
-            if tth_found > -1:
-                # Avoid division by zero. Keep 0.0 default for consistency.
-                active_sp = max(getattr(scheduler_array[0], 'active_sp',
-                                        0.0), 1.0)
-                tth_found = tth_found * 100.0 / float(active_sp)
-
-            if scheduler_tth_found < tth_found:
-                wh_queue.put(('speed-scan', {'tth_found': tth_found}))
-                scheduler_tth_found = tth_found
+        if args.webhook_scheduler_updates:
+            wh_status_update(args, threadStatus['Overseer'], wh_queue,
+                             scheduler_array[0])
 
         # Now we just give a little pause here.
         time.sleep(1)
+
+
+def wh_status_update(args, status, wh_queue, scheduler):
+    scheduler_name = status['scheduler']
+    if args.speed_scan:
+        tth_found = getattr(scheduler, 'tth_found', -1)
+        spawns_found = getattr(scheduler, 'spawns_found', 0)
+        if tth_found > -1:
+            # Avoid division by zero. Keep 0.0 default for consistency.
+            active_sp = max(getattr(scheduler, 'active_sp', 0.0), 1.0)
+            tth_found = tth_found * 100.0 / float(active_sp)
+
+        if (tth_found - status['scheduler_status']['tth_found']) > 0.01:
+            log.debug("Scheduler update is due, sending webhook message.")
+            wh_queue.put(('scheduler', {'name': scheduler_name,
+                                        'instance': args.status_name,
+                                        'tth_found': tth_found,
+                                        'spawns_found': spawns_found}))
+            status['scheduler_status']['tth_found'] = tth_found
 
 
 def get_stats_message(threadStatus):
