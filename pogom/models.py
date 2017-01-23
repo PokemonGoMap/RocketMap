@@ -1047,6 +1047,7 @@ class WorkerStatus(BaseModel):
     hash_key = CharField(index=True, max_length=50, null=True)
     maximum_rpm = IntegerField(default=0)
     rpm_left = IntegerField(default=0)
+    total_rpm = IntegerField(default=0)
     last_modified = DateTimeField(index=True)
     message = CharField(max_length=255)
     last_scan_date = DateTimeField(index=True)
@@ -1066,6 +1067,7 @@ class WorkerStatus(BaseModel):
                 'hash_key': status['hash_key'],
                 'maximum_rpm': status['maximum_rpm'],
                 'rpm_left': status['rpm_left'],
+                'total_rpm': status['total_rpm'],
                 'last_modified': datetime.utcnow(),
                 'message': status['message'],
                 'last_scan_date': status.get('last_scan_date',
@@ -2130,7 +2132,6 @@ def db_updater(args, q, db):
                     break
                 except Exception as e:
                     log.warning('%s... Retrying...', e)
-                    time.sleep(5)
 
             # Loop the queue.
             while True:
@@ -2149,7 +2150,6 @@ def db_updater(args, q, db):
 
         except Exception as e:
             log.exception('Exception in db_updater: %s', e)
-            time.sleep(5)
 
 
 def clean_db_loop(args):
@@ -2380,6 +2380,7 @@ def database_migrate(db, old_ver):
             migrator.add_column('workerstatus', 'maximum_rpm',
                                 IntegerField(default=0)),
             migrator.add_column('workerstatus', 'rpm_left',
+                                IntegerField(default=0)),
+            migrator.add_column('workerstatus', 'total_rpm',
                                 IntegerField(default=0))
-
         )

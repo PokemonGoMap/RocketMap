@@ -51,6 +51,7 @@ function addWorker(mainWorkerHash, workerHash) {
        <div id="hash_key_${workerHash}" class="status_cell hash"/>
        <div id="maximum_rpm_${workerHash}" class="status_cell"/>
        <div id="rpm_left_${workerHash}" class="status_cell"/>
+       <div id="total_rpm_${workerHash}" class="status_cell"/>
        <div id="lastmod_${workerHash}"  class="status_cell"/>
        <div id="message_${workerHash}"  class="status_cell"/>
      </div>
@@ -95,6 +96,7 @@ function processWorker(i, worker) {
     $('#hash_key_' + hash).html(worker['hash_key'])
     $('#maximum_rpm_' + hash).html(worker['maximum_rpm'])
     $('#rpm_left_' + hash).html(worker['rpm_left'])
+    $('#total_rpm_' + hash).html(worker['total_rpm'])
     $('#lastmod_' + hash).html(lastModified)
     $('#message_' + hash).html(worker['message'])
 }
@@ -140,6 +142,9 @@ function addTable(hash) {
         </div>
         <div class="status_cell">
           RPM Left
+          </div>
+        <div class="status_cell">
+          Total RPM Used
           </div>
          <div class="status_cell">
            Last Modified

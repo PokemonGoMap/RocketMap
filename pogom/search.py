@@ -30,14 +30,14 @@ import requests
 import copy
 
 from datetime import datetime
-from threading import Thread, Lock
+from threading import Thread
 from queue import Queue, Empty
 from sets import Set
 
 from pgoapi import PGoApi
 from pgoapi.utilities import f2i
 from pgoapi import utilities as util
-from pgoapi.exceptions import AuthException, HashingQuotaExceededException
+from pgoapi.exceptions import AuthException
 from pgoapi.hash_server import HashServer
 
 from .models import parse_map, GymDetails, parse_gyms, MainWorker, WorkerStatus
@@ -53,8 +53,6 @@ import terminalsize
 log = logging.getLogger(__name__)
 
 TIMESTAMP = '\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000'
-
-loginDelayLock = Lock()
 
 
 # Apply a location jitter.
@@ -382,6 +380,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb, db_updat
             'hash_key': 0,
             'maximum_rpm': 0,
             'rpm_left': 0,
+            'total_rpm': 0,
             'captcha': 0,
             'username': '',
             'proxy_display': proxy_display,
@@ -631,8 +630,9 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
             status['maximum_rpm'] = 0
             status['rpm_left'] = 0
             status['captcha'] = 0
+            status['total_rpm'] = 0
 
-            stagger_thread(args)
+            stagger_thread(args, account)
 
             # Sleep when consecutive_fails reaches max_failures, overall fails
             # for stat purposes.
@@ -886,10 +886,10 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                                     remaining = HashServer.status.get('remaining')
                                     request.call()
                                     status['rpm_left'] = remaining
+                                    status['total_rpm'] = maximum - remaining
                                     log.info('Hash Key {} has {}/{} RPM left.'.format(key, remaining, maximum))
-                                except HashingQuotaExceededException:
-                                    status['message'] = 'Hash Key {} exceeded RPM! {}.'.format(key)
-                                    log.info(status['message'])
+                                except Exception as e:
+                                    log.error('Hash Key {} exceeded RPM! {}.'.format(key, e))
 
                         else:
                             status['noitems'] += 1
@@ -1128,12 +1128,13 @@ def calc_distance(pos1, pos2):
 
 
 # Delay each thread start time so that logins occur after delay.
-def stagger_thread(args):
-    loginDelayLock.acquire()
-    delay = args.login_delay + ((random.random() - .5) / 2)
-    log.debug('Delaying thread startup for %.2f seconds', delay)
+def stagger_thread(args, account):
+    if args.accounts.index(account) == 0:
+        return  # No need to delay the first one.
+    delay = args.accounts.index(
+        account) * args.login_delay + ((random.random() - .5) / 2)
+    log.debug('Delaying thread startup for %.2f seconds...', delay)
     time.sleep(delay)
-    loginDelayLock.release()
 
 
 # The delta from last stat to current stat
