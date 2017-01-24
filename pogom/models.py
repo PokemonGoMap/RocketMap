@@ -1607,7 +1607,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
     if not wild_pokemon and not nearby_pokemon:
         # . . . and there are no gyms/pokestops then it's unusable/bad.
         abandon_loc = False
-        
+
         if not forts:
             log.warning('Bad scan. Parsing found absolutely nothing.')
             log.info('Common causes: captchas or IP bans.')
@@ -1621,12 +1621,12 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                 # If we're not going to parse the forts, then we'll just
                 # exit here.
                 abandon_loc = True
-        
+
         if abandon_loc:
             scan_loc = ScannedLocation.get_by_loc(step_location)
             ScannedLocation.update_band(scan_loc)
             db_update_queue.put((ScannedLocation, {0: scan_loc}))
-            
+
             return {
                 'count': 0,
                 'gyms': gyms,
