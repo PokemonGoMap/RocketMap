@@ -1060,7 +1060,7 @@ class SchedulerFactory():
 
 
 # The KeyScheduler returns a scheduler
-#that cycles through the given hash server keys.
+# that cycles through the given hash server keys.
 class KeyScheduler(object):
 
     def __init__(self, keys):
