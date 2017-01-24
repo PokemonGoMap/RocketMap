@@ -733,9 +733,9 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                 # Delay the desired amount after "scan" completion.
                 delay = scheduler.delay(status['last_scan_date'])
                 status['message'] += '  Sleeping {}s until {}.'.format(
-                    delay, 
+                    delay,
                     time.strftime(
-                        '%H:%M:%S', 
+                        '%H:%M:%S',
                         time.localtime(time.time() + args.scan_delay)))
 
                 time.sleep(delay)
