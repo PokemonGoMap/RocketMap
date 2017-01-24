@@ -2362,7 +2362,8 @@ def database_migrate(db, old_ver):
     if old_ver < 13:
         migrate(
             migrator.add_column('workerstatus', 'hash_key',
-                                CharField(index=True, max_length=50, null=True)),
+                                CharField(
+                                    index=True, max_length=50, null=True)),
             migrator.add_column('workerstatus', 'maximum_rpm',
                                 IntegerField(default=0)),
             migrator.add_column('workerstatus', 'rpm_left',
