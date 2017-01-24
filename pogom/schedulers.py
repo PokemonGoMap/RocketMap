@@ -1059,7 +1059,8 @@ class SchedulerFactory():
             "The requested scheduler has not been implemented")
 
 
-# The KeyScheduler returns a scheduler that cycles through the given hash server keys.
+# The KeyScheduler returns a scheduler
+#that cycles through the given hash server keys.
 class KeyScheduler(object):
 
     def __init__(self, keys):

@@ -1002,11 +1002,11 @@ def search_worker_thread(args, account_queue, account_failures,
                                     status['total_rpm'] = maximum - remaining
                                     log.info(
                                         ('Hash Key {} has {}/{}' +
-                                        'RPM left.'.format(
-                                            key, remaining, maximum))
+                                         'RPM left.'.format(
+                                            key, remaining, maximum)))
                                 except Exception as e:
                                     log.error('Hash Key {} exceeded RPM!' +
-                                    '{}.'.format(key, e))
+                                              '{}.'.format(key, e))
                     else:
                         status['noitems'] += 1
                         consecutive_noitems += 1
