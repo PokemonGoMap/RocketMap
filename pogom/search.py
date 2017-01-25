@@ -37,7 +37,7 @@ from sets import Set
 from pgoapi import PGoApi
 from pgoapi.utilities import f2i
 from pgoapi import utilities as util
-from pgoapi.exceptions import AuthException
+from pgoapi.exceptions import AuthException, HashingQuotaExceededException
 from pgoapi.hash_server import HashServer
 
 from .models import parse_map, GymDetails, parse_gyms, MainWorker, WorkerStatus
@@ -189,7 +189,8 @@ def status_printer(threadStatus, search_items_queue_array, db_updates_queue,
             proxylen = 5
             for item in threadStatus:
                 if threadStatus[item]['type'] == 'Worker':
-                    userlen = max(userlen, len(threadStatus[item]['username']))
+                    userlen = max(userlen, len(
+                        threadStatus[item]['username']))
                     if 'proxy_display' in threadStatus[item]:
                         proxylen = max(proxylen, len(
                             str(threadStatus[item]['proxy_display'])))
@@ -891,7 +892,8 @@ def search_worker_thread(args, account_queue, account_failures,
 
                 # Make the actual request.
                 scan_date = datetime.utcnow()
-                response_dict = map_request(api, step_location, args.no_jitter)
+                response_dict = map_request(
+                    api, step_location, args.no_jitter)
                 status['last_scan_date'] = datetime.utcnow()
 
                 # Record the time and the place that the worker made the
@@ -1002,12 +1004,12 @@ def search_worker_thread(args, account_queue, account_failures,
                                     status['rpm_left'] = remaining
                                     status['total_rpm'] = maximum - remaining
                                     log.info(
-                                        ('Hash Key {} has {}/{}' +
-                                         'RPM left.'.format(
-                                            key, remaining, maximum)))
-                                except Exception as e:
+                                        ('Hash Key {} has {}/{} RPM ' +
+                                         'left.').format(key, remaining,
+                                                         maximum))
+                                except HashingQuotaExceededException as e:
                                     log.error('Hash Key {} exceeded RPM!' +
-                                              '{}.'.format(key, e))
+                                              ' {}.'.format(key, repr(e)))
                     else:
                         status['noitems'] += 1
                         consecutive_noitems += 1
@@ -1036,7 +1038,8 @@ def search_worker_thread(args, account_queue, account_failures,
                     # Build a list of gyms to update.
                     gyms_to_update = {}
                     for gym in parsed['gyms'].values():
-                        # Can only get gym details within 450m of our position.
+                        # Can only get gym details within 450m of our
+                        # position.
                         distance = calc_distance(
                             step_location, [gym['latitude'], gym['longitude']])
                         if distance < 0.45:
@@ -1098,7 +1101,8 @@ def search_worker_thread(args, account_queue, account_failures,
                                 gym_responses[gym['gym_id']] = response[
                                     'responses']['GET_GYM_DETAILS']
 
-                            # Increment which gym we're on for status messages.
+                            # Increment which gym we're on for status
+                            # messages.
                             current_gym += 1
 
                         status['message'] = (
