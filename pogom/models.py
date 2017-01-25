@@ -1574,7 +1574,7 @@ def hex_bounds(center, steps=None, radius=None):
 
 # todo: this probably shouldn't _really_ be in "models" anymore, but w/e.
 def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
-              api, now_date):
+              api, now_date, tth_found_pct):
     pokemon = {}
     pokestops = {}
     gyms = {}
@@ -1789,7 +1789,8 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                     'disappear_time': calendar.timegm(
                         disappear_time.timetuple()),
                     'last_modified_time': p['last_modified_timestamp_ms'],
-                    'time_until_hidden_ms': p['time_till_hidden_ms']
+                    'time_until_hidden_ms': p['time_till_hidden_ms'],
+                    'tth_found': tth_found_pct
                 })
                 wh_update_queue.put(('pokemon', wh_poke))
 
