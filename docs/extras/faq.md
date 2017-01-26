@@ -1,7 +1,7 @@
 # Common Questions and Answers
 
 ## Critical Error "Missing sprite files"
-Sprite files are the files that contain all the pokemon icons, Unfortunatly due to the need to protect from copywrite situation, sprite files can no longer be part of the project. These files can probably be located from other users in the [RocketMap Discord](https://discord.gg/PWp2bAm).
+If you're unaware of what sprites are, the friendly users on our Discord are more than willing to explain. [RocketMap Discord](https://discord.gg/PWp2bAm).
 
 ## Can I sign in with Google?
 
