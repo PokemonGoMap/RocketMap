@@ -130,7 +130,7 @@ Open your browser to http://localhost:5000 and your pokemon will begin to show u
 Updating the Application
 ************************
 
-RocketMap is a very active project and updates often. You can follow the `latest changes <https://github.com/RocketMap/commits/develop>`_ to see what's changing.
+RocketMap is a very active project and updates often. You can follow the `latest changes <https://github.com/RocketMap/RocketMap/commits/develop>`_ to see what's changing.
 
 If you are running a ``git`` version, you can update with a few quick commands:
 
