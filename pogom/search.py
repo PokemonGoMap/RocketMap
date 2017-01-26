@@ -1009,7 +1009,7 @@ def search_worker_thread(args, account_queue, account_failures,
                                                          maximum))
                                 except HashingQuotaExceededException as e:
                                     log.error('Hash Key {} exceeded RPM!' +
-                                              ' {}.'.format(key, repr(e)))
+                                              ' {}.').format(key, repr(e))
                     else:
                         status['noitems'] += 1
                         consecutive_noitems += 1
