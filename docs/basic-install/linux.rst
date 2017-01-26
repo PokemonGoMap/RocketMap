@@ -55,8 +55,8 @@ If your output looks as above, you can proceed with installation:
         
 	cd ~/
 	sudo apt-get install git
-	git clone https://github.com/PokemonGoMap/PokemonGo-Map.git
-	cd PokemonGo-Map
+	git clone https://github.com/RocketMap/RocketMap.git
+	cd RocketMap
 	sudo -H pip install -r requirements.txt
 	npm install
 	sudo npm install -g grunt-cli
@@ -71,11 +71,26 @@ Troubleshooting:
 
 	pip freeze | xargs pip uninstall -y
 	
+If you have other pip installed packages, the old requirements.txt and cannot uninstall all then you can use:
+
+.. code-block:: bash
+	
+	pip uninstall -r "old requirements.txt"
+	pip install -r "new requirements.txt"
+
+An error resulting from not removing previous packages can be:
+
+.. code-block:: bash
+	
+	016-12-29 00:50:37,560 [ search-worker-1][        search][    INFO] Searching at xxxxxxx,xxxxxxx
+	2016-12-29 00:50:37,575 [ search-worker-1][        search][ WARNING] Exception while downloading map:
+	2016-12-29 00:50:37,575 [ search-worker-1][        search][   ERROR] Invalid response at xxxxxxx,xxxxxxx, abandoning location
+	
 If you're getting the following error:
 
 .. code-block:: bash
 
-	root:~/PokemonGo-Map# ./runserver.py
+	root:~/RocketMap# ./runserver.py
 	Traceback (most recent call last):
   		File "./runserver.py", line 10, in <module>
   		import requests
