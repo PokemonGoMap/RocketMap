@@ -32,11 +32,13 @@ class Pogom(Flask):
 
         # Global blist
         if not args.disable_blacklist:
+            log.info('Retrieving blacklist...')
             self.blacklist = get_blacklist()
             # Sort & index for binary search
             self.blacklist.sort(key=lambda r: r[0])
             self.blacklist_keys = [r[0] for r in self.blacklist]
         else:
+            log.info('Blacklist disabled for this session.')
             self.blacklist = []
             self.blacklist_keys = []
 
