@@ -36,7 +36,9 @@ class Pogom(Flask):
             self.blacklist = get_blacklist()
             # Sort & index for binary search
             self.blacklist.sort(key=lambda r: r[0])
-            self.blacklist_keys = [r[0] for r in self.blacklist]
+            self.blacklist_keys = [
+                dottedQuadToNum(r[0]) for r in self.blacklist
+            ]
         else:
             log.info('Blacklist disabled for this session.')
             self.blacklist = []
@@ -67,7 +69,7 @@ class Pogom(Flask):
             return False
 
         # Get the nearest IP range
-        pos = bisect_left(self.blacklist_keys, ip)
+        pos = max(bisect_left(self.blacklist_keys, ip) - 1, 0)
         ip_range = self.blacklist[pos]
 
         start = dottedQuadToNum(ip_range[0])
