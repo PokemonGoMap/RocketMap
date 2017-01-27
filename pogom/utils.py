@@ -11,6 +11,9 @@ import shutil
 import pprint
 import time
 import random
+import socket
+import struct
+import requests
 from s2sphere import CellId, LatLng
 
 from . import config
@@ -875,3 +878,19 @@ def complete_tutorial(api, account, tutorial_state):
               account['username'])
     time.sleep(random.uniform(2, 4))
     return True
+
+
+def dottedQuadToNum(ip):
+    "convert decimal dotted quad string to long integer"
+    return struct.unpack('L', socket.inet_aton(ip))[0]
+
+
+def get_blacklist():
+    try:
+        url = 'https://blist.devkat.org/blacklist.json'
+        blacklist = requests.get(url).json()
+        log.debug('Entries in blacklist: %s.', len(blacklist))
+        return blacklist
+    except (requests.exceptions.RequestException, IndexError, KeyError):
+        log.error('Unable to retrieve blacklist, setting to empty.')
+        return []
