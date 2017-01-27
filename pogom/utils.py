@@ -355,6 +355,9 @@ def get_args():
                         help=('Pause searching while web UI is inactive ' +
                               'for this timeout(in seconds).'),
                         type=int, default=0)
+    parser.add_argument('--disable-blacklist',
+                        help=('Disable the global anti-scraper IP blacklist.'),
+                        action='store_true', default=False)
     verbosity = parser.add_mutually_exclusive_group()
     verbosity.add_argument('-v', '--verbose',
                            help=('Show debug messages from PokemonGo-Map ' +
