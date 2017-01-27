@@ -997,10 +997,8 @@ def search_worker_thread(args, account_queue, account_failures,
                                 maximum = HashServer.status.get('maximum')
                                 status['maximum_rpm'] = maximum
                                 try:
-                                    request = api.create_request()
                                     remaining = HashServer.status.get(
                                         'remaining')
-                                    request.call()
                                     status['rpm_left'] = remaining
                                     status['total_rpm'] = maximum - remaining
                                     log.info(
