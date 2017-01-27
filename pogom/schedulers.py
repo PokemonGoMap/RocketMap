@@ -509,6 +509,21 @@ class SpeedScan(HexSearch):
         scans = {}
         initial = {}
         all_scans = {}
+
+        if self.args.speed_initial_scan:
+            log.info('Remove scanned locations for this hex')
+            scanned_loc = []
+            for cell_id in ScannedLocation.select_in_hex(self.scan_location,
+                                                         self.args.step_limit):
+                scanned_loc.append(str(cell_id['cellid']))
+                ScanSpawnPoint.delete().where(
+                    ScanSpawnPoint.scannedlocation_id == str(
+                        cell_id['cellid'])).execute()
+                ScannedLocation.delete().where(ScannedLocation.cellid == str(
+                    cell_id['cellid'])).execute()
+
+            log.info('Removed %s scanned locations' % (len(scanned_loc)))
+
         for sl in ScannedLocation.select_in_hex(self.scan_location,
                                                 self.args.step_limit):
             all_scans[cellid((sl['latitude'], sl['longitude']))] = sl
@@ -528,6 +543,7 @@ class SpeedScan(HexSearch):
         self.band_status()
         spawnpoints = SpawnPoint.select_in_hex(
             self.scan_location, self.args.step_limit)
+
         if not spawnpoints:
             log.info('No spawnpoints in hex found in SpawnPoint table. ' +
                      'Doing initial scan.')
