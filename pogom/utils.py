@@ -879,6 +879,7 @@ def complete_tutorial(api, account, tutorial_state):
 
 
 # Generate random device info.
+# Original by Noctem.
 IPHONES = {'iPhone5,1': 'N41AP',
            'iPhone5,2': 'N42AP',
            'iPhone5,3': 'N48AP',
