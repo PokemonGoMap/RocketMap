@@ -41,7 +41,7 @@ from pgoapi.exceptions import AuthException
 
 from .models import parse_map, GymDetails, parse_gyms, MainWorker, WorkerStatus
 from .fakePogoApi import FakePogoApi
-from .utils import now, get_tutorial_state, complete_tutorial
+from .utils import now, get_tutorial_state, complete_tutorial, captcha_balance
 from .transform import get_new_coords
 import schedulers
 
@@ -295,6 +295,15 @@ def account_recycler(accounts_queue, account_failures, args):
                     a['notified'] = True
 
 
+def captcha(args, pause_bit):
+    while True:
+        # Pause scanning if 2captcha balance reach under limit
+        if args.captcha_key and captcha_balance(args.captcha_key) <= args.captcha_balance_limit:
+            pause_bit.set()
+            log.info('Searching paused due to 2captcha balance is under limit!')
+        time.sleep(args.captcha_balance_interval)
+
+
 def worker_status_db_thread(threads_status, name, db_updates_queue):
 
     while True:
@@ -372,6 +381,13 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
                args=(account_queue, account_failures, args))
     t.daemon = True
     t.start()
+
+    # Create 2captcha balance watchdog thread
+    if args.captcha_key:
+        log.info('Starting 2captcha balance watchdog thread')
+        t = Thread(target=captcha, name='2captcha', args=(args, pause_bit))
+        t.daemon = True
+        t.start()
 
     if args.status_name is not None:
         log.info('Starting status database thread...')
