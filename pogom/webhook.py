@@ -136,6 +136,8 @@ def __get_requests_session(args):
                                           pool_connections=pool_size,
                                           pool_maxsize=pool_size))
 
+    return session
+
 
 def __get_key_fields(whtype):
     key_fields = {
