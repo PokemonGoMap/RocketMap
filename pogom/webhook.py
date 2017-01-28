@@ -129,8 +129,12 @@ def __get_requests_session(args):
                     status_forcelist=[500, 502, 503, 504])
 
     # Mount handler on both HTTP & HTTPS.
-    session.mount('http://', HTTPAdapter(max_retries=retries))
-    session.mount('https://', HTTPAdapter(max_retries=retries))
+    session.mount('http://', HTTPAdapter(max_retries=retries,
+                                         pool_connections=pool_size,
+                                         pool_maxsize=pool_size))
+    session.mount('https://', HTTPAdapter(max_retries=retries,
+                                          pool_connections=pool_size,
+                                          pool_maxsize=pool_size))
 
 
 def __get_key_fields(whtype):
