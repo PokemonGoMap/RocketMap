@@ -86,15 +86,18 @@ def wh_updater(args, queue, key_cache):
                         log.debug('Not resending %s to webhook: %s.',
                                   whtype, ident)
             except KeyError as ex:
+                # Avoid choking other threads: don't just requeue the item,
+                # send it to the webhooks and be done with it. Requeuing
+                # could trigger the error infinitely on the same key.
                 log.debug(
-                    'LFUCache thread unsafe exception: %s. Requeuing.',
+                    'LFUCache thread unsafe exception: %s. Sending.',
                     repr(ex))
-                queue.put((whtype, message))
+                send_to_webhook(session, whtype, message)
 
             # Webhook queue moving too slow.
-            if queue.qsize() > 50:
-                log.warning('Webhook queue is > 50 (@%d); ' +
-                            'try increasing --wh-threads.',
+            if queue.qsize() > 100:
+                log.warning('Webhook queue is > 100 (@%d); ' +
+                            'try increasing --wh-concurrency or --wh-threads.',
                             queue.qsize())
 
             queue.task_done()
