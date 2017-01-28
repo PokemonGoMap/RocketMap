@@ -97,23 +97,24 @@ def wh_updater(args, queue, key_cache):
                                   whtype, ident)
 
             # Webhook queue moving too slow.
-            if not wh_over_threshold and queue.qsize() > wh_warning_threshold:
+            if (not wh_over_threshold) and (
+                    queue.qsize() > wh_warning_threshold):
                 wh_over_threshold = True
                 wh_threshold_timer = datetime.now()
             elif wh_over_threshold:
-                timediff = datetime.now() - wh_threshold_timer
+                if queue.qsize() < wh_warning_threshold:
+                    wh_over_threshold = False
+                else:
+                    timediff = datetime.now() - wh_threshold_timer
 
-                if timediff.total_seconds() > wh_threshold_lifetime:
-                    log.warning('Webhook queue has been > %d (@%d);'
-                                + ' for over %d seconds,'
-                                + ' try increasing --wh-concurrency'
-                                + ' or --wh-threads.',
-                                wh_warning_threshold,
-                                queue.qsize(),
-                                wh_threshold_lifetime)
-            else:
-                # Not over max queue size. Reset flag.
-                wh_over_threshold = False
+                    if timediff.total_seconds() > wh_threshold_lifetime:
+                        log.warning('Webhook queue has been > %d (@%d);'
+                                    + ' for over %d seconds,'
+                                    + ' try increasing --wh-concurrency'
+                                    + ' or --wh-threads.',
+                                    wh_warning_threshold,
+                                    queue.qsize(),
+                                    wh_threshold_lifetime)
 
             queue.task_done()
         except Exception as e:
