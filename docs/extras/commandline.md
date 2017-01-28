@@ -115,11 +115,11 @@
                             List of Pokemon to NOT encounter for more stats. [env
                             var: POGOMAP_ENCOUNTER_BLACKLIST]
       -ewhtf ENCOUNTER_WHITELIST_FILE, --encounter-whitelist-file ENCOUNTER_WHITELIST_FILE
-                            File containing a list of Pokemon to encounter for
+                            File containing a list of Pokemon to NOT encounter for
                             more stats. [env var:
                             POGOMAP_ENCOUNTER_WHITELIST_FILE]
       -eblkf ENCOUNTER_BLACKLIST_FILE, --encounter-blacklist-file ENCOUNTER_BLACKLIST_FILE
-                            File containing a list of Pokemon to encounter for
+                            File containing a list of Pokemon to NOT encounter for
                             more stats. [env var:
                             POGOMAP_ENCOUNTER_BLACKLIST_FILE]
       -ld LOGIN_DELAY, --login-delay LOGIN_DELAY

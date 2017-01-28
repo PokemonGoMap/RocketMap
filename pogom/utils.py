@@ -133,13 +133,13 @@ def get_args():
                                 help=('List of Pokemon to NOT encounter for ' +
                                       'more stats.'))
     encounter_list.add_argument('-ewhtf', '--encounter-whitelist-file',
-                                default='', help='File containing a list of ' +
-                                                 'Pokemon to encounter for ' +
-                                                 'more stats.')
+                                default='', help='File containing a list of '
+                                                 'Pokemon to NOT encounter for'
+                                                 ' more stats.')
     encounter_list.add_argument('-eblkf', '--encounter-blacklist-file',
-                                default='', help='File containing a list of ' +
-                                                 'Pokemon to encounter for ' +
-                                                 'more stats.')
+                                default='', help='File containing a list of '
+                                                 'Pokemon to NOT encounter for'
+                                                 ' more stats.')
     parser.add_argument('-ld', '--login-delay',
                         help='Time delay between each login attempt.',
                         type=float, default=6)
