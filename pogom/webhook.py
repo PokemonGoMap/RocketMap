@@ -3,12 +3,21 @@
 
 import logging
 import requests
+from datetime import datetime
 from requests_futures.sessions import FuturesSession
+import threading
 from .utils import get_args
 from requests.packages.urllib3.util.retry import Retry
 from requests.adapters import HTTPAdapter
 
 log = logging.getLogger(__name__)
+
+# How low do we want the queue size to stay?
+wh_warning_threshold = 100
+# How long can it be over the threshold, in seconds?
+# Default: 5 seconds per 100 in threshold.
+wh_threshold_lifetime = int(5 * (wh_warning_threshold / 100.0))
+wh_lock = threading.Lock()
 
 
 def send_to_webhook(session, message_type, message):
@@ -37,6 +46,9 @@ def send_to_webhook(session, message_type, message):
 
 
 def wh_updater(args, queue, key_cache):
+    wh_threshold_timer = datetime.now()
+    wh_over_threshold = False
+
     # Set up one session to use for all requests.
     # Requests to the same host will reuse the underlying TCP
     # connection, giving a performance increase.
@@ -56,10 +68,8 @@ def wh_updater(args, queue, key_cache):
             }
             ident = message.get(ident_fields.get(whtype), None)
 
-            # cachetools in Python2.7 isn't thread safe, but adding a Lock
-            # slows down the queue immensely. Rather than being entirely
-            # thread safe, we catch the rare exception and re-add to queue.
-            try:
+            # cachetools in Python2.7 isn't thread safe, so we add a lock.
+            with wh_lock:
                 # Only send if identifier isn't already in cache.
                 if ident is None:
                     # We don't know what it is, so let's just log and send
@@ -85,20 +95,25 @@ def wh_updater(args, queue, key_cache):
                     else:
                         log.debug('Not resending %s to webhook: %s.',
                                   whtype, ident)
-            except KeyError as ex:
-                # Avoid choking other threads: don't just requeue the item,
-                # send it to the webhooks and be done with it. Requeuing
-                # could trigger the error infinitely on the same key.
-                log.debug(
-                    'LFUCache thread unsafe exception: %s. Sending.',
-                    repr(ex))
-                send_to_webhook(session, whtype, message)
 
             # Webhook queue moving too slow.
-            if queue.qsize() > 100:
-                log.warning('Webhook queue is > 100 (@%d); ' +
-                            'try increasing --wh-concurrency or --wh-threads.',
-                            queue.qsize())
+            if not wh_over_threshold and queue.qsize() > wh_warning_threshold:
+                wh_over_threshold = True
+                wh_threshold_timer = datetime.now()
+            elif wh_over_threshold:
+                timediff = datetime.now() - wh_threshold_timer
+
+                if timediff.total_seconds() > wh_threshold_lifetime:
+                    log.warning('Webhook queue has been > %d (@%d);'
+                                + ' for over %d seconds,'
+                                + ' try increasing --wh-concurrency'
+                                + ' or --wh-threads.',
+                                wh_warning_threshold,
+                                queue.qsize(),
+                                wh_threshold_lifetime)
+            else:
+                # Not over max queue size. Reset flag.
+                wh_over_threshold = False
 
             queue.task_done()
         except Exception as e:
