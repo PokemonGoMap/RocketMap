@@ -486,7 +486,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
                     'Search queue %d empty, scheduling more items to scan.', i)
                 try:  # Can't have the scheduler die because of a DB deadlock.
                     scheduler_array[i].schedule()
-                    if scheduler_array[i].empty():
+                    if scheduler_array[i].queues == [[]]:
                         scheduler_status_array[i] -= 1
                         log.warning("Scheduler didn't fetch items. Attempt " +
                                     "number %d", 3-scheduler_status_array[i])
