@@ -3,6 +3,7 @@
 
 import logging
 import requests
+from requests_futures.sessions import FuturesSession
 from .utils import get_args
 from requests.packages.urllib3.util.retry import Retry
 from requests.adapters import HTTPAdapter
@@ -10,7 +11,7 @@ from requests.adapters import HTTPAdapter
 log = logging.getLogger(__name__)
 
 
-def send_to_webhook(message_type, message):
+def send_to_webhook(session, message_type, message):
     args = get_args()
 
     if not args.webhooks:
@@ -18,26 +19,7 @@ def send_to_webhook(message_type, message):
         log.warning('Called send_to_webhook() without webhooks.')
         return
 
-    # Config / arg parser
-    num_retries = args.wh_retries
     req_timeout = args.wh_timeout
-    backoff_factor = args.wh_backoff_factor
-
-    # Use requests & urllib3 to auto-retry.
-    # If the backoff_factor is 0.1, then sleep() will sleep for [0.1s, 0.2s,
-    # 0.4s, ...] between retries. It will also force a retry if the status
-    # code returned is 500, 502, 503 or 504.
-    session = requests.Session()
-
-    # If any regular response is generated, no retry is done. Without using
-    # the status_forcelist, even a response with status 500 will not be
-    # retried.
-    retries = Retry(total=num_retries, backoff_factor=backoff_factor,
-                    status_forcelist=[500, 502, 503, 504])
-
-    # Mount handler on both HTTP & HTTPS.
-    session.mount('http://', HTTPAdapter(max_retries=retries))
-    session.mount('https://', HTTPAdapter(max_retries=retries))
 
     data = {
         'type': message_type,
@@ -46,7 +28,8 @@ def send_to_webhook(message_type, message):
 
     for w in args.webhooks:
         try:
-            session.post(w, json=data, timeout=(None, req_timeout))
+            session.post(w, json=data, timeout=(None, req_timeout),
+                         background_callback=__wh_completed)
         except requests.exceptions.ReadTimeout:
             log.exception('Response timeout on webhook endpoint %s.', w)
         except requests.exceptions.RequestException as e:
@@ -54,6 +37,11 @@ def send_to_webhook(message_type, message):
 
 
 def wh_updater(args, queue, key_cache):
+    # Set up one session to use for all requests.
+    # Requests to the same host will reuse the underlying TCP
+    # connection, giving a performance increase.
+    session = __get_requests_session(args)
+
     # The forever loop.
     while True:
         try:
@@ -78,11 +66,11 @@ def wh_updater(args, queue, key_cache):
                     # as-is.
                     log.debug(
                         'Sending webhook item of unknown type: %s.', whtype)
-                    send_to_webhook(whtype, message)
+                    send_to_webhook(session, whtype, message)
                 elif ident not in key_cache:
                     key_cache[ident] = message
                     log.debug('Sending %s to webhook: %s.', whtype, ident)
-                    send_to_webhook(whtype, message)
+                    send_to_webhook(session, whtype, message)
                 else:
                     # Make sure to call key_cache[ident] in all branches so it
                     # updates the LFU usage count.
@@ -91,7 +79,7 @@ def wh_updater(args, queue, key_cache):
                     # data to webhooks.
                     if __wh_object_changed(whtype, key_cache[ident], message):
                         key_cache[ident] = message
-                        send_to_webhook(whtype, message)
+                        send_to_webhook(session, whtype, message)
                         log.debug('Sending updated %s to webhook: %s.',
                                   whtype, ident)
                     else:
@@ -115,6 +103,35 @@ def wh_updater(args, queue, key_cache):
 
 
 # Helpers
+
+# Background handler for completed webhook requests.
+# Currently doesn't do anything.
+def __wh_completed():
+    pass
+
+
+def __get_requests_session(args):
+    # Config / arg parser
+    num_retries = args.wh_retries
+    backoff_factor = args.wh_backoff_factor
+    pool_size = args.wh_concurrency
+
+    # Use requests & urllib3 to auto-retry.
+    # If the backoff_factor is 0.1, then sleep() will sleep for [0.1s, 0.2s,
+    # 0.4s, ...] between retries. It will also force a retry if the status
+    # code returned is 500, 502, 503 or 504.
+    session = FuturesSession(max_workers=pool_size)
+
+    # If any regular response is generated, no retry is done. Without using
+    # the status_forcelist, even a response with status 500 will not be
+    # retried.
+    retries = Retry(total=num_retries, backoff_factor=backoff_factor,
+                    status_forcelist=[500, 502, 503, 504])
+
+    # Mount handler on both HTTP & HTTPS.
+    session.mount('http://', HTTPAdapter(max_retries=retries))
+    session.mount('https://', HTTPAdapter(max_retries=retries))
+
 
 def __get_key_fields(whtype):
     key_fields = {
