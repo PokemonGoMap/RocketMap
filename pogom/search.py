@@ -354,9 +354,15 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
         'success_total': 0,
         'fail_total': 0,
         'empty_total': 0,
+        'peak': 0,
         'scheduler': args.scheduler,
         'scheduler_status': {'tth_found': 0}
     }
+
+    # Create the key scheduler.
+    if args.hash_key:
+        log.info('Enabling hashing key scheduler...')
+        key_scheduler = schedulers.KeyScheduler(args.hash_key)
 
     if(args.print_status):
         log.info('Starting status printer thread...')
@@ -382,11 +388,6 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
                    args=(threadStatus, args.status_name, db_updates_queue))
         t.daemon = True
         t.start()
-
-    # Create the key scheduler.
-    if args.hash_key:
-        log.info('Enabling hashing key scheduler...')
-        key_scheduler = schedulers.KeyScheduler(args.hash_key)
 
     # Create specified number of search_worker_thread.
     log.info('Starting search worker threads...')
@@ -419,7 +420,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
             'hash_key': 0,
             'maximum_rpm': 0,
             'rpm_left': 0,
-            'total_rpm': 0,
+            'peak_key': 0,
             'username': '',
             'proxy_display': proxy_display,
             'proxy_url': proxy_url
@@ -553,19 +554,22 @@ def get_stats_message(threadStatus):
     eph = overseer['empty_total'] * 3600 / elapsed
     skph = overseer['skip_total'] * 3600 / elapsed
     cph = overseer['captcha_total'] * 3600 / elapsed
+    rpmk = overseer['peak']
     ccost = cph * 0.00299
     cmonth = ccost * 730
 
     message = ('Total active: {}  |  Success: {} ({}/hr) | ' +
                'Fails: {} ({}/hr) | Empties: {} ({}/hr) | ' +
                'Skips {} ({}/hr) | ' +
-               'Captchas: {} ({}/hr)|${:2}/hr|${:2}/mo').format(
+               'Captchas: {} ({}/hr)|${:2}/hr|${:2}/mo | ' +
+               'Peak Per Key: {}/min |').format(
                    overseer['active_accounts'],
                    overseer['success_total'], sph,
                    overseer['fail_total'], fph,
                    overseer['empty_total'], eph,
                    overseer['skip_total'], skph,
                    overseer['captcha_total'], cph,
+                   overseer['peak'], rpmk,
                    ccost, cmonth)
 
     return message
@@ -591,6 +595,8 @@ def update_total_stats(threadStatus, last_account_status):
             overseer['fail_total'] += stat_delta(tstatus, last_status, 'fail')
             overseer[
                 'success_total'] += stat_delta(tstatus, last_status, 'success')
+            overseer[
+                'peak'] = stat_delta(tstatus, last_status, 'peak_key')
             last_account_status[username] = copy.deepcopy(tstatus)
 
     overseer['active_accounts'] = usercount
@@ -705,7 +711,7 @@ def search_worker_thread(args, account_queue, account_failures,
             status['hash_key'] = 0
             status['maximum_rpm'] = 0
             status['rpm_left'] = 0
-            status['total_rpm'] = 0
+            status['peak_key'] = 0
 
             stagger_thread(args)
 
@@ -975,7 +981,7 @@ def search_worker_thread(args, account_queue, account_failures,
                             status['message'] = ("Account {} has encountered" +
                                                  " a captcha, putting away " +
                                                  "account for now.").format(
-                                                     account['username'])
+                                account['username'])
                             log.info(status['message'])
                             account_failures.append({
                                 'account': account,
@@ -989,25 +995,33 @@ def search_worker_thread(args, account_queue, account_failures,
                     if parsed['count'] > 0:
                         status['success'] += 1
                         consecutive_noitems = 0
-                        # Check for used Hash Key and request Header from api
+                # Check for used Hash Key and request Header from api
                         if (key_scheduler):
-                            if (key == key_scheduler.current_key()):
-                                status['hash_key'] = (
-                                    key_scheduler.current_key())
-                                maximum = HashServer.status.get('maximum')
-                                status['maximum_rpm'] = maximum
-                                try:
-                                    remaining = HashServer.status.get(
-                                        'remaining')
-                                    status['rpm_left'] = remaining
-                                    status['total_rpm'] = maximum - remaining
-                                    log.info(
-                                        ('Hash Key {} has {}/{} RPM ' +
-                                         'left.').format(key, remaining,
-                                                         maximum))
-                                except HashingQuotaExceededException as e:
-                                    log.error('Hash Key {} exceeded RPM!' +
-                                              ' {}.').format(key, repr(e))
+                            key_instance = key_scheduler.keys[key]
+                            key_instance['remaining'] = (
+                                HashServer.status.get('remaining'))
+                            key_instance['maximum'] = (
+                                HashServer.status.get('maximum'))
+                            peak = (
+                                key_instance['maximum'] -
+                                key_instance['remaining'])
+                            key_instance['peak'] = peak
+                            status['hash_key'] = key
+                            status['maximum_rpm'] = key_instance['maximum']
+                            try:
+                                status[
+                                    'rpm_left'] = key_instance['remaining']
+                                status['peak_key'] = key_instance['peak']
+                                log.info(
+                                    ('Hash Key {} has {}/{} RPM ' +
+                                     'left.').format(key,
+                                                     key_instance[
+                                                         'remaining'],
+                                                     key_instance[
+                                                         'maximum']))
+                            except HashingQuotaExceededException as e:
+                                log.error('Hash Key {} exceeded RPM!' +
+                                          ' {}.').format(key, repr(e))
                     else:
                         status['noitems'] += 1
                         consecutive_noitems += 1
