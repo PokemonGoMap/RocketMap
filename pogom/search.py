@@ -987,8 +987,7 @@ def search_worker_thread(args, account_queue, account_failures,
                             break
 
                     parsed = parse_map(args, response_dict, step_location,
-                                       dbq, whq, api, scan_date,
-                                       get_scheduler_tth_found_pct(scheduler))
+                                       dbq, whq, api, scan_date)
                     scheduler.task_done(status, parsed)
                     if parsed['count'] > 0:
                         status['success'] += 1
