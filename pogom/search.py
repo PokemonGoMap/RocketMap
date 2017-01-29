@@ -42,7 +42,8 @@ from pgoapi.hash_server import HashServer
 
 from .models import parse_map, GymDetails, parse_gyms, MainWorker, WorkerStatus
 from .fakePogoApi import FakePogoApi
-from .utils import now, get_tutorial_state, complete_tutorial
+from .utils import (now, get_tutorial_state, complete_tutorial,
+                    generate_device_info)
 from .transform import get_new_coords
 import schedulers
 
@@ -549,6 +550,7 @@ def get_stats_message(threadStatus):
     if elapsed == 0:
         elapsed = 1
 
+
     sph = overseer['success_total'] * 3600 / elapsed
     fph = overseer['fail_total'] * 3600 / elapsed
     eph = overseer['empty_total'] * 3600 / elapsed
@@ -563,6 +565,7 @@ def get_stats_message(threadStatus):
                'Skips {} ({}/hr) | ' +
                'Captchas: {} ({}/hr)|${:2}/hr|${:2}/mo | ' +
                'Peak Per Key: {}/min |').format(
+
                    overseer['active_accounts'],
                    overseer['success_total'], sph,
                    overseer['fail_total'], fph,
@@ -683,6 +686,10 @@ def search_worker_thread(args, account_queue, account_failures,
     # This reinitializes the API and grabs a new account from the queue.
     while True:
         try:
+            # Force storing of previous worker info to keep consistency
+            if 'starttime' in status:
+                dbq.put((WorkerStatus, {0: WorkerStatus.db_format(status)}))
+
             status['starttime'] = now()
 
             # Track per loop.
@@ -727,7 +734,8 @@ def search_worker_thread(args, account_queue, account_failures,
             if args.mock != '':
                 api = FakePogoApi(args.mock)
             else:
-                api = PGoApi()
+                device_info = generate_device_info()
+                api = PGoApi(device_info=device_info)
 
             # New account - new proxy.
             if args.proxy:

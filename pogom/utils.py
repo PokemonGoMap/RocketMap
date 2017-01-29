@@ -11,6 +11,10 @@ import shutil
 import pprint
 import time
 import random
+import socket
+import struct
+import requests
+from uuid import uuid4
 from s2sphere import CellId, LatLng
 
 from . import config
@@ -132,6 +136,14 @@ def get_args():
                                 action='append', default=[],
                                 help=('List of Pokemon to NOT encounter for ' +
                                       'more stats.'))
+    encounter_list.add_argument('-ewhtf', '--encounter-whitelist-file',
+                                default='', help='File containing a list of '
+                                                 'Pokemon to encounter for'
+                                                 ' more stats.')
+    encounter_list.add_argument('-eblkf', '--encounter-blacklist-file',
+                                default='', help='File containing a list of '
+                                                 'Pokemon to NOT encounter for'
+                                                 ' more stats.')
     parser.add_argument('-ld', '--login-delay',
                         help='Time delay between each login attempt.',
                         type=float, default=6)
@@ -302,13 +314,16 @@ def get_args():
                         help=('Number of webhook threads; increase if the ' +
                               'webhook queue falls behind.'),
                         type=int, default=1)
+    parser.add_argument('-whc', '--wh-concurrency',
+                        help=('Async requests pool size.'), type=int,
+                        default=25)
     parser.add_argument('-whr', '--wh-retries',
                         help=('Number of times to retry sending webhook ' +
                               'data on failure.'),
-                        type=int, default=5)
+                        type=int, default=3)
     parser.add_argument('-wht', '--wh-timeout',
                         help='Timeout (in seconds) for webhook requests.',
-                        type=int, default=2)
+                        type=float, default=1.0)
     parser.add_argument('-whbf', '--wh-backoff-factor',
                         help=('Factor (in seconds) by which the delay ' +
                               'until next retry will increase.'),
@@ -352,6 +367,9 @@ def get_args():
                         help=('Pause searching while web UI is inactive ' +
                               'for this timeout(in seconds).'),
                         type=int, default=0)
+    parser.add_argument('--disable-blacklist',
+                        help=('Disable the global anti-scraper IP blacklist.'),
+                        action='store_true', default=False)
     verbosity = parser.add_mutually_exclusive_group()
     verbosity.add_argument('-v', '--verbose',
                            help=('Show debug messages from PokemonGo-Map ' +
@@ -572,8 +590,19 @@ def get_args():
                   "--accountcsv to add accounts.")
             sys.exit(1)
 
-        args.encounter_blacklist = [int(i) for i in args.encounter_blacklist]
-        args.encounter_whitelist = [int(i) for i in args.encounter_whitelist]
+        if args.encounter_whitelist_file:
+            with open(args.encounter_whitelist_file) as f:
+                args.encounter_whitelist = [get_pokemon_id(name) for name in
+                                            f.read().splitlines()]
+        elif args.encounter_blacklist_file:
+            with open(args.encounter_blacklist_file) as f:
+                args.encounter_blacklist = [get_pokemon_id(name) for name in
+                                            f.read().splitlines()]
+        else:
+            args.encounter_blacklist = [int(i) for i in
+                                        args.encounter_blacklist]
+            args.encounter_whitelist = [int(i) for i in
+                                        args.encounter_whitelist]
 
         # Decide which scanning mode to use.
         if args.spawnpoint_scanning:
@@ -674,6 +703,19 @@ def get_pokemon_data(pokemon_id):
         with open(file_path, 'r') as f:
             get_pokemon_data.pokemon = json.loads(f.read())
     return get_pokemon_data.pokemon[str(pokemon_id)]
+
+
+def get_pokemon_id(pokemon_name):
+    if not hasattr(get_pokemon_id, 'ids'):
+        if not hasattr(get_pokemon_data, 'pokemon'):
+            # initialize from file
+            get_pokemon_data(1)
+
+        get_pokemon_id.ids = {}
+        for pokemon_id, data in get_pokemon_data.pokemon.iteritems():
+            get_pokemon_id.ids[data['name']] = int(pokemon_id)
+
+    return get_pokemon_id.ids.get(pokemon_name, -1)
 
 
 def get_pokemon_name(pokemon_id):
@@ -875,3 +917,65 @@ def complete_tutorial(api, account, tutorial_state):
               account['username'])
     time.sleep(random.uniform(2, 4))
     return True
+
+
+def dottedQuadToNum(ip):
+    return struct.unpack("!L", socket.inet_aton(ip))[0]
+
+
+def get_blacklist():
+    try:
+        url = 'https://blist.devkat.org/blacklist.json'
+        blacklist = requests.get(url).json()
+        log.debug('Entries in blacklist: %s.', len(blacklist))
+        return blacklist
+    except (requests.exceptions.RequestException, IndexError, KeyError):
+        log.error('Unable to retrieve blacklist, setting to empty.')
+        return []
+
+
+# Generate random device info.
+# Original by Noctem.
+IPHONES = {'iPhone5,1': 'N41AP',
+           'iPhone5,2': 'N42AP',
+           'iPhone5,3': 'N48AP',
+           'iPhone5,4': 'N49AP',
+           'iPhone6,1': 'N51AP',
+           'iPhone6,2': 'N53AP',
+           'iPhone7,1': 'N56AP',
+           'iPhone7,2': 'N61AP',
+           'iPhone8,1': 'N71AP',
+           'iPhone8,2': 'N66AP',
+           'iPhone8,4': 'N69AP',
+           'iPhone9,1': 'D10AP',
+           'iPhone9,2': 'D11AP',
+           'iPhone9,3': 'D101AP',
+           'iPhone9,4': 'D111AP'}
+
+
+def generate_device_info():
+    device_info = {'device_brand': 'Apple', 'device_model': 'iPhone',
+                   'hardware_manufacturer': 'Apple',
+                   'firmware_brand': 'iPhone OS'}
+    devices = tuple(IPHONES.keys())
+
+    ios8 = ('8.0', '8.0.1', '8.0.2', '8.1', '8.1.1',
+            '8.1.2', '8.1.3', '8.2', '8.3', '8.4', '8.4.1')
+    ios9 = ('9.0', '9.0.1', '9.0.2', '9.1', '9.2', '9.2.1',
+            '9.3', '9.3.1', '9.3.2', '9.3.3', '9.3.4', '9.3.5')
+    ios10 = ('10.0', '10.0.1', '10.0.2', '10.0.3', '10.1', '10.1.1')
+
+    device_info['device_model_boot'] = random.choice(devices)
+    device_info['hardware_model'] = IPHONES[device_info['device_model_boot']]
+    device_info['device_id'] = uuid4().hex
+
+    if device_info['hardware_model'] in ('iPhone9,1', 'iPhone9,2',
+                                         'iPhone9,3', 'iPhone9,4'):
+        device_info['firmware_type'] = random.choice(ios10)
+    elif device_info['hardware_model'] in ('iPhone8,1', 'iPhone8,2',
+                                           'iPhone8,4'):
+        device_info['firmware_type'] = random.choice(ios9 + ios10)
+    else:
+        device_info['firmware_type'] = random.choice(ios8 + ios9 + ios10)
+
+    return device_info
