@@ -556,7 +556,7 @@ def get_stats_message(threadStatus):
     eph = overseer['empty_total'] * 3600 / elapsed
     skph = overseer['skip_total'] * 3600 / elapsed
     cph = overseer['captcha_total'] * 3600 / elapsed
-    rpmk = overseer['peak']
+    rpmk = overseer['peak'] * 60 / elapsed
     ccost = cph * 0.00299
     cmonth = ccost * 730
 
