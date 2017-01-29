@@ -384,6 +384,14 @@ def get_args():
                         help=("Complete ToS and tutorial steps on accounts " +
                               "if they haven't already."),
                         default=False)
+    parser.add_argument('-pvc', '--plfe-version-check', action='store_true',
+                        help='Check if nianticlabs force a new API and stop ' +
+                        'scanning',
+                        default=False)
+    parser.add_argument('-pvci', '--plfe-version-check-interval', type=int,
+                        help='Interval to check API version force in secs ' +
+                        '(default: 300)',
+                        default=300)
     parser.add_argument('-el', '--encrypt-lib',
                         help=('Path to encrypt lib to be used instead of ' +
                               'the shipped ones.'))

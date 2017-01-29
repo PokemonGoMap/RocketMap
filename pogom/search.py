@@ -24,6 +24,11 @@ import sys
 import traceback
 import random
 import time
+import geopy
+import geopy.distance
+import requests
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
 import copy
 
 from datetime import datetime
@@ -350,6 +355,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
     account_queue = Queue()
     threadStatus = {}
     key_scheduler = None
+    cur_plfe_version = None
 
     '''
     Create a queue of accounts for workers to pull from. When a worker has
@@ -420,6 +426,21 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
         t = Thread(target=worker_status_db_thread,
                    name='status_worker_db',
                    args=(threadStatus, args.status_name, db_updates_queue))
+        t.daemon = True
+        t.start()
+
+    # Create the key scheduler.
+    if args.hash_key:
+        log.info('Enabling hashing key scheduler...')
+        key_scheduler = schedulers.KeyScheduler(args.hash_key).scheduler()
+
+    # Create API version check thread
+    if args.plfe_version_check:
+        cur_plfe_version = get_plfe_version(args)
+        log.info('Enabling new API force Watchdog')
+        t = Thread(target=plfe_check_thread,
+                   name='niantic_api',
+                   args=(args, cur_plfe_version, pause_bit))
         t.daemon = True
         t.start()
 
@@ -1212,3 +1233,50 @@ def stagger_thread(args):
 # The delta from last stat to current stat
 def stat_delta(current_status, last_status, stat_name):
     return current_status.get(stat_name, 0) - last_status.get(stat_name, 0)
+
+
+class TooManyLoginAttempts(Exception):
+    pass
+
+
+def plfe_check_thread(args, cur_plfe_version, pause_bit):
+    while True:
+        # pause if niantic force a new version (to prevent get banned)
+        forced_api = get_plfe_version(args)
+        if (cur_plfe_version != forced_api and forced_api != 0):
+            pause_bit.set()
+            log.info('Started with API: %s, Niantic forced to API: %s' % (
+                cur_plfe_version, forced_api))
+            log.info('Scanner paused due Niantic API foce.')
+            log.info('Stop the scanner process until RocketMap has updated.')
+
+        time.sleep(args.plfe_version_check_interval)
+
+
+def get_plfe_version(args):
+    proxies = {}
+
+    if args.proxy:
+        num, proxy = get_new_proxy(args)
+        proxies = {
+            'http': proxy,
+            'https': proxy
+        }
+
+    try:
+        s = requests.Session()
+        s.mount('https://', HTTPAdapter(max_retries=Retry(total=3,
+                                        backoff_factor=0.1,
+                                        status_forcelist=[500, 502,
+                                                          503, 504])))
+        r = s.get(
+            'https://pgorelease.nianticlabs.com/plfe/version',
+            proxies=proxies,
+            verify=False)
+
+        return r.text[2:]
+
+    except Exception as e:
+        log.warning('error on API check: %s', repr(e))
+
+        return 0
