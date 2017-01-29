@@ -550,7 +550,6 @@ def get_stats_message(threadStatus):
     if elapsed == 0:
         elapsed = 1
 
-
     sph = overseer['success_total'] * 3600 / elapsed
     fph = overseer['fail_total'] * 3600 / elapsed
     eph = overseer['empty_total'] * 3600 / elapsed
