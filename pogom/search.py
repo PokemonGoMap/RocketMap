@@ -24,12 +24,11 @@ import sys
 import traceback
 import random
 import time
-import geopy
-import geopy.distance
 import requests
+import copy
+
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
-import copy
 
 from datetime import datetime
 from threading import Thread, Lock
@@ -355,7 +354,8 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
     account_queue = Queue()
     threadStatus = {}
     key_scheduler = None
-    cur_plfe_version = None
+    curr_api_version = '0.53.0'
+    api_check_time = 0
 
     '''
     Create a queue of accounts for workers to pull from. When a worker has
@@ -429,21 +429,6 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
         t.daemon = True
         t.start()
 
-    # Create the key scheduler.
-    if args.hash_key:
-        log.info('Enabling hashing key scheduler...')
-        key_scheduler = schedulers.KeyScheduler(args.hash_key).scheduler()
-
-    # Create API version check thread
-    if args.plfe_version_check:
-        cur_plfe_version = get_plfe_version(args)
-        log.info('Enabling new API force Watchdog')
-        t = Thread(target=plfe_check_thread,
-                   name='niantic_api',
-                   args=(args, cur_plfe_version, pause_bit))
-        t.daemon = True
-        t.start()
-
     # Create specified number of search_worker_thread.
     log.info('Starting search worker threads...')
     for i in range(0, args.workers):
@@ -485,6 +470,9 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
                          wh_queue, scheduler, key_scheduler))
         t.daemon = True
         t.start()
+
+    if not args.no_version_check:
+        log.info('Enabling new API force Watchdog.')
 
     # A place to track the current location.
     current_location = False
@@ -570,6 +558,11 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
         if args.webhook_scheduler_updates:
             wh_status_update(args, threadStatus['Overseer'], wh_queue,
                              scheduler_array[0])
+
+        # New API Watchdog - Check if Niantic forces a new API
+        if not args.no_version_check:
+            api_check_time = check_forced_version(args, curr_api_version,
+                                                  api_check_time, pause_bit)
 
         # Now we just give a little pause here.
         time.sleep(1)
@@ -1239,21 +1232,25 @@ class TooManyLoginAttempts(Exception):
     pass
 
 
-def plfe_check_thread(args, cur_plfe_version, pause_bit):
-    while True:
-        # pause if niantic force a new version (to prevent get banned)
-        forced_api = get_plfe_version(args)
-        if (cur_plfe_version != forced_api and forced_api != 0):
+def check_forced_version(args, curr_api_version, api_check_time, pause_bit):
+    if int(time.time()) > api_check_time:
+        api_check_time = int(time.time()) + args.version_check_interval
+        forced_api = get_api_version(args)
+        if (curr_api_version != forced_api and
+           forced_api != 0):
             pause_bit.set()
-            log.info('Started with API: %s, Niantic forced to API: %s' % (
-                cur_plfe_version, forced_api))
+            log.info(('Started with API: {}, ' +
+                     'Niantic forced to API: {}').format(
+                         curr_api_version,
+                         forced_api))
             log.info('Scanner paused due Niantic API foce.')
-            log.info('Stop the scanner process until RocketMap has updated.')
+            log.info('Stop the scanner process until RocketMap ' +
+                     'has updated.')
 
-        time.sleep(args.plfe_version_check_interval)
+    return api_check_time
 
 
-def get_plfe_version(args):
+def get_api_version(args):
     proxies = {}
 
     if args.proxy:
@@ -1274,7 +1271,7 @@ def get_plfe_version(args):
             proxies=proxies,
             verify=False)
 
-        return r.text[2:]
+        return r.text[2:] if r.status_code == requests.codes.ok else 0
 
     except Exception as e:
         log.warning('error on API check: %s', repr(e))
