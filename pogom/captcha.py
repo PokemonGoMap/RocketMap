@@ -33,8 +33,6 @@ from .utils import now
 log = logging.getLogger(__name__)
 
 
-# Warning: we only manipulate account_captchas here (single thread)
-# collections.deque() is thread-safe but only one thread iterates it
 def captcha_overseer_thread(args, account_queue, account_captchas,
                             key_scheduler, wh_queue):
     solverId = 0
@@ -79,15 +77,18 @@ def captcha_overseer_thread(args, account_queue, account_captchas,
                     # TODO: check if this works
                     last_scan = account_captchas[0][0]['last_scan_date']
                     hold_time = (datetime.utcnow() - last_scan).total_seconds()
-                    log.debug("Account is on hold for %d secs.", hold_time)
+                    log.debug("Account %s waited for %d secs (limit: %d).",
+                              account_captchas[0][0]['username'], hold_time,
+                              args.manual_captcha_timeout)
                     if hold_time > args.manual_captcha_timeout:
+
                         if args.hash_key:
                             hash_key = key_scheduler.next()
 
                         t = Thread(target=captcha_solver_thread,
                                    name='captcha-solver-{}'.format(solverId),
                                    args=(args, account_queue, account_captchas,
-                                         hash_key, wh_queue, hold_time))
+                                         hash_key, wh_queue))
                         t.daemon = True
                         t.start()
 
@@ -128,7 +129,7 @@ def captcha_solver_thread(args, account_queue, account_captchas, hash_key,
             log.debug('Using proxy %s', proxy_url)
             api.set_proxy({'http': proxy_url, 'https': proxy_url})
 
-    location = [status['latitude'], status['longitude']]
+    location = [status['latitude'], status['longitude'], 0]
 
     if not args.no_jitter:
         # Jitter location before uncaptcha attempt
@@ -241,6 +242,7 @@ def automatic_captcha_solve(args, status, api, captcha_url, account, wh_queue):
     if args.webhooks:
         wh_message = {'status_name': args.status_name,
                       'status': 'encounter',
+                      'mode': '2captcha',
                       'account': status['username'],
                       'captcha': status['captcha'],
                       'time': 0}
