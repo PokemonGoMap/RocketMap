@@ -10,7 +10,7 @@ import gc
 import time
 import geopy
 import math
-from peewee import SqliteDatabase, InsertQuery, \
+from peewee import InsertQuery, \
     Check, CompositeKey, ForeignKeyField, \
     IntegerField, CharField, DoubleField, BooleanField, \
     DateTimeField, fn, DeleteQuery, FloatField, SQL, TextField, JOIN, \
@@ -19,6 +19,7 @@ from playhouse.flask_utils import FlaskDB
 from playhouse.pool import PooledMySQLDatabase
 from playhouse.shortcuts import RetryOperationalError
 from playhouse.migrate import migrate, MySQLMigrator, SqliteMigrator
+from playhouse.sqlite_ext import SqliteExtDatabase
 from datetime import datetime, timedelta
 from base64 import b64encode
 from cachetools import TTLCache
@@ -59,8 +60,13 @@ def init_database(app):
             max_connections=connections,
             stale_timeout=300)
     else:
-        log.info('Connecting to local SQLite database...')
-        db = SqliteDatabase(args.db)
+        log.info('Connecting to local SQLite database')
+        db = SqliteExtDatabase(args.db,
+                               pragmas=(
+                                   ('journal_mode', 'WAL'),
+                                   ('mmap_size', 1024 * 1024 * 32),
+                                   ('cache_size', 10000),
+                                   ('journal_size_limit', 1024 * 1024 * 4),))
 
     app.config['DATABASE'] = db
     flaskDb.init_app(app)
@@ -1845,7 +1851,11 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                     'disappear_time': calendar.timegm(
                         disappear_time.timetuple()),
                     'last_modified_time': p['last_modified_timestamp_ms'],
-                    'time_until_hidden_ms': p['time_till_hidden_ms']
+                    'time_until_hidden_ms': p['time_till_hidden_ms'],
+                    'verified': SpawnPoint.tth_found(sp),
+                    'seconds_until_despawn': seconds_until_despawn,
+                    'spawn_start': start_end[0],
+                    'spawn_end': start_end[1]
                 })
                 wh_update_queue.put(('pokemon', wh_poke))
 
