@@ -30,6 +30,7 @@ from datetime import datetime
 from threading import Thread, Lock
 from queue import Queue, Empty
 from sets import Set
+from collections import deque
 
 from pgoapi import PGoApi
 from pgoapi.utilities import f2i
@@ -40,8 +41,7 @@ from .fakePogoApi import FakePogoApi
 from .utils import now, generate_device_info
 from .transform import get_new_coords, jitter_location
 from .account import check_login, get_tutorial_state, complete_tutorial
-from .captcha import captcha_overseer_thread, check_captcha, \
-    automatic_captcha_solve
+from .captcha import captcha_overseer_thread, handle_captcha
 
 from .proxy import get_new_proxy
 
@@ -93,7 +93,7 @@ def switch_status_printer(display_type, current_page, mainlog,
 
 # Thread to print out the status of each worker.
 def status_printer(threadStatus, search_items_queue_array, db_updates_queue,
-                   wh_queue, account_queue, captcha_queue, account_failures,
+                   wh_queue, account_queue, account_failures, account_captchas,
                    logmode):
 
     if (logmode == 'logs'):
@@ -148,7 +148,7 @@ def status_printer(threadStatus, search_items_queue_array, db_updates_queue,
                 'Accounts on hold: {}. Accounts with captcha: {}').format(
                     search_items_queue_size, db_updates_queue.qsize(),
                     wh_queue.qsize(), skip_total, account_queue.qsize(),
-                    len(account_failures), captcha_queue.qsize()))
+                    len(account_failures), len(account_captchas)))
 
             # Print status of overseer.
             status_text.append('{} Overseer: {}'.format(
@@ -319,7 +319,6 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
     search_items_queue_array = []
     scheduler_array = []
     account_queue = Queue()
-    captcha_queue = Queue()
     threadStatus = {}
     key_scheduler = None
 
@@ -335,6 +334,8 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
 
     # Create a list for failed accounts.
     account_failures = []
+    # Create a double-ended queue for captcha'd accounts
+    account_captchas = deque()
 
     threadStatus['Overseer'] = {
         'message': 'Initializing',
@@ -358,7 +359,8 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
                    name='status_printer',
                    args=(threadStatus, search_items_queue_array,
                          db_updates_queue, wh_queue, account_queue,
-                         captcha_queue, account_failures, args.print_status))
+                         account_failures, account_captchas,
+                         args.print_status))
         t.daemon = True
         t.start()
 
@@ -378,7 +380,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
     if args.captcha_solving:
         log.info('Starting captcha overseer thread...')
         t = Thread(target=captcha_overseer_thread, name='captcha-overseer',
-                   args=(args, account_queue, captcha_queue, key_scheduler,
+                   args=(args, account_queue, account_captchas, key_scheduler,
                          wh_queue))
         t.daemon = True
         t.start()
@@ -426,8 +428,8 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
 
         t = Thread(target=search_worker_thread,
                    name='search-worker-{}'.format(i),
-                   args=(args, account_queue, captcha_queue,
-                         account_failures, search_items_queue, pause_bit,
+                   args=(args, account_queue, account_failures,
+                         account_captchas, search_items_queue, pause_bit,
                          threadStatus[workerId], db_updates_queue,
                          wh_queue, scheduler, key_scheduler))
         t.daemon = True
@@ -510,8 +512,8 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
                 stats_timer = 0
 
         # Update Overseer statistics
-        threadStatus['Overseer']['accounts_captcha'] = captcha_queue.qsize()
         threadStatus['Overseer']['accounts_failed'] = len(account_failures)
+        threadStatus['Overseer']['accounts_captcha'] = len(account_captchas)
 
         # Send webhook updates when scheduler status changes.
         if args.webhook_scheduler_updates:
@@ -668,9 +670,9 @@ def generate_hive_locations(current_location, step_distance,
     return results
 
 
-def search_worker_thread(args, account_queue, captcha_queue, account_failures,
-                         search_items_queue, pause_bit, status, dbq, whq,
-                         scheduler, key_scheduler):
+def search_worker_thread(args, account_queue, account_failures,
+                         account_captchas, search_items_queue, pause_bit,
+                         status, dbq, whq, scheduler, key_scheduler):
 
     log.debug('Search worker thread starting...')
 
@@ -913,45 +915,20 @@ def search_worker_thread(args, account_queue, captcha_queue, account_failures,
                 # Got the response, check for captcha, parse it out, then send
                 # todo's to db/wh queues.
                 try:
-                    # Captcha check.
-                    captcha_url = check_captcha(response_dict)
-                    if captcha_url:
-                        status['captcha'] += 1
-                        if automatic_captcha_solve(args, status, api,
-                                                   captcha_url, account,
-                                                   account_failures, whq):
-                                # Make another request for the same location
-                                # since the previous one was captcha'd.
-                                scan_date = datetime.utcnow()
-                                response_dict = map_request(api, step_location,
-                                                            args.no_jitter)
-                        else:
-                            status['message'] = ('Account {} has encountered' +
-                                                 ' a captcha.').format(
-                                                    status['username'])
-                            if args.captcha_solving:
-                                status['message'] += ' Waiting for token.'
-                                captcha_queue.put((status, account,
-                                                   step_location, captcha_url))
-                            else:
-                                status['message'] += ' Putting account away.'
-                                account_failures.append({
-                                    'account': account,
-                                    'last_fail_time': now(),
-                                    'reason': 'captcha found'})
-                            log.info(status['message'])
-
-                            if args.webhooks:
-                                wh_message = {'status_name': args.status_name,
-                                              'status': 'encounter',
-                                              'account': status['username'],
-                                              'captcha': status['captcha'],
-                                              'time': 0}
-                                whq.put(('captcha', wh_message))
-
-                            account_queue.task_done()
-                            time.sleep(3)
-                            break
+                    captcha = handle_captcha(args, status, api, account,
+                                             account_failures,
+                                             account_captchas, whq,
+                                             response_dict)
+                    if captcha is not None and captcha:
+                        # Make another request for the same location
+                        # since the previous one was captcha'd.
+                        scan_date = datetime.utcnow()
+                        response_dict = map_request(api, step_location,
+                                                    args.no_jitter)
+                    elif captcha is not None:
+                        account_queue.task_done()
+                        time.sleep(3)
+                        break
 
                     parsed = parse_map(args, response_dict, step_location,
                                        dbq, whq, api, scan_date)

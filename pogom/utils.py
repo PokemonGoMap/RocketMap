@@ -126,6 +126,14 @@ def get_args():
     parser.add_argument('-mcd', '--manual-captcha-domain',
                         help='Domain to where captcha tokens will be sent.',
                         default="http://127.0.0.1:5000")
+    parser.add_argument('-mcr', '--manual-captcha-refresh',
+                        help='Time available before captcha page refreshes.',
+                        default="30")
+    parser.add_argument('-mct', '--manual-captcha-timeout',
+                        help='Maximum time captchas will wait for manual ' +
+                        'captcha solving. On timeout, if enabled, 2Captcha ' +
+                        'will be used to solve captcha. Default is 0.',
+                        default="0")
     parser.add_argument('-ed', '--encounter-delay',
                         help=('Time delay between encounter pokemon ' +
                               'in scan threads.'),

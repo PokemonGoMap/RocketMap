@@ -70,7 +70,8 @@ class Pogom(Flask):
     def render_inject_js(self):
         args = get_args()
         return render_template("inject.js",
-                               domain=args.manual_captcha_domain)
+                               domain=args.manual_captcha_domain,
+                               timer=args.manual_captcha_refresh)
 
     def submit_token(self):
         response = 'error'
