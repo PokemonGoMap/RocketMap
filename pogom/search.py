@@ -27,6 +27,7 @@ import time
 import copy
 
 from datetime import datetime
+from dateutil import tz
 from threading import Thread, Lock
 from queue import Queue, Empty
 from sets import Set
@@ -243,14 +244,16 @@ def status_printer(threadStatus, search_items_queue_array, db_updates_queue,
 
         elif display_type[0] == 'hashstatus':
             status_text.append(
-                '----------------------------------------------------------')
+                '----------------------------------------------------------' + 
+                '---------------------')
             status_text.append('Hash key status:')
             status_text.append(
-                '----------------------------------------------------------')
+                '----------------------------------------------------------' + 
+                '---------------------')
 
-            status = '{:21} | {:9} | {:9} | {:9}'
+            status = '{:21} | {:9} | {:9} | {:9} | {:20}'
             status_text.append(status.format('Key', 'Remaining', 'Maximum',
-                                             'Peak'))
+                                             'Peak', 'Expires'))
 
             for key in hash_key:
                 key_instance = key_scheduler.keys[key]
@@ -263,7 +266,8 @@ def status_printer(threadStatus, search_items_queue_array, db_updates_queue,
                     key_text,
                     key_instance['remaining'],
                     key_instance['maximum'],
-                    key_instance['peak']))
+                    key_instance['peak'],
+                    key_instance['expires']))
 
         # Print the status_text for the current screen.
         status_text.append((
@@ -1103,6 +1107,23 @@ def search_worker_thread(args, account_queue, account_failures,
 
                     if key_instance['peak'] < peak:
                         key_instance['peak'] = peak
+
+                    if key_instance['expires'] == 'N/A':
+                        expires = HashServer.status.get(
+                            'expiration', 'N/A')
+
+                        if expires <> 'N/A':
+                            expires = datetime.utcfromtimestamp(
+                                int(expires))
+                                
+                            from_zone = tz.tzutc()
+                            to_zone = tz.tzlocal()
+                            
+                            expires = expires.replace(tzinfo=from_zone)
+                            expires = expires.astimezone(to_zone)
+                            expires = expires.strftime('%Y-%m-%d %H:%M:%S')
+                            
+                        key_instance['expires'] = expires
 
                 # Delay the desired amount after "scan" completion.
                 delay = scheduler.delay(status['last_scan_date'])
