@@ -874,18 +874,14 @@ def complete_tutorial(api, account, tutorial_state):
 
         time.sleep(random.uniform(0.5, 0.6))
         request = api.create_request()
-        request.get_player(
-            player_locale={
-                'country': 'US',
-                'language': 'en',
-                'timezone': 'America/Denver'})
+        request.get_inventory()
         responses = request.call().get('responses', {})
 
         inventory = responses.get('GET_INVENTORY', {}).get(
             'inventory_delta', {}).get('inventory_items', [])
         for item in inventory:
             pokemon = item.get('inventory_item_data', {}).get('pokemon_data')
-            if pokemon:
+            if pokemon and pokemon.get('move_1'):
                 starter_id = pokemon.get('id')
 
     if 4 not in tutorial_state:
