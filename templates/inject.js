@@ -19,17 +19,6 @@ function initCaptchaPage(){
     timer = {{timer}};
 }
 
-function refreshCaptcha() {
-    var script = document.createElement('script');
-    script.src = 'https://www.google.com/recaptcha/api.js';
-    script.type = 'text/javascript';
-
-    $('form').html(captchaOnly);
-    $('#recaptcha').delay(500).append(script);
-    refreshStats();
-    $('#status').delay(1000).fadeOut(400);
-}
-
 function refreshStats() {
     $.getJSON('{{domain}}/get_stats', function(data){
         $('#accounts_working').text(data.working);
