@@ -74,12 +74,8 @@ def captcha_overseer_thread(args, account_queue, account_captchas,
                 # Safety guard
                 tokens_remaining = min(tokens_remaining, 5)
                 for i in range(0, tokens_remaining):
-                    # TODO: check if this works
                     last_scan = account_captchas[0][0]['last_scan_date']
                     hold_time = (datetime.utcnow() - last_scan).total_seconds()
-                    log.debug("Account %s waited for %d secs (limit: %d).",
-                              account_captchas[0][0]['username'], hold_time,
-                              args.manual_captcha_timeout)
                     if hold_time > args.manual_captcha_timeout:
 
                         if args.hash_key:
