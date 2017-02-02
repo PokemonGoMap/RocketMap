@@ -9,7 +9,7 @@
                         [--spawn-delay SPAWN_DELAY] [-enc] [-cs] [-ck CAPTCHA_KEY]
                         [-cds CAPTCHA_DSK] [-mcd MANUAL-CAPTCHA-DOMAIN]
                         [-mcr MANUAL-CAPTCHA-REFRESH]
-                        [-mct MANUAL-CAPTCHA-TIMEMOUT] [-ed ENCOUNTER_DELAY]
+                        [-mct MANUAL-CAPTCHA-TIMEOUT] [-ed ENCOUNTER_DELAY]
                         [-ewht ENCOUNTER_WHITELIST | -eblk ENCOUNTER_BLACKLIST | -ewhtf ENCOUNTER_WHITELIST_FILE | -eblkf ENCOUNTER_BLACKLIST_FILE]
                         [-ld LOGIN_DELAY] [-lr LOGIN_RETRIES] [-mf MAX_FAILURES]
                         [-me MAX_EMPTY] [-bsr BAD_SCAN_RETRY]
@@ -113,7 +113,7 @@
       -mcr MANUAL-CAPTCHA-REFRESH --manual-captcha-refresh
                             Time available before captcha page refreshes
                             (default: 30 seconds)
-      -mct MANUAL-CAPTCHA-TIMEMOUT -manual-captcha-timeout
+      -mct MANUAL-CAPTCHA-TIMEOUT -manual-captcha-timeout
                             Maximum time captchas will wait for manual captcha
                             solving. On timeout, if enabled, 2Captcha will be
                             used to solve captcha. (default: 0 - disabled)
