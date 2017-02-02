@@ -244,11 +244,11 @@ def status_printer(threadStatus, search_items_queue_array, db_updates_queue,
 
         elif display_type[0] == 'hashstatus':
             status_text.append(
-                '----------------------------------------------------------' + 
+                '----------------------------------------------------------' +
                 '---------------------')
             status_text.append('Hash key status:')
             status_text.append(
-                '----------------------------------------------------------' + 
+                '----------------------------------------------------------' +
                 '---------------------')
 
             status = '{:21} | {:9} | {:9} | {:9} | {:20}'
@@ -1112,17 +1112,17 @@ def search_worker_thread(args, account_queue, account_failures,
                         expires = HashServer.status.get(
                             'expiration', 'N/A')
 
-                        if expires <> 'N/A':
+                        if expires != 'N/A':
                             expires = datetime.utcfromtimestamp(
                                 int(expires))
-                                
+
                             from_zone = tz.tzutc()
                             to_zone = tz.tzlocal()
-                            
+
                             expires = expires.replace(tzinfo=from_zone)
                             expires = expires.astimezone(to_zone)
                             expires = expires.strftime('%Y-%m-%d %H:%M:%S')
-                            
+
                         key_instance['expires'] = expires
 
                 # Delay the desired amount after "scan" completion.
