@@ -400,11 +400,6 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
         t.daemon = True
         t.start()
 
-    # Create the key scheduler.
-    if args.hash_key:
-        log.info('Enabling hashing key scheduler...')
-        key_scheduler = schedulers.KeyScheduler(args.hash_key).scheduler()
-
     # Create account recycler thread.
     log.info('Starting account recycler thread...')
     t = Thread(target=account_recycler, name='account-recycler',
@@ -955,6 +950,7 @@ def search_worker_thread(args, account_queue, account_failures,
                 # request.
                 status['latitude'] = step_location[0]
                 status['longitude'] = step_location[1]
+                status['altitude'] = step_location[2]
                 dbq.put((WorkerStatus, {0: WorkerStatus.db_format(status)}))
 
                 # Nothing back. Mark it up, sleep, carry on.

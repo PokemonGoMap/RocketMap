@@ -125,7 +125,7 @@ def captcha_solver_thread(args, account_queue, account_captchas, hash_key,
             log.debug('Using proxy %s', proxy_url)
             api.set_proxy({'http': proxy_url, 'https': proxy_url})
 
-    location = [status['latitude'], status['longitude'], 0]
+    location = [status['latitude'], status['longitude'], status['altitude']]
 
     if not args.no_jitter:
         # Jitter location before uncaptcha attempt
