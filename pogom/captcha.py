@@ -187,7 +187,9 @@ def handle_captcha(args, status, api, account, account_failures,
                                      'Putting account away.').format(
                                         status['username'])
                 log.warning(status['message'])
+                status['on_hold'] = True
                 account_failures.append({
+                    'status': status,
                     'account': account,
                     'last_fail_time': now(),
                     'reason': 'captcha found'})
@@ -206,7 +208,9 @@ def handle_captcha(args, status, api, account, account_failures,
                                            account, whq):
                     return True
                 else:
+                    status['on_hold'] = True
                     account_failures.append({
+                       'status': status,
                        'account': account,
                        'last_fail_time': now(),
                        'reason': 'captcha failed to verify'})
@@ -223,7 +227,7 @@ def handle_captcha(args, status, api, account, account_failures,
                                   'mode': 'manual',
                                   'account': status['username'],
                                   'captcha': status['captcha'],
-                                  'time': 0}
+                                  'time': args.manual_captcha_timeout}
                     whq.put(('captcha', wh_message))
                 return False
     except KeyError, e:

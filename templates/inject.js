@@ -71,6 +71,6 @@ setInterval(function() {
         setTimeout(initCaptchaPage, 1000);
         setTimeout(refreshStats, 1000);
     } else {
-        $('#timer').html('<strong>' + timer.toString() + '</strong> seconds until refresh');
+        $('#timer').html('<strong>' + timer.toString() + '</strong> seconds until refresh.');
     }
 }, 1000);
