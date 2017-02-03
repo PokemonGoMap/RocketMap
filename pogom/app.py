@@ -4,7 +4,8 @@
 import calendar
 import logging
 
-from flask import Flask, abort, jsonify, render_template, request
+from flask import Flask, abort, jsonify, render_template, request,\
+    make_response
 from flask.json import JSONEncoder
 from flask_compress import Compress
 from datetime import datetime
@@ -12,18 +13,39 @@ from s2sphere import LatLng
 from pogom.utils import get_args
 from datetime import timedelta
 from collections import OrderedDict
+from bisect import bisect_left
 
 from . import config
-from .models import Pokemon, Gym, Pokestop, ScannedLocation, MainWorker, WorkerStatus
-from .utils import now
+from .models import (Pokemon, Gym, Pokestop, ScannedLocation,
+                     MainWorker, WorkerStatus, Token)
+from .utils import now, dottedQuadToNum, get_blacklist
 log = logging.getLogger(__name__)
 compress = Compress()
 
 
 class Pogom(Flask):
+
     def __init__(self, import_name, **kwargs):
         super(Pogom, self).__init__(import_name, **kwargs)
         compress.init_app(self)
+
+        args = get_args()
+
+        # Global blist
+        if not args.disable_blacklist:
+            log.info('Retrieving blacklist...')
+            self.blacklist = get_blacklist()
+            # Sort & index for binary search
+            self.blacklist.sort(key=lambda r: r[0])
+            self.blacklist_keys = [
+                dottedQuadToNum(r[0]) for r in self.blacklist
+            ]
+        else:
+            log.info('Blacklist disabled for this session.')
+            self.blacklist = []
+            self.blacklist_keys = []
+
+        # Routes
         self.json_encoder = CustomJSONEncoder
         self.route("/", methods=['GET'])(self.fullmap)
         self.route("/raw_data", methods=['GET'])(self.raw_data)
@@ -31,11 +53,60 @@ class Pogom(Flask):
         self.route("/next_loc", methods=['POST'])(self.next_loc)
         self.route("/mobile", methods=['GET'])(self.list_pokemon)
         self.route("/search_control", methods=['GET'])(self.get_search_control)
-        self.route("/search_control", methods=['POST'])(self.post_search_control)
+        self.route("/search_control", methods=['POST'])(
+            self.post_search_control)
         self.route("/stats", methods=['GET'])(self.get_stats)
         self.route("/status", methods=['GET'])(self.get_status)
         self.route("/status", methods=['POST'])(self.post_status)
         self.route("/gym_data", methods=['GET'])(self.get_gymdata)
+        self.route("/bookmarklet", methods=['GET'])(self.get_bookmarklet)
+        self.route("/inject.js", methods=['GET'])(self.render_inject_js)
+        self.route("/submit_token", methods=['POST'])(self.submit_token)
+        self.route("/get_stats", methods=['GET'])(self.get_account_stats)
+
+    def get_bookmarklet(self):
+        return render_template('bookmarklet.html')
+
+    def render_inject_js(self):
+        args = get_args()
+        return render_template("inject.js",
+                               domain=args.manual_captcha_domain,
+                               timer=args.manual_captcha_refresh)
+
+    def submit_token(self):
+        response = 'error'
+        if request.form:
+            token = request.form.get('token')
+            query = Token.insert(token=token, last_updated=datetime.utcnow())
+            query.execute()
+            response = 'ok'
+        r = make_response(response)
+        r.headers.add('Access-Control-Allow-Origin', '*')
+        return r
+
+    def get_account_stats(self):
+        stats = MainWorker.get_account_stats()
+        r = make_response(jsonify(**stats))
+        r.headers.add('Access-Control-Allow-Origin', '*')
+        return r
+
+    def validate_request(self):
+        if self._ip_is_blacklisted(request.remote_addr):
+            log.debug('Denied access to %s.', request.remote_addr)
+            abort(403)
+
+    def _ip_is_blacklisted(self, ip):
+        if not self.blacklist:
+            return False
+
+        # Get the nearest IP range
+        pos = max(bisect_left(self.blacklist_keys, ip) - 1, 0)
+        ip_range = self.blacklist[pos]
+
+        start = dottedQuadToNum(ip_range[0])
+        end = dottedQuadToNum(ip_range[1])
+
+        return start <= dottedQuadToNum(ip) <= end
 
     def set_search_control(self, control):
         self.search_control = control
@@ -73,8 +144,10 @@ class Pogom(Flask):
         if args.on_demand_timeout > 0:
             self.search_control.clear()
         fixed_display = "none" if args.fixed_location else "inline"
-        search_display = "inline" if args.search_control and args.on_demand_timeout <= 0 else "none"
-        scan_display = "none" if (args.only_server or args.fixed_location or args.spawnpoint_scanning) else "inline"
+        search_display = "inline" if (args.search_control and
+                                      args.on_demand_timeout <= 0) else "none"
+        scan_display = "none" if (args.only_server or args.fixed_location or
+                                  args.spawnpoint_scanning) else "inline"
 
         map_lat = self.current_location[0]
         map_lng = self.current_location[1]
@@ -148,9 +221,11 @@ class Pogom(Flask):
             d['lastspawns'] = request.args.get('spawnpoints', 'false')
 
         # If old coords are not equal to current coords we have moved/zoomed!
-        if oSwLng < swLng and oSwLat < swLat and oNeLat > neLat and oNeLng > neLng:
+        if (oSwLng < swLng and oSwLat < swLat and
+                oNeLat > neLat and oNeLng > neLng):
             newArea = False  # We zoomed in no new area uncovered.
-        elif not (oSwLat == swLat and oSwLng == swLng and oNeLat == neLat and oNeLng == neLng):
+        elif not (oSwLat == swLat and oSwLng == swLng and
+                  oNeLat == neLat and oNeLng == neLng):
             newArea = True
         else:
             newArea = False
@@ -167,53 +242,79 @@ class Pogom(Flask):
                 d['pokemons'] = Pokemon.get_active_by_id(ids, swLat, swLng,
                                                          neLat, neLng)
             elif lastpokemon != 'true':
-                # If this is first request since switch on, load all pokemon on screen.
+                # If this is first request since switch on, load
+                # all pokemon on screen.
                 d['pokemons'] = Pokemon.get_active(swLat, swLng, neLat, neLng)
             else:
-                # If map is already populated only request modified Pokemon since last request time.
-                d['pokemons'] = Pokemon.get_active(swLat, swLng, neLat, neLng, timestamp=timestamp)
+                # If map is already populated only request modified Pokemon
+                # since last request time.
+                d['pokemons'] = Pokemon.get_active(swLat, swLng, neLat, neLng,
+                                                   timestamp=timestamp)
                 if newArea:
-                    # If screen is moved add newly uncovered Pokemon to the ones that were modified since last request time.
-                    d['pokemons'] = d['pokemons'] + (Pokemon.get_active(swLat, swLng, neLat, neLng, oSwLat=oSwLat, oSwLng=oSwLng, oNeLat=oNeLat, oNeLng=oNeLng))
+                    # If screen is moved add newly uncovered Pokemon to the
+                    # ones that were modified since last request time.
+                    d['pokemons'] = d['pokemons'] + (
+                        Pokemon.get_active(swLat, swLng, neLat, neLng,
+                                           oSwLat=oSwLat, oSwLng=oSwLng,
+                                           oNeLat=oNeLat, oNeLng=oNeLng))
 
             if request.args.get('eids'):
                 # Exclude id's of pokemon that are hidden.
                 eids = [int(x) for x in request.args.get('eids').split(',')]
-                d['pokemons'] = [x for x in d['pokemons'] if x['pokemon_id'] not in eids]
+                d['pokemons'] = [
+                    x for x in d['pokemons'] if x['pokemon_id'] not in eids]
 
             if request.args.get('reids'):
                 reids = [int(x) for x in request.args.get('reids').split(',')]
-                d['pokemons'] = d['pokemons'] + (Pokemon.get_active_by_id(reids, swLat, swLng, neLat, neLng))
+                d['pokemons'] = d['pokemons'] + (
+                    Pokemon.get_active_by_id(reids, swLat, swLng,
+                                             neLat, neLng))
                 d['reids'] = reids
 
         if request.args.get('pokestops', 'true') == 'true':
             if lastpokestops != 'true':
-                d['pokestops'] = Pokestop.get_stops(swLat, swLng, neLat, neLng, lured=luredonly)
+                d['pokestops'] = Pokestop.get_stops(swLat, swLng, neLat, neLng,
+                                                    lured=luredonly)
             else:
-                d['pokestops'] = Pokestop.get_stops(swLat, swLng, neLat, neLng, timestamp=timestamp)
+                d['pokestops'] = Pokestop.get_stops(swLat, swLng, neLat, neLng,
+                                                    timestamp=timestamp)
                 if newArea:
-                    d['pokestops'] = d['pokestops'] + (Pokestop.get_stops(swLat, swLng, neLat, neLng, oSwLat=oSwLat, oSwLng=oSwLng, oNeLat=oNeLat, oNeLng=oNeLng, lured=luredonly))
+                    d['pokestops'] = d['pokestops'] + (
+                        Pokestop.get_stops(swLat, swLng, neLat, neLng,
+                                           oSwLat=oSwLat, oSwLng=oSwLng,
+                                           oNeLat=oNeLat, oNeLng=oNeLng,
+                                           lured=luredonly))
 
         if request.args.get('gyms', 'true') == 'true':
             if lastgyms != 'true':
                 d['gyms'] = Gym.get_gyms(swLat, swLng, neLat, neLng)
             else:
-                d['gyms'] = Gym.get_gyms(swLat, swLng, neLat, neLng, timestamp=timestamp)
+                d['gyms'] = Gym.get_gyms(swLat, swLng, neLat, neLng,
+                                         timestamp=timestamp)
                 if newArea:
-                    d['gyms'].update(Gym.get_gyms(swLat, swLng, neLat, neLng, oSwLat=oSwLat, oSwLng=oSwLng, oNeLat=oNeLat, oNeLng=oNeLng))
+                    d['gyms'].update(
+                        Gym.get_gyms(swLat, swLng, neLat, neLng,
+                                     oSwLat=oSwLat, oSwLng=oSwLng,
+                                     oNeLat=oNeLat, oNeLng=oNeLng))
 
         if request.args.get('scanned', 'true') == 'true':
             if lastslocs != 'true':
-                d['scanned'] = ScannedLocation.get_recent(swLat, swLng, neLat, neLng)
+                d['scanned'] = ScannedLocation.get_recent(swLat, swLng,
+                                                          neLat, neLng)
             else:
-                d['scanned'] = ScannedLocation.get_recent(swLat, swLng, neLat, neLng, timestamp=timestamp)
+                d['scanned'] = ScannedLocation.get_recent(swLat, swLng,
+                                                          neLat, neLng,
+                                                          timestamp=timestamp)
                 if newArea:
-                    d['scanned'] = d['scanned'] + (ScannedLocation.get_recent(swLat, swLng, neLat, neLng, oSwLat=oSwLat, oSwLng=oSwLng, oNeLat=oNeLat, oNeLng=oNeLng))
+                    d['scanned'] = d['scanned'] + ScannedLocation.get_recent(
+                        swLat, swLng, neLat, neLng, oSwLat=oSwLat,
+                        oSwLng=oSwLng, oNeLat=oNeLat, oNeLng=oNeLng)
 
         selected_duration = None
 
         # for stats and changed nest points etc, limit pokemon queried.
-        for duration in self.get_valid_stat_input()["duration"]["items"].values():
+        for duration in (
+                self.get_valid_stat_input()["duration"]["items"].values()):
             if duration["selected"] == "SELECTED":
                 selected_duration = duration["value"]
                 break
@@ -222,27 +323,38 @@ class Pogom(Flask):
             d['seen'] = Pokemon.get_seen(selected_duration)
 
         if request.args.get('appearances', 'false') == 'true':
-            d['appearances'] = Pokemon.get_appearances(request.args.get('pokemonid'), selected_duration)
+            d['appearances'] = Pokemon.get_appearances(
+                request.args.get('pokemonid'), selected_duration)
 
         if request.args.get('appearancesDetails', 'false') == 'true':
-            d['appearancesTimes'] = Pokemon.get_appearances_times_by_spawnpoint(request.args.get('pokemonid'),
-                                                                                request.args.get('spawnpoint_id'),
-                                                                                selected_duration)
+            d['appearancesTimes'] = (
+                Pokemon.get_appearances_times_by_spawnpoint(
+                    request.args.get('pokemonid'),
+                    request.args.get('spawnpoint_id'),
+                    selected_duration))
 
         if request.args.get('spawnpoints', 'false') == 'true':
             if lastspawns != 'true':
-                d['spawnpoints'] = Pokemon.get_spawnpoints(swLat=swLat, swLng=swLng, neLat=neLat, neLng=neLng)
+                d['spawnpoints'] = Pokemon.get_spawnpoints(
+                    swLat=swLat, swLng=swLng, neLat=neLat, neLng=neLng)
             else:
-                d['spawnpoints'] = Pokemon.get_spawnpoints(swLat=swLat, swLng=swLng, neLat=neLat, neLng=neLng, timestamp=timestamp)
+                d['spawnpoints'] = Pokemon.get_spawnpoints(
+                    swLat=swLat, swLng=swLng, neLat=neLat, neLng=neLng,
+                    timestamp=timestamp)
                 if newArea:
-                    d['spawnpoints'] = d['spawnpoints'] + (Pokemon.get_spawnpoints(swLat, swLng, neLat, neLng, oSwLat=oSwLat, oSwLng=oSwLng, oNeLat=oNeLat, oNeLng=oNeLng))
+                    d['spawnpoints'] = d['spawnpoints'] + (
+                        Pokemon.get_spawnpoints(
+                            swLat, swLng, neLat, neLng,
+                            oSwLat=oSwLat, oSwLng=oSwLng,
+                            oNeLat=oNeLat, oNeLng=oNeLng))
 
         if request.args.get('status', 'false') == 'true':
             args = get_args()
             d = {}
             if args.status_page_password is None:
                 d['error'] = 'Access denied'
-            elif request.args.get('password', None) == args.status_page_password:
+            elif (request.args.get('password', None) ==
+                  args.status_page_password):
                 d['main_workers'] = MainWorker.get_all()
                 d['workers'] = WorkerStatus.get_all()
         return jsonify(d)
@@ -302,10 +414,12 @@ class Pogom(Flask):
                 'card_dir': direction,
                 'distance': int(origin_point.get_distance(
                     pokemon_point).radians * 6366468.241830914),
-                'time_to_disappear': '%d min %d sec' % (divmod((
-                    pokemon['disappear_time'] - datetime.utcnow()).seconds, 60)),
+                'time_to_disappear': '%d min %d sec' % (divmod(
+                    (pokemon['disappear_time'] - datetime.utcnow()).seconds,
+                    60)),
                 'disappear_time': pokemon['disappear_time'],
-                'disappear_sec': (pokemon['disappear_time'] - datetime.utcnow()).seconds,
+                'disappear_sec': (
+                    pokemon['disappear_time'] - datetime.utcnow()).seconds,
                 'latitude': pokemon['latitude'],
                 'longitude': pokemon['longitude']
             }
@@ -321,33 +435,80 @@ class Pogom(Flask):
         sort = request.args.get("sort", type=str)
         order = request.args.get("order", type=str)
         valid_durations = OrderedDict()
-        valid_durations["1h"] = {"display": "Last Hour", "value": timedelta(hours=1), "selected": ("SELECTED" if duration == "1h" else "")}
-        valid_durations["3h"] = {"display": "Last 3 Hours", "value": timedelta(hours=3), "selected": ("SELECTED" if duration == "3h" else "")}
-        valid_durations["6h"] = {"display": "Last 6 Hours", "value": timedelta(hours=6), "selected": ("SELECTED" if duration == "6h" else "")}
-        valid_durations["12h"] = {"display": "Last 12 Hours", "value": timedelta(hours=12), "selected": ("SELECTED" if duration == "12h" else "")}
-        valid_durations["1d"] = {"display": "Last Day", "value": timedelta(days=1), "selected": ("SELECTED" if duration == "1d" else "")}
-        valid_durations["7d"] = {"display": "Last 7 Days", "value": timedelta(days=7), "selected": ("SELECTED" if duration == "7d" else "")}
-        valid_durations["14d"] = {"display": "Last 14 Days", "value": timedelta(days=14), "selected": ("SELECTED" if duration == "14d" else "")}
-        valid_durations["1m"] = {"display": "Last Month", "value": timedelta(days=365 / 12), "selected": ("SELECTED" if duration == "1m" else "")}
-        valid_durations["3m"] = {"display": "Last 3 Months", "value": timedelta(days=3 * 365 / 12), "selected": ("SELECTED" if duration == "3m" else "")}
-        valid_durations["6m"] = {"display": "Last 6 Months", "value": timedelta(days=6 * 365 / 12), "selected": ("SELECTED" if duration == "6m" else "")}
-        valid_durations["1y"] = {"display": "Last Year", "value": timedelta(days=365), "selected": ("SELECTED" if duration == "1y" else "")}
-        valid_durations["all"] = {"display": "Map Lifetime", "value": 0, "selected": ("SELECTED" if duration == "all" else "")}
+        valid_durations["1h"] = {
+            "display": "Last Hour",
+            "value": timedelta(hours=1),
+            "selected": ("SELECTED" if duration == "1h" else "")}
+        valid_durations["3h"] = {
+            "display": "Last 3 Hours",
+            "value": timedelta(hours=3),
+            "selected": ("SELECTED" if duration == "3h" else "")}
+        valid_durations["6h"] = {
+            "display": "Last 6 Hours",
+            "value": timedelta(hours=6),
+            "selected": ("SELECTED" if duration == "6h" else "")}
+        valid_durations["12h"] = {
+            "display": "Last 12 Hours",
+            "value": timedelta(hours=12),
+            "selected": ("SELECTED" if duration == "12h" else "")}
+        valid_durations["1d"] = {
+            "display": "Last Day",
+            "value": timedelta(days=1),
+            "selected": ("SELECTED" if duration == "1d" else "")}
+        valid_durations["7d"] = {
+            "display": "Last 7 Days",
+            "value": timedelta(days=7),
+            "selected": ("SELECTED" if duration == "7d" else "")}
+        valid_durations["14d"] = {
+            "display": "Last 14 Days",
+            "value": timedelta(days=14),
+            "selected": ("SELECTED" if duration == "14d" else "")}
+        valid_durations["1m"] = {
+            "display": "Last Month",
+            "value": timedelta(days=365 / 12),
+            "selected": ("SELECTED" if duration == "1m" else "")}
+        valid_durations["3m"] = {
+            "display": "Last 3 Months",
+            "value": timedelta(days=3 * 365 / 12),
+            "selected": ("SELECTED" if duration == "3m" else "")}
+        valid_durations["6m"] = {
+            "display": "Last 6 Months",
+            "value": timedelta(days=6 * 365 / 12),
+            "selected": ("SELECTED" if duration == "6m" else "")}
+        valid_durations["1y"] = {
+            "display": "Last Year",
+            "value": timedelta(days=365),
+            "selected": ("SELECTED" if duration == "1y" else "")}
+        valid_durations["all"] = {
+            "display": "Map Lifetime",
+            "value": 0,
+            "selected": ("SELECTED" if duration == "all" else "")}
         if duration not in valid_durations:
             valid_durations["1d"]["selected"] = "SELECTED"
         valid_sort = OrderedDict()
-        valid_sort["count"] = {"display": "Count", "selected": ("SELECTED" if sort == "count" else "")}
-        valid_sort["id"] = {"display": "Pokedex Number", "selected": ("SELECTED" if sort == "id" else "")}
-        valid_sort["name"] = {"display": "Pokemon Name", "selected": ("SELECTED" if sort == "name" else "")}
+        valid_sort["count"] = {
+            "display": "Count",
+            "selected": ("SELECTED" if sort == "count" else "")}
+        valid_sort["id"] = {
+            "display": "Pokedex Number",
+            "selected": ("SELECTED" if sort == "id" else "")}
+        valid_sort["name"] = {
+            "display": "Pokemon Name",
+            "selected": ("SELECTED" if sort == "name" else "")}
         if sort not in valid_sort:
             valid_sort["count"]["selected"] = "SELECTED"
         valid_order = OrderedDict()
-        valid_order["asc"] = {"display": "Ascending", "selected": ("SELECTED" if order == "asc" else "")}
-        valid_order["desc"] = {"display": "Descending", "selected": ("SELECTED" if order == "desc" else "")}
+        valid_order["asc"] = {
+            "display": "Ascending",
+            "selected": ("SELECTED" if order == "asc" else "")}
+        valid_order["desc"] = {
+            "display": "Descending",
+            "selected": ("SELECTED" if order == "desc" else "")}
         if order not in valid_order:
             valid_order["desc"]["selected"] = "SELECTED"
         valid_input = OrderedDict()
-        valid_input["duration"] = {"display": "Duration", "items": valid_durations}
+        valid_input["duration"] = {
+            "display": "Duration", "items": valid_durations}
         valid_input["sort"] = {"display": "Sort", "items": valid_sort}
         valid_input["order"] = {"display": "Order", "items": valid_order}
         return valid_input

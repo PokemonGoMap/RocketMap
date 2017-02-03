@@ -789,33 +789,13 @@ var pGoStyleNight = [{
 }]
 
 var pokemonSprites = {
-    normal: {
-        columns: 12,
-        iconWidth: 30,
-        iconHeight: 30,
-        spriteWidth: 360,
-        spriteHeight: 390,
-        filename: 'static/icons-sprite.png',
-        name: 'Normal'
-    },
-    highres: {
-        columns: 7,
-        iconWidth: 65,
-        iconHeight: 65,
-        spriteWidth: 455,
-        spriteHeight: 1430,
-        filename: 'static/icons-large-sprite.png',
-        name: 'High-Res'
-    },
-    shuffle: {
-        columns: 7,
-        iconWidth: 65,
-        iconHeight: 65,
-        spriteWidth: 455,
-        spriteHeight: 1430,
-        filename: 'static/icons-shuffle-sprite.png',
-        name: 'Shuffle'
-    }
+    columns: 7,
+    iconWidth: 65,
+    iconHeight: 65,
+    spriteWidth: 455,
+    spriteHeight: 1430,
+    filename: 'static/icons-large-sprite.png',
+    name: 'High-Res'
 }
 
 //
@@ -893,6 +873,26 @@ var StoreOptions = {
     'useGymSidebar': {
         default: false,
         type: StoreTypes.Boolean
+    },
+    'showOpenGymsOnly': {
+        default: 0,
+        type: StoreTypes.Number
+    },
+    'showTeamGymsOnly': {
+        default: 0,
+        type: StoreTypes.Number
+    },
+    'showLastUpdatedGymsOnly': {
+        default: 0,
+        type: StoreTypes.Number
+    },
+    'minGymLevel': {
+        default: 0,
+        type: StoreTypes.Number
+    },
+    'maxGymLevel': {
+        default: 10,
+        type: StoreTypes.Number
     },
     'showPokemon': {
         default: true,
@@ -1038,7 +1038,7 @@ function setupPokemonMarker(item, map, isBounceDisabled) {
     // Scale icon size up with the map exponentially
     var iconSize = 2 + (map.getZoom() - 3) * (map.getZoom() - 3) * 0.2 + Store.get('iconSizeModifier')
     var pokemonIndex = item['pokemon_id'] - 1
-    var sprite = pokemonSprites[Store.get('pokemonIcons')] || pokemonSprites['highres']
+    var sprite = pokemonSprites
     var icon = getGoogleSprite(pokemonIndex, sprite, iconSize)
 
     var animationDisabled = false

@@ -8,7 +8,7 @@
                         [-st STEP_LIMIT] [-sd SCAN_DELAY]
                         [--spawn-delay SPAWN_DELAY] [-enc] [-cs] [-ck CAPTCHA_KEY]
                         [-cds CAPTCHA_DSK] [-ed ENCOUNTER_DELAY]
-                        [-ewht ENCOUNTER_WHITELIST | -eblk ENCOUNTER_BLACKLIST]
+                        [-ewht ENCOUNTER_WHITELIST | -eblk ENCOUNTER_BLACKLIST | -ewhtf ENCOUNTER_WHITELIST_FILE | -eblkf ENCOUNTER_BLACKLIST_FILE]
                         [-ld LOGIN_DELAY] [-lr LOGIN_RETRIES] [-mf MAX_FAILURES]
                         [-me MAX_EMPTY] [-bsr BAD_SCAN_RETRY]
                         [-msl MIN_SECONDS_LEFT] [-dc] [-H HOST] [-P PORT]
@@ -35,7 +35,7 @@
                         [-v [filename.log] | -vv [filename.log]]
  
     Args that start with '--' (eg. -a) can also be set in a config file
-    (default: <PokemonGo-Map Project Root>/config/config.ini or specified
+    (default: <RocketMap Project Root>/config/config.ini or specified
     via -cf). The recognized syntax for setting (key, value) pairs is based on the
     INI and YAML formats (e.g. key=value or foo=TRUE). For full documentation of
     the differences from the standards please refer to the ConfigArgParse
@@ -114,6 +114,14 @@
       -eblk ENCOUNTER_BLACKLIST, --encounter-blacklist ENCOUNTER_BLACKLIST
                             List of Pokemon to NOT encounter for more stats. [env
                             var: POGOMAP_ENCOUNTER_BLACKLIST]
+      -ewhtf ENCOUNTER_WHITELIST_FILE, --encounter-whitelist-file ENCOUNTER_WHITELIST_FILE
+                            File containing a list of Pokemon to encounter for
+                            more stats. [env var:
+                            POGOMAP_ENCOUNTER_WHITELIST_FILE]
+      -eblkf ENCOUNTER_BLACKLIST_FILE, --encounter-blacklist-file ENCOUNTER_BLACKLIST_FILE
+                            File containing a list of Pokemon to NOT encounter for
+                            more stats. [env var:
+                            POGOMAP_ENCOUNTER_BLACKLIST_FILE]
       -ld LOGIN_DELAY, --login-delay LOGIN_DELAY
                             Time delay between each login attempt. [env var:
                             POGOMAP_LOGIN_DELAY]
@@ -290,7 +298,7 @@
                             timeout(in seconds). [env var:
                             POGOMAP_ON_DEMAND_TIMEOUT]
       -v [filename.log], --verbose [filename.log]
-                            Show debug messages from PokemonGo-Map and pgoapi.
+                            Show debug messages from RocketMap and pgoapi.
                             Optionally specify file to log to. [env var:
                             POGOMAP_VERBOSE]
       -vv [filename.log], --very-verbose [filename.log]
