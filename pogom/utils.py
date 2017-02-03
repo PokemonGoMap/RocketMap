@@ -9,8 +9,8 @@ import json
 import logging
 import shutil
 import pprint
-import time
 import random
+import time
 import socket
 import struct
 import requests
@@ -98,6 +98,19 @@ def get_args():
                         type=int, default=1)
     parser.add_argument('-l', '--location', type=parse_unicode,
                         help='Location, can be an address or coordinates.')
+    # Default based on the average elevation of cities around the world.
+    # Source: https://www.wikiwand.com/en/List_of_cities_by_elevation
+    parser.add_argument('-alt', '--altitude',
+                        help='Default altitude in meters.',
+                        type=int, default=507)
+    parser.add_argument('-altv', '--altitude-variance',
+                        help='Variance for --altitude in meters',
+                        type=int, default=1)
+    parser.add_argument('-nac', '--no-altitude-cache',
+                        help=('Do not cache fetched altitudes in the' +
+                              'database. This implies fetching the altitude ' +
+                              'only once for the running instance.'),
+                        action='store_true', default=False)
     parser.add_argument('-nj', '--no-jitter',
                         help=("Don't apply random -9m to +9m jitter to " +
                               "location."),
@@ -123,6 +136,17 @@ def get_args():
     parser.add_argument('-cds', '--captcha-dsk',
                         help='PokemonGo captcha data-sitekey.',
                         default="6LeeTScTAAAAADqvhqVMhPpr_vB9D364Ia-1dSgK")
+    parser.add_argument('-mcd', '--manual-captcha-domain',
+                        help='Domain to where captcha tokens will be sent.',
+                        default="http://127.0.0.1:5000")
+    parser.add_argument('-mcr', '--manual-captcha-refresh',
+                        help='Time available before captcha page refreshes.',
+                        type=int, default=30)
+    parser.add_argument('-mct', '--manual-captcha-timeout',
+                        help='Maximum time captchas will wait for manual ' +
+                        'captcha solving. On timeout, if enabled, 2Captcha ' +
+                        'will be used to solve captcha. Default is 0.',
+                        type=int, default=0)
     parser.add_argument('-ed', '--encounter-delay',
                         help=('Time delay between encounter pokemon ' +
                               'in scan threads.'),
@@ -136,6 +160,14 @@ def get_args():
                                 action='append', default=[],
                                 help=('List of Pokemon to NOT encounter for ' +
                                       'more stats.'))
+    encounter_list.add_argument('-ewhtf', '--encounter-whitelist-file',
+                                default='', help='File containing a list of '
+                                                 'Pokemon to encounter for'
+                                                 ' more stats.')
+    encounter_list.add_argument('-eblkf', '--encounter-blacklist-file',
+                                default='', help='File containing a list of '
+                                                 'Pokemon to NOT encounter for'
+                                                 ' more stats.')
     parser.add_argument('-ld', '--login-delay',
                         help='Time delay between each login attempt.',
                         type=float, default=6)
@@ -306,13 +338,16 @@ def get_args():
                         help=('Number of webhook threads; increase if the ' +
                               'webhook queue falls behind.'),
                         type=int, default=1)
+    parser.add_argument('-whc', '--wh-concurrency',
+                        help=('Async requests pool size.'), type=int,
+                        default=25)
     parser.add_argument('-whr', '--wh-retries',
                         help=('Number of times to retry sending webhook ' +
                               'data on failure.'),
-                        type=int, default=5)
+                        type=int, default=3)
     parser.add_argument('-wht', '--wh-timeout',
                         help='Timeout (in seconds) for webhook requests.',
-                        type=int, default=2)
+                        type=float, default=1.0)
     parser.add_argument('-whbf', '--wh-backoff-factor',
                         help=('Factor (in seconds) by which the delay ' +
                               'until next retry will increase.'),
@@ -587,8 +622,19 @@ def get_args():
                   "--accountcsv to add accounts.")
             sys.exit(1)
 
-        args.encounter_blacklist = [int(i) for i in args.encounter_blacklist]
-        args.encounter_whitelist = [int(i) for i in args.encounter_whitelist]
+        if args.encounter_whitelist_file:
+            with open(args.encounter_whitelist_file) as f:
+                args.encounter_whitelist = [get_pokemon_id(name) for name in
+                                            f.read().splitlines()]
+        elif args.encounter_blacklist_file:
+            with open(args.encounter_blacklist_file) as f:
+                args.encounter_blacklist = [get_pokemon_id(name) for name in
+                                            f.read().splitlines()]
+        else:
+            args.encounter_blacklist = [int(i) for i in
+                                        args.encounter_blacklist]
+            args.encounter_whitelist = [int(i) for i in
+                                        args.encounter_whitelist]
 
         # Decide which scanning mode to use.
         if args.spawnpoint_scanning:
@@ -691,6 +737,19 @@ def get_pokemon_data(pokemon_id):
     return get_pokemon_data.pokemon[str(pokemon_id)]
 
 
+def get_pokemon_id(pokemon_name):
+    if not hasattr(get_pokemon_id, 'ids'):
+        if not hasattr(get_pokemon_data, 'pokemon'):
+            # initialize from file
+            get_pokemon_data(1)
+
+        get_pokemon_id.ids = {}
+        for pokemon_id, data in get_pokemon_data.pokemon.iteritems():
+            get_pokemon_id.ids[data['name']] = int(pokemon_id)
+
+    return get_pokemon_id.ids.get(pokemon_name, -1)
+
+
 def get_pokemon_name(pokemon_id):
     return i8ln(get_pokemon_data(pokemon_id)['name'])
 
@@ -749,147 +808,6 @@ class Timer():
     def output(self):
         self.checkpoint('end')
         pprint.pprint(self.times)
-
-
-# Check if all important tutorial steps have been completed.
-# API argument needs to be a logged in API instance.
-def get_tutorial_state(api, account):
-    log.debug('Checking tutorial state for %s.', account['username'])
-    request = api.create_request()
-    request.get_player(
-        player_locale={'country': 'US',
-                       'language': 'en',
-                       'timezone': 'America/Denver'})
-
-    response = request.call().get('responses', {})
-
-    get_player = response.get('GET_PLAYER', {})
-    tutorial_state = get_player.get(
-        'player_data', {}).get('tutorial_state', [])
-    time.sleep(random.uniform(2, 4))
-    return tutorial_state
-
-
-# Complete minimal tutorial steps.
-# API argument needs to be a logged in API instance.
-# TODO: Check if game client bundles these requests, or does them separately.
-def complete_tutorial(api, account, tutorial_state):
-    if 0 not in tutorial_state:
-        time.sleep(random.uniform(1, 5))
-        request = api.create_request()
-        request.mark_tutorial_complete(tutorials_completed=0)
-        log.debug('Sending 0 tutorials_completed for %s.', account['username'])
-        request.call()
-
-    if 1 not in tutorial_state:
-        time.sleep(random.uniform(5, 12))
-        request = api.create_request()
-        request.set_avatar(player_avatar={
-            'hair': random.randint(1, 5),
-            'shirt': random.randint(1, 3),
-            'pants': random.randint(1, 2),
-            'shoes': random.randint(1, 6),
-            'avatar': random.randint(0, 1),
-            'eyes': random.randint(1, 4),
-            'backpack': random.randint(1, 5)
-        })
-        log.debug('Sending set random player character request for %s.',
-                  account['username'])
-        request.call()
-
-        time.sleep(random.uniform(0.3, 0.5))
-
-        request = api.create_request()
-        request.mark_tutorial_complete(tutorials_completed=1)
-        log.debug('Sending 1 tutorials_completed for %s.', account['username'])
-        request.call()
-
-    time.sleep(random.uniform(0.5, 0.6))
-    request = api.create_request()
-    request.get_player_profile()
-    log.debug('Fetching player profile for %s...', account['username'])
-    request.call()
-
-    starter_id = None
-    if 3 not in tutorial_state:
-        time.sleep(random.uniform(1, 1.5))
-        request = api.create_request()
-        request.get_download_urls(asset_id=[
-            '1a3c2816-65fa-4b97-90eb-0b301c064b7a/1477084786906000',
-            'aa8f7687-a022-4773-b900-3a8c170e9aea/1477084794890000',
-            'e89109b0-9a54-40fe-8431-12f7826c8194/1477084802881000'])
-        log.debug('Grabbing some game assets.')
-        request.call()
-
-        time.sleep(random.uniform(1, 1.6))
-        request = api.create_request()
-        request.call()
-
-        time.sleep(random.uniform(6, 13))
-        request = api.create_request()
-        starter = random.choice((1, 4, 7))
-        request.encounter_tutorial_complete(pokemon_id=starter)
-        log.debug('Catching the starter for %s.', account['username'])
-        request.call()
-
-        time.sleep(random.uniform(0.5, 0.6))
-        request = api.create_request()
-        request.get_player(
-            player_locale={
-                'country': 'US',
-                'language': 'en',
-                'timezone': 'America/Denver'})
-        responses = request.call().get('responses', {})
-
-        inventory = responses.get('GET_INVENTORY', {}).get(
-            'inventory_delta', {}).get('inventory_items', [])
-        for item in inventory:
-            pokemon = item.get('inventory_item_data', {}).get('pokemon_data')
-            if pokemon:
-                starter_id = pokemon.get('id')
-
-    if 4 not in tutorial_state:
-        time.sleep(random.uniform(5, 12))
-        request = api.create_request()
-        request.claim_codename(codename=account['username'])
-        log.debug('Claiming codename for %s.', account['username'])
-        request.call()
-
-        time.sleep(random.uniform(1, 1.3))
-        request = api.create_request()
-        request.mark_tutorial_complete(tutorials_completed=4)
-        log.debug('Sending 4 tutorials_completed for %s.', account['username'])
-        request.call()
-
-        time.sleep(0.1)
-        request = api.create_request()
-        request.get_player(
-            player_locale={
-                'country': 'US',
-                'language': 'en',
-                'timezone': 'America/Denver'})
-        request.call()
-
-    if 7 not in tutorial_state:
-        time.sleep(random.uniform(4, 10))
-        request = api.create_request()
-        request.mark_tutorial_complete(tutorials_completed=7)
-        log.debug('Sending 7 tutorials_completed for %s.', account['username'])
-        request.call()
-
-    if starter_id:
-        time.sleep(random.uniform(3, 5))
-        request = api.create_request()
-        request.set_buddy_pokemon(pokemon_id=starter_id)
-        log.debug('Setting buddy pokemon for %s.', account['username'])
-        request.call()
-        time.sleep(random.uniform(0.8, 1.8))
-
-    # Sleeping before we start scanning to avoid Niantic throttling.
-    log.debug('And %s is done. Wait for a second, to avoid throttle.',
-              account['username'])
-    time.sleep(random.uniform(2, 4))
-    return True
 
 
 def dottedQuadToNum(ip):
