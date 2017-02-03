@@ -1,10 +1,20 @@
 # Handling Captchas
+In the following examples we will be using `http://localhost:5000` as URL where RocketMap can be accessed (i.e. front-end instance).
 
-In the following examples we will be using `http://localhost:5000` as the URL where the RocketMap can be accessed (i.e. front-end instance). Please remember that if you want your map to be accessed from the exterior you need to setup the `--host` and `--manual-captcha-domain` to something like `http://<your-ip>:<port>` or `http://<your-domain>:<port>`.
+## Automatic Mode (2captcha)
+RocketMap can request tokens for captcha solving from an external service, allowing captchas to be solved "on-the-fly" - meaning that once an account encounters a captcha it immediately starts the uncaptcha process.
+
+If you want to enable this behavior you need to specify:
+- Enable captcha solving: `-cs` or `--captcha-solving`
+
+- 2captcha API key: `-ck` or `--captcha-key`
 
 ## Enabling Manual/Hybrid Captcha Solving:
 You can setup RocketMap to enable manual captcha solving. This feature uses common web browsers to let users rescue captcha'd accounts.
-We use a JavaScript [bookmarklet](https://en.wikipedia.org/wiki/Bookmarklet) to trigger the captcha and allow the user to solve it in its web browser.
+We use a JavaScript [bookmarklet](https://en.wikipedia.org/wiki/Bookmarklet) that triggers a captcha which allows the user to solve it in its web browser.
+The result is then forwarded to the RocketMap instance running at the URL specified by `-mcd`.
+
+Please remember that if you want your map to be accessed from the exterior you need to setup `--host` and `--manual-captcha-domain` to something like `http://<your-ip>:<port>` or `http://<your-domain>:<port>`.
 
 To enable manual captcha solving you need to add the following parameters:
 
@@ -15,8 +25,8 @@ Or using config.ini:
     captcha-solving: True
     manual-captcha-domain: http://localhost:5000
 
-## Bookmarklet
-You can find the required bookmarklet to solve captchas in browser at:
+### Bookmarklet
+The required bookmarklet to solve captchas using only the web browser can be found at:
 
 `http://localhost:5000/bookmarklet`
 
@@ -30,27 +40,19 @@ which is normal to display a 404 error message.
 
 ![bookmarklet page](../_static/img/captchas-1st-click.png)
 
-The "magic" happens when you **click in bookmarklet a second time** (while remaining in the same URL).
+The "magic" happens when you **click the bookmarklet a second time** (while remaining in the same URL).
 
 ![bookmarklet page](../_static/img/captchas-page.png)
 
-A similar page to the above should appear and some statistics should be visible.
+If `-mcd` / `--manual-captcha-domain` is correct, a similar page to the one above will appear and some statistics should be visible.
 
- - **Working accounts**: counts the total of available accounts (includes captcha'd accounts)
+ - **Working accounts**: shows the total of available accounts (includes captcha'd accounts)
 
  - **Remaining captchas**: displays the number of accounts waiting for captcha token.
 
  This number can take some time to refresh since the uncaptcha process can take up to a minute to complete.
 
- - **Failed accounts**: counts the total of disabled accounts (can include captcha'd accounts if `--captcha-solving` is not enabled)
-
-## Automatic Mode (2captcha)
-RocketMap can request tokens for captcha solving from an external service, allowing captchas to be solved "on-the-fly" - meaning that once an account encounters a captcha it immediately starts the uncaptcha process.
-
-If you want to enable this behavior you need to specify:
-- Enable captcha solving: `-cs` or `--captcha-solving`
-
-- 2captcha API key: `-ck` or `--captcha-key`
+ - **Failed accounts**: total count of disabled accounts (can include captcha'd accounts if `--captcha-solving` is not enabled)
 
 ## Hybrid Mode
 RocketMap also allows an hybrid mode for captcha solving.
