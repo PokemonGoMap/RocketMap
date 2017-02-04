@@ -1002,11 +1002,12 @@ def search_worker_thread(args, account_queue, account_failures,
                     parsed = parse_map(args, response_dict, step_location,
                                        dbq, whq, api, scan_date)
                     scheduler.task_done(status, parsed)
+
                     if parsed['count'] > 0:
                         status['success'] += 1
                         consecutive_noitems = 0
                 # Check if Hash Key is used and set Values
-                        if (key_scheduler):
+                    if (key_scheduler):
                             status['hash_key'] = key
                             status['maximum_rpm'] = key_instance['maximum']
 
@@ -1028,7 +1029,6 @@ def search_worker_thread(args, account_queue, account_failures,
                                                  'remaining'],
                                              key_instance[
                                                  'maximum'])
-
         except Exception as e:
                     parsed=False
                     status['fail'] += 1
