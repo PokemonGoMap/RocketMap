@@ -1576,6 +1576,42 @@ class GymDetails(BaseModel):
     last_scanned = DateTimeField(default=datetime.utcnow)
 
 
+<<<<<<< Updated upstream
+=======
+class Token(flaskDb.Model):
+    token = TextField()
+    last_updated = DateTimeField(default=datetime.utcnow)
+
+    @staticmethod
+    def get_valid(limit=15):
+        # Make sure we don't grab more than we can process
+        if limit > 15:
+            limit = 15
+        valid_time = datetime.utcnow() - timedelta(seconds=30)
+        token_ids = []
+        tokens = []
+        try:
+            with flaskDb.database.transaction():
+                query = (Token
+                         .select()
+                         .where(Token.last_updated > valid_time)
+                         .order_by(Token.last_updated.asc())
+                         .limit(limit))
+                for t in query:
+                    token_ids.append(t.id)
+                    tokens.append(t.token)
+                if tokens:
+                    log.debug('Retrived Token IDs: {}'.format(token_ids))
+                    result = DeleteQuery(Token).where(
+                        Token.id << token_ids).execute()
+                    log.debug('Deleted {} tokens.'.format(result))
+        except OperationalError as e:
+            log.error('Failed captcha token transactional query: {}'.format(e))
+
+        return tokens
+
+
+>>>>>>> Stashed changes
 def hex_bounds(center, steps=None, radius=None):
     # Make a box that is (70m * step_limit * 2) + 70m away from the
     # center point.  Rationale is that you need to travel.
@@ -2370,11 +2406,16 @@ def database_migrate(db, old_ver):
 
     if old_ver < 12:
         db.drop_tables([MainWorker])
+<<<<<<< Updated upstream
         migrate(
             migrator.add_column('workerstatus', 'captcha',
                                 IntegerField(default=0))
         )
     if old_ver < 13:
+=======
+
+    if old_ver < 14:
+>>>>>>> Stashed changes
         migrate(
             migrator.add_column('workerstatus', 'hash_key',
                                 CharField(

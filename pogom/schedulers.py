@@ -433,10 +433,17 @@ class SpawnScan(BaseScheduler):
         # locations = [((lat, lng, alt), ts_appears, ts_leaves),...]
         retset = []
         for step, location in enumerate(self.locations, 1):
+<<<<<<< Updated upstream
             retset.append((step,
                            (location['lat'], location['lng'], 40.32),
                            location['appears'],
                            location['leaves']))
+=======
+            altitude = get_altitude(self.args, [location['lat'],
+                                                location['lng']])
+            retset.append((step, (location['lat'], location['lng'], altitude),
+                           location['appears'], location['leaves']))
+>>>>>>> Stashed changes
 
         return retset
 
@@ -1074,7 +1081,12 @@ class KeyScheduler(object):
             self.keys[key] = {
                 'remaining': 0,
                 'maximum': 0,
+<<<<<<< Updated upstream
                 'peak': 0
+=======
+                'peak': 0,
+                'expires': 'N/A'
+>>>>>>> Stashed changes
             }
 
         self.key_cycle = itertools.cycle(keys)

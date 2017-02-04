@@ -30,6 +30,7 @@ import requests
 import copy
 
 from datetime import datetime
+from dateutil import tz
 from threading import Thread, Lock
 from queue import Queue, Empty
 from sets import Set
@@ -37,7 +38,10 @@ from sets import Set
 from pgoapi import PGoApi
 from pgoapi.utilities import f2i
 from pgoapi import utilities as util
+<<<<<<< Updated upstream
 from pgoapi.exceptions import AuthException, HashingQuotaExceededException
+=======
+>>>>>>> Stashed changes
 from pgoapi.hash_server import HashServer
 
 from .models import parse_map, GymDetails, parse_gyms, MainWorker, WorkerStatus
@@ -1004,9 +1008,43 @@ def search_worker_thread(args, account_queue, account_failures,
                                 'reason': 'captcha found'})
                             break
 
+                    if args.hash_key:
+                        key_instance = key_scheduler.keys[key]
+                        key_instance['remaining'] = HashServer.status.get(
+                            'remaining', 0)
+
+                        if key_instance['maximum'] == 0:
+                            key_instance['maximum'] = (
+                                HashServer.status.get('maximum', 0))
+
+                        peak = (
+                            key_instance['maximum'] -
+                            key_instance['remaining'])
+
+                        if key_instance['peak'] < peak:
+                            key_instance['peak'] = peak
+
+                        if key_instance['expires'] == 'N/A':
+                            expires = HashServer.status.get(
+                                'expiration', 'N/A')
+
+                            if expires != 'N/A':
+                                expires = datetime.utcfromtimestamp(
+                                    int(expires))
+
+                            from_zone = tz.tzutc()
+                            to_zone = tz.tzlocal()
+
+                            expires = expires.replace(tzinfo=from_zone)
+                            expires = expires.astimezone(to_zone)
+                            expires = expires.strftime('%Y-%m-%d %H:%M:%S')
+
+                            key_instance['expires'] = expires
+
                     parsed = parse_map(args, response_dict, step_location,
                                        dbq, whq, api, scan_date)
                     scheduler.task_done(status, parsed)
+
                     if parsed['count'] > 0:
                         status['success'] += 1
                         consecutive_noitems = 0
@@ -1023,6 +1061,7 @@ def search_worker_thread(args, account_queue, account_failures,
                             key_instance['peak'] = peak
                             status['hash_key'] = key
                             status['maximum_rpm'] = key_instance['maximum']
+<<<<<<< Updated upstream
                             try:
                                 status[
                                     'rpm_left'] = key_instance['remaining']
@@ -1037,6 +1076,9 @@ def search_worker_thread(args, account_queue, account_failures,
                             except HashingQuotaExceededException as e:
                                 log.error('Hash Key {} exceeded RPM!' +
                                           ' {}.').format(key, repr(e))
+=======
+
+>>>>>>> Stashed changes
                     else:
                         status['noitems'] += 1
                         consecutive_noitems += 1
@@ -1045,7 +1087,19 @@ def search_worker_thread(args, account_queue, account_failures,
                                          'with {} finds.').format(
                         step_location[0], step_location[1],
                         parsed['count'])
+<<<<<<< Updated upstream
                     log.debug(status['message'])
+=======
+                    log.info(
+                            ('Hash Key {} has {}/{} RPM ' +
+                             'left.').format(key,
+                                             key_instance[
+                                                 'remaining'],
+                                             key_instance[
+                                                 'maximum']))
+                    log.debug(status['message'])
+
+>>>>>>> Stashed changes
                 except Exception as e:
                     parsed = False
                     status['fail'] += 1
