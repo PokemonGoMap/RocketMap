@@ -58,9 +58,10 @@ from queue import Empty
 from operator import itemgetter
 from datetime import datetime, timedelta
 from .transform import get_new_coords
-from .models import (hex_bounds, Pokemon, SpawnPoint,
-                     ScannedLocation, ScanSpawnPoint)
+from .models import (hex_bounds, Pokemon, SpawnPoint, ScannedLocation,
+                     ScanSpawnPoint)
 from .utils import now, cur_sec, cellid, date_secs, equi_rect_distance
+from .altitude import get_altitude
 
 log = logging.getLogger(__name__)
 
@@ -130,8 +131,8 @@ class BaseScheduler(object):
                 step_location[0], step_location[1], remain),
             'late': 'Too late for location {:6f},{:6f}; skipping.'.format(
                 step_location[0], step_location[1]),
-            'search': 'Searching at {:6f},{:6f}.'.format(
-                step_location[0], step_location[1]),
+            'search': 'Searching at {:6f},{:6f},{:6f}.'.format(
+                step_location[0], step_location[1], step_location[2]),
             'invalid': ('Invalid response at {:6f},{:6f}, ' +
                         'abandoning location.').format(step_location[0],
                                                        step_location[1])
@@ -170,7 +171,6 @@ class HexSearch(BaseScheduler):
             self.step_distance = 0.070
 
         self.step_limit = args.step_limit
-
         # This will hold the list of locations to scan so it can be reused,
         # instead of recalculating on each loop.
         self.locations = False
@@ -276,8 +276,9 @@ class HexSearch(BaseScheduler):
         # Add the required appear and disappear times.
         locationsZeroed = []
         for step, location in enumerate(results, 1):
+            altitude = get_altitude(self.args, location)
             locationsZeroed.append(
-                (step, (location[0], location[1], 0), 0, 0))
+                (step, (location[0], location[1], altitude), 0, 0))
         return locationsZeroed
 
     # Schedule the work to be done.
@@ -433,17 +434,10 @@ class SpawnScan(BaseScheduler):
         # locations = [((lat, lng, alt), ts_appears, ts_leaves),...]
         retset = []
         for step, location in enumerate(self.locations, 1):
-<<<<<<< Updated upstream
-            retset.append((step,
-                           (location['lat'], location['lng'], 40.32),
-                           location['appears'],
-                           location['leaves']))
-=======
             altitude = get_altitude(self.args, [location['lat'],
-                                                location['lng']])
+                                    location['lng']])
             retset.append((step, (location['lat'], location['lng'], altitude),
                            location['appears'], location['leaves']))
->>>>>>> Stashed changes
 
         return retset
 
@@ -510,8 +504,7 @@ class SpeedScan(HexSearch):
 
     # On location change, empty the current queue and the locations list
     def location_changed(self, scan_location, db_update_queue):
-        super(SpeedScan, self).location_changed(
-            scan_location, db_update_queue)
+        super(SpeedScan, self).location_changed(scan_location, db_update_queue)
         self.locations = self._generate_locations()
         scans = {}
         initial = {}
@@ -607,8 +600,12 @@ class SpeedScan(HexSearch):
                 loc = get_new_coords(loc, xdist, WEST)
                 results.append((loc[0], loc[1], 0))
 
-        return [(step, (location[0], location[1], 0), 0, 0)
-                for step, location in enumerate(results)]
+        generated_locations = []
+        for step, location in enumerate(results):
+            altitude = get_altitude(self.args, location)
+            generated_locations.append(
+                (step, (location[0], location[1], altitude), 0, 0))
+        return generated_locations
 
     def getsize(self):
         return len(self.queues[0])
@@ -828,8 +825,7 @@ class SpeedScan(HexSearch):
                              self.spawns_found, spawns_missed, found_percent)
                     self.spawn_percent.append(round(found_percent, 1))
                     if self.spawns_missed_delay:
-                        log.warning(
-                            'Missed spawn IDs with times after spawn:')
+                        log.warning('Missed spawn IDs with times after spawn:')
                         log.warning(self.spawns_missed_delay)
                     log.info('History: %s', str(
                         self.spawn_percent).strip('[]'))
@@ -843,8 +839,7 @@ class SpeedScan(HexSearch):
                 if self.scans_missed_list:
                     log.warning('Missed scans: %s', Counter(
                         self.scans_missed_list).most_common(3))
-                    log.info('History: %s', str(
-                        self.scan_percent).strip('[]'))
+                    log.info('History: %s', str(self.scan_percent).strip('[]'))
                 self.status_message = ('Initial scan: {:.2f}%, TTH found: ' +
                                        '{:.2f}% [{} missing], ').format(
                     band_percent, self.tth_found * 100.0 / self.active_sp,
@@ -1071,8 +1066,8 @@ class SchedulerFactory():
             "The requested scheduler has not been implemented")
 
 
-# The KeyScheduler returns a scheduler
-# that cycles through the given hash server keys.
+# The KeyScheduler returns a scheduler that cycles through the given hash
+# server keys.
 class KeyScheduler(object):
 
     def __init__(self, keys):
@@ -1081,12 +1076,7 @@ class KeyScheduler(object):
             self.keys[key] = {
                 'remaining': 0,
                 'maximum': 0,
-<<<<<<< Updated upstream
                 'peak': 0
-=======
-                'peak': 0,
-                'expires': 'N/A'
->>>>>>> Stashed changes
             }
 
         self.key_cycle = itertools.cycle(keys)

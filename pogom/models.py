@@ -10,14 +10,16 @@ import gc
 import time
 import geopy
 import math
-from peewee import SqliteDatabase, InsertQuery, \
+from peewee import InsertQuery, \
     Check, CompositeKey, ForeignKeyField, \
     IntegerField, CharField, DoubleField, BooleanField, \
-    DateTimeField, fn, DeleteQuery, FloatField, SQL, TextField, JOIN
+    DateTimeField, fn, DeleteQuery, FloatField, SQL, TextField, JOIN, \
+    OperationalError
 from playhouse.flask_utils import FlaskDB
 from playhouse.pool import PooledMySQLDatabase
 from playhouse.shortcuts import RetryOperationalError
 from playhouse.migrate import migrate, MySQLMigrator, SqliteMigrator
+from playhouse.sqlite_ext import SqliteExtDatabase
 from datetime import datetime, timedelta
 from base64 import b64encode
 from cachetools import TTLCache
@@ -58,8 +60,13 @@ def init_database(app):
             max_connections=connections,
             stale_timeout=300)
     else:
-        log.info('Connecting to local SQLite database...')
-        db = SqliteDatabase(args.db)
+        log.info('Connecting to local SQLite database')
+        db = SqliteExtDatabase(args.db,
+                               pragmas=(
+                                   ('journal_mode', 'WAL'),
+                                   ('mmap_size', 1024 * 1024 * 32),
+                                   ('cache_size', 10000),
+                                   ('journal_size_limit', 1024 * 1024 * 4),))
 
     app.config['DATABASE'] = db
     flaskDb.init_app(app)
@@ -397,8 +404,7 @@ class Pokemon(BaseModel):
         # steps - 1 to account for the center circle then add 70 for the edge.
         step_distance = ((steps - 1) * 121.2436) + 70
         # Compare spawnpoint list to a circle with radius steps * 120.
-        # Uses the direct geopy distance between the center and the
-        # spawnpoint.
+        # Uses the direct geopy distance between the center and the spawnpoint.
         filtered = []
 
         for idx, sp in enumerate(s):
@@ -685,6 +691,51 @@ class Gym(BaseModel):
         return result
 
 
+class LocationAltitude(BaseModel):
+    cellid = CharField(primary_key=True, max_length=50)
+    latitude = DoubleField()
+    longitude = DoubleField()
+    last_modified = DateTimeField(index=True, default=datetime.utcnow,
+                                  null=True)
+    altitude = DoubleField()
+
+    class Meta:
+        indexes = ((('latitude', 'longitude'), False),)
+
+    # DB format of a new location altitude
+    @staticmethod
+    def new_loc(loc, altitude):
+        return {'cellid': cellid(loc),
+                'latitude': loc[0],
+                'longitude': loc[1],
+                'altitude': altitude}
+
+    # find a nearby altitude from the db
+    # looking for one within 140m
+    @classmethod
+    def get_nearby_altitude(cls, loc):
+        n, e, s, w = hex_bounds(loc, radius=0.14)  # 140m
+
+        # Get all location altitudes in that box.
+        query = (cls
+                 .select()
+                 .where((cls.latitude <= n) &
+                        (cls.latitude >= s) &
+                        (cls.longitude >= w) &
+                        (cls.longitude <= e))
+                 .dicts())
+
+        altitude = None
+        if len(list(query)):
+            altitude = query[0]['altitude']
+
+        return altitude
+
+    @classmethod
+    def save_altitude(cls, loc, altitude):
+        InsertQuery(cls, rows=[cls.new_loc(loc, altitude)]).upsert().execute()
+
+
 class ScannedLocation(BaseModel):
     cellid = CharField(primary_key=True, max_length=50)
     latitude = DoubleField()
@@ -824,8 +875,7 @@ class ScannedLocation(BaseModel):
         key = "{},{}".format(loc[0], loc[1])
         return locs[key] if key in locs else cls.new_loc(loc)
 
-    # Return value of a particular scan from loc, or default dict if not
-    # found.
+    # Return value of a particular scan from loc, or default dict if not found.
     @classmethod
     def get_by_loc(cls, loc):
         query = (cls
@@ -926,8 +976,7 @@ class ScannedLocation(BaseModel):
                 continue
 
             radius = 120 - s['width'] / 2
-            end = (basems + s['midpoint'] +
-                   radius + (i - 1) * 720 - 10) % 3600
+            end = (basems + s['midpoint'] + radius + (i - 1) * 720 - 10) % 3600
             end = end if end >= nowms else end + 3600
 
             if end < min['end']:
@@ -1011,8 +1060,7 @@ class ScannedLocation(BaseModel):
                          (cls.longitude <= e))
                   .dicts())
 
-        # For each spawn work out if it is in the hex (clipping the
-        # diagonals).
+        # For each spawn work out if it is in the hex (clipping the diagonals).
         in_hex = []
         for spawn in sp:
             # Get the offset from the center of each spawn in km.
@@ -1038,6 +1086,28 @@ class MainWorker(BaseModel):
     message = TextField(null=True, default="")
     method = CharField(max_length=50)
     last_modified = DateTimeField(index=True)
+    accounts_working = IntegerField()
+    accounts_captcha = IntegerField()
+    accounts_failed = IntegerField()
+
+    @staticmethod
+    def get_total_captchas():
+        return MainWorker.select(fn.SUM(MainWorker.accounts_captcha)).scalar()
+
+    @staticmethod
+    def get_account_stats():
+        account_stats = (MainWorker
+                         .select(fn.SUM(MainWorker.accounts_working),
+                                 fn.SUM(MainWorker.accounts_captcha),
+                                 fn.SUM(MainWorker.accounts_failed))
+                         .scalar(as_tuple=True))
+        dict = {'working': 0, 'captcha': 0, 'failed': 0}
+        if account_stats[0] is not None:
+            dict = {'working': int(account_stats[0]),
+                    'captcha': int(account_stats[1]),
+                    'failed': int(account_stats[2])}
+
+        return dict
 
 
 class WorkerStatus(BaseModel):
@@ -1047,11 +1117,7 @@ class WorkerStatus(BaseModel):
     fail = IntegerField()
     no_items = IntegerField()
     skip = IntegerField()
-    captcha = IntegerField(default=0)
-    hash_key = CharField(index=True, max_length=50, null=True)
-    maximum_rpm = IntegerField(default=0)
-    rpm_left = IntegerField(default=0)
-    peak_key = IntegerField(default=0, null=True)
+    captcha = IntegerField()
     last_modified = DateTimeField(index=True)
     message = CharField(max_length=255)
     last_scan_date = DateTimeField(index=True)
@@ -1068,10 +1134,6 @@ class WorkerStatus(BaseModel):
                 'no_items': status['noitems'],
                 'skip': status['skip'],
                 'captcha': status['captcha'],
-                'hash_key': status['hash_key'],
-                'maximum_rpm': status['maximum_rpm'],
-                'rpm_left': status['rpm_left'],
-                'peak_key': status['peak_key'],
                 'last_modified': datetime.utcnow(),
                 'message': status['message'],
                 'last_scan_date': status.get('last_scan_date',
@@ -1213,8 +1275,7 @@ class SpawnPoint(BaseModel):
         links = links[:-1] + '-'
         plus_or_minus = links.index(
             '+') if links.count('+') else links.index('-')
-        start = sp['earliest_unseen'] - \
-            (4 - plus_or_minus) * 900 + spawn_delay
+        start = sp['earliest_unseen'] - (4 - plus_or_minus) * 900 + spawn_delay
         no_tth_adjust = 60 if not links_arg and not cls.tth_found(sp) else 0
         end = sp['latest_seen'] - (3 - links.index('-')) * 900 + no_tth_adjust
         return [start % 3600, end % 3600]
@@ -1263,8 +1324,7 @@ class SpawnPoint(BaseModel):
 
         last_scanned = sp_by_id[sp['id']]['last_scanned']
         if (now_date - last_scanned).total_seconds() > now_secs - start:
-            l.append(ScannedLocation._q_init(
-                scan, start, end, kind, sp['id']))
+            l.append(ScannedLocation._q_init(scan, start, end, kind, sp['id']))
 
     # Given seconds after the hour and a spawnpoint dict, return which quartile
     # of the spawnpoint the secs falls in.
@@ -1288,8 +1348,7 @@ class SpawnPoint(BaseModel):
                          (cls.longitude <= e))
                   .dicts())
 
-        # For each spawn work out if it is in the hex (clipping the
-        # diagonals).
+        # For each spawn work out if it is in the hex (clipping the diagonals).
         in_hex = []
         for spawn in sp:
             # Get the offset from the center of each spawn in km.
@@ -1576,8 +1635,6 @@ class GymDetails(BaseModel):
     last_scanned = DateTimeField(default=datetime.utcnow)
 
 
-<<<<<<< Updated upstream
-=======
 class Token(flaskDb.Model):
     token = TextField()
     last_updated = DateTimeField(default=datetime.utcnow)
@@ -1603,7 +1660,7 @@ class Token(flaskDb.Model):
                 if tokens:
                     log.debug('Retrived Token IDs: {}'.format(token_ids))
                     result = DeleteQuery(Token).where(
-                        Token.id << token_ids).execute()
+                                 Token.id << token_ids).execute()
                     log.debug('Deleted {} tokens.'.format(result))
         except OperationalError as e:
             log.error('Failed captcha token transactional query: {}'.format(e))
@@ -1611,7 +1668,6 @@ class Token(flaskDb.Model):
         return tokens
 
 
->>>>>>> Stashed changes
 def hex_bounds(center, steps=None, radius=None):
     # Make a box that is (70m * step_limit * 2) + 70m away from the
     # center point.  Rationale is that you need to travel.
@@ -2210,6 +2266,13 @@ def clean_db_loop(args):
                      .where(Pokestop.lure_expiration < datetime.utcnow()))
             query.execute()
 
+            # Remove old (unusable) captcha tokens
+            query = (Token
+                     .delete()
+                     .where((Token.last_updated <
+                             (datetime.utcnow() - timedelta(minutes=2)))))
+            query.execute()
+
             # If desired, clear old Pokemon spawns.
             if args.purge_data > 0:
                 query = (Pokemon
@@ -2276,8 +2339,8 @@ def create_tables(db):
     verify_database_schema(db)
     db.create_tables([Pokemon, Pokestop, Gym, ScannedLocation, GymDetails,
                       GymMember, GymPokemon, Trainer, MainWorker, WorkerStatus,
-                      SpawnPoint, ScanSpawnPoint, SpawnpointDetectionData],
-                     safe=True)
+                      SpawnPoint, ScanSpawnPoint, SpawnpointDetectionData,
+                      Token, LocationAltitude], safe=True)
     db.close()
 
 
@@ -2286,7 +2349,8 @@ def drop_tables(db):
     db.drop_tables([Pokemon, Pokestop, Gym, ScannedLocation, Versions,
                     GymDetails, GymMember, GymPokemon, Trainer, MainWorker,
                     WorkerStatus, SpawnPoint, ScanSpawnPoint,
-                    SpawnpointDetectionData, Versions], safe=True)
+                    SpawnpointDetectionData, LocationAltitude,
+                    Token, Versions], safe=True)
     db.close()
 
 
@@ -2404,28 +2468,7 @@ def database_migrate(db, old_ver):
 
         db.drop_tables([ScanSpawnPoint])
 
-    if old_ver < 12:
-        db.drop_tables([MainWorker])
-<<<<<<< Updated upstream
-        migrate(
-            migrator.add_column('workerstatus', 'captcha',
-                                IntegerField(default=0))
-        )
     if old_ver < 13:
-=======
 
-    if old_ver < 14:
->>>>>>> Stashed changes
-        migrate(
-            migrator.add_column('workerstatus', 'hash_key',
-                                CharField(
-                                    index=True, max_length=50, null=True)),
-            migrator.add_column('workerstatus', 'maximum_rpm',
-                                IntegerField(default=0)),
-            migrator.add_column('workerstatus', 'rpm_left',
-                                IntegerField(default=0)),
-            migrator.add_column('workerstatus', 'rpm_left',
-                                IntegerField(default=0)),
-            migrator.add_column('workerstatus', 'peak_key',
-                                IntegerField(default=0))
-        )
+        db.drop_tables([WorkerStatus])
+        db.drop_tables([MainWorker])
