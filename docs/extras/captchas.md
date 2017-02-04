@@ -22,6 +22,8 @@ In order to enable manual captcha solving we need the following parameters:
 
 - Manual captcha domain: `-mcd` / `--manual-captcha-domain`
 
+- Provide a status name for instance: `-sn` / `--status-name`
+
 ### Bookmarklet
 The required bookmarklet to solve captchas using only the web browser can be found at:
 
@@ -51,6 +53,8 @@ If `-mcd` / `--manual-captcha-domain` is correct, a similar page to the one abov
 
 - **Failed accounts**: total count of disabled accounts (can include captcha'd accounts if `--captcha-solving` is not enabled)
 
+**Remember**: Status name (`-sn` / `--status-name`) is required for RocketMap to store account statistics in the database, otherwise the captcha page will keep displaying zeros.
+
 ## Hybrid Mode
 RocketMap also allows an hybrid mode for captcha solving.
 
@@ -63,12 +67,14 @@ To enable this behavior you need to specify:
 
 - Manual captcha timeout: `-mct 1800` / `-manual-captcha-timeout 1800`
 
+- Provide a status name for instance: `-sn` / `--status-name`
+
 The number `1800` indicates how many seconds you want the accounts to wait for manual tokens before resorting to the automatic method (a.k.a. 2captcha).
 
 `-mct` is by default set to `0` which disables this mode and if you have set `-ck` it will only use the automatic mode.
 
 ### Sample configuration: Hybrid mode
-
+    status-name: My Server 1
     captcha-solving: True
     captcha-key: <2Captcha API Key>
     manual-captcha-domain: http://<mydomain.com>:<port>
