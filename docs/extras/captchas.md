@@ -22,7 +22,7 @@ In order to enable manual captcha solving we need the following parameters:
 
 - Manual captcha domain: `-mcd` / `--manual-captcha-domain`
 
-- Provide a status name for instance: `-sn` / `--status-name`
+- Provide a status name: `-sn` / `--status-name`
 
 ### Bookmarklet
 The required bookmarklet to solve captchas using only the web browser can be found at:
@@ -55,6 +55,17 @@ If `-mcd` / `--manual-captcha-domain` is correct, a similar page to the one abov
 
 **Remember**: Status name (`-sn` / `--status-name`) is required for RocketMap to store account statistics in the database, otherwise the captcha page will keep displaying zeros.
 
+**Note**: When you solve a captcha you won't immediately see a change in "Remaining captchas" because the operation takes some time to validate.
+
+### Extra Parameter: `--manual-captcha-refresh`
+Simply put, this is an easy way of controlling how often you want the captcha solving page to be refreshed.
+
+Captcha tokens (the result of solving a captcha) are only valid for a limited amount of time. This validity period starts a little bit after the bookmarklet loads, when recaptcha code is also loaded. This means that if the captcha is solved after a minute or two of browser idle time, the resulting token will not verify challenge and account will remain on hold.
+
+- Manual captcha refresh: `-mcr 30` / `--manual-captcha-refresh 30`
+
+The default value is `30` seconds because we had good results with it during our tests.
+
 ## Hybrid Mode
 RocketMap also allows an hybrid mode for captcha solving.
 
@@ -67,11 +78,11 @@ To enable this behavior you need to specify:
 
 - Manual captcha timeout: `-mct 1800` / `-manual-captcha-timeout 1800`
 
-- Provide a status name for instance: `-sn` / `--status-name`
-
 The number `1800` indicates how many seconds you want the accounts to wait for manual tokens before resorting to the automatic method (a.k.a. 2captcha).
 
-`-mct` is by default set to `0` which disables this mode and if you have set `-ck` it will only use the automatic mode.
+- Provide a status name: `-sn` / `--status-name`
+
+By default `--manual-captcha-timeout` is set to `0` which disables hybrid mode and only automatic captcha solve will be used. If you provide `--captcha-key` and wish to enable hybrid mode then, `--manual-captcha-timeout` needs to be greater than `0`.
 
 ### Sample configuration: Hybrid mode
     status-name: My Server 1
