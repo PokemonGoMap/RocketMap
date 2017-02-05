@@ -74,10 +74,14 @@ def captcha_overseer_thread(args, account_queue, account_captchas,
                 # Safety guard
                 tokens_remaining = min(tokens_remaining, 5)
                 for i in range(0, tokens_remaining):
-                    last_scan = account_captchas[0][0]['last_scan_date']
+                    captcha = account_captchas[0]
+                    last_scan = captcha[0]['last_scan_date']
                     hold_time = (datetime.utcnow() - last_scan).total_seconds()
                     if hold_time > args.manual_captcha_timeout:
-
+                        log.info('Account %s waited %ds for captcha token ' +
+                                 'and reached the %ds timeout.',
+                                 captcha[0]['username'], hold_time,
+                                 args.manual_captcha_timeout)
                         if args.hash_key:
                             hash_key = key_scheduler.next()
 
@@ -156,6 +160,7 @@ def captcha_solver_thread(args, account_queue, account_captchas, hash_key,
             "Account {} successfully uncaptcha'd, returning to " +
             'active duty.').format(account['username'])
         log.info(status['message'])
+        status['on_hold'] = False
         account_queue.put(account)
         wh_message['status'] = 'success'
     else:
@@ -168,6 +173,8 @@ def captcha_solver_thread(args, account_queue, account_captchas, hash_key,
 
     if args.webhooks:
         wh_queue.put(('captcha', wh_message))
+    # Make sure status is updated
+    time.sleep(1)
 
 
 def handle_captcha(args, status, api, account, account_failures,
