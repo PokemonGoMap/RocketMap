@@ -1169,9 +1169,10 @@ def map_request(api, position, no_jitter=False):
 def gym_request(api, position, gym):
     try:
         log.debug('Getting details for gym @ %f/%f (%fkm away)',
-                  gym['latitude'], gym['longitude'],
-                  haversine_distance(position, [gym['latitude'],
-                  gym['longitude']]))
+                gym['latitude'],
+                gym['longitude'],
+                haversine_distance(
+                    position, [gym['latitude'], gym['longitude']]))
         req = api.create_request()
         x = req.get_gym_details(gym_id=gym['gym_id'],
                                 player_latitude=f2i(position[0]),

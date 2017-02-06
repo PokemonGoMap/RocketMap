@@ -404,12 +404,12 @@ class Pokemon(BaseModel):
         # steps - 1 to account for the center circle then add 70 for the edge.
         step_distance = ((steps - 1) * 121.2436) + 70
         # Compare spawnpoint list to a circle with radius steps * 120.
-        # Uses the direct geopy distance between the center and the spawnpoint.
+        # Uses the distance between the center and the spawnpoint.
         filtered = []
 
         for idx, sp in enumerate(s):
-            if haversine_distance(center, (sp['lat'], sp['lng'])) <=
-                0.001 * step_distance:
+            if haversine_distance(
+                center, (sp['lat'], sp['lng'])) <= 0.001 * step_distance:
                     filtered.append(s[idx])
 
         # At this point, 'time' is DISAPPEARANCE time, we're going to morph it
