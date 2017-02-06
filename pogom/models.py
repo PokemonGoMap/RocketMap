@@ -31,6 +31,7 @@ from .utils import get_pokemon_name, get_pokemon_rarity, get_pokemon_types, \
     haversine_distance
 from .transform import transform_from_wgs_to_gcj, get_new_coords
 from .customLog import printPokemon
+from functools import reduce
 log = logging.getLogger(__name__)
 
 args = get_args()
@@ -409,7 +410,7 @@ class Pokemon(BaseModel):
 
         for idx, sp in enumerate(s):
             if (
-                haversine_distance(center, (sp['lat'], sp['lng'])) <= \
+                haversine_distance(center, (sp['lat'], sp['lng'])) <=
                 0.001 * step_distance
             ):
                 filtered.append(s[idx])
@@ -1662,7 +1663,7 @@ class Token(flaskDb.Model):
                 if tokens:
                     log.debug('Retrived Token IDs: {}'.format(token_ids))
                     result = DeleteQuery(Token).where(
-                                 Token.id << token_ids).execute()
+                        Token.id << token_ids).execute()
                     log.debug('Deleted {} tokens.'.format(result))
         except OperationalError as e:
             log.error('Failed captcha token transactional query: {}'.format(e))
