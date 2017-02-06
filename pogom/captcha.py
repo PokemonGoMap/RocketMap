@@ -182,7 +182,8 @@ def handle_captcha(args, status, api, account, account_failures,
         captcha_url = response_dict['responses'][
             'CHECK_CHALLENGE']['challenge_url']
         if len(captcha_url) > 1:
-            status['captcha'] += 1
+            account['captcha'] = account.get('captcha', 0) + 1
+            status['captcha'] = account['captcha']
             if not args.captcha_solving:
                 status['message'] = ('Account {} has encountered a captcha. ' +
                                      'Putting account away.').format(
