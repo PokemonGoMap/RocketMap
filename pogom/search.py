@@ -941,7 +941,6 @@ def search_worker_thread(args, account_queue, account_failures,
                 # request.
                 status['latitude'] = step_location[0]
                 status['longitude'] = step_location[1]
-                status['altitude'] = step_location[2]
                 dbq.put((WorkerStatus, {0: WorkerStatus.db_format(status)}))
 
                 # Nothing back. Mark it up, sleep, carry on.
@@ -959,7 +958,7 @@ def search_worker_thread(args, account_queue, account_failures,
                     captcha = handle_captcha(args, status, api, account,
                                              account_failures,
                                              account_captchas, whq,
-                                             response_dict)
+                                             response_dict, step_location)
                     if captcha is not None and captcha:
                         # Make another request for the same location
                         # since the previous one was captcha'd.
