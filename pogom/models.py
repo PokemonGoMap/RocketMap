@@ -407,9 +407,7 @@ class Pokemon(BaseModel):
         filtered = []
 
         for idx, sp in enumerate(s):
-
             if haversine_distance(center, (sp['lat'], sp['lng'])) <= 0.001* step_distance:
-
                 filtered.append(s[idx])
 
         # At this point, 'time' is DISAPPEARANCE time, we're going to morph it

@@ -39,7 +39,6 @@ from pgoapi.hash_server import HashServer
 
 from .models import parse_map, GymDetails, parse_gyms, MainWorker, WorkerStatus
 from .fakePogoApi import FakePogoApi
-
 from .utils import now, haversine_distance, generate_device_info
 from .transform import get_new_coords, jitter_location
 from .account import check_login, get_tutorial_state, complete_tutorial
@@ -1191,7 +1190,6 @@ def gym_request(api, position, gym):
     except Exception as e:
         log.warning('Exception while downloading gym details: %s', repr(e))
         return False
-
 
 
 # Delay each thread start time so that logins occur after delay.
