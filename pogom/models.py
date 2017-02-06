@@ -27,7 +27,8 @@ from cachetools import cached
 from . import config
 from .utils import get_pokemon_name, get_pokemon_rarity, get_pokemon_types, \
     get_args, cellid, in_radius, date_secs, clock_between, secs_between, \
-    get_move_name, get_move_damage, get_move_energy, get_move_type, haversine_distance
+    get_move_name, get_move_damage, get_move_energy, get_move_type, \
+    haversine_distance
 from .transform import transform_from_wgs_to_gcj, get_new_coords
 from .customLog import printPokemon
 log = logging.getLogger(__name__)
@@ -407,7 +408,8 @@ class Pokemon(BaseModel):
         filtered = []
 
         for idx, sp in enumerate(s):
-            if haversine_distance(center, (sp['lat'], sp['lng'])) <= 0.001* step_distance:
+            if haversine_distance(center, (sp['lat'], sp['lng'])) 
+            <= 0.001 * step_distance:
                 filtered.append(s[idx])
 
         # At this point, 'time' is DISAPPEARANCE time, we're going to morph it

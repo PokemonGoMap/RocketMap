@@ -4,7 +4,6 @@
 import sys
 import configargparse
 import os
-import math
 import json
 import logging
 import shutil
@@ -679,11 +678,12 @@ def cellid(loc):
 
 
 # Return approximate distance in km.
-# from http://stackoverflow.com/questions/4913349/haversine-formula-in-python-bearing-and-distance-between-two-gps-points
+# from http://stackoverflow.com/questions/4913349/
+# haversine-formula-in-python-bearing-and-distance-between-two-gps-points
 # also see http://www.movable-type.co.uk/scripts/latlong.html
 def haversine_distance(pos1, pos2):
     """
-    Calculate the great circle distance between two points 
+    Calculate the great circle distance between two points
     on the earth (specified in decimal degrees)
     """
     # convert decimal degrees to radians 
@@ -700,7 +700,7 @@ def haversine_distance(pos1, pos2):
 
 # Return True if distance between two locs is less than distance in km.
 def in_radius(loc1, loc2, distance):
-    return equi_rect_distance(loc1, loc2) < distance
+    return haversine_distance(loc1, loc2) < distance
 
 
 def i8ln(word):
