@@ -37,7 +37,7 @@ args = get_args()
 flaskDb = FlaskDB()
 cache = TTLCache(maxsize=100, ttl=60 * 5)
 
-db_schema_version = 13
+db_schema_version = 14
 
 
 class MyRetryDB(RetryOperationalError, PooledMySQLDatabase):
@@ -404,7 +404,8 @@ class Pokemon(BaseModel):
         # steps - 1 to account for the center circle then add 70 for the edge.
         step_distance = ((steps - 1) * 121.2436) + 70
         # Compare spawnpoint list to a circle with radius steps * 120.
-        # Uses the direct geopy distance between the center and the spawnpoint.
+        # Uses the direct geopy distance between the center and the
+        # spawnpoint.
         filtered = []
 
         for idx, sp in enumerate(s):
@@ -875,7 +876,8 @@ class ScannedLocation(BaseModel):
         key = "{},{}".format(loc[0], loc[1])
         return locs[key] if key in locs else cls.new_loc(loc)
 
-    # Return value of a particular scan from loc, or default dict if not found.
+    # Return value of a particular scan from loc, or default dict if not
+    # found.
     @classmethod
     def get_by_loc(cls, loc):
         query = (cls
@@ -976,7 +978,8 @@ class ScannedLocation(BaseModel):
                 continue
 
             radius = 120 - s['width'] / 2
-            end = (basems + s['midpoint'] + radius + (i - 1) * 720 - 10) % 3600
+            end = (basems + s['midpoint'] +
+                   radius + (i - 1) * 720 - 10) % 3600
             end = end if end >= nowms else end + 3600
 
             if end < min['end']:
@@ -1060,7 +1063,8 @@ class ScannedLocation(BaseModel):
                          (cls.longitude <= e))
                   .dicts())
 
-        # For each spawn work out if it is in the hex (clipping the diagonals).
+        # For each spawn work out if it is in the hex (clipping the
+        # diagonals).
         in_hex = []
         for spawn in sp:
             # Get the offset from the center of each spawn in km.
@@ -1118,6 +1122,10 @@ class WorkerStatus(BaseModel):
     no_items = IntegerField()
     skip = IntegerField()
     captcha = IntegerField()
+    hash_key = CharField(index=True, max_length=50, null=True)
+    maximum_rpm = IntegerField(default=0)
+    rpm_left = IntegerField(default=0)
+    peak_key = IntegerField(default=0, null=True)
     last_modified = DateTimeField(index=True)
     message = CharField(max_length=255)
     last_scan_date = DateTimeField(index=True)
@@ -1134,6 +1142,10 @@ class WorkerStatus(BaseModel):
                 'no_items': status['noitems'],
                 'skip': status['skip'],
                 'captcha': status['captcha'],
+                'hash_key': status['hash_key'],
+                'maximum_rpm': status['maximum_rpm'],
+                'rpm_left': status['rpm_left'],
+                'peak_key': status['peak_key'],
                 'last_modified': datetime.utcnow(),
                 'message': status['message'],
                 'last_scan_date': status.get('last_scan_date',
@@ -1275,7 +1287,8 @@ class SpawnPoint(BaseModel):
         links = links[:-1] + '-'
         plus_or_minus = links.index(
             '+') if links.count('+') else links.index('-')
-        start = sp['earliest_unseen'] - (4 - plus_or_minus) * 900 + spawn_delay
+        start = sp['earliest_unseen'] - \
+            (4 - plus_or_minus) * 900 + spawn_delay
         no_tth_adjust = 60 if not links_arg and not cls.tth_found(sp) else 0
         end = sp['latest_seen'] - (3 - links.index('-')) * 900 + no_tth_adjust
         return [start % 3600, end % 3600]
@@ -1324,7 +1337,8 @@ class SpawnPoint(BaseModel):
 
         last_scanned = sp_by_id[sp['id']]['last_scanned']
         if (now_date - last_scanned).total_seconds() > now_secs - start:
-            l.append(ScannedLocation._q_init(scan, start, end, kind, sp['id']))
+            l.append(ScannedLocation._q_init(
+                scan, start, end, kind, sp['id']))
 
     # Given seconds after the hour and a spawnpoint dict, return which quartile
     # of the spawnpoint the secs falls in.
@@ -1348,7 +1362,8 @@ class SpawnPoint(BaseModel):
                          (cls.longitude <= e))
                   .dicts())
 
-        # For each spawn work out if it is in the hex (clipping the diagonals).
+        # For each spawn work out if it is in the hex (clipping the
+        # diagonals).
         in_hex = []
         for spawn in sp:
             # Get the offset from the center of each spawn in km.
@@ -2471,4 +2486,23 @@ def database_migrate(db, old_ver):
     if old_ver < 13:
 
         db.drop_tables([WorkerStatus])
-        db.drop_tables([MainWorker])
+        ([MainWorker])
+
+        migrate(
+            migrator.add_column('workerstatus', 'captcha',
+                                IntegerField())
+        )
+
+    if old_ver < 14:
+
+        migrate(
+            migrator.add_column('workerstatus', 'hash_key',
+                                CharField(
+                                    index=True, max_length=50, null=True)),
+            migrator.add_column('workerstatus', 'maximum_rpm',
+                                IntegerField(default=0)),
+            migrator.add_column('workerstatus', 'rpm_left',
+                                IntegerField(default=0)),
+            migrator.add_column('workerstatus', 'peak_key',
+                                IntegerField(default=0))
+        )
