@@ -53,6 +53,8 @@ If `-mcd` / `--manual-captcha-domain` is correct, a similar page to the one abov
 
 - **Failed accounts**: total count of disabled accounts (can include captcha'd accounts if `--captcha-solving` is not enabled)
 
+Accounts that were rotated to sleep when `-asi` / `--account-search-interval` is enabled will show as failed accounts.
+
 **Remember**: Status name (`-sn` / `--status-name`) is required for RocketMap to store account statistics in the database, otherwise the captcha page will keep displaying zeros.
 
 **Note**: When you solve a captcha you won't immediately see a change in "Remaining captchas" because the operation takes some time to validate.
