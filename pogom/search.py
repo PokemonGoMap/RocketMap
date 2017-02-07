@@ -746,7 +746,7 @@ def search_worker_thread(args, account_queue, account_failures,
             status['success'] = 0
             status['noitems'] = 0
             status['skip'] = 0
-            status['captcha'] = account.get('captcha', 0)
+            status['captcha'] = 0
 
             stagger_thread(args)
 
