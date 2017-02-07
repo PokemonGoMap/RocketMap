@@ -31,7 +31,6 @@ from .utils import get_pokemon_name, get_pokemon_rarity, get_pokemon_types, \
     haversine_distance
 from .transform import transform_from_wgs_to_gcj, get_new_coords
 from .customLog import printPokemon
-from functools import reduce
 log = logging.getLogger(__name__)
 
 args = get_args()
