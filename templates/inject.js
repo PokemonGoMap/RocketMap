@@ -72,6 +72,6 @@ setInterval(function() {
         setTimeout(refreshStats, 1000);
     } else {
         $('#timer').html('<strong>' + timer.toString() + '</strong> seconds until refresh.');
-        setTimeout(refreshStats, 1000);
+        setTimeout(refreshStats, 2500);
     }
 }, 1000);
