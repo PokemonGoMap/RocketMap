@@ -354,7 +354,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
     account_queue = Queue()
     threadStatus = {}
     key_scheduler = None
-    curr_api_version = '0.53.0'
+    curr_api_version = '0.55.0'
     api_check_time = 0
 
     '''
