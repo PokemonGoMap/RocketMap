@@ -384,13 +384,6 @@ def get_args():
                         help=("Complete ToS and tutorial steps on accounts " +
                               "if they haven't already."),
                         default=False)
-    parser.add_argument('-nvc', '--no-version-check', action='store_true',
-                        help='Disable API version check',
-                        default=False)
-    parser.add_argument('-vci', '--version-check-interval', type=int,
-                        help='Interval to check API version force in secs ' +
-                        '(default: 300)',
-                        default=300)
     parser.add_argument('-el', '--encrypt-lib',
                         help=('Path to encrypt lib to be used instead of ' +
                               'the shipped ones.'))
