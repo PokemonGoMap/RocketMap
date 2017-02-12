@@ -260,6 +260,10 @@ def get_args():
                         help=('Disables PokeStops from the map (including ' +
                               'parsing them into local db).'),
                         action='store_true', default=False)
+    parser.add_argument('-lp', '--lured-pokemon',
+                        help=('Shows lured Pokemon on map (including ' +
+                              'parsing them into local db).'),
+                        action='store_true', default=False)
     parser.add_argument('-ss', '--spawnpoint-scanning',
                         help=('Use spawnpoint scanning (instead of hex ' +
                               'grid). Scans in a circle based on step_limit ' +

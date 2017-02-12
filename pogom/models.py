@@ -1923,30 +1923,32 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                         f['last_modified_timestamp_ms'] / 1000.0) +
                         timedelta(minutes=360))
                     active_fort_modifier = f['active_fort_modifier']
-                    log.debug('Lured Pokestop - Found one:')
-                    log.debug(f)
-                    if 'lure_info' in f:
-                        lure_info = f.get('lure_info')
-                        log.debug('Lured Pokestop - Additional lure info:')
-                        log.debug(lure_info)
-                        if 'encounter_id' and 'active_pokemon_id' and 'lure_expires_timestamp_ms'in lure_info:
-                            pokemon[lure_info['encounter_id']] = {
-                                'encounter_id': b64encode(str(lure_info['encounter_id'])),
-                                'spawnpoint_id': '',
-                                'pokemon_id': lure_info['active_pokemon_id'],
-                                'latitude': f['latitude'],
-                                'longitude': f['longitude'],
-                                'disappear_time': datetime.utcfromtimestamp(lure_info['lure_expires_timestamp_ms'] / 1000),
-                                'individual_attack': None,
-                                'individual_defense': None,
-                                'individual_stamina': None,
-                                'move_1': None,
-                                'move_2': None
-                            }
-                            log.debug(pokemon[lure_info['encounter_id']])
-                            log.debug('Lured Pokestop - Adjacent Pokemon #%s found.', lure_info['active_pokemon_id'])
-                    else:
-                        log.debug('Lured Pokestop - No additional info found.')
+
+                    if args.lured_pokemon:
+                        log.debug('Lured Pokestop - Found one:')
+                        log.debug(f)
+                        if 'lure_info' in f:
+                            lure_info = f.get('lure_info')
+                            log.debug('Lured Pokestop - Additional lure info:')
+                            log.debug(lure_info)
+                            if 'encounter_id' and 'active_pokemon_id' and 'lure_expires_timestamp_ms'in lure_info:
+                                pokemon[lure_info['encounter_id']] = {
+                                    'encounter_id': b64encode(str(lure_info['encounter_id'])),
+                                    'spawnpoint_id': '',
+                                    'pokemon_id': lure_info['active_pokemon_id'],
+                                    'latitude': f['latitude'],
+                                    'longitude': f['longitude'],
+                                    'disappear_time': datetime.utcfromtimestamp(lure_info['lure_expires_timestamp_ms'] / 1000),
+                                    'individual_attack': None,
+                                    'individual_defense': None,
+                                    'individual_stamina': None,
+                                    'move_1': None,
+                                    'move_2': None
+                                }
+                                log.debug(pokemon[lure_info['encounter_id']])
+                                log.debug('Lured Pokestop - Adjacent Pokemon #%s found.', lure_info['active_pokemon_id'])
+                        else:
+                            log.debug('Lured Pokestop - No additional info found.')
 
                     if args.webhooks and args.webhook_updates_only:
                         wh_update_queue.put(('pokestop', {
