@@ -1931,8 +1931,14 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                             lure_info = f.get('lure_info')
                             log.debug('Lured Pokestop - Additional lure info:')
                             log.debug(lure_info)
-                            if ('encounter_id' and 'active_pokemon_id' and
-                                    'lure_expires_timestamp_ms') in lure_info:
+                            if 'encounter_id' and 'active_pokemon_id' and
+                                    'lure_expires_timestamp_ms' and
+                                    'fort_id' in lure_info:
+                                printPokemon(lure_info['pokemon_id'], 
+                                    f['latitude'], f['longitude'], 
+                                    datetime.utcfromtimestamp(
+                                        lure_info[
+                                        'lure_expires_timestamp_ms'] / 1000))
                                 pokemon[lure_info['encounter_id']] = {
                                     'encounter_id': b64encode(str(
                                         lure_info['encounter_id'])),
