@@ -1941,8 +1941,10 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                                         'active_pokemon_id'],
                                     'latitude': f['latitude'],
                                     'longitude': f['longitude'],
-                                    'disappear_time': datetime.utcfromtimestamp(
-                                        lure_info['lure_expires_timestamp_ms'] / 1000),
+                                    'disappear_time': 
+                                        datetime.utcfromtimestamp(
+                                        lure_info[
+                                        'lure_expires_timestamp_ms'] / 1000),
                                     'individual_attack': None,
                                     'individual_defense': None,
                                     'individual_stamina': None,
@@ -1950,9 +1952,13 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                                     'move_2': None
                                 }
                                 log.debug(pokemon[lure_info['encounter_id']])
-                                log.debug('Lured Pokestop - Adjacent Pokemon #%s found.', lure_info['active_pokemon_id'])
+                                log.debug(
+                                    'Lured Pokestop - '
+                                    'Adjacent Pokemon #%s found.', 
+                                    lure_info['active_pokemon_id'])
                         else:
-                            log.debug('Lured Pokestop - No further info found.')
+                            log.debug('Lured Pokestop - '
+                                'No further info found.')
 
                     if args.webhooks and args.webhook_updates_only:
                         wh_update_queue.put(('pokestop', {
