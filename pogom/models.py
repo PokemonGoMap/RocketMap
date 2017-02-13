@@ -1931,14 +1931,18 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                             lure_info = f.get('lure_info')
                             log.debug('Lured Pokestop - Additional lure info:')
                             log.debug(lure_info)
-                            if 'encounter_id' and 'active_pokemon_id' and 'lure_expires_timestamp_ms'in lure_info:
+                            if 'encounter_id' and 'active_pokemon_id' 
+                                    and 'lure_expires_timestamp_ms'in lure_info:
                                 pokemon[lure_info['encounter_id']] = {
-                                    'encounter_id': b64encode(str(lure_info['encounter_id'])),
+                                    'encounter_id': b64encode(str(
+                                        lure_info['encounter_id'])),
                                     'spawnpoint_id': '',
-                                    'pokemon_id': lure_info['active_pokemon_id'],
+                                    'pokemon_id': lure_info[
+                                        'active_pokemon_id'],
                                     'latitude': f['latitude'],
                                     'longitude': f['longitude'],
-                                    'disappear_time': datetime.utcfromtimestamp(lure_info['lure_expires_timestamp_ms'] / 1000),
+                                    'disappear_time': datetime.utcfromtimestamp(
+                                        lure_info['lure_expires_timestamp_ms'] / 1000),
                                     'individual_attack': None,
                                     'individual_defense': None,
                                     'individual_stamina': None,
@@ -1948,7 +1952,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                                 log.debug(pokemon[lure_info['encounter_id']])
                                 log.debug('Lured Pokestop - Adjacent Pokemon #%s found.', lure_info['active_pokemon_id'])
                         else:
-                            log.debug('Lured Pokestop - No additional info found.')
+                            log.debug('Lured Pokestop - No further info found.')
 
                     if args.webhooks and args.webhook_updates_only:
                         wh_update_queue.put(('pokestop', {
