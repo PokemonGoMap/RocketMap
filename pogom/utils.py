@@ -384,6 +384,9 @@ def get_args():
                         help=("Complete ToS and tutorial steps on accounts " +
                               "if they haven't already."),
                         default=False)
+    parser.add_argument('-sic', '--speed-initial-scan',
+                        action='store_true', default=False,
+                        help='create a new initial scan')
     parser.add_argument('-el', '--encrypt-lib',
                         help=('Path to encrypt lib to be used instead of ' +
                               'the shipped ones.'))
