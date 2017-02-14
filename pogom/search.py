@@ -1212,3 +1212,7 @@ def stagger_thread(args):
 # The delta from last stat to current stat
 def stat_delta(current_status, last_status, stat_name):
     return current_status.get(stat_name, 0) - last_status.get(stat_name, 0)
+
+
+class TooManyLoginAttempts(Exception):
+    pass
