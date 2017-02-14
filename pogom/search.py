@@ -560,7 +560,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
 
         # API Watchdog - Check if Niantic forces a new API.
         if not args.no_version_check:
-            api_check_time = check_forced_version(args, curr_api_version,
+            api_check_time = check_forced_version(args, api_version,
                                                   api_check_time, pause_bit)
 
         # Now we just give a little pause here.
@@ -1227,18 +1227,18 @@ def stat_delta(current_status, last_status, stat_name):
     return current_status.get(stat_name, 0) - last_status.get(stat_name, 0)
 
 
-def check_forced_version(args, curr_api_version, api_check_time, pause_bit):
+def check_forced_version(args, api_version, api_check_time, pause_bit):
     if int(time.time()) > api_check_time:
         api_check_time = int(time.time()) + args.version_check_interval
         forced_api = get_api_version(args)
-        if (curr_api_version != forced_api and
-                forced_api != 0):
+
+        if (api_version != forced_api and forced_api != 0):
             pause_bit.set()
             log.info(('Started with API: {}, ' +
                       'Niantic forced to API: {}').format(
-                curr_api_version,
+                api_version,
                 forced_api))
-            log.info('Scanner paused due Niantic API foce.')
+            log.info('Scanner paused due to forced Niantic API update.')
             log.info('Stop the scanner process until RocketMap ' +
                      'has updated.')
 
