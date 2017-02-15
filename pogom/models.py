@@ -1943,7 +1943,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                             log.debug(fort_details)
 
                             if 'fort_id' and 'name' and 'image_urls' and
-                            'description' in fort_details:
+                                    'description' in fort_details:
                                 fort_id = fort_details['fort_id']
                                 name = fort_details['name']
                                 image_urls = fort_details['image_urls']
@@ -1964,8 +1964,9 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
 
                                 for modifier in modifiers:
                                     if 'item_id' and
-                                    'expiration_timestamp_ms' and
-                                    'deployer_player_codename' in modifier:
+                                            'expiration_timestamp_ms' and
+                                            'deployer_player_codename'
+                                            in modifier:
                                         item_id = modifier['item_id']
                                         expiration_time =
                                         datetime.utcfromtimestamp(
