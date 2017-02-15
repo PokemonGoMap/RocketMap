@@ -2004,7 +2004,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                                         / 1000.0))
                                 pokemon[lure_info['encounter_id']] = {
                                     'encounter_id': b64encode(
-                                    str(lure_info['encounter_id'])),
+                                        str(lure_info['encounter_id'])),
                                     'spawnpoint_id': lure_info['fort_id'],
                                     'pokemon_id':
                                     lure_info['active_pokemon_id'],
@@ -2012,8 +2012,8 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                                     'longitude': f['longitude'],
                                     'disappear_time':
                                     datetime.utcfromtimestamp(
-                                    lure_info['lure_expires_timestamp_ms']
-                                    / 1000.0),
+                                        lure_info['lure_expires_timestamp_ms']
+                                        / 1000.0),
                                     'individual_attack': None,
                                     'individual_defense': None,
                                     'individual_stamina': None,
