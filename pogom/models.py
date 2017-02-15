@@ -1965,8 +1965,8 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                                 for modifier in modifiers:
                                     if 'item_id' and
                                             'expiration_timestamp_ms' and
-                                            'deployer_player_codename'
-                                            in modifier:
+                                            'deployer_player_codename' in
+                                            modifier:
                                         item_id = modifier['item_id']
                                         expiration_time =
                                         datetime.utcfromtimestamp(
