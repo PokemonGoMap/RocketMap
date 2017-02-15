@@ -49,7 +49,7 @@ If `-mcd` / `--manual-captcha-domain` is correct, a similar page to the one abov
 
 - **Remaining captchas**: displays the number of accounts waiting for captcha token.
 
-**Note**: When you solve a captcha you won't immediately see a change in "Remaining captchas" because the uncaptcha process can take a couple of minutes to complete.
+When you solve a captcha you won't immediately see a change in "Remaining captchas" because the uncaptcha process can take a couple of minutes to complete.
 
 - **Failed accounts**: total count of disabled accounts (can include captcha'd accounts if `--captcha-solving` is not enabled)
 
