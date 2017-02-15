@@ -1930,7 +1930,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                     fort_details = {}
 
                     response = pokestop_request(api, f)
-                    log.debug( 'Lured Pokestop - Retrieved fort details response:')
+                    log.debug('Lured Pokestop - Retrieved fort details response:')
                     log.debug(response)
 
                     if 'FORT_DETAILS' in response['responses']:
@@ -1944,7 +1944,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                             name = fort_details['name']
                             image_urls = fort_details['image_urls']
                             description = fort_details['description']
-                            log.debug('Lured Pokestop - Pokestop "%s" (%s) is lured.', name, description)
+                            log.debug('Lured Pokestop - Pokestop "%s" (%s, id %s) with image %s is lured.', name, description, fort_id, image_urls)
 
                         if 'modifiers' in fort_details:
                             modifiers = fort_details.get('modifiers')
@@ -2279,9 +2279,7 @@ def pokestop_request(api, pokestop):
     try:
         log.debug("Getting details for pokestop @ '{0}'/'{0}'".format(pokestop['latitude'], pokestop['longitude']))
         req = api.create_request()
-        x = req.fort_details(fort_id=pokestop['id'],
-                                latitude=pokestop['latitude'],
-                                longitude=pokestop['longitude'])
+        x = req.fort_details(fort_id=pokestop['id'], latitude=pokestop['latitude'], longitude=pokestop['longitude'])
         x = req.check_challenge()
         x = req.get_hatched_eggs()
         x = req.get_inventory()
