@@ -2491,4 +2491,3 @@ def database_migrate(db, old_ver):
             migrator.add_column('pokemon', 'gender',
                                 IntegerField(null=True, default=0))
         )
-
