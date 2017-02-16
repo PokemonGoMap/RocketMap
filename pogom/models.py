@@ -1660,7 +1660,7 @@ class Token(flaskDb.Model):
                 if tokens:
                     log.debug('Retrived Token IDs: {}'.format(token_ids))
                     result = DeleteQuery(Token).where(
-                            Token.id << token_ids).execute()
+                        Token.id << token_ids).execute()
                     log.debug('Deleted {} tokens.'.format(result))
         except OperationalError as e:
             log.error('Failed captcha token transactional query: {}'.format(e))
@@ -1946,17 +1946,17 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
 
                             for 'fort_id' & 'name' & 'image_urls' & \
                                     'description' in fort_details:
-                                    fort_id = fort_details['fort_id']
-                                    name = fort_details['name']
-                                    image_urls = fort_details['image_urls']
-                                    description = fort_details['description']
-                                    log.debug(
-                                        'Lured Pokestop - Pokestop %s' +
-                                        '%s, id %s) with image %s is lured.',
-                                        name,
-                                        description,
-                                        fort_id,
-                                        image_urls)
+                                fort_id = fort_details['fort_id']
+                                name = fort_details['name']
+                                image_urls = fort_details['image_urls']
+                                description = fort_details['description']
+                                log.debug(
+                                    'Lured Pokestop - Pokestop %s' +
+                                    '%s, id %s) with image %s is lured.',
+                                    name,
+                                    description,
+                                    fort_id,
+                                    image_urls)
 
                         if 'modifiers' in fort_details:
                             modifiers = fort_details.get('modifiers')
@@ -1965,37 +1965,38 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
 
                             for modifier in modifiers:
                                 for 'item_id' & 'expiration_timestamp_ms' & \
-                                    'deployer_player_codename' in modifier:
+                                        'deployer_player_codename' in modifier:
                                     item_id = modifier['item_id']
                                     expiration_time = (
                                         datetime.utcfromtimestamp(
                                             modifier['expiration_timestamp_ms']
                                             / 1000.0))
                                     deployer_player_codename = (
-                                        modifier['deployer_player_codename'])
+                                        modifier['deployer_playe
+                                                 r_codename'])
                                     log.debug(
-                                            'Lured Pokestop - '
-                                            'Suspected lure until %s, '
-                                            'found out %s.',
-                                            lure_expiration,
-                                            expiration_time)
+                                        'Lured Pokestop - '
+                                        'Suspected lure until %s, '
+                                        'found out %s.',
+                                        lure_expiration,
+                                        expiration_time)
                                     lure_expiration = expiration_time
                                     active_fort_modifier = item_id
                                     log.debug(
-                                            'Lured Pokestop - '
-                                            'Pokestop lured with %s '
-                                            'by %s until %s.',
-                                            item_id,
-                                            deployer_player_codename,
-                                            lure_expiration)
+                                        'Lured Pokestop - '
+                                        'Pokestop lured with %s '
+                                        'by %s until %s.',
+                                        item_id,
+                                        deployer_player_codename,
+                                        lure_expiration)
 
                     if args.lured_pokemon:
                         if 'lure_info' in f:
                             lure_info = f.get('lure_info')
                             log.debug('Lured Pokestop - Additional lure info:')
                             log.debug(lure_info)
-                            if 'encounter_id' and 'active_pokemon_id'
-                            and 'lure_expires_timestamp_ms'in lure_info:
+                            if 'encounter_id' & 'active_pokemon_id' & \
+                                    'lure_expires_timestamp_ms'in lure_info:
                                 printPokemon(
                                     lure_info['pokemon_id'],
                                     f['latitude'],
