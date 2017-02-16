@@ -1660,7 +1660,7 @@ class Token(flaskDb.Model):
                 if tokens:
                     log.debug('Retrived Token IDs: {}'.format(token_ids))
                     result = DeleteQuery(Token).where(
-                        Token.id << token_ids).execute()
+                            Token.id << token_ids).execute()
                     log.debug('Deleted {} tokens.'.format(result))
         except OperationalError as e:
             log.error('Failed captcha token transactional query: {}'.format(e))
@@ -1917,8 +1917,9 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                      datetime(1970, 1, 1)).total_seconds())) for f in query]
 
         for f in forts:
+            # Pokestops
             if config['parse_pokestops'] and f.get('type') == 1:
-                # Pokestops.
+
                 if 'active_fort_modifier' in f:
                     log.debug('Lured Pokestop - Found one:')
                     log.debug(f)
@@ -1963,9 +1964,8 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                             log.debug(modifiers)
 
                             for modifier in modifiers:
-                                for 'item_id' & 'expiration_timestamp_ms'
-                                and 'deployer_player_codename'
-                                in modifier:
+                                for 'item_id' & 'expiration_timestamp_ms' & \
+                                    'deployer_player_codename' in modifier:
                                     item_id = modifier['item_id']
                                     expiration_time = (
                                         datetime.utcfromtimestamp(
