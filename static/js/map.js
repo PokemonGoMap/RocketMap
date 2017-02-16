@@ -68,7 +68,7 @@ var gymPrestige = [2000, 4000, 8000, 12000, 16000, 20000, 30000, 40000, 50000]
 var audio = new Audio('static/sounds/ding.mp3')
 
 
-var GenderType = ["Male", "Female", "Neutral"]
+var GenderType = ['Male', 'Female', 'Neutral']
 
 /*
   text place holders:
@@ -416,7 +416,7 @@ function pokemonLabel(name, rarity, types, disappearTime, id, latitude, longitud
     if (gender != null) {
         details += `
             <div>
-                Gender: ${GenderType[gender-1]} | Weight: ${weight.toFixed(2)}kg | Height: ${height.toFixed(2)}m
+                Gender: ${GenderType[gender - 1]} | Weight: ${weight.toFixed(2)}kg | Height: ${height.toFixed(2)}m
             </div>
             `
     }
