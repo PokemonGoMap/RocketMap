@@ -1934,7 +1934,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
 
                         response = pokestop_request(api, f)
                         log.debug(
-                            'Lured Pokestop - '
+                            'Lured Pokestop - ' +
                             'Retrieved fort details response:')
                         log.debug(response)
 
@@ -1974,16 +1974,16 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                                     deployer_player_codename = (
                                         modifier['deployer_player_codename'])
                                     log.debug(
-                                        'Lured Pokestop - '
-                                        'Suspected lure until %s, '
+                                        'Lured Pokestop - ' +
+                                        'Suspected lure until %s, ' +
                                         'found out %s.',
                                         lure_expiration,
                                         expiration_time)
                                     lure_expiration = expiration_time
                                     active_fort_modifier = item_id
                                     log.debug(
-                                        'Lured Pokestop - '
-                                        'Pokestop lured with %s '
+                                        'Lured Pokestop - ' +
+                                        'Pokestop lured with %s ' +
                                         'by %s until %s.',
                                         item_id,
                                         deployer_player_codename,
@@ -2023,12 +2023,12 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                                 }
                                 log.debug(pokemon[lure_info['encounter_id']])
                                 log.debug(
-                                    'Lured Pokestop - '
+                                    'Lured Pokestop - ' +
                                     'Adjacent Pokemon #%s found.',
                                     lure_info['active_pokemon_id'])
                         else:
                             log.debug(
-                                'Lured Pokestop - '
+                                'Lured Pokestop - ' +
                                 'Not close enough for lured Pokemon.')
 
                     if args.webhooks and args.webhook_updates_only:
