@@ -1972,8 +1972,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                                             modifier['expiration_timestamp_ms']
                                             / 1000.0))
                                     deployer_player_codename = (
-                                        modifier['deployer_playe
-                                                 r_codename'])
+                                        modifier['deployer_player_codename'])
                                     log.debug(
                                         'Lured Pokestop - '
                                         'Suspected lure until %s, '
