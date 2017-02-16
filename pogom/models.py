@@ -1917,7 +1917,8 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                      datetime(1970, 1, 1)).total_seconds())) for f in query]
 
         for f in forts:
-            if config['parse_pokestops'] and f.get('type') == 1:  # Pokestops.
+            if config['parse_pokestops'] and f.get('type') == 1:
+                # Pokestops.
                 if 'active_fort_modifier' in f:
                     log.debug('Lured Pokestop - Found one:')
                     log.debug(f)
@@ -1942,47 +1943,45 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                             log.debug('Lured Pokestop - Fort details found:')
                             log.debug(fort_details)
 
-                            if 'fort_id' and 'name' and 'image_urls' and
+                            for 'fort_id' & 'name' & 'image_urls' & \
                                     'description' in fort_details:
-                                fort_id = fort_details['fort_id']
-                                name = fort_details['name']
-                                image_urls = fort_details['image_urls']
-                                description = fort_details['description']
-                                log.debug(
-                                    'Lured Pokestop - Pokestop "%s" '
-                                    '(%s, id %s) with image %s is lured.',
-                                    name,
-                                    description,
-                                    fort_id,
-                                    image_urls)
+                                    fort_id = fort_details['fort_id']
+                                    name = fort_details['name']
+                                    image_urls = fort_details['image_urls']
+                                    description = fort_details['description']
+                                    log.debug(
+                                        'Lured Pokestop - Pokestop %s' +
+                                        '%s, id %s) with image %s is lured.',
+                                        name,
+                                        description,
+                                        fort_id,
+                                        image_urls)
 
-                            if 'modifiers' in fort_details:
-                                modifiers = fort_details.get('modifiers')
-                                log.debug(
-                                    'Lured Pokestop - Modifier retrieved:')
-                                log.debug(modifiers)
+                        if 'modifiers' in fort_details:
+                            modifiers = fort_details.get('modifiers')
+                            log.debug('Lured Pokestop - Modifier retrieved:')
+                            log.debug(modifiers)
 
-                                for modifier in modifiers:
-                                    if 'item_id' and
-                                            'expiration_timestamp_ms' and
-                                            'deployer_player_codename' in
-                                            modifier:
-                                        item_id = modifier['item_id']
-                                        expiration_time =
+                            for modifier in modifiers:
+                                for 'item_id' & 'expiration_timestamp_ms'
+                                and 'deployer_player_codename'
+                                in modifier:
+                                    item_id = modifier['item_id']
+                                    expiration_time = (
                                         datetime.utcfromtimestamp(
                                             modifier['expiration_timestamp_ms']
-                                            / 1000.0)
-                                        deployer_player_codename = modifier[
-                                            'deployer_player_codename']
-                                        log.debug(
+                                            / 1000.0))
+                                    deployer_player_codename = (
+                                        modifier['deployer_player_codename'])
+                                    log.debug(
                                             'Lured Pokestop - '
                                             'Suspected lure until %s, '
                                             'found out %s.',
                                             lure_expiration,
                                             expiration_time)
-                                        lure_expiration = expiration_time
-                                        active_fort_modifier = item_id
-                                        log.debug(
+                                    lure_expiration = expiration_time
+                                    active_fort_modifier = item_id
+                                    log.debug(
                                             'Lured Pokestop - '
                                             'Pokestop lured with %s '
                                             'by %s until %s.',
