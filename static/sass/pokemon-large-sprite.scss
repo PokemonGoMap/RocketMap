@@ -5,12 +5,12 @@
   top: 6px;
   position: relative;
   -moz-transform-origin: 0 0;
-  height: 96px;
-  width: 96px;
+  height: 80px;
+  width: 80px;
 
-  @for $i from 1 through 649 {
+  @for $i from 1 through 493 {
     &.n#{$i} {
-      background-position: -#{(($i - 1) % 10) * 96}px -#{floor(($i - 1) / 10) * 96}px
+      background-position: -#{(($i - 1) % 28) * 80}px -#{floor(($i - 1) / 28) * 80}px
     }
   }
 }
