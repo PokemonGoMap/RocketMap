@@ -1065,7 +1065,7 @@
     },
     "134": {
         "name": "Scald (Blastoise)",
-        "type": "",
+        "type": "Water",
         "damage": 0,
         "duration": 0,
         "energy": 0,
@@ -1073,7 +1073,7 @@
     },
     "135": {
         "name": "Hydro Pump (Blastoise)",
-        "type": "",
+        "type": "Water",
         "damage": 0,
         "duration": 0,
         "energy": 0,
@@ -1081,7 +1081,7 @@
     },
     "136": {
         "name": "Wrap Green",
-        "type": "",
+        "type": "Normal",
         "damage": 0,
         "duration": 0,
         "energy": 0,
@@ -1089,7 +1089,7 @@
     },
     "137": {
         "name": "Wrap Pink",
-        "type": "",
+        "type": "Normal",
         "damage": 0,
         "duration": 0,
         "energy": 0,
@@ -1441,7 +1441,7 @@
     },
     "243": {
         "name": "Counter",
-        "type": "",
+        "type": "Fighting",
         "damage": 0,
         "duration": 0,
         "energy": 0,
@@ -1449,7 +1449,7 @@
     },
     "244": {
         "name": "Powder Snow",
-        "type": "",
+        "type": "Ice",
         "damage": 0,
         "duration": 0,
         "energy": 0,
@@ -1457,7 +1457,7 @@
     },
     "245": {
         "name": "Close Combat",
-        "type": "",
+        "type": "Fighting",
         "damage": 0,
         "duration": 0,
         "energy": 0,
@@ -1465,7 +1465,7 @@
     },
     "246": {
         "name": "Dynamic Punch",
-        "type": "",
+        "type": "Fighting",
         "damage": 0,
         "duration": 0,
         "energy": 0,
@@ -1473,7 +1473,7 @@
     },
     "247": {
         "name": "Focus Blast",
-        "type": "",
+        "type": "Fighting",
         "damage": 0,
         "duration": 0,
         "energy": 0,
@@ -1481,7 +1481,7 @@
     },
     "248": {
         "name": "Aurora Beam",
-        "type": "",
+        "type": "Ice",
         "damage": 0,
         "duration": 0,
         "energy": 0,
@@ -1489,7 +1489,7 @@
     },
     "249": {
         "name": "Charge Beam",
-        "type": "",
+        "type": "Electric",
         "damage": 0,
         "duration": 0,
         "energy": 0,
@@ -1497,7 +1497,7 @@
     },
     "250": {
         "name": "Volt Switch",
-        "type": "",
+        "type": "Electric",
         "damage": 0,
         "duration": 0,
         "energy": 0,
@@ -1505,7 +1505,7 @@
     },
     "251": {
         "name": "Wild Charge",
-        "type": "",
+        "type": "Electric",
         "damage": 0,
         "duration": 0,
         "energy": 0,
@@ -1513,7 +1513,7 @@
     },
     "252": {
         "name": "Zap Cannon",
-        "type": "",
+        "type": "Electric",
         "damage": 0,
         "duration": 0,
         "energy": 0,
@@ -1521,7 +1521,7 @@
     },
     "253": {
         "name": "Dragon Tail",
-        "type": "",
+        "type": "Dragon",
         "damage": 0,
         "duration": 0,
         "energy": 0,
@@ -1529,7 +1529,7 @@
     },
     "254": {
         "name": "Avalanche",
-        "type": "",
+        "type": "Ice",
         "damage": 0,
         "duration": 0,
         "energy": 0,
@@ -1537,7 +1537,7 @@
     },
     "255": {
         "name": "Air Slash",
-        "type": "",
+        "type": "Flying",
         "damage": 0,
         "duration": 0,
         "energy": 0,
@@ -1545,7 +1545,7 @@
     },
     "256": {
         "name": "Brave Bird",
-        "type": "",
+        "type": "Flying",
         "damage": 0,
         "duration": 0,
         "energy": 0,
@@ -1553,7 +1553,7 @@
     },
     "257": {
         "name": "Sky Attack",
-        "type": "",
+        "type": "Flying",
         "damage": 0,
         "duration": 0,
         "energy": 0,
@@ -1561,7 +1561,7 @@
     },
     "258": {
         "name": "Sand Tomb",
-        "type": "",
+        "type": "Ground",
         "damage": 0,
         "duration": 0,
         "energy": 0,
@@ -1569,7 +1569,7 @@
     },
     "259": {
         "name": "Rock Blast",
-        "type": "",
+        "type": "Rock",
         "damage": 0,
         "duration": 0,
         "energy": 0,
@@ -1577,7 +1577,7 @@
     },
     "260": {
         "name": "Infestation",
-        "type": "",
+        "type": "Bug",
         "damage": 0,
         "duration": 0,
         "energy": 0,
@@ -1585,7 +1585,7 @@
     },
     "261": {
         "name": "Struggle Bug",
-        "type": "",
+        "type": "Bug",
         "damage": 0,
         "duration": 0,
         "energy": 0,
@@ -1593,7 +1593,7 @@
     },
     "262": {
         "name": "Silver Wind",
-        "type": "",
+        "type": "Bug",
         "damage": 0,
         "duration": 0,
         "energy": 0,
@@ -1601,7 +1601,7 @@
     },
     "263": {
         "name": "Astonish",
-        "type": "",
+        "type": "Ghost",
         "damage": 0,
         "duration": 0,
         "energy": 0,
@@ -1609,7 +1609,7 @@
     },
     "264": {
         "name": "Hex",
-        "type": "",
+        "type": "Ghost",
         "damage": 0,
         "duration": 0,
         "energy": 0,
@@ -1617,7 +1617,7 @@
     },
     "265": {
         "name": "Night Shade",
-        "type": "",
+        "type": "Ghost",
         "damage": 0,
         "duration": 0,
         "energy": 0,
@@ -1625,7 +1625,7 @@
     },
     "266": {
         "name": "Iron Tail",
-        "type": "",
+        "type": "Steel",
         "damage": 0,
         "duration": 0,
         "energy": 0,
@@ -1633,7 +1633,7 @@
     },
     "267": {
         "name": "Gyro Ball",
-        "type": "",
+        "type": "Steel",
         "damage": 0,
         "duration": 0,
         "energy": 0,
@@ -1641,7 +1641,7 @@
     },
     "268": {
         "name": "Heavy Slam",
-        "type": "",
+        "type": "Steel",
         "damage": 0,
         "duration": 0,
         "energy": 0,
@@ -1649,7 +1649,7 @@
     },
     "269": {
         "name": "Fire Spin",
-        "type": "",
+        "type": "Fire",
         "damage": 0,
         "duration": 0,
         "energy": 0,
@@ -1657,7 +1657,7 @@
     },
     "270": {
         "name": "Overheat",
-        "type": "",
+        "type": "Fire",
         "damage": 0,
         "duration": 0,
         "energy": 0,
@@ -1665,7 +1665,7 @@
     },
     "271": {
         "name": "Bullet Seed",
-        "type": "",
+        "type": "Grass",
         "damage": 0,
         "duration": 0,
         "energy": 0,
@@ -1673,7 +1673,7 @@
     },
     "272": {
         "name": "Grass Knot",
-        "type": "",
+        "type": "Grass",
         "damage": 0,
         "duration": 0,
         "energy": 0,
@@ -1681,7 +1681,7 @@
     },
     "273": {
         "name": "Energy Ball",
-        "type": "",
+        "type": "Grass",
         "damage": 0,
         "duration": 0,
         "energy": 0,
@@ -1689,7 +1689,7 @@
     },
     "274": {
         "name": "Extrasensory",
-        "type": "",
+        "type": "Psychic",
         "damage": 0,
         "duration": 0,
         "energy": 0,
@@ -1697,7 +1697,7 @@
     },
     "275": {
         "name": "Futuresight",
-        "type": "",
+        "type": "Psychic",
         "damage": 0,
         "duration": 0,
         "energy": 0,
@@ -1705,7 +1705,7 @@
     },
     "276": {
         "name": "Mirror Coat",
-        "type": "",
+        "type": "Psychic",
         "damage": 0,
         "duration": 0,
         "energy": 0,
@@ -1713,7 +1713,7 @@
     },
     "277": {
         "name": "Outrage",
-        "type": "",
+        "type": "Dragon",
         "damage": 0,
         "duration": 0,
         "energy": 0,
@@ -1721,7 +1721,7 @@
     },
     "278": {
         "name": "Snarl",
-        "type": "",
+        "type": "Dark",
         "damage": 0,
         "duration": 0,
         "energy": 0,
@@ -1729,7 +1729,7 @@
     },
     "279": {
         "name": "Crunch",
-        "type": "",
+        "type": "Dark",
         "damage": 0,
         "duration": 0,
         "energy": 0,
@@ -1737,7 +1737,7 @@
     },
     "280": {
         "name": "Foul Play",
-        "type": "",
+        "type": "Dark",
         "damage": 0,
         "duration": 0,
         "energy": 0,
@@ -1745,7 +1745,7 @@
     },
     "281": {
         "name": "Hidden Power",
-        "type": "",
+        "type": "Normal",
         "damage": 0,
         "duration": 0,
         "energy": 0,
