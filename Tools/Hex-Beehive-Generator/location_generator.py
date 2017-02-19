@@ -3,6 +3,7 @@ import argparse
 import LatLon
 import itertools
 import os
+from ast import literal_eval
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-lat", "--lat", help="latitude", type=float, required=True)
@@ -17,11 +18,30 @@ parser.add_argument("--auth", help="Auth method (ptc or google)", default="ptc")
 parser.add_argument("-v", "--verbose", help="Print lat/lng to stdout for debugging", action='store_true', default=False)
 parser.add_argument("--windows", help="Generate a bat file for Windows", action='store_true', default=False)
 parser.add_argument("--installdir", help="Installation directory (only used for Windows)", type=str, default="C:\\PokemonGo-Map")
-
+parser.add_argument("--polygon", help="Only create workers within the bounds of polygon", type=str)
 preamble = "#!/usr/bin/env bash"
 server_template = "nohup python runserver.py -os -l '{lat}, {lon}' &\n" #this is the output template for linux
 worker_template = "sleep 0.5; nohup python runserver.py -ns -l '{lat}, {lon}' -st {steps} {auth}&\n" # so is this
 auth_template = "-a {} -u {} -p '{}' "  # unix people want single-quoted passwords - for threading reasons whitespace after ' before ""
+
+def point_in_polygon(point,poly):
+    x = float(point.lat)
+    y = float(point.lon)
+    n = len(poly)
+    inside = False
+
+    p1x,p1y = poly[0]
+    for i in range(n+1):
+        p2x,p2y = poly[i % n]
+        if y > min(p1y,p2y):
+            if y <= max(p1y,p2y):
+                if x <= max(p1x,p2x):
+                    if p1y != p2y:
+                        xints = (y-p1y)*(p2x-p1x)/(p2y-p1y)+p1x
+                    if p1x == p2x or x <= xints:
+                        inside = not inside
+        p1x,p1y = p2x,p2y
+    return inside
 
 R = 6378137.0
 r_hex = 52.5  # probably not correct
@@ -83,6 +103,7 @@ turns = 0               # number of turns made in this ring (0 to 6)
 turn_steps = 0          # number of cells required to complete one turn of the ring
 turn_steps_so_far = 0   # current cell number in this side of the current ring
 
+k=1
 
 for i in range(1, total_workers):
     if turns == 6 or turn_steps == 0:
@@ -109,7 +130,13 @@ for i in range(1, total_workers):
         brng = 60 * turns + math.degrees(A)
 
     loc = loc.offset(brng + mod, d)
-    locations[i] = loc
+    #If polygon arg is set, ignore points outside polygon
+    if args.polygon :
+        if point_in_polygon(loc, literal_eval(args.polygon)) :
+            locations[k] = loc
+            k=k+1
+    else:
+        locations[i] = loc
     d = d_s
 
     turn_steps_so_far += 1
@@ -120,14 +147,20 @@ for i in range(1, total_workers):
         turns += 1
         turn_steps_so_far = 0
 
+if args.polygon :
+    if point_in_polygon(locations[0],  literal_eval(args.polygon)) == False :
+        locations.pop(0)
+        k=k-1
+    total_workers=k
+
 #if threading is desired (-t flag) cycle through all accounts and merge them into an array (do this anyway because otherwise we need an if statement below)
 
 #make a list of exactly the right number of accounts
 accountsNeeded = [(j) for i,j in itertools.izip(range(0,int(args.thread)*total_workers),itertools.cycle(accounts))]
 #group those accounts, concatenate the details into a single string per worker
 accountStack=[""]*total_workers
-for i in range(0,total_workers):    
-    for j in range(0,int(args.thread)):
+for i in range(0,total_workers):
+    for j in range(0,int(args.thread)):   
         accountStack[i] = accountStack[i] + accountsNeeded[i*int(args.thread)+j]
 
 # if accounts list was provided, match each location with an account

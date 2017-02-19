@@ -11,9 +11,9 @@ Experimental Windows support!  Use the --windows flag
 
 
 An example (Linux):
-    python location_generator.py -lat -33.9 -lon 151.1 -st 5 -lp 3 --accounts /home/pika/accounts.csv
+    python location_generator.py -lat -33.9 -lon 151.1 -st 5 -lp 3 --polygon '(-33.895, 151.094),(-33.894, 151.107),(-33.913, 151.099)' --accounts /home/pika/accounts.csv
 An example (Windows):
-    python location_generator.py -lat -33.9 -lon 151.1 -st 5 -lp 3 --accounts C:\Documents\accounts.csv --windows --installdir="C:\Downloads\PokemonGo-Map"
+    python location_generator.py -lat -33.9 -lon 151.1 -st 5 -lp 3 --polygon '(-33.895, 151.094),(-33.894, 151.107),(-33.913, 151.099)' --accounts C:\Documents\accounts.csv --windows --installdir="C:\Downloads\PokemonGo-Map"
 
 
 usage: location_generator.py [-h] -lat LAT -lon LON [-st STEPS] [-lp LEAPS]
@@ -36,6 +36,8 @@ usage: location_generator.py [-h] -lat LAT -lon LON [-st STEPS] [-lp LEAPS]
                         format
 
   --auth AUTH           Auth method (ptc or google)
+  
+  --polygon             Bounding box for workers
 
   -v, --verbose         Print lat/lng to stdout for debugging
 
