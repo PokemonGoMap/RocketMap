@@ -1660,7 +1660,7 @@ class Token(flaskDb.Model):
                 if tokens:
                     log.debug('Retrived Token IDs: {}'.format(token_ids))
                     result = DeleteQuery(Token).where(
-                                 Token.id << token_ids).execute()
+                        Token.id << token_ids).execute()
                     log.debug('Deleted {} tokens.'.format(result))
         except OperationalError as e:
             log.error('Failed captcha token transactional query: {}'.format(e))
@@ -1917,12 +1917,122 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                      datetime(1970, 1, 1)).total_seconds())) for f in query]
 
         for f in forts:
-            if config['parse_pokestops'] and f.get('type') == 1:  # Pokestops.
+            # Pokestops
+            if config['parse_pokestops'] and f.get('type') == 1:
+
                 if 'active_fort_modifier' in f:
+                    log.debug('Lured Pokestop - Found one:')
+                    log.debug(f)
+
                     lure_expiration = (datetime.utcfromtimestamp(
                         f['last_modified_timestamp_ms'] / 1000.0) +
-                        timedelta(minutes=30))
+                        timedelta(minutes=360))
                     active_fort_modifier = f['active_fort_modifier']
+
+                    if args.gym_info:
+                        fort_details = {}
+
+                        response = pokestop_request(api, f)
+                        log.debug(
+                            'Lured Pokestop - ' +
+                            'Retrieved fort details response:')
+                        log.debug(response)
+
+                        if 'FORT_DETAILS' in response['responses']:
+                            fort_details = response[
+                                'responses']['FORT_DETAILS']
+                            log.debug('Lured Pokestop - Fort details found:')
+                            log.debug(fort_details)
+
+                            if ('fort_id' and 'name' and 'image_urls' and
+                                    'description' in fort_details):
+                                fort_id = fort_details['fort_id']
+                                name = fort_details['name']
+                                image_urls = fort_details['image_urls']
+                                description = fort_details['description']
+                                log.debug(
+                                    'Lured Pokestop - Pokestop %s' +
+                                    '%s, id %s) with image %s is lured.',
+                                    name,
+                                    description,
+                                    fort_id,
+                                    image_urls)
+
+                        if 'modifiers' in fort_details:
+                            modifiers = fort_details.get('modifiers')
+                            log.debug('Lured Pokestop - Modifier retrieved:')
+                            log.debug(modifiers)
+
+                            for modifier in modifiers:
+                                if ('item_id' and
+                                        'expiration_timestamp_ms' and
+                                        'deployer_player_codename'
+                                        in modifier):
+                                    item_id = modifier['item_id']
+                                    expiration_time = (
+                                        datetime.utcfromtimestamp(
+                                            modifier['expiration_timestamp_ms']
+                                            / 1000.0))
+                                    deployer_player_codename = (
+                                        modifier['deployer_player_codename'])
+                                    log.debug(
+                                        'Lured Pokestop - ' +
+                                        'Suspected lure until %s, ' +
+                                        'found out %s.',
+                                        lure_expiration,
+                                        expiration_time)
+                                    lure_expiration = expiration_time
+                                    active_fort_modifier = item_id
+                                    log.debug(
+                                        'Lured Pokestop - ' +
+                                        'Pokestop lured with %s ' +
+                                        'by %s until %s.',
+                                        item_id,
+                                        deployer_player_codename,
+                                        lure_expiration)
+
+                    if args.lured_pokemon:
+                        if 'lure_info' in f:
+                            lure_info = f.get('lure_info')
+                            log.debug('Lured Pokestop - Additional lure info:')
+                            log.debug(lure_info)
+                            if ('encounter_id' and 'active_pokemon_id' and
+                                    'lure_expires_timestamp_ms'in lure_info):
+                                printPokemon(
+                                    lure_info['pokemon_id'],
+                                    f['latitude'],
+                                    f['longitude'],
+                                    datetime.utcfromtimestamp(
+                                        lure_info['lure_expires_timestamp_ms']
+                                        / 1000.0))
+                                pokemon[lure_info['encounter_id']] = {
+                                    'encounter_id': b64encode(
+                                        str(lure_info['encounter_id'])),
+                                    'spawnpoint_id': lure_info['fort_id'],
+                                    'pokemon_id':
+                                    lure_info['active_pokemon_id'],
+                                    'latitude': f['latitude'],
+                                    'longitude': f['longitude'],
+                                    'disappear_time':
+                                    datetime.utcfromtimestamp(
+                                        lure_info['lure_expires_timestamp_ms']
+                                        / 1000.0),
+                                    'individual_attack': None,
+                                    'individual_defense': None,
+                                    'individual_stamina': None,
+                                    'move_1': None,
+                                    'move_2': None
+                                }
+                                log.debug(pokemon[lure_info['encounter_id']])
+                                log.debug(
+                                    'Lured Pokestop - ' +
+                                    'Adjacent Pokemon #%s found.',
+                                    lure_info['active_pokemon_id'])
+                        else:
+                            log.debug(
+                                'Lured Pokestop - ' +
+                                'Not close enough for lured Pokemon.')
+
                     if args.webhooks and args.webhook_updates_only:
                         wh_update_queue.put(('pokestop', {
                             'pokestop_id': b64encode(str(f['id'])),
@@ -2210,6 +2320,29 @@ def parse_gyms(args, gym_responses, wh_update_queue, db_update_queue):
     log.info('Upserted gyms: %d, gym members: %d.',
              len(gym_details),
              len(gym_members))
+
+
+def pokestop_request(api, pokestop):
+    try:
+        log.debug("Getting details for pokestop @ '{0}'/'{0}'".format(
+            pokestop['latitude'], pokestop['longitude']))
+        req = api.create_request()
+        x = req.fort_details(fort_id=pokestop['id'], latitude=pokestop[
+                             'latitude'], longitude=pokestop['longitude'])
+        x = req.check_challenge()
+        x = req.get_hatched_eggs()
+        x = req.get_inventory()
+        x = req.check_awarded_badges()
+        x = req.download_settings()
+        x = req.get_buddy_walked()
+        x = req.call()
+        return x
+
+    except Exception as e:
+        log.warning(
+            'Exception while downloading pokestop details: %s',
+            repr(e))
+        return False
 
 
 def db_updater(args, q, db):
