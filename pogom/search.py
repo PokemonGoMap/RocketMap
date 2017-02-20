@@ -1258,15 +1258,14 @@ def get_api_version(args):
 
     try:
         s = requests.Session()
-        s.mount('https://',
+        s.mount('http://',
                 HTTPAdapter(max_retries=Retry(total=3,
                                               backoff_factor=0.1,
                                               status_forcelist=[500, 502,
                                                                 503, 504])))
         r = s.get(
-            'https://pgorelease.nianticlabs.com/plfe/version',
-            proxies=proxies,
-            verify=False)
+            'http://pgorelease.nianticlabs.com/plfe/version',
+            proxies=proxies)
         return r.text[2:] if r.status_code == requests.codes.ok else 0
     except Exception as e:
         log.warning('error on API check: %s', repr(e))
