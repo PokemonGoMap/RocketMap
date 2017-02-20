@@ -153,7 +153,8 @@
 
 #captcha-solving			# Enables captcha solving. (default=False)
 #captcha-key:				# 2Captcha API key.
-#captcha-dsk:				# PokemonGo captcha data-sitekey. Don't change this if not explicitly needed due to recent changes. (default="6LeeTScTAAAAADqvhqVMhPpr_vB9D364Ia-1dSgK")
+#captcha-dsk:				# PokemonGo captcha data-sitekey. Don't change this if not explicitly needed due to recent changes.
+					# (default="6LeeTScTAAAAADqvhqVMhPpr_vB9D364Ia-1dSgK")
 #manual-captcha-domain:			# Enables the option to manual solve Captcha.
 					# Enter domain where captcha tokens will be sent. (default="http://127.0.0.1:5000")
 #manual-captcha-refresh:		# Time available before captcha page refreshes. (default=30)
