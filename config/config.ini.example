@@ -1,9 +1,9 @@
 # DO NOT USE NOTEPAD TO EDIT CONFIG FILES!! USE NOTEPAD ++ INSTEAD.
 # Uncomment a line when you want to change its default value (Remove # at the beginning)
 # Please ensure to leave a space after the colon if a value is needed ("example-setting" "example-setting-with: value")
-# Ot least one account with "username", "password" and "location" and "gmaps-key" are required
-# When your basic config is done, rename this file by removing the "example" extension
-# Other config-files can be included in processes by "--config-file" or "-cf" and path
+# At least one account with "username", "password" as well as "location" and "gmaps-key" are required
+# When your configuration is done, rename this file by removing the ".example" extension
+# A different config-files can be included directly in processes by "--config-file" or "-cf" and path
 
 
 # Basic settings
