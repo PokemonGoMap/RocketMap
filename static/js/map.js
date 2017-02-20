@@ -387,7 +387,7 @@ function getTypeSpan(type) {
 }
 
 function openMapDirections(lat, lng) { // eslint-disable-line no-unused-vars
-    var url = 'https://www.google.com/maps/dir/Current+Location/' + lat + ',' + lng
+    var url = 'https://www.google.com/maps/?daddr=' + lat + ',' + lng
     window.open(url, '_blank')
 }
 
@@ -395,18 +395,21 @@ function pokemonLabel(name, rarity, types, disappearTime, id, latitude, longitud
     var disappearDate = new Date(disappearTime)
     var rarityDisplay = rarity ? '(' + rarity + ')' : ''
     var typesDisplay = ''
+    var pMove1 = (moves[move1] !== undefined) ? i8ln(moves[move1]['name']) : 'gen/unknown'
+    var pMove2 = (moves[move2] !== undefined) ? i8ln(moves[move2]['name']) : 'gen/unknown'
+
     $.each(types, function (index, type) {
         typesDisplay += getTypeSpan(type)
     })
     var details = ''
     if (atk != null) {
-        var iv = (atk + def + sta) / 45 * 100
+        var iv = getIv(atk, def, sta)
         details = `
             <div>
                 IV: ${iv.toFixed(1)}% (${atk}/${def}/${sta})
             </div>
             <div>
-                Moves: ${i8ln(moves[move1]['name'])} / ${i8ln(moves[move2]['name'])}
+                Moves: ${pMove1} / ${pMove2}
             </div>
             `
     }
@@ -1805,7 +1808,7 @@ function showGymDetails(id) { // eslint-disable-line no-unused-vars
                                 <div class="move">
                                     <div class="name">
                                         ${pokemon.move_1_name}
-                                        <div class="type ${pokemon.move_1_type.toLowerCase()}">${pokemon.move_1_type}</div>
+                                        <div class="type ${pokemon.move_1_type['type_en'].toLowerCase()}">${pokemon.move_1_type['type']}</div>
                                     </div>
                                     <div class="damage">
                                         ${pokemon.move_1_damage}
@@ -1815,7 +1818,7 @@ function showGymDetails(id) { // eslint-disable-line no-unused-vars
                                 <div class="move">
                                     <div class="name">
                                         ${pokemon.move_2_name}
-                                        <div class="type ${pokemon.move_2_type.toLowerCase()}">${pokemon.move_2_type}</div>
+                                        <div class="type ${pokemon.move_2_type['type_en'].toLowerCase()}">${pokemon.move_2_type['type']}</div>
                                         <div>
                                             <i class="move-bar-sprite move-bar-sprite-${moveEnergy}"></i>
                                         </div>
@@ -2109,7 +2112,7 @@ $(function () {
     $selectPokemonNotify = $('#notify-pokemon')
     $selectRarityNotify = $('#notify-rarity')
     $textPerfectionNotify = $('#notify-perfection')
-    var numberOfPokemon = 151
+    var numberOfPokemon = 493
 
     // Load pokemon names and populate lists
     $.getJSON('static/dist/data/pokemon.min.json').done(function (data) {

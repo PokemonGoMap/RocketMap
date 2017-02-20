@@ -172,8 +172,8 @@ def get_args():
                         help='Time delay between each login attempt.',
                         type=float, default=6)
     parser.add_argument('-lr', '--login-retries',
-                        help=('Number of login attempts before refreshing ' +
-                              'a thread.'),
+                        help=('Number of times to retry the login before ' +
+                              'refreshing a thread.'),
                         type=int, default=3)
     parser.add_argument('-mf', '--max-failures',
                         help=('Maximum number of failures to parse ' +
@@ -384,12 +384,19 @@ def get_args():
                         help=("Complete ToS and tutorial steps on accounts " +
                               "if they haven't already."),
                         default=False)
+    parser.add_argument('-novc', '--no-version-check', action='store_true',
+                        help='Disable API version check.',
+                        default=False)
+    parser.add_argument('-vci', '--version-check-interval', type=int,
+                        help='Interval to check API version in seconds ' +
+                        '(Default: in [60, 300]).',
+                        default=random.randint(60, 300))
     parser.add_argument('-el', '--encrypt-lib',
                         help=('Path to encrypt lib to be used instead of ' +
                               'the shipped ones.'))
     parser.add_argument('-odt', '--on-demand_timeout',
                         help=('Pause searching while web UI is inactive ' +
-                              'for this timeout(in seconds).'),
+                              'for this timeout (in seconds).'),
                         type=int, default=0)
     parser.add_argument('--disable-blacklist',
                         help=('Disable the global anti-scraper IP blacklist.'),
@@ -781,7 +788,8 @@ def get_move_energy(move_id):
 
 
 def get_move_type(move_id):
-    return i8ln(get_moves_data(move_id)['type'])
+    move_type = get_moves_data(move_id)['type']
+    return {"type": i8ln(move_type), "type_en": move_type}
 
 
 class Timer():
