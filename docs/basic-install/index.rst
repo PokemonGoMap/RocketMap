@@ -153,8 +153,6 @@ Key used to access the hash server. :doc:`Full Info <hashing>`
  * -cs -ck "CAPTCHA_KEY"
 Enables captcha solving and 2Captcha API key. (Manual captcha avaiable) :doc:`Full Info <captchas>`
 
-There are plenty of other configurations that can be set but the two above should be more than enough to get you started. 
-
 Another thing to note is that all of these configs can be set inside of a configuration file to avoid clutter on the command line. View :doc:`this page <configuration-files>` to see how.
 
 Updating the Application
