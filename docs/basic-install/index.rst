@@ -132,6 +132,7 @@ Common Launch Example
 
 A more common server config will include multiple accounts, a hash key, and some form of capchta solving.
 
+Example:
 .. code-block:: bash
 
   python ./runserver.py -ac accounts.csv -tut -st 10 \
@@ -144,13 +145,17 @@ Lets run through this startup command to make sure you understand what configs a
 Load accounts from CSV (Comma Seperated Values) file containing "auth_service,username,passwd" lines. :doc:`Full Info <multi-account>`
 
  * -tut
-Complete Tos and tutorial steps on accounts if they haven't already.
+Complete ToS and tutorial steps on accounts if they haven't already.
 
  * -hk "HASH_KEY_HERE"
 Key used to access the hash server. :doc:`Full Info <hashing>`
 
  * -cs -ck "CAPTCHA_KEY"
 Enables captcha solving and 2Captcha API key. (Manual captcha avaiable) :doc:`Full Info <captchas>`
+
+There are plenty of other configurations that can be set but the two above should be more than enough to get you started. 
+
+Another thing to note is that all of these configs can be set inside of a configuration file to avoid clutter on the command line. View :doc:`this page <configuration-files>` to see how.
 
 Updating the Application
 ************************
