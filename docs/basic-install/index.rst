@@ -1,4 +1,4 @@
-Basic Installation
+Installation
 ##################
 
 These instructions cover an instation from a **release** as well as from a git clone.
@@ -107,8 +107,8 @@ Once node/npm is installed, you can install the node dependencies and build the 
   npm run build
 
 
-Basic Launching
-***************
+Basic Launch Example
+********************
 
 Once those have run, you should be able to start using the application, make sure you're in the directory of RocketMap then:
 
@@ -123,9 +123,34 @@ The most basic config you could use would look something like this:
 .. code-block:: bash
 
   python ./runserver.py -a ptc -u "USERNAME_HERE" -p "PASSWORD_HERE" \
-   -l "a street address or lat/lng coords here" -st 3 -k "maps key here"
+   -l "a street address or lat/lng coords here" -st 3 -k "MAPS_KEY_HERE"
 
 Open your browser to http://localhost:5000 and your pokemon will begin to show up! Happy hunting!
+
+Common Launch Example
+*********************
+
+A more common server config will include multiple accounts, a hash key, and some form of capchta solving.
+
+.. code-block:: bash
+
+  python ./runserver.py -ac accounts.csv -tut -st 10 \
+   -l "a street address or lat/lng coords here" -k "MAPS_KEY_HERE" \
+   -hk "HASH_KEY_HERE" -cs -ck "CAPTCHA_KEY"
+
+Lets run through this startup command to make sure you understand what configs are being set.
+
+ * -ac accounts.csv
+Load accounts from CSV (Comma Seperated Values) file containing "auth_service,username,passwd" lines. :doc:`Full Info <multi-account>`
+
+ * -tut
+Complete Tos and tutorial steps on accounts if they haven't already.
+
+ * -hk "HASH_KEY_HERE"
+Key used to access the hash server. :doc:`Full Info <hashing>`
+
+ * -cs -ck "CAPTCHA_KEY"
+Enables captcha solving and 2Captcha API key. (Manual captcha avaiable) :doc:`Full Info <captchas>`
 
 Updating the Application
 ************************
