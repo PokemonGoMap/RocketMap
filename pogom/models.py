@@ -1021,13 +1021,14 @@ class ScannedLocation(BaseModel):
     @classmethod
     def get_band_count_by_cells(cls, cells):
         return int(ScannedLocation
-                .select(fn.SUM(fn.IF(ScannedLocation.band1 == -1, 0, 1)
-                               + fn.IF(ScannedLocation.band2 == -1, 0, 1)
-                               + fn.IF(ScannedLocation.band3 == -1, 0, 1)
-                               + fn.IF(ScannedLocation.band4 == -1, 0, 1)
-                               + fn.IF(ScannedLocation.band5 == -1, 0, 1)).alias('band_count'))
-                .where(ScannedLocation.cellid << cells)
-                .scalar())
+                   .select(fn.SUM(fn.IF(ScannedLocation.band1 == -1, 0, 1)
+                                  + fn.IF(ScannedLocation.band2 == -1, 0, 1)
+                                  + fn.IF(ScannedLocation.band3 == -1, 0, 1)
+                                  + fn.IF(ScannedLocation.band4 == -1, 0, 1)
+                                  + fn.IF(ScannedLocation.band5 == -1, 0, 1))
+                           .alias('band_count'))
+                   .where(ScannedLocation.cellid << cells)
+                   .scalar())
 
     @classmethod
     def reset_bands(cls, scan_loc):
