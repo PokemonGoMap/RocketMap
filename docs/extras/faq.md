@@ -50,10 +50,14 @@ You can use the the free api (0.45) but be aware that api is old and it is easy 
 
 Yes, you can level your workers to level two(spin a single pokéstop manually), this reduces captchas a lot. you may also consider scanning a smaller area, using less workers or encountering less pokemon for IV.
 
+## How many workers do I need?
+
+There is no simple answer to this really, it all depends on your -st and more importantly how spawn dense that location is.  
+For a rough guide you can use formula at the bottom of this page.
+
 ## example.py isn't working right
 
 10/10 would run again
-
 
 # Lets get technical
 
@@ -106,3 +110,23 @@ The account is banned or hasn't completed the tutorial.
 
 Please read the [Wiki](https://rocketmap.readthedocs.io/en/develop/extras/configuration-files.html) for information and then join us on the [RocketMap Discord](https://discord.gg/PWp2bAm).
 
+# Formulas?
+
+st=step distance  
+sd=scan delay [default: 10]  
+w=# of workers  
+t=desired scan time  
+
+## Speed Scan
+
+Workers for initial scan(speed scan):  
+Workers = Cells / 20, Cells = (((steps * (steps - 1)) * 3) + 1)  
+an example for st 19: (((19 * 18) * 3) +1 ) / 20 = 51.35 so use 52 workers.  
+You will not need as many accounts once initial scan is complete.
+
+## Hex scan
+time to scan: (sd/w)*(3st^2-3st+1)  
+time to scan (using default scan delay): (10/w)*(3st^2-3st+1)
+
+workers needed: (sd/t)*(3st^2-3st+1)  
+workers needed (using default scan delay): (10/t)*(3st^2-3st+1)
