@@ -1020,7 +1020,7 @@ class ScannedLocation(BaseModel):
 
     @classmethod
     def get_band_count_by_cells(cls, cells):
-        return (ScannedLocation
+        return int(ScannedLocation
                 .select(fn.SUM(fn.IF(ScannedLocation.band1 == -1, 0, 1)
                                + fn.IF(ScannedLocation.band2 == -1, 0, 1)
                                + fn.IF(ScannedLocation.band3 == -1, 0, 1)
