@@ -73,6 +73,10 @@ RocketMap uses SQLite as default, this is really basic and not fit for realtime 
 
 No, my advice is delete it all and start again, this time don't edit files unless you know what you are doing.
 
+## “It’s acting like the location flag is missing.”
+
+-l, never forget.
+
 ## I'm getting this error...
 
 ```
