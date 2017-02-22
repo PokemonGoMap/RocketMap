@@ -1,5 +1,5 @@
 Installation
-##################
+############
 
 These instructions cover an instation from a **release** as well as from a git clone.
 
