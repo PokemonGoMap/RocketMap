@@ -31,10 +31,10 @@ Seeing 1-minute timers during initial scan is perfectly normal.
 
 ## Whats the simplest command to start the map scanning?
 
-./runserver.py -speed -l location -u user -p pass -k googlekey
+./runserver.py -speed -l LOCATION -u USER -p PASS -k GOOGLEKEY
 Please dont just paste that, replace location, user, pass and google map key
 
-## Nice what other stuff can I use in the command line
+## Nice what other stuff can I use in the command line?
 
 There is a list [here](https://rocketmap.readthedocs.io/en/develop/extras/commandline.html) or a more up to date list can be found by running ./runserver.py -h 
 
