@@ -68,6 +68,12 @@ Linux/OSX:
 
   sudo -H pip install -r requirements.txt
 
+OSX El Capitan:
+
+.. code-block:: bash
+
+  sudo -H pip install -r requirements.txt --ignore-installed
+
 ``git`` Version Extra Steps
 ===========================
 
