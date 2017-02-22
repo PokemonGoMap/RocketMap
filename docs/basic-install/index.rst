@@ -1,5 +1,5 @@
-Installation
-############
+Basic Installation
+##################
 
 These instructions cover an instation from a **release** as well as from a git clone.
 
@@ -118,21 +118,8 @@ Once those have run, you should be able to start using the application, make sur
 
 Read through the available options and set all the required CLI flags to start your own server. At a minimum you will need to provide a location, account login credentials, and a :doc:`google maps key <google-maps>`.
 
-The most basic config you could use would look something like this:
+A basic config you could use would look something like this:
 
-.. code-block:: bash
-
-  python ./runserver.py -a ptc -u "USERNAME_HERE" -p "PASSWORD_HERE" \
-   -l "a street address or lat/lng coords here" -st 3 -k "MAPS_KEY_HERE"
-
-Open your browser to http://localhost:5000 and your pokemon will begin to show up! Happy hunting!
-
-Common Launch Example
-*********************
-
-A more common server config will include multiple accounts, a hash key, and some form of capchta solving.
-
-Example:
 .. code-block:: bash
 
   python ./runserver.py -ac accounts.csv -tut -st 10 \
@@ -154,6 +141,8 @@ Key used to access the hash server. :doc:`Full Info <hashing>`
 Enables captcha solving and 2Captcha API key. (Manual captcha avaiable) :doc:`Full Info <captchas>`
 
 Another thing to note is that all of these configs can be set inside of a configuration file to avoid clutter on the command line. View :doc:`this page <configuration-files>` to see how.
+
+Open your browser to http://localhost:5000 and your pokemon will begin to show up! Happy hunting!
 
 Updating the Application
 ************************
