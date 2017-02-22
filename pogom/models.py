@@ -1020,14 +1020,14 @@ class ScannedLocation(BaseModel):
 
     @classmethod
     def get_band_count_by_cells(cls, cells):
-        return int(ScannedLocation
-                   .select(fn.SUM(fn.IF(ScannedLocation.band1 == -1, 0, 1)
-                                  + fn.IF(ScannedLocation.band2 == -1, 0, 1)
-                                  + fn.IF(ScannedLocation.band3 == -1, 0, 1)
-                                  + fn.IF(ScannedLocation.band4 == -1, 0, 1)
-                                  + fn.IF(ScannedLocation.band5 == -1, 0, 1))
+        return int(cls
+                   .select(fn.SUM(fn.IF(cls.band1 == -1, 0, 1)
+                                  + fn.IF(cls.band2 == -1, 0, 1)
+                                  + fn.IF(cls.band3 == -1, 0, 1)
+                                  + fn.IF(cls.band4 == -1, 0, 1)
+                                  + fn.IF(cls.band5 == -1, 0, 1))
                            .alias('band_count'))
-                   .where(ScannedLocation.cellid << cells)
+                   .where(cls.cellid << cells)
                    .scalar())
 
     @classmethod
@@ -1655,7 +1655,7 @@ class Token(flaskDb.Model):
                 if tokens:
                     log.debug('Retrived Token IDs: {}'.format(token_ids))
                     result = DeleteQuery(Token).where(
-                                 Token.id << token_ids).execute()
+                        Token.id << token_ids).execute()
                     log.debug('Deleted {} tokens.'.format(result))
         except OperationalError as e:
             log.error('Failed captcha token transactional query: {}'.format(e))
