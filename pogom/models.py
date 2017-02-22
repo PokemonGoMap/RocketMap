@@ -1019,14 +1019,15 @@ class ScannedLocation(BaseModel):
         return scan
 
     @classmethod
-    def bands_filled(cls, locations):
-        filled = 0
-        for e in locations:
-            sl = cls.get_by_loc(e[1])
-            bands = [sl['band' + str(i)] for i in range(1, 6)]
-            filled += reduce(lambda x, y: x + (y > -1), bands, 0)
-
-        return filled
+    def get_band_count_by_cells(cls, cells):
+        return (ScannedLocation
+                .select(fn.SUM(fn.IF(ScannedLocation.band1 == -1, 0, 1)
+                               + fn.IF(ScannedLocation.band2 == -1, 0, 1)
+                               + fn.IF(ScannedLocation.band3 == -1, 0, 1)
+                               + fn.IF(ScannedLocation.band4 == -1, 0, 1)
+                               + fn.IF(ScannedLocation.band5 == -1, 0, 1)).alias('band_count'))
+                .where(ScannedLocation.cellid << cells)
+                .scalar())
 
     @classmethod
     def reset_bands(cls, scan_loc):

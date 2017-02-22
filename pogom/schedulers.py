@@ -660,7 +660,7 @@ class SpeedScan(HexSearch):
     def band_status(self):
         try:
             bands_total = len(self.locations) * 5
-            bands_filled = ScannedLocation.bands_filled(self.locations)
+            bands_filled = int(ScannedLocation.get_band_count_by_cells(self.scans.keys()))
             percent = bands_filled * 100.0 / bands_total
             if bands_total == bands_filled:
                 log.info('Initial spawnpoint scan is complete')
