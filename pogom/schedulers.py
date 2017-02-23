@@ -660,7 +660,7 @@ class SpeedScan(HexSearch):
     def band_status(self):
         try:
             bands_total = len(self.locations) * 5
-            bands_filled = ScannedLocation.get_band_count_by_cellids(
+            bands_filled = ScannedLocation.get_bands_filled_by_cellids(
                 self.scans.keys())
             percent = bands_filled * 100.0 / bands_total
             if bands_total == bands_filled:
