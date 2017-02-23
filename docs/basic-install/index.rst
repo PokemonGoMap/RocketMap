@@ -16,7 +16,7 @@ Credentials
 ***********
 
  * You'll need an active Pokemon Trainer Club account or Google account
- * Get a :doc:`google-maps`
+ * Get a [Google maps key](./google-maps.md)
 
 Downloading the Application
 ***************************
@@ -116,7 +116,7 @@ Once those have run, you should be able to start using the application, make sur
 
   python ./runserver.py --help
 
-Read through the available options and set all the required CLI flags to start your own server. At a minimum you will need to provide a location, account login credentials, and a :doc:`google maps key <google-maps>`.
+Read through the available options and set all the required CLI flags to start your own server. At a minimum you will need to provide a location, account login credentials, and a [Google maps key](./google-maps.md).
 
 A basic config you could use would look something like this:
 
@@ -129,18 +129,18 @@ A basic config you could use would look something like this:
 Lets run through this startup command to make sure you understand what configs are being set.
 
  * -ac accounts.csv
-Load accounts from CSV (Comma Seperated Values) file containing "auth_service,username,passwd" lines. :doc:`Full Info <multi-account>`
+Load accounts from CSV (Comma Seperated Values) file containing "auth_service,username,passwd" lines. [Full Info](../extras/multi-account.md)
 
  * -tut
-Complete ToS and tutorial steps on accounts if they haven't already. :doc:`Full Info <tutorial>`
+Complete ToS and tutorial steps on accounts if they haven't already. [Full Info](../extras/tutorial.md)
 
  * -hk "HASH_KEY_HERE"
-Key used to access the hash server. :doc:`Full Info <hashing>`
+Key used to access the hash server. [Full Info](../extras/hashing.md)
 
  * -cs -ck "CAPTCHA_KEY"
-Enables captcha solving and 2Captcha API key. (Manual captcha avaiable) :doc:`Full Info <captchas>`
+Enables captcha solving and 2Captcha API key. (Manual captcha avaiable) [Full Info](../extras/captchas.md)
 
-Another thing to note is that all of these configs can be set inside of a configuration file to avoid clutter on the command line. View :doc:`this page <configuration-files>` to see how.
+Another thing to note is that all of these configs can be set inside of a configuration file to avoid clutter on the command line. View [this page](../extras/configuration-files.md) to see how.
 
 Open your browser to http://localhost:5000 and your pokemon will begin to show up! Happy hunting!
 
