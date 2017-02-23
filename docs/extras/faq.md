@@ -12,9 +12,9 @@ If you happen to have 2-step verification enabled for your Google account you wi
 
 ## Which is the best scan option to use to find pokemon?
 
-Speed-Scheduler is the most useful as it has many features such as finding exact spawnpoint times and duration and limiting  
-speed to stop violations.
-More information can be found here : [Speed Scheduler] (https://rocketmap.readthedocs.io/en/develop/extras/Speed-Scheduler.html)
+SpeedScan (`-speed`) is the most used scheduler: it's the only scheduler that currently supports finding the proper spawnpoint time and duration, and it also features a built-in speed limiter to avoid speed violations (i.e. softbans).
+
+More information can be found here : [Speed Scheduler] (Speed-Scheduler.md)
 
 ## But I was happy using the default Hex or Spawnpoint scanning...
 
@@ -36,15 +36,15 @@ Please dont just paste that, replace location, user, pass and google map key
 
 ## Nice what other stuff can I use in the command line?
 
-There is a list [here](https://rocketmap.readthedocs.io/en/develop/extras/commandline.html) or a more up to date list can be found by running ./runserver.py -h 
+There is a list [here](commandline.md) or a more up to date list can be found by running ./runserver.py -h 
 
 ## Woah I added a ton of cool stuff and now my command line is massive, any way to shorten it?
 
-It is a lot simplier to use a [config file] (https://rocketmap.readthedocs.io/en/develop/extras/configuration-files.html)
+It is a lot simplier to use a [config file] (configuration-files.md)
 
 ## Can I scan for free or do I need to pay for a hash key?
 
-You can use the the free api but be aware that using an api that is older than the game currently uses is easy for Niantic to see that you are not using the game client. This can get your accounts flagged for increased captcha rate or even account bans. Using a [hash key](https://hashing.pogodev.org/) uses the latest api and reduces captchas or removes them almost completely.
+You can use the the free api but be aware that using an api that is older than the game currently uses makes it easy for Niantic to see that you are not using the game client. This can get your accounts flagged for increased captcha rate or even account bans. Using a [hash key](https://hashing.pogodev.org/) uses the latest api and reduces captchas or removes them almost completely.
 
 ## Is there anything I can do to lower captchas on either api version?
 
@@ -67,7 +67,7 @@ RocketMap uses SQLite which doesn't support real concurrency, so you're limited 
 
 Higher threads or extra workers = increased odds of SQLite locking up. sqlite also has a very low limit of number of variables that can be used in a single query, which breaks support for medium or large sized maps.
 
-You need [MySQL] (https://rocketmap.readthedocs.io/en/develop/extras/mysql.html) if you want a proper database.
+You need [MySQL] (mysql.md) if you want a proper database.
 
 ## How do I setup port forwarding?
 
@@ -75,7 +75,7 @@ You need [MySQL] (https://rocketmap.readthedocs.io/en/develop/extras/mysql.html)
 
 ## I edited my files/installed unfinished code and messed up, will you help me fix it?
 
-No, the best course of action is delete it all and start again, this time don't edit files unless you know what you are doing.
+No, the best course of action is to delete it all and start again, this time don't edit files unless you know what you are doing.
 
 ## “It’s acting like the location flag is missing.”
 
@@ -116,7 +116,7 @@ The account is banned or hasn't completed the tutorial.
 
 ## I have more questions!
 
-Please read the [Wiki](https://rocketmap.readthedocs.io/en/develop/extras/configuration-files.html) for information and then join us on the [RocketMap Discord](https://discord.gg/PWp2bAm). Before asking question in #help on Discord, make sure you've read #announcements and #faq.
+Please read the [Wiki](configuration-files.md) for information and then join us on the [RocketMap Discord](https://discord.gg/PWp2bAm). Before asking questions in #help on Discord, make sure you've read #announcements and #faq.
 
 # Formulas?
 
