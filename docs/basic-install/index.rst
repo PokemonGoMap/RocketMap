@@ -1,7 +1,7 @@
 Basic Installation
 ##################
 
-These instructions cover an instation from a **release** as well as from a git clone.
+These instructions cover an installation from a **release** as well as from a git clone.
 
 Prerequisites
 *************
