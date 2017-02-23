@@ -132,7 +132,7 @@ Lets run through this startup command to make sure you understand what configs a
 Load accounts from CSV (Comma Seperated Values) file containing "auth_service,username,passwd" lines. :doc:`Full Info <multi-account>`
 
  * -tut
-Complete ToS and tutorial steps on accounts if they haven't already.
+Complete ToS and tutorial steps on accounts if they haven't already. :doc:`Full Info <tutorial>`
 
  * -hk "HASH_KEY_HERE"
 Key used to access the hash server. :doc:`Full Info <hashing>`
