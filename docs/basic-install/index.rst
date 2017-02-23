@@ -8,15 +8,15 @@ Prerequisites
 
 Follow one of the guides below to get the basic prerequisites installed:
 
- * :doc:`osx`
- * :doc:`windows`
- * :doc:`linux`
+ * [macOS Prerequisites](osx.md)
+ * [Windows Prerequisites](windows.md)
+ * [Linux Prerequisites](linux.md)
 
 Credentials
 ***********
 
  * You'll need an active Pokemon Trainer Club account or Google account
- * Get a [Google maps key](./google-maps.md)
+ * Get a [Google maps key](google-maps.md)
 
 Downloading the Application
 ***************************
@@ -116,7 +116,7 @@ Once those have run, you should be able to start using the application, make sur
 
   python ./runserver.py --help
 
-Read through the available options and set all the required CLI flags to start your own server. At a minimum you will need to provide a location, account login credentials, and a [Google maps key](./google-maps.md).
+Read through the available options and set all the required CLI flags to start your own server. At a minimum you will need to provide a location, account login credentials, and a [Google maps key](google-maps.md).
 
 A basic config you could use would look something like this:
 
