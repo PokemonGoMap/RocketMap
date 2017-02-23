@@ -1,22 +1,22 @@
 Basic Installation
 ##################
 
-These instructions cover an instation from a **release** as well as from a git clone.
+These instructions cover an installation from a **release** as well as from a git clone.
 
 Prerequisites
 *************
 
 Follow one of the guides below to get the basic prerequisites installed:
 
- * :doc:`osx`
- * :doc:`windows`
- * :doc:`linux`
+ * [macOS Prerequisites](osx.md)
+ * [Windows Prerequisites](windows.md)
+ * [Linux Prerequisites](linux.md)
 
 Credentials
 ***********
 
  * You'll need an active Pokemon Trainer Club account or Google account
- * Get a :doc:`google-maps`
+ * Get a [Google maps key](google-maps.md)
 
 Downloading the Application
 ***************************
@@ -107,8 +107,8 @@ Once node/npm is installed, you can install the node dependencies and build the 
   npm run build
 
 
-Basic Launching
-***************
+Basic Launch Example
+********************
 
 Once those have run, you should be able to start using the application, make sure you're in the directory of RocketMap then:
 
@@ -116,14 +116,31 @@ Once those have run, you should be able to start using the application, make sur
 
   python ./runserver.py --help
 
-Read through the available options and set all the required CLI flags to start your own server. At a minimum you will need to provide a location, account login credentials, and a :doc:`google maps key <google-maps>`.
+Read through the available options and set all the required CLI flags to start your own server. At a minimum you will need to provide a location, account login credentials, and a [Google maps key](google-maps.md).
 
-The most basic config you could use would look something like this:
+A basic config you could use would look something like this:
 
 .. code-block:: bash
 
-  python ./runserver.py -a ptc -u "USERNAME_HERE" -p "PASSWORD_HERE" \
-   -l "a street address or lat/lng coords here" -st 3 -k "maps key here"
+  python ./runserver.py -ac accounts.csv -tut -st 10 \
+   -l "a street address or lat/lng coords here" -k "MAPS_KEY_HERE" \
+   -hk "HASH_KEY_HERE" -cs -ck "CAPTCHA_KEY"
+
+Lets run through this startup command to make sure you understand what configs are being set.
+
+ * -ac accounts.csv
+Load accounts from CSV (Comma Seperated Values) file containing "auth_service,username,passwd" lines. [Full Info](../extras/multi-account.md)
+
+ * -tut
+Complete ToS and tutorial steps on accounts if they haven't already. [Full Info](../extras/tutorial.md)
+
+ * -hk "HASH_KEY_HERE"
+Key used to access the hash server. [Full Info](../extras/hashing.md)
+
+ * -cs -ck "CAPTCHA_KEY"
+Enables captcha solving and 2Captcha API key. (Manual captcha avaiable) [Full Info](../extras/captchas.md)
+
+Another thing to note is that all of these configs can be set inside of a configuration file to avoid clutter on the command line. View [this page](../extras/configuration-files.md) to see how.
 
 Open your browser to http://localhost:5000 and your pokemon will begin to show up! Happy hunting!
 
