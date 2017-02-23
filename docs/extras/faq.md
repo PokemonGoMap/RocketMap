@@ -12,8 +12,8 @@ If you happen to have 2-step verification enabled for your Google account you wi
 
 ## Which is the best scan option to use to find pokemon?
 
-Speed-Scheduler is the only scheduler that has been updated in recent times, it is also the most useful as it has many features such 
-as finding exact spawnpoint times and duration and limiting speed to stop violations.
+Speed-Scheduler is the most useful as it has many features such as finding exact spawnpoint times and duration and limiting  
+speed to stop violations.
 More information can be found here : [Speed Scheduler] (https://rocketmap.readthedocs.io/en/develop/extras/Speed-Scheduler.html)
 
 ## But I was happy using the default Hex or Spawnpoint scanning...
@@ -22,14 +22,14 @@ Speed- Scheduler combines both and is more efficient.
 
 ## Should I swap back to spawn point scanning after the speed-scheduler has done its initial scan?
 
-No, It will automatically spawn scanpoints.
+No, it will automatically spawn scanpoints.
 
-## All pokemon dissapear after only 1 minute, the map is broken!
+## All pokemon disappear after only 1 minute, the map is broken!
 
 One of Niantic's updates removed spawn timers from Pokémon (until there's little time left until they despawn). SpeedScan does an initial scan to determine all spawn points and their timers and automatically transitions into spawn scanning once it found them all. 
 Seeing 1-minute timers during initial scan is perfectly normal.
 
-## Whats the simplest command to start the map scanning?
+## What's the simplest command to start the map scanning?
 
 ./runserver.py -speed -l LOCATION -u USER -p PASS -k GOOGLEKEY
 Please dont just paste that, replace location, user, pass and google map key
@@ -38,32 +38,36 @@ Please dont just paste that, replace location, user, pass and google map key
 
 There is a list [here](https://rocketmap.readthedocs.io/en/develop/extras/commandline.html) or a more up to date list can be found by running ./runserver.py -h 
 
-## Woah I added a ton of cool stuff and now my command line is massive
+## Woah I added a ton of cool stuff and now my command line is massive, any way to shorten it?
 
 It is a lot simplier to use a [config file] (https://rocketmap.readthedocs.io/en/develop/extras/configuration-files.html)
 
 ## Can I scan for free or do I need to pay for a hash key?
 
-You can use the the free api (0.45) but be aware that api is old and it is easy to be spotted and flagged for captcha or bans. Using a [hash key](https://hashing.pogodev.org/) uses the latest api and reduces captchas or removes them almost completely.
+You can use the the free api but be aware that using an api that is older than the game currently uses is easy for Niantic to see that you are not using the game client. This can get your accounts flagged for increased captcha rate or even account bans. Using a [hash key](https://hashing.pogodev.org/) uses the latest api and reduces captchas or removes them almost completely.
 
 ## Is there anything I can do to lower captchas on either api version?
 
-Yes, you can level your workers to level two(spin a single pokéstop manually), this reduces captchas a lot. you may also consider scanning a smaller area, using less workers or encountering less pokemon for IV.
+Yes, you can level your workers to level two (spin a single pokéstop manually), this reduces captchas a lot. you may also consider scanning a smaller area, using less workers or encountering less pokemon for IV.
 
 ## How many workers do I need?
 
-There is no simple answer to this really, it all depends on your -st and more importantly how spawn dense that location is.  
-For a rough guide you can use formula at the bottom of this page.
+There is no simple answer to this, it all depends on your -st and more importantly how spawn dense that location is.  
+For a rough guide you can use the formulas at the bottom of this page.
 
-## example.py isn't working right
+## example.py isn't working right!
 
 10/10 would run again
 
-# Lets get technical
+# Lets get technical!
 
 ## I have problems with my database because......
 
-RocketMap uses SQLite as default, this is really basic and not fit for realtime use. Please consider swapping to use something like [MySQL] (https://rocketmap.readthedocs.io/en/develop/extras/mysql.html)
+RocketMap uses SQLite which doesn't support real concurrency, so you're limited directly by the read/write speed of your drive and you're hoping that nothing happens concurrently (otherwise it breaks).
+
+Higher threads or extra workers = increased odds of SQLite locking up. sqlite also has a very low limit of number of variables that can be used in a single query, which breaks support for medium or large sized maps.
+
+You need [MySQL] (https://rocketmap.readthedocs.io/en/develop/extras/mysql.html) if you want a proper database.
 
 ## How do I setup port forwarding?
 
@@ -71,7 +75,7 @@ RocketMap uses SQLite as default, this is really basic and not fit for realtime 
 
 ## I edited my files/installed unfinished code and messed up, will you help me fix it?
 
-No, my advice is delete it all and start again, this time don't edit files unless you know what you are doing.
+No, the best course of action is delete it all and start again, this time don't edit files unless you know what you are doing.
 
 ## “It’s acting like the location flag is missing.”
 
@@ -112,7 +116,7 @@ The account is banned or hasn't completed the tutorial.
 
 ## I have more questions!
 
-Please read the [Wiki](https://rocketmap.readthedocs.io/en/develop/extras/configuration-files.html) for information and then join us on the [RocketMap Discord](https://discord.gg/PWp2bAm).
+Please read the [Wiki](https://rocketmap.readthedocs.io/en/develop/extras/configuration-files.html) for information and then join us on the [RocketMap Discord](https://discord.gg/PWp2bAm). Before asking question in #help on Discord, make sure you've read #announcements and #faq.
 
 # Formulas?
 
