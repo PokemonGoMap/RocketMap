@@ -882,5 +882,3 @@ def extract_sprites():
     zip = zipfile('static01.zip', 'r')
     zip.extractall('static')
     zip.close()
-    log.debug("Removing leftover zip file...")
-    os.remove('static01.zip')
