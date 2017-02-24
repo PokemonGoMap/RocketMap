@@ -874,3 +874,37 @@ def generate_device_info():
         device_info['firmware_type'] = random.choice(ios8 + ios9 + ios10)
 
     return device_info
+
+
+def get_static_dir():
+    return os.path.join(os.path.dirname(__file__), '../static')
+
+
+def sprite_file_is_missing():
+    static_dir = get_static_dir()
+    sprites_file = os.path.join(static_dir, 'icons-sprite.png')
+    return not os.path.isfile(sprites_file)
+
+
+# Use already bundled uncopyrighted sprites
+def use_bundled_sprites():
+    static_dir = get_static_dir()
+
+    icons_dir = os.path.join(static_dir, 'icons')
+    sprites_file = os.path.join(static_dir, 'icons-sprite.png')
+    large_sprites_file = os.path.join(static_dir, 'icons-large-sprite.png')
+
+    bundled_dir = os.path.join(static_dir, 'uncopyrighted_sprites')
+
+    bundled_icons = os.path.join(bundled_dir, 'icons')
+    bundled_sprites_file = os.path.join(bundled_dir, 'icons-sprite.png')
+    bundled_large_sprites_file = os.path.join(bundled_dir,
+                                              'icons-large-sprite.png')
+
+    for item in os.listdir(bundled_icons):
+        src_file = os.path.join(bundled_icons, item)
+        dest_file = os.path.join(icons_dir, item)
+        shutil.copy2(src_file, dest_file)
+
+    shutil.copy2(bundled_sprites_file, sprites_file)
+    shutil.copy2(bundled_large_sprites_file, large_sprites_file)

@@ -20,7 +20,8 @@ from flask_cache_bust import init_cache_busting
 
 from pogom import config
 from pogom.app import Pogom
-from pogom.utils import get_args, now
+from pogom.utils import (get_args, now, use_bundled_sprites,
+                         sprite_file_is_missing)
 from pogom.altitude import get_gmaps_altitude
 
 from pogom.search import search_overseer_thread
@@ -154,12 +155,10 @@ def main():
                 '"npm install && npm run build" before starting the server.')
             sys.exit()
 
-        # You need custom image files now.
-        if not os.path.isfile(
-                os.path.join(os.path.dirname(__file__),
-                             'static/icons-sprite.png')):
-            log.critical('Missing sprite files.')
-            sys.exit()
+        # Use bundled sprites if none are present
+        if sprite_file_is_missing():
+            log.warn('Missing sprite files. Using bundled ones.')
+            use_bundled_sprites()
 
     # These are very noisy, let's shush them up a bit.
     logging.getLogger('peewee').setLevel(logging.INFO)
