@@ -13,6 +13,7 @@ import random
 import time
 import socket
 import struct
+import zipfile
 import requests
 from uuid import uuid4
 from s2sphere import CellId, LatLng
@@ -883,7 +884,7 @@ def get_sprites():
         dl.write(r.content)
         dl.close()
         log.debug("Extracting sprites...")
-        zip = zipfile.ZipFile('static01.zip', 'r')  # noqa
+        zip = zipfile('static01.zip', 'r')
         zip.extractall('static')
         zip.close()
         log.debug("Removing leftover zip file...")
