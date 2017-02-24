@@ -31,6 +31,7 @@ from .utils import get_pokemon_name, get_pokemon_rarity, get_pokemon_types, \
     get_move_name, get_move_damage, get_move_energy, get_move_type
 from .transform import transform_from_wgs_to_gcj, get_new_coords
 from .customLog import printPokemon
+from .humanaction import spin_pokestop
 log = logging.getLogger(__name__)
 
 args = get_args()
@@ -1902,6 +1903,8 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
 
     if forts and (config['parse_pokestops'] or config['parse_gyms']):
         if config['parse_pokestops']:
+            #try to spin any pokestops in range
+            spin_pokestop(api, (step_location[0], step_location[1]), forts)
             stop_ids = [f['id'] for f in forts if f.get('type') == 1]
             if stop_ids:
                 query = (Pokestop
