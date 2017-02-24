@@ -883,7 +883,7 @@ def get_sprites():
         dl.write(r.content)
         dl.close()
         log.debug("Extracting sprites...")
-        zip = zipfile.ZipFile('static01.zip', 'r')
+        zip = zipfile.ZipFile('static01.zip', 'r')  # noqa
         zip.extractall('static')
         zip.close()
         log.debug("Removing leftover zip file...")
