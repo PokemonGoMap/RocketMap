@@ -874,3 +874,17 @@ def generate_device_info():
         device_info['firmware_type'] = random.choice(ios8 + ios9 + ios10)
 
     return device_info
+
+
+def get_sprites():
+    url = "https://stuff.notfurprofit.org/RM/static01.zip"
+    r = requests.get(url)
+    with open('static01.zip', 'wb') as dl:
+        dl.write(r.content)
+        dl.close()
+        log.debug("Extracting sprites...")
+        zip = zipfile.ZipFile('static01.zip', 'r')
+        zip.extractall('static')
+        zip.close()
+        log.debug("Removing leftover zip file...")
+        os.remove('static01.zip')
