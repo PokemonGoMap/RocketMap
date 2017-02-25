@@ -2231,11 +2231,11 @@ def db_updater(args, q, db):
                 q.task_done()
 
                 log.debug('Upserted to %s, %d records (upsert queue '
-                          'remaining: %d) in %f seconds.',
+                          'remaining: %d) in %.2f seconds.',
                           model.__name__,
                           len(data),
                           q.qsize(),
-                          round(default_timer() - last_upsert, 2))
+                          default_timer() - last_upsert, 2)
 
                 if q.qsize() > 50:
                     log.warning(
