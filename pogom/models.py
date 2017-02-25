@@ -24,6 +24,7 @@ from datetime import datetime, timedelta
 from base64 import b64encode
 from cachetools import TTLCache
 from cachetools import cached
+from timeit import default_timer
 
 from . import config
 from .utils import get_pokemon_name, get_pokemon_rarity, get_pokemon_types, \
@@ -2223,14 +2224,19 @@ def db_updater(args, q, db):
 
             # Loop the queue.
             while True:
+                last_upsert = default_timer()
                 model, data = q.get()
+
                 bulk_upsert(model, data, db)
                 q.task_done()
+
                 log.debug('Upserted to %s, %d records (upsert queue '
-                          'remaining: %d).',
+                          'remaining: %d) in %f seconds.',
                           model.__name__,
                           len(data),
-                          q.qsize())
+                          q.qsize(),
+                          round(default_timer() - last_upsert, 2))
+
                 if q.qsize() > 50:
                     log.warning(
                         "DB queue is > 50 (@%d); try increasing --db-threads.",
