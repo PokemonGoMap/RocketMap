@@ -14,6 +14,7 @@ from pogom.utils import get_args
 from datetime import timedelta
 from collections import OrderedDict
 from bisect import bisect_left
+from decimal import Decimal
 
 from . import config
 from .models import (Pokemon, Gym, Pokestop, ScannedLocation,
@@ -563,6 +564,8 @@ class CustomJSONEncoder(JSONEncoder):
                     obj.microsecond / 1000
                 )
                 return millis
+            if isinstance(obj, Decimal):
+                return float(obj)
             iterable = iter(obj)
         except TypeError:
             pass
