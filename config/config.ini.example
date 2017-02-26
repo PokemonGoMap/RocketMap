@@ -26,7 +26,7 @@
 #location:                      # Location, can be an address or coordinates.
 #step-limit:                    # Steps (default=10)
 #scan-delay:                    # Time delay between requests in scan threads. (default=12)
-#no-gyms                        # Disables gym scanning (default false)
+#no-gyms                        # Disables gym scanning (default=False)
 #no-pokemon                     # Disables pokemon scanning. (default=False)
 #no-pokestops                   # Disables pokestop scanning. (default=False)
 #print-status                   # Enable ENTER to switch between log view and a status view.
@@ -174,9 +174,9 @@
 ######
 
 #verbose                        # Show debug messages from PokemonGo-Map and pgoapi.
-                                # Optionally specify file to log to by adding ": PATH/FILENAME.log". (default="False")
+                                # Optionally specify file to log to by adding ": PATH/FILENAME.log". (default=False)
 #very-verbose                   # Like verbose, but show debug messages from all modules as well.
-                                # Optionally specify file to log to like above mentioned. (default="False")
+                                # Optionally specify file to log to like above mentioned. (default=False)
 #no-version-check               # Disable API version check. (default=False)
 #version-check-interval:        # Interval to check API version in seconds (Default: in range [60, 300]).
 #mock:                          # Mock mode - point to a fpgo endpoint instead of using the real PogoApi,
