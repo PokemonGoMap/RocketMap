@@ -2505,7 +2505,3 @@ def database_migrate(db, old_ver):
                            'MODIFY COLUMN `height` FLOAT NULL DEFAULT NULL,'
                            'MODIFY COLUMN `gender` SMALLINT NULL DEFAULT NULL'
                            ';')
-            db.execute_sql('ALTER TABLE `gympokemon` '
-                           'MODIFY COLUMN `weight` FLOAT NULL DEFAULT NULL,'
-                           'MODIFY COLUMN `height` FLOAT NULL DEFAULT NULL'
-                           ';')
