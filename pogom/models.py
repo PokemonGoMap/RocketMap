@@ -102,8 +102,10 @@ class Pokemon(BaseModel):
     individual_stamina = IntegerField(null=True)
     move_1 = IntegerField(null=True)
     move_2 = IntegerField(null=True)
-    weight = DecimalField(null=True, max_digits=6, decimal_places=2)
-    height = DecimalField(null=True, max_digits=5, decimal_places=2)
+    weight = DecimalField(
+        null=True, max_digits=6, decimal_places=2, auto_round=True)
+    height = DecimalField(
+        null=True, max_digits=5, decimal_places=2, auto_round=True)
     gender = SmallIntegerField(null=True)
     last_modified = DateTimeField(
         null=True, index=True, default=datetime.utcnow)
@@ -1608,8 +1610,10 @@ class GymPokemon(BaseModel):
     num_upgrades = IntegerField(null=True)
     move_1 = IntegerField(null=True)
     move_2 = IntegerField(null=True)
-    height = DecimalField(null=True, max_digits=5, decimal_places=2)
-    weight = DecimalField(null=True, max_digits=6, decimal_places=2)
+    height = DecimalField(
+        null=True, max_digits=5, decimal_places=2, auto_round=True)
+    weight = DecimalField(
+        null=True, max_digits=6, decimal_places=2, auto_round=True)
     stamina = IntegerField(null=True)
     stamina_max = IntegerField(null=True)
     cp_multiplier = FloatField(null=True)
