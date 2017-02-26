@@ -67,7 +67,7 @@
 #no-jitter                      # Don't apply random -9m to +9m jitter to location.
 #altitude:                      # Default altitude in meters. Retrieve this value regarding your scan location from the web. (default=507)
 #altitude-variance:             # Variance for --altitude in meters (default=1)
-#use-altitude-cache             # Query the Elevation API for each step, rather than only once, and store results in the database.                    
+#use-altitude-cache             # Query the Elevation API for each step, rather than only once, and store results in the database.
                                 # Make sure your Google Elevation API is enabled
 #workers-per-hive:              # Only referenced when using --beehive. Sets number of workers per hive. (default=1)
 #workers:                       # Number of search worker threads to start. (default=#accounts)
@@ -148,7 +148,7 @@
 #wh-concurrency:                # Async requests pool size. (default=25)
 #wh-backoff-factor:             # Factor (in seconds) by which the delay until next retry will increase. (default=0.25).
 #wh-lfu-size:                   # Webhook LFU cache max size (default=1000).
-				
+
 
 # Status and logs
 #################
@@ -173,6 +173,10 @@
 # Misc
 ######
 
+#verbose                        # Show debug messages from PokemonGo-Map and pgoapi.
+                                # Optionally specify file to log to by adding ": PATH/FILENAME.log". (default="False")
+#very-verbose                   # Like verbose, but show debug messages from all modules as well.
+                                # Optionally specify file to log to like above mentioned. (default="False")
 #no-version-check               # Disable API version check. (default=False)
 #version-check-interval:        # Interval to check API version in seconds (Default: in range [60, 300]).
 #mock:                          # Mock mode - point to a fpgo endpoint instead of using the real PogoApi,
