@@ -30,7 +30,7 @@
 #no-pokemon                     # Disables pokemon scanning. (default=False)
 #no-pokestops                   # Disables pokestop scanning. (default=False)
 #print-status                   # Enable ENTER to switch between log view and a status view.
-                                # Use "status" to start in status view and "logs" to start in log view. (default=False)
+                                # Optionally add ": status" to start in status view and ": logs" to start in log view. (default=False)
 #status-page-password:          # Enables and protects the /status page to view status of all workers. (default=None)
 #captcha-solving                # Enables captcha solving. (default=False)
 
