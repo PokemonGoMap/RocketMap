@@ -393,6 +393,14 @@ function openMapDirections(lat, lng) { // eslint-disable-line no-unused-vars
     window.open(url, '_blank')
 }
 
+function selectContent(target) { // eslint-disable-line no-unused-vars
+    var selection = window.getSelection()
+    var range = new Range()
+    range.selectNodeContents(target)
+    selection.removeAllRanges()
+    selection.addRange(range)
+}
+
 function pokemonLabel(name, rarity, types, disappearTime, id, latitude, longitude, encounterId, atk, def, sta, move1, move2, weight, height, gender) {
     var disappearDate = new Date(disappearTime)
     var rarityDisplay = rarity ? '(' + rarity + ')' : ''
@@ -438,14 +446,15 @@ function pokemonLabel(name, rarity, types, disappearTime, id, latitude, longitud
             <span class='label-countdown' disappears-at='${disappearTime}'>(00m00s)</span>
         </div>
         <div>
-            Location: ${latitude.toFixed(6)}, ${longitude.toFixed(7)}
+            Location:
+            <span onclick="selectContent(this)">${latitude.toFixed(6)}, ${longitude.toFixed(7)}</span>
         </div>
             ${details}
         <div>
             <a href='javascript:excludePokemon(${id})'>Exclude</a>&nbsp;&nbsp
             <a href='javascript:notifyAboutPokemon(${id})'>Notify</a>&nbsp;&nbsp
             <a href='javascript:removePokemonMarker("${encounterId}")'>Remove</a>&nbsp;&nbsp
-            <a href='javascript:void(0);' onclick='javascript:openMapDirections(${latitude},${longitude});' title='View in Maps'>Get directions</a>
+            <a href='javascript:void(0)' onclick='openMapDirections(${latitude},${longitude})' title='View in Maps'>Get directions</a>
         </div>`
     return contentstring
 }
