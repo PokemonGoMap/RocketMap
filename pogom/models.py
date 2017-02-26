@@ -2505,9 +2505,14 @@ def database_migrate(db, old_ver):
         # we don't have to touch sqlite because it has REAL and INTEGER only
         if args.db_type == 'mysql':
             db.execute_sql('ALTER TABLE `pokemon` '
-                           'MODIFY COLUMN `weight` DECIMAL(6,2) NULL DEFAULT NULL,'
-                           'MODIFY COLUMN `height` DECIMAL(5,2) NULL DEFAULT NULL,'
-                           'MODIFY COLUMN `gender` SMALLINT NULL DEFAULT NULL;')
+                           'MODIFY COLUMN `weight` DECIMAL(6,2) NULL DEFAULT '
+                           ' NULL,'
+                           'MODIFY COLUMN `height` DECIMAL(5,2) NULL DEFAULT '
+                           'NULL,'
+                           'MODIFY COLUMN `gender` SMALLINT NULL DEFAULT '
+                           ' NULL;')
             db.execute_sql('ALTER TABLE `gympokemon` '
-                           'MODIFY COLUMN `weight` DECIMAL(6,2) NULL DEFAULT NULL,'
-                           'MODIFY COLUMN `height` DECIMAL(5,2) NULL DEFAULT NULL;')
+                           'MODIFY COLUMN `weight` DECIMAL(6,2) NULL DEFAULT '
+                           'NULL,'
+                           'MODIFY COLUMN `height` DECIMAL(5,2) NULL DEFAULT '
+                           ' NULL;')
