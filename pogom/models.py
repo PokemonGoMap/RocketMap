@@ -13,8 +13,8 @@ import math
 from peewee import InsertQuery, \
     Check, CompositeKey, ForeignKeyField, \
     SmallIntegerField, IntegerField, CharField, DoubleField, BooleanField, \
-    DateTimeField, DecimalField, fn, DeleteQuery, FloatField, SQL, TextField, \
-    JOIN, OperationalError
+    DateTimeField, fn, DeleteQuery, FloatField, SQL, TextField, JOIN, \
+    OperationalError
 from playhouse.flask_utils import FlaskDB
 from playhouse.pool import PooledMySQLDatabase
 from playhouse.shortcuts import RetryOperationalError, case
@@ -102,10 +102,8 @@ class Pokemon(BaseModel):
     individual_stamina = IntegerField(null=True)
     move_1 = IntegerField(null=True)
     move_2 = IntegerField(null=True)
-    weight = DecimalField(
-        null=True, max_digits=6, decimal_places=2, auto_round=True)
-    height = DecimalField(
-        null=True, max_digits=5, decimal_places=2, auto_round=True)
+    weight = FloatField(null=True)
+    height = FloatField(null=True)
     gender = SmallIntegerField(null=True)
     last_modified = DateTimeField(
         null=True, index=True, default=datetime.utcnow)
@@ -1610,10 +1608,8 @@ class GymPokemon(BaseModel):
     num_upgrades = IntegerField(null=True)
     move_1 = IntegerField(null=True)
     move_2 = IntegerField(null=True)
-    height = DecimalField(
-        null=True, max_digits=5, decimal_places=2, auto_round=True)
-    weight = DecimalField(
-        null=True, max_digits=6, decimal_places=2, auto_round=True)
+    height = FloatField(null=True)
+    weight = FloatField(null=True)
     stamina = IntegerField(null=True)
     stamina_max = IntegerField(null=True)
     cp_multiplier = FloatField(null=True)
@@ -2505,14 +2501,11 @@ def database_migrate(db, old_ver):
         # we don't have to touch sqlite because it has REAL and INTEGER only
         if args.db_type == 'mysql':
             db.execute_sql('ALTER TABLE `pokemon` '
-                           'MODIFY COLUMN `weight` DECIMAL(6,2) NULL DEFAULT '
-                           ' NULL,'
-                           'MODIFY COLUMN `height` DECIMAL(5,2) NULL DEFAULT '
-                           'NULL,'
-                           'MODIFY COLUMN `gender` SMALLINT NULL DEFAULT '
-                           ' NULL;')
+                           'MODIFY COLUMN `weight` FLOAT NULL DEFAULT NULL,'
+                           'MODIFY COLUMN `height` FLOAT NULL DEFAULT NULL,'
+                           'MODIFY COLUMN `gender` SMALLINT NULL DEFAULT NULL'
+                           ';')
             db.execute_sql('ALTER TABLE `gympokemon` '
-                           'MODIFY COLUMN `weight` DECIMAL(6,2) NULL DEFAULT '
-                           'NULL,'
-                           'MODIFY COLUMN `height` DECIMAL(5,2) NULL DEFAULT '
-                           ' NULL;')
+                           'MODIFY COLUMN `weight` FLOAT NULL DEFAULT NULL,'
+                           'MODIFY COLUMN `height` FLOAT NULL DEFAULT NULL'
+                           ';')
