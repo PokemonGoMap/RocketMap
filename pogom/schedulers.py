@@ -867,8 +867,8 @@ class SpeedScan(HexSearch):
     def next_item(self, status):
         # Thread safety: don't let multiple threads get the same "best item".
         with self.lock_next_item:
-            # score each item in the queue by # of due spawns or scan time
-            # bands can be filled
+            # Score each item in the queue by # of due spawns or scan time
+            # bands can be filled.
 
             while not self.ready:
                 time.sleep(1)
@@ -890,9 +890,13 @@ class SpeedScan(HexSearch):
                 if item.get('done', False):
                     continue
 
-                # If the item is parked by a different thread, pass.
+                # If the item is parked by a different thread, or by a
+                # different account (should never happen, but making sure),
+                # pass.
+                our_parked_name = (current_thread().name + '-' +
+                                   status['username'])
                 if (item.get('thread_name', False) and
-                        item.get('thread_name') != current_thread().name):
+                        item.get('thread_name') != our_parked_name):
                     continue
 
                 # If already timed out, mark it as Missed and check next.
@@ -972,7 +976,9 @@ class SpeedScan(HexSearch):
                 # Flag item as "parked" by a specific thread, because
                 # we're waiting for it. This will avoid all threads "walking"
                 # to the same item.
-                item['thread_name'] = current_thread().name
+                our_parked_name = (current_thread().name + '-' +
+                                   status['username'])
+                item['thread_name'] = our_parked_name
 
                 messages['wait'] = 'Moving {}m to step {} for a {}.'.format(
                     int(equi_rect_distance(loc, worker_loc) * 1000), step,
