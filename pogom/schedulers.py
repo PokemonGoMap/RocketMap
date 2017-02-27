@@ -51,6 +51,7 @@ import geopy
 import json
 import time
 import sys
+from timeit import default_timer
 from threading import Lock, current_thread
 from copy import deepcopy
 import traceback
@@ -897,7 +898,21 @@ class SpeedScan(HexSearch):
                                    status['username'])
                 if (item.get('thread_name', False) and
                         item.get('thread_name') != our_parked_name):
-                    continue
+                    # We use 'parked_last_update' to determine when the
+                    # last time was since the thread passed the item with the
+                    # same thread name & username. If it's been too long, unset
+                    # the park so another worker can pick it up.
+                    now = default_timer()
+                    max_parking_idle_seconds = 3 * 60
+
+                    if (item.get('parked_last_update', 0) - now
+                            > max_parking_idle_seconds):
+                        # Unpark & don't skip it.
+                        delattr(item, 'thread_name')
+                        delattr(item, 'parked_last_update')
+                    else:
+                        # Still parked. Skip it.
+                        continue
 
                 # If already timed out, mark it as Missed and check next.
                 if ms > item['end']:
@@ -979,6 +994,9 @@ class SpeedScan(HexSearch):
                 our_parked_name = (current_thread().name + '-' +
                                    status['username'])
                 item['thread_name'] = our_parked_name
+
+                # CTRL+F 'parked_last_update' in this file for more info.
+                item['parked_last_update'] = default_timer()
 
                 messages['wait'] = 'Moving {}m to step {} for a {}.'.format(
                     int(equi_rect_distance(loc, worker_loc) * 1000), step,
