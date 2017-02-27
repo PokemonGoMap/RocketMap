@@ -51,6 +51,7 @@ import geopy
 import json
 import time
 import sys
+from threading import Lock
 from copy import deepcopy
 import traceback
 from collections import Counter
@@ -493,7 +494,9 @@ class SpeedScan(HexSearch):
         self.spawn_percent = []
         self.status_message = []
         self.tth_found = 0
+        # Initiate special types.
         self._stat_init()
+        self._locks_init()
 
     def _stat_init(self):
         self.spawns_found = 0
@@ -501,6 +504,9 @@ class SpeedScan(HexSearch):
         self.scans_done = 0
         self.scans_missed = 0
         self.scans_missed_list = []
+
+    def _locks_init(self):
+        self.lock_next_item = Lock()
 
     # On location change, empty the current queue and the locations list
     def location_changed(self, scan_location, db_update_queue):
@@ -859,129 +865,140 @@ class SpeedScan(HexSearch):
 
     # Find the best item to scan next
     def next_item(self, status):
-        # score each item in the queue by # of due spawns or scan time bands
-        # can be filled
+        # Thread safety: don't let multiple threads get the same "best item".
+        with self.lock_next_item:
+            # score each item in the queue by # of due spawns or scan time
+            # bands can be filled
 
-        while not self.ready:
-            time.sleep(1)
+            while not self.ready:
+                time.sleep(1)
 
-        now_date = datetime.utcnow()
-        now_time = time.time()
-        n = 0  # count valid scans reviewed
-        q = self.queues[0]
-        ms = (now_date - self.refresh_date).total_seconds() + self.refresh_ms
-        best = {'score': 0}
-        cant_reach = False
-        worker_loc = [status['latitude'], status['longitude']]
-        last_action = status['last_scan_date']
+            now_date = datetime.utcnow()
+            now_time = time.time()
+            n = 0  # count valid scans reviewed
+            q = self.queues[0]
+            ms = ((now_date - self.refresh_date).total_seconds() +
+                  self.refresh_ms)
+            best = {'score': 0}
+            cant_reach = False
+            worker_loc = [status['latitude'], status['longitude']]
+            last_action = status['last_scan_date']
 
-        # check all scan locations possible in the queue
-        for i, item in enumerate(q):
-            # if already claimed by another worker or done, pass
+            # check all scan locations possible in the queue
+            for i, item in enumerate(q):
+                # if already claimed by another worker or done, pass
+                if item.get('done', False):
+                    continue
+
+                # if already timed out, mark it as Missed and check next
+                if ms > item['end']:
+                    item['done'] = 'Missed' if not item.get(
+                        'done', False) else item['done']
+                    continue
+
+                # If we just did a fresh band recently, wait a few seconds to
+                # space out the band scans.
+                if now_date < self.next_band_date:
+                    continue
+
+                # If the start time isn't yet, don't bother looking further,
+                # since queue sorted by start time.
+                if ms < item['start']:
+                    break
+
+                loc = item['loc']
+                distance = equi_rect_distance(loc, worker_loc)
+                secs_to_arrival = distance / self.args.kph * 3600
+
+                # If we can't make it there before it disappears, don't bother
+                # trying.
+                if ms + secs_to_arrival > item['end']:
+                    cant_reach = True
+                    continue
+
+                n += 1
+
+                # Bands are top priority to find new spawns first
+                score = 1e12 if item['kind'] == 'band' else (
+                    1e6 if item['kind'] == 'TTH' else 1)
+
+                # For spawns, score is purely based on how close they are to
+                # last worker position
+                score = score / (distance + .01)
+
+                if score > best['score']:
+                    best = {'score': score, 'i': i}
+                    best.update(item)
+
+            prefix = 'Calc %.2f for %d scans:' % (time.time() - now_time, n)
+            loc = best.get('loc', [])
+            step = best.get('step', 0)
+            i = best.get('i', 0)
+            messages = {
+                'wait': 'Nothing to scan.',
+                'early': 'Early for step {}; waiting a few seconds...'.format(
+                    step),
+                'late': ('API response on step {} delayed by {} seconds. ' +
+                         'Possible causes: slow proxies, internet, or ' +
+                         'Niantic servers.').format(
+                             step,
+                             int((now_date - last_action).total_seconds())),
+                'search': 'Searching at step {}.'.format(step),
+                'invalid': ('Invalid response at step {}, abandoning ' +
+                            'location.').format(step)
+            }
+
+            try:
+                item = q[i]
+            except IndexError:
+                messages['wait'] = ('Search aborting.'
+                                    + ' Overseer refreshing queue.')
+                return -1, 0, 0, 0, messages
+
+            if best['score'] == 0:
+                if cant_reach:
+                    messages['wait'] = ('Not able to reach any scan'
+                                        + ' under the speed limit.')
+                return -1, 0, 0, 0, messages
+
+            if (equi_rect_distance(loc, worker_loc) >
+                    (now_date - last_action).total_seconds() *
+                    self.args.kph / 3600):
+
+                messages['wait'] = 'Moving {}m to step {} for a {}.'.format(
+                    int(equi_rect_distance(loc, worker_loc) * 1000), step,
+                    best['kind'])
+                return -1, 0, 0, 0, messages
+
+            prefix += ' Step %d,' % (step)
+
+            # Check again if another worker heading there.
+            # TODO: Check if this is still necessary. I believe this was
+            # originally a failed attempt at thread safety, which still
+            # resulted in a race condition (multiple workers heading to the
+            # same spot). A thread Lock has since been added.
             if item.get('done', False):
-                continue
+                messages['wait'] = ('Skipping step {}. Other worker already ' +
+                                    'scanned.').format(step)
+                return -1, 0, 0, 0, messages
 
-            # if already timed out, mark it as Missed and check next
-            if ms > item['end']:
-                item['done'] = 'Missed' if not item.get(
-                    'done', False) else item['done']
-                continue
+            if not self.ready:
+                messages['wait'] = ('Search aborting.'
+                                    + ' Overseer refreshing queue.')
+                return -1, 0, 0, 0, messages
 
-            # if we just did a fresh band recently, wait a few seconds to space
-            # out the band scans
-            if now_date < self.next_band_date:
-                continue
+            # If a new band, set the date to wait until for the next band.
+            if best['kind'] == 'band' and best['end'] - best['start'] > 5 * 60:
+                self.next_band_date = datetime.utcnow() + timedelta(
+                    seconds=self.band_spacing)
 
-            # if the start time isn't yet, don't bother looking further, since
-            # queue sorted by start time
-            if ms < item['start']:
-                break
+            # Mark scanned
+            item['done'] = 'Scanned'
+            status['index_of_queue_item'] = i
 
-            loc = item['loc']
-            distance = equi_rect_distance(loc, worker_loc)
-            secs_to_arrival = distance / self.args.kph * 3600
-
-            # if we can't make it there before it disappears, don't bother
-            # trying
-            if ms + secs_to_arrival > item['end']:
-                cant_reach = True
-                continue
-
-            n += 1
-
-            # Bands are top priority to find new spawns first
-            score = 1e12 if item['kind'] == 'band' else (
-                1e6 if item['kind'] == 'TTH' else 1)
-
-            # For spawns, score is purely based on how close they are to last
-            # worker position
-            score = score / (distance + .01)
-
-            if score > best['score']:
-                best = {'score': score, 'i': i}
-                best.update(item)
-
-        prefix = 'Calc %.2f for %d scans:' % (time.time() - now_time, n)
-        loc = best.get('loc', [])
-        step = best.get('step', 0)
-        i = best.get('i', 0)
-        messages = {
-            'wait': 'Nothing to scan.',
-            'early': 'Early for step {}; waiting a few seconds...'.format(
-                step),
-            'late': ('API response on step {} delayed by {} seconds. ' +
-                     'Possible causes: slow proxies, internet, or ' +
-                     'Niantic servers.').format(
-                         step, int((now_date - last_action).total_seconds())),
-            'search': 'Searching at step {}.'.format(step),
-            'invalid': ('Invalid response at step {}, abandoning ' +
-                        'location.').format(step)
-        }
-
-        try:
-            item = q[i]
-        except IndexError:
-            messages['wait'] = 'Search aborting. Overseer refreshing queue.'
-            return -1, 0, 0, 0, messages
-
-        if best['score'] == 0:
-            if cant_reach:
-                messages['wait'] = ('Not able to reach any scan under the ' +
-                                    'speed limit.')
-            return -1, 0, 0, 0, messages
-
-        if (equi_rect_distance(loc, worker_loc) >
-                (now_date - last_action).total_seconds() *
-                self.args.kph / 3600):
-
-            messages['wait'] = 'Moving {}m to step {} for a {}.'.format(
-                int(equi_rect_distance(loc, worker_loc) * 1000), step,
-                best['kind'])
-            return -1, 0, 0, 0, messages
-
-        prefix += ' Step %d,' % (step)
-        # Check again if another worker heading there
-        if item.get('done', False):
-            messages['wait'] = ('Skipping step {}. Other worker already ' +
-                                'scanned.').format(step)
-            return -1, 0, 0, 0, messages
-
-        if not self.ready:
-            messages['wait'] = 'Search aborting. Overseer refreshing queue.'
-            return -1, 0, 0, 0, messages
-
-        # if a new band, set the date to wait until for the next band
-        if best['kind'] == 'band' and best['end'] - best['start'] > 5 * 60:
-            self.next_band_date = datetime.utcnow() + timedelta(
-                seconds=self.band_spacing)
-
-        # Mark scanned
-        item['done'] = 'Scanned'
-        status['index_of_queue_item'] = i
-
-        messages['search'] = 'Scanning step {} for a {}.'.format(
-            best['step'], best['kind'])
-        return best['step'], best['loc'], 0, 0, messages
+            messages['search'] = 'Scanning step {} for a {}.'.format(
+                best['step'], best['kind'])
+            return best['step'], best['loc'], 0, 0, messages
 
     def task_done(self, status, parsed=False):
         if parsed:
