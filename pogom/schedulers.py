@@ -51,7 +51,7 @@ import geopy
 import json
 import time
 import sys
-from threading import Lock
+from threading import Lock, current_thread
 from copy import deepcopy
 import traceback
 from collections import Counter
@@ -884,13 +884,17 @@ class SpeedScan(HexSearch):
             worker_loc = [status['latitude'], status['longitude']]
             last_action = status['last_scan_date']
 
-            # check all scan locations possible in the queue
+            # Check all scan locations possible in the queue.
             for i, item in enumerate(q):
-                # if already claimed by another worker or done, pass
+                # If already claimed by another worker or done, pass.
                 if item.get('done', False):
                     continue
 
-                # if already timed out, mark it as Missed and check next
+                # If the item is parked by a different thread, pass.
+                if item.get('thread_name', False) != current_thread().name:
+                    continue
+
+                # If already timed out, mark it as Missed and check next.
                 if ms > item['end']:
                     item['done'] = 'Missed' if not item.get(
                         'done', False) else item['done']
@@ -964,6 +968,10 @@ class SpeedScan(HexSearch):
             if (equi_rect_distance(loc, worker_loc) >
                     (now_date - last_action).total_seconds() *
                     self.args.kph / 3600):
+                # Flag item as "parked" by a specific thread, because
+                # we're waiting for it. This will avoid all threads "walking"
+                # to the same item.
+                item['thread_name'] = current_thread().name
 
                 messages['wait'] = 'Moving {}m to step {} for a {}.'.format(
                     int(equi_rect_distance(loc, worker_loc) * 1000), step,
