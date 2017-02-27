@@ -891,7 +891,8 @@ class SpeedScan(HexSearch):
                     continue
 
                 # If the item is parked by a different thread, pass.
-                if item.get('thread_name', False) != current_thread().name:
+                if (item.get('thread_name', False) and
+                        item.get('thread_name') != current_thread().name):
                     continue
 
                 # If already timed out, mark it as Missed and check next.
