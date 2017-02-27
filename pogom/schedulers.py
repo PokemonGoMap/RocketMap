@@ -905,7 +905,7 @@ class SpeedScan(HexSearch):
                     now = default_timer()
                     max_parking_idle_seconds = 3 * 60
 
-                    if (item.get('parked_last_update', 0) - now
+                    if (now - item.get('parked_last_update', now)
                             > max_parking_idle_seconds):
                         # Unpark & don't skip it.
                         delattr(item, 'thread_name')
