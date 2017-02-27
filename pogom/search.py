@@ -254,7 +254,7 @@ def status_printer(threadStatus, search_items_queue_array, db_updates_queue,
             status = '{:21} | {:9} | {:9} | {:9}'
             status_text.append(status.format('Key', 'Remaining', 'Maximum',
                                              'Peak'))
-            if hash_key != None:
+            if hash_key is not None:
                 for key in hash_key:
                     key_instance = key_scheduler.keys[key]
                     key_text = key
