@@ -42,7 +42,7 @@ from pgoapi.hash_server import HashServer
 
 from .models import parse_map, GymDetails, parse_gyms, MainWorker, WorkerStatus
 from .fakePogoApi import FakePogoApi
-from .utils import now, generate_device_info
+from .utils import now, haversine_distance, generate_device_info
 from .transform import get_new_coords, jitter_location
 from .account import check_login, get_tutorial_state, complete_tutorial
 from .captcha import captcha_overseer_thread, handle_captcha
@@ -1022,7 +1022,7 @@ def search_worker_thread(args, account_queue, account_failures,
                     gyms_to_update = {}
                     for gym in parsed['gyms'].values():
                         # Can only get gym details within 450m of our position.
-                        distance = calc_distance(
+                        distance = haversine_distance(
                             step_location, [gym['latitude'], gym['longitude']])
                         if distance < 0.45:
                             # Check if we already have details on this gym.
@@ -1175,8 +1175,10 @@ def map_request(api, position, no_jitter=False):
 def gym_request(api, position, gym):
     try:
         log.debug('Getting details for gym @ %f/%f (%fkm away)',
-                  gym['latitude'], gym['longitude'],
-                  calc_distance(position, [gym['latitude'], gym['longitude']]))
+                  gym['latitude'],
+                  gym['longitude'],
+                  haversine_distance(
+                        position, [gym['latitude'], gym['longitude']]))
         req = api.create_request()
         x = req.get_gym_details(gym_id=gym['gym_id'],
                                 player_latitude=f2i(position[0]),
@@ -1196,22 +1198,6 @@ def gym_request(api, position, gym):
     except Exception as e:
         log.warning('Exception while downloading gym details: %s', repr(e))
         return False
-
-
-def calc_distance(pos1, pos2):
-    R = 6378.1  # KM radius of the earth.
-
-    dLat = math.radians(pos1[0] - pos2[0])
-    dLon = math.radians(pos1[1] - pos2[1])
-
-    a = math.sin(dLat / 2) * math.sin(dLat / 2) + \
-        math.cos(math.radians(pos1[0])) * math.cos(math.radians(pos2[0])) * \
-        math.sin(dLon / 2) * math.sin(dLon / 2)
-
-    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-    d = R * c
-
-    return d
 
 
 # Delay each thread start time so that logins occur after delay.

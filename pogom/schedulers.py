@@ -47,7 +47,6 @@ add it to __scheduler_classes
 import itertools
 import logging
 import math
-import geopy
 import json
 import time
 import sys
@@ -60,7 +59,7 @@ from datetime import datetime, timedelta
 from .transform import get_new_coords
 from .models import (hex_bounds, Pokemon, SpawnPoint, ScannedLocation,
                      ScanSpawnPoint)
-from .utils import now, cur_sec, cellid, date_secs, equi_rect_distance
+from .utils import now, cur_sec, cellid, date_secs, haversine_distance
 from .altitude import get_altitude
 
 log = logging.getLogger(__name__)
@@ -308,7 +307,7 @@ class HexSearchSpawnpoint(HexSearch):
 
     def _any_spawnpoints_in_range(self, coords, spawnpoints):
         return any(
-            geopy.distance.distance(coords, x).meters <= 70
+            haversine_distance(coords, x) <= 0.070
             for x in spawnpoints)
 
     # Extend the generate_locations function to remove locations with no
@@ -898,7 +897,7 @@ class SpeedScan(HexSearch):
                 break
 
             loc = item['loc']
-            distance = equi_rect_distance(loc, worker_loc)
+            distance = haversine_distance(loc, worker_loc)
             secs_to_arrival = distance / self.args.kph * 3600
 
             # if we can't make it there before it disappears, don't bother
@@ -950,12 +949,12 @@ class SpeedScan(HexSearch):
                                     'speed limit.')
             return -1, 0, 0, 0, messages
 
-        if (equi_rect_distance(loc, worker_loc) >
+        if (haversine_distance(loc, worker_loc) >
                 (now_date - last_action).total_seconds() *
                 self.args.kph / 3600):
 
             messages['wait'] = 'Moving {}m to step {} for a {}.'.format(
-                int(equi_rect_distance(loc, worker_loc) * 1000), step,
+                int(haversine_distance(loc, worker_loc) * 1000), step,
                 best['kind'])
             return -1, 0, 0, 0, messages
 

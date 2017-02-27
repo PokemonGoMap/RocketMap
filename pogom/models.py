@@ -8,7 +8,6 @@ import sys
 import traceback
 import gc
 import time
-import geopy
 import math
 from peewee import InsertQuery, \
     Check, CompositeKey, ForeignKeyField, \
@@ -29,7 +28,8 @@ from timeit import default_timer
 from . import config
 from .utils import get_pokemon_name, get_pokemon_rarity, get_pokemon_types, \
     get_args, cellid, in_radius, date_secs, clock_between, secs_between, \
-    get_move_name, get_move_damage, get_move_energy, get_move_type
+    get_move_name, get_move_damage, get_move_energy, get_move_type, \
+    haversine_distance
 from .transform import transform_from_wgs_to_gcj, get_new_coords
 from .customLog import printPokemon
 log = logging.getLogger(__name__)
@@ -408,12 +408,14 @@ class Pokemon(BaseModel):
         # steps - 1 to account for the center circle then add 70 for the edge.
         step_distance = ((steps - 1) * 121.2436) + 70
         # Compare spawnpoint list to a circle with radius steps * 120.
-        # Uses the direct geopy distance between the center and the spawnpoint.
+        # Uses the distance between the center and the spawnpoint.
         filtered = []
 
         for idx, sp in enumerate(s):
-            if geopy.distance.distance(
-                    center, (sp['lat'], sp['lng'])).meters <= step_distance:
+            if (
+                haversine_distance(center, (sp['lat'], sp['lng'])) <=
+                0.001 * step_distance
+            ):
                 filtered.append(s[idx])
 
         # At this point, 'time' is DISAPPEARANCE time, we're going to morph it
@@ -1047,7 +1049,7 @@ class ScannedLocation(BaseModel):
         # There should be a way to delegate this to SpawnPoint.select_in_hex,
         # but w/e.
 
-        R = 6378.1  # KM radius of the earth
+        R = 6371.009  # IUGG mean earth radius in kilometers.
         hdist = ((steps * 120.0) - 50.0) / 1000.0
         n, e, s, w = hex_bounds(center, steps)
 
@@ -1335,7 +1337,7 @@ class SpawnPoint(BaseModel):
 
     @classmethod
     def select_in_hex(cls, center, steps):
-        R = 6378.1  # KM radius of the earth
+        R = 6371.009  # IUGG mean earth radius in kilometers.
         hdist = ((steps * 120.0) - 50.0) / 1000.0
         n, e, s, w = hex_bounds(center, steps)
 

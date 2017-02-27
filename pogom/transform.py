@@ -1,6 +1,4 @@
 import math
-import geopy
-import geopy.distance
 import random
 
 a = 6378245.0
@@ -60,21 +58,27 @@ def transform_long(x, y):
     return lon
 
 
-def get_new_coords(init_loc, distance, bearing):
-    """
-    Given an initial lat/lng, a distance(in kms), and a bearing (degrees),
-    this will calculate the resulting lat/lng coordinates.
-    """
-    origin = geopy.Point(init_loc[0], init_loc[1])
-    destination = geopy.distance.distance(kilometers=distance).destination(
-        origin, bearing)
-    return (destination.latitude, destination.longitude)
+# Returns destination coords given origin coords, distance and bearing.
+def get_new_coords(init_loc, d, bearing):
+    R = 6371.009  # IUGG mean earth radius in kilometers.
+
+    oLat = math.radians(init_loc[0])
+    oLon = math.radians(init_loc[1])
+    b = math.radians(bearing)
+
+    Lat = math.asin(math.sin(oLat) * math.cos(d / R) +
+                    math.cos(oLat) * math.sin(d / R) * math.cos(b))
+
+    Lon = oLon + math.atan2(math.sin(b) * math.sin(d / R) * math.cos(oLat),
+                            math.cos(d / R) - math.sin(oLat) * math.sin(Lat))
+
+    return math.degrees(Lat), math.degrees(Lon)
 
 
 # Apply a location jitter.
 def jitter_location(location=None, maxMeters=10):
-    origin = geopy.Point(location[0], location[1])
-    b = random.randint(0, 360)
-    d = math.sqrt(random.random()) * (float(maxMeters) / 1000)
-    destination = geopy.distance.distance(kilometers=d).destination(origin, b)
-    return (destination.latitude, destination.longitude, location[2])
+    bearing = random.randint(0, 360)
+    distance = math.sqrt(random.random()) * (float(maxMeters) / 1000)
+    destination = get_new_coords(location, distance, bearing)
+
+    return (destination[0], destination[1], location[2])

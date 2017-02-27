@@ -4,7 +4,6 @@
 import sys
 import configargparse
 import os
-import math
 import json
 import logging
 import shutil
@@ -15,6 +14,7 @@ import socket
 import struct
 import zipfile
 import requests
+from math import radians, cos, sin, asin, sqrt
 from uuid import uuid4
 from s2sphere import CellId, LatLng
 
@@ -689,20 +689,30 @@ def cellid(loc):
     return CellId.from_lat_lng(LatLng.from_degrees(loc[0], loc[1])).to_token()
 
 
-# Return equirectangular approximation distance in km.
-def equi_rect_distance(loc1, loc2):
-    R = 6371  # Radius of the earth in km.
-    lat1 = math.radians(loc1[0])
-    lat2 = math.radians(loc2[0])
-    x = (math.radians(loc2[1]) - math.radians(loc1[1])
-         ) * math.cos(0.5 * (lat2 + lat1))
-    y = lat2 - lat1
-    return R * math.sqrt(x * x + y * y)
+# Return approximate distance in km.
+# from http://stackoverflow.com/questions/4913349/
+# haversine-formula-in-python-bearing-and-distance-between-two-gps-points
+# also see http://www.movable-type.co.uk/scripts/latlong.html
+def haversine_distance(pos1, pos2):
+    """
+    Calculate the great circle distance between two points
+    on the earth (specified in decimal degrees)
+    """
+    # convert decimal degrees to radians
+    lon1, lat1, lon2, lat2 = map(radians, [pos1[1], pos1[0], pos2[1], pos2[0]])
+
+    # haversine formula
+    dlon = lon2 - lon1
+    dlat = lat2 - lat1
+    a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
+    c = 2 * asin(sqrt(a))
+    r = 6371.009  # IUGG mean earth radius in kilometers.
+    return c * r
 
 
 # Return True if distance between two locs is less than distance in km.
 def in_radius(loc1, loc2, distance):
-    return equi_rect_distance(loc1, loc2) < distance
+    return haversine_distance(loc1, loc2) < distance
 
 
 def i8ln(word):
