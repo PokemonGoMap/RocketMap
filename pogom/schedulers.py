@@ -985,7 +985,8 @@ class SpeedScan(HexSearch):
                                         + ' under the speed limit.')
                 return -1, 0, 0, 0, messages
 
-            if (equi_rect_distance(loc, worker_loc) >
+            distance = equi_rect_distance(loc, worker_loc)
+            if (distance >
                     (now_date - last_action).total_seconds() *
                     self.args.kph / 3600):
                 # Flag item as "parked" by a specific thread, because
@@ -999,7 +1000,7 @@ class SpeedScan(HexSearch):
                 item['parked_last_update'] = default_timer()
 
                 messages['wait'] = 'Moving {}m to step {} for a {}.'.format(
-                    int(equi_rect_distance(loc, worker_loc) * 1000), step,
+                    int(distance * 1000), step,
                     best['kind'])
                 return -1, 0, 0, 0, messages
 
