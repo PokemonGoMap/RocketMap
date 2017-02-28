@@ -52,7 +52,7 @@ import json
 import time
 import sys
 from timeit import default_timer
-from threading import Lock, current_thread
+from threading import Lock
 from copy import deepcopy
 import traceback
 from collections import Counter
@@ -891,12 +891,11 @@ class SpeedScan(HexSearch):
                 if item.get('done', False):
                     continue
 
-                # If the item is parked by a different thread, or by a
-                # different account (should never happen, but making sure),
+                # If the item is parked by a different thread (or by a
+                # different account, which should be on that one thread),
                 # pass.
-                our_parked_name = (current_thread().name + '-' +
-                                   status['username'])
-                if item.get('thread_name', False):
+                our_parked_name = status['username']
+                if 'thread_name' in item:
                     # We use 'parked_last_update' to determine when the
                     # last time was since the thread passed the item with the
                     # same thread name & username. If it's been too long, unset
@@ -992,8 +991,7 @@ class SpeedScan(HexSearch):
                 # Flag item as "parked" by a specific thread, because
                 # we're waiting for it. This will avoid all threads "walking"
                 # to the same item.
-                our_parked_name = (current_thread().name + '-' +
-                                   status['username'])
+                our_parked_name = status['username']
                 item['thread_name'] = our_parked_name
 
                 # CTRL+F 'parked_last_update' in this file for more info.
