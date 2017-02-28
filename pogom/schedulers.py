@@ -895,7 +895,7 @@ class SpeedScan(HexSearch):
                 # different account, which should be on that one thread),
                 # pass.
                 our_parked_name = status['username']
-                if 'thread_name' in item:
+                if 'parked_name' in item:
                     # We use 'parked_last_update' to determine when the
                     # last time was since the thread passed the item with the
                     # same thread name & username. If it's been too long, unset
@@ -906,11 +906,11 @@ class SpeedScan(HexSearch):
                     if (now - item.get('parked_last_update', now)
                             > max_parking_idle_seconds):
                         # Unpark & don't skip it.
-                        item.pop('thread_name', None)
+                        item.pop('parked_name', None)
                         item.pop('parked_last_update', None)
                     else:
                         # Still parked and not our item. Skip it.
-                        if item.get('thread_name') != our_parked_name:
+                        if item.get('parked_name') != our_parked_name:
                             continue
 
                 # If already timed out, mark it as Missed and check next.
@@ -992,7 +992,7 @@ class SpeedScan(HexSearch):
                 # we're waiting for it. This will avoid all threads "walking"
                 # to the same item.
                 our_parked_name = status['username']
-                item['thread_name'] = our_parked_name
+                item['parked_name'] = our_parked_name
 
                 # CTRL+F 'parked_last_update' in this file for more info.
                 item['parked_last_update'] = default_timer()
