@@ -2580,7 +2580,7 @@ def database_migrate(db, old_ver):
             migrator.add_index('gymmember', ('pokemon_uid',), False),
             migrator.add_index('gympokemon', ('trainer_name',), False),
             # was missing in a previous migration
-            migrator.add_index('pokestop', ('last_updated',), False),
+            #migrator.add_index('pokestop', ('last_updated',), False),
             migrator.add_index('pokestop', ('active_fort_modifier',), False),
             migrator.add_index('spawnpointdetectiondata', ('spawnpoint_id',),
                                False),
