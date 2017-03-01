@@ -38,7 +38,7 @@ args = get_args()
 flaskDb = FlaskDB()
 cache = TTLCache(maxsize=100, ttl=60 * 5)
 
-db_schema_version = 15
+db_schema_version = 16
 
 
 class MyRetryDB(RetryOperationalError, PooledMySQLDatabase):
@@ -2508,6 +2508,71 @@ def database_migrate(db, old_ver):
                            ';')
 
     if old_ver < 16:
+        log.info('This DB schema update can take some minutes. '
+                 'Please be patient.')
+
+        # change some column types from INT to SMALLINT
+        # we don't have to touch sqlite because it has INTEGER only
+        if args.db_type == 'mysql':
+            db.execute_sql(
+                'ALTER TABLE `pokemon` '
+                'MODIFY COLUMN `pokemon_id` SMALLINT NOT NULL,'
+                'MODIFY COLUMN `individual_attack` SMALLINT '
+                'NULL DEFAULT NULL,'
+                'MODIFY COLUMN `individual_defense` SMALLINT '
+                'NULL DEFAULT NULL,'
+                'MODIFY COLUMN `individual_stamina` SMALLINT '
+                'NULL DEFAULT NULL,'
+                'MODIFY COLUMN `move_1` SMALLINT NULL DEFAULT NULL,'
+                'MODIFY COLUMN `move_2` SMALLINT NULL DEFAULT NULL;'
+            )
+            db.execute_sql(
+                'ALTER TABLE `gym` '
+                'MODIFY COLUMN `team_id` SMALLINT NOT NULL,'
+                'MODIFY COLUMN `guard_pokemon_id` SMALLINT NOT NULL;'
+            )
+            db.execute_sql(
+                'ALTER TABLE `scannedlocation` '
+                'MODIFY COLUMN `band1` SMALLINT NOT NULL,'
+                'MODIFY COLUMN `band2` SMALLINT NOT NULL,'
+                'MODIFY COLUMN `band3` SMALLINT NOT NULL,'
+                'MODIFY COLUMN `band4` SMALLINT NOT NULL,'
+                'MODIFY COLUMN `band5` SMALLINT NOT NULL,'
+                'MODIFY COLUMN `midpoint` SMALLINT NOT NULL,'
+                'MODIFY COLUMN `width` SMALLINT NOT NULL;'
+            )
+            db.execute_sql(
+                'ALTER TABLE `spawnpoint` '
+                'MODIFY COLUMN `latest_seen` SMALLINT NOT NULL,'
+                'MODIFY COLUMN `earliest_unseen` SMALLINT NOT NULL;'
+            )
+            db.execute_sql(
+                'ALTER TABLE `spawnpointdetectiondata` '
+                'MODIFY COLUMN `tth_secs` SMALLINT NULL DEFAULT NULL;'
+            )
+            db.execute_sql(
+                'ALTER TABLE `versions` '
+                'MODIFY COLUMN `val` SMALLINT NOT NULL;'
+            )
+            db.execute_sql(
+                'ALTER TABLE `gympokemon` '
+                'MODIFY COLUMN `pokemon_id` SMALLINT NOT NULL,'
+                'MODIFY COLUMN `cp` SMALLINT NOT NULL,'
+                'MODIFY COLUMN `num_upgrades` SMALLINT NULL DEFAULT NULL,'
+                'MODIFY COLUMN `move_1` SMALLINT NULL DEFAULT NULL,'
+                'MODIFY COLUMN `move_2` SMALLINT NULL DEFAULT NULL,'
+                'MODIFY COLUMN `stamina` SMALLINT NULL DEFAULT NULL,'
+                'MODIFY COLUMN `stamina_max` SMALLINT NULL DEFAULT NULL,'
+                'MODIFY COLUMN `iv_defense` SMALLINT NULL DEFAULT NULL,'
+                'MODIFY COLUMN `iv_stamina` SMALLINT NULL DEFAULT NULL,'
+                'MODIFY COLUMN `iv_attack` SMALLINT NULL DEFAULT NULL;'
+            )
+            db.execute_sql(
+                'ALTER TABLE `trainer` '
+                'MODIFY COLUMN `team` SMALLINT NOT NULL,'
+                'MODIFY COLUMN `level` SMALLINT NOT NULL;'
+            )
+
         # add some missing indexes
         migrate(
             migrator.add_index('gym', ('last_scanned',), False),
@@ -2521,4 +2586,3 @@ def database_migrate(db, old_ver):
                                False),
             migrator.add_index('token', ('last_updated',), False)
         )
-
