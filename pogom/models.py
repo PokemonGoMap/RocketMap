@@ -434,7 +434,7 @@ class Pokestop(BaseModel):
     longitude = DoubleField()
     last_modified = DateTimeField(index=True)
     lure_expiration = DateTimeField(null=True, index=True)
-    active_fort_modifier = CharField(max_length=50, null=True)
+    active_fort_modifier = CharField(max_length=50, null=True, index=True)
     last_updated = DateTimeField(
         null=True, index=True, default=datetime.utcnow)
 
@@ -538,7 +538,7 @@ class Gym(BaseModel):
     latitude = DoubleField()
     longitude = DoubleField()
     last_modified = DateTimeField(index=True)
-    last_scanned = DateTimeField(default=datetime.utcnow)
+    last_scanned = DateTimeField(default=datetime.utcnow, index=True)
 
     class Meta:
         indexes = ((('latitude', 'longitude'), False),)
@@ -1383,7 +1383,7 @@ class SpawnpointDetectionData(BaseModel):
     # Removed ForeignKeyField since it caused MySQL issues.
     encounter_id = CharField(max_length=54)
     # Removed ForeignKeyField since it caused MySQL issues.
-    spawnpoint_id = CharField(max_length=54)
+    spawnpoint_id = CharField(max_length=54, index=True)
     scan_time = DateTimeField()
     tth_secs = IntegerField(null=True)
 
@@ -1594,8 +1594,8 @@ class Versions(flaskDb.Model):
 
 class GymMember(BaseModel):
     gym_id = CharField(index=True)
-    pokemon_uid = CharField()
-    last_scanned = DateTimeField(default=datetime.utcnow)
+    pokemon_uid = CharField(index=True)
+    last_scanned = DateTimeField(default=datetime.utcnow, index=True)
 
     class Meta:
         primary_key = False
@@ -1605,7 +1605,7 @@ class GymPokemon(BaseModel):
     pokemon_uid = CharField(primary_key=True, max_length=50)
     pokemon_id = IntegerField()
     cp = IntegerField()
-    trainer_name = CharField()
+    trainer_name = CharField(index=True)
     num_upgrades = IntegerField(null=True)
     move_1 = IntegerField(null=True)
     move_2 = IntegerField(null=True)
@@ -1638,7 +1638,7 @@ class GymDetails(BaseModel):
 
 class Token(flaskDb.Model):
     token = TextField()
-    last_updated = DateTimeField(default=datetime.utcnow)
+    last_updated = DateTimeField(default=datetime.utcnow, index=True)
 
     @staticmethod
     def get_valid(limit=15):
