@@ -2506,3 +2506,19 @@ def database_migrate(db, old_ver):
                            'MODIFY COLUMN `height` FLOAT NULL DEFAULT NULL,'
                            'MODIFY COLUMN `gender` SMALLINT NULL DEFAULT NULL'
                            ';')
+
+    if old_ver < 16:
+        # add some missing indexes
+        migrate(
+            migrator.add_index('gym', ('last_scanned',), False),
+            migrator.add_index('gymmember', ('last_scanned',), False),
+            migrator.add_index('gymmember', ('pokemon_uid',), False),
+            migrator.add_index('gympokemon', ('trainer_name',), False),
+            # was missing in a previous migration
+            migrator.add_index('pokestop', ('last_updated',), False),
+            migrator.add_index('pokestop', ('active_fort_modifier',), False),
+            migrator.add_index('spawnpointdetectiondata', ('spawnpoint_id',),
+                               False),
+            migrator.add_index('token', ('last_updated',), False)
+        )
+
