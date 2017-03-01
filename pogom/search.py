@@ -775,7 +775,7 @@ def map_request(api, position, jitter=False):
         scan_location = position
 
     try:
-        cell_ids = util.get_cell_ids(scan_location[0], scan_location[1], radius=1000)
+        cell_ids = util.get_cell_ids(scan_location[0], scan_location[1])
         timestamps = [0, ] * len(cell_ids)
         req = api.create_request()
         response = req.get_map_objects(latitude=f2i(scan_location[0]),
