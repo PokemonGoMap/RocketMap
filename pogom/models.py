@@ -93,15 +93,15 @@ class Pokemon(BaseModel):
     # because they are too big for sqlite to handle.
     encounter_id = CharField(primary_key=True, max_length=50)
     spawnpoint_id = CharField(index=True)
-    pokemon_id = IntegerField(index=True)
+    pokemon_id = SmallIntegerField(index=True)
     latitude = DoubleField()
     longitude = DoubleField()
     disappear_time = DateTimeField(index=True)
-    individual_attack = IntegerField(null=True)
-    individual_defense = IntegerField(null=True)
-    individual_stamina = IntegerField(null=True)
-    move_1 = IntegerField(null=True)
-    move_2 = IntegerField(null=True)
+    individual_attack = SmallIntegerField(null=True)
+    individual_defense = SmallIntegerField(null=True)
+    individual_stamina = SmallIntegerField(null=True)
+    move_1 = SmallIntegerField(null=True)
+    move_2 = SmallIntegerField(null=True)
     weight = FloatField(null=True)
     height = FloatField(null=True)
     gender = SmallIntegerField(null=True)
@@ -531,8 +531,8 @@ class Gym(BaseModel):
     TEAM_INSTINCT = 3
 
     gym_id = CharField(primary_key=True, max_length=50)
-    team_id = IntegerField()
-    guard_pokemon_id = IntegerField()
+    team_id = SmallIntegerField()
+    guard_pokemon_id = SmallIntegerField()
     gym_points = IntegerField()
     enabled = BooleanField()
     latitude = DoubleField()
@@ -756,22 +756,22 @@ class ScannedLocation(BaseModel):
     # with a 2 minute window during which the scan can be done.
 
     # Default of -1 is for bands not yet scanned.
-    band1 = IntegerField(default=-1)
-    band2 = IntegerField(default=-1)
-    band3 = IntegerField(default=-1)
-    band4 = IntegerField(default=-1)
-    band5 = IntegerField(default=-1)
+    band1 = SmallIntegerField(default=-1)
+    band2 = SmallIntegerField(default=-1)
+    band3 = SmallIntegerField(default=-1)
+    band4 = SmallIntegerField(default=-1)
+    band5 = SmallIntegerField(default=-1)
 
     # midpoint is the center of the bands relative to band 1.
     # If band 1 is 10.4 minutes, and band 4 is 34.0 minutes, midpoint
     # is -0.2 minutes in minsec.  Extra 10 seconds in case of delay in
     # recording now time.
-    midpoint = IntegerField(default=0)
+    midpoint = SmallIntegerField(default=0)
 
     # width is how wide the valid window is. Default is 0, max is 2 minutes.
     # If band 1 is 10.4 minutes, and band 4 is 34.0 minutes, midpoint
     # is 0.4 minutes in minsec.
-    width = IntegerField(default=0)
+    width = SmallIntegerField(default=0)
 
     class Meta:
         indexes = ((('latitude', 'longitude'), False),)
@@ -1217,11 +1217,11 @@ class SpawnPoint(BaseModel):
 
     # Next 2 fields are to narrow down on the valid TTH window.
     # Seconds after the hour of the latest Pokemon seen time within the hour.
-    latest_seen = IntegerField()
+    latest_seen = SmallIntegerField()
 
     # Seconds after the hour of the earliest time Pokemon wasn't seen after an
     # appearance.
-    earliest_unseen = IntegerField()
+    earliest_unseen = SmallIntegerField()
 
     class Meta:
         indexes = ((('latitude', 'longitude'), False),)
@@ -1385,7 +1385,7 @@ class SpawnpointDetectionData(BaseModel):
     # Removed ForeignKeyField since it caused MySQL issues.
     spawnpoint_id = CharField(max_length=54, index=True)
     scan_time = DateTimeField()
-    tth_secs = IntegerField(null=True)
+    tth_secs = SmallIntegerField(null=True)
 
     @staticmethod
     def set_default_earliest_unseen(sp):
@@ -1586,7 +1586,7 @@ class SpawnpointDetectionData(BaseModel):
 
 class Versions(flaskDb.Model):
     key = CharField()
-    val = IntegerField()
+    val = SmallIntegerField()
 
     class Meta:
         primary_key = False
@@ -1603,28 +1603,28 @@ class GymMember(BaseModel):
 
 class GymPokemon(BaseModel):
     pokemon_uid = CharField(primary_key=True, max_length=50)
-    pokemon_id = IntegerField()
-    cp = IntegerField()
+    pokemon_id = SmallIntegerField()
+    cp = SmallIntegerField()
     trainer_name = CharField(index=True)
-    num_upgrades = IntegerField(null=True)
-    move_1 = IntegerField(null=True)
-    move_2 = IntegerField(null=True)
+    num_upgrades = SmallIntegerField(null=True)
+    move_1 = SmallIntegerField(null=True)
+    move_2 = SmallIntegerField(null=True)
     height = FloatField(null=True)
     weight = FloatField(null=True)
-    stamina = IntegerField(null=True)
-    stamina_max = IntegerField(null=True)
+    stamina = SmallIntegerField(null=True)
+    stamina_max = SmallIntegerField(null=True)
     cp_multiplier = FloatField(null=True)
     additional_cp_multiplier = FloatField(null=True)
-    iv_defense = IntegerField(null=True)
-    iv_stamina = IntegerField(null=True)
-    iv_attack = IntegerField(null=True)
+    iv_defense = SmallIntegerField(null=True)
+    iv_stamina = SmallIntegerField(null=True)
+    iv_attack = SmallIntegerField(null=True)
     last_seen = DateTimeField(default=datetime.utcnow)
 
 
 class Trainer(BaseModel):
     name = CharField(primary_key=True, max_length=50)
-    team = IntegerField()
-    level = IntegerField()
+    team = SmallIntegerField()
+    level = SmallIntegerField()
     last_seen = DateTimeField(default=datetime.utcnow)
 
 
