@@ -2579,10 +2579,20 @@ def database_migrate(db, old_ver):
             migrator.add_index('gymmember', ('last_scanned',), False),
             migrator.add_index('gymmember', ('pokemon_uid',), False),
             migrator.add_index('gympokemon', ('trainer_name',), False),
-            # was missing in a previous migration
-            #migrator.add_index('pokestop', ('last_updated',), False),
             migrator.add_index('pokestop', ('active_fort_modifier',), False),
             migrator.add_index('spawnpointdetectiondata', ('spawnpoint_id',),
                                False),
             migrator.add_index('token', ('last_updated',), False)
         )
+        # pokestop.last_updated was missing in a previous migration
+        # check whether we have to add it
+        has_last_updated_index = False
+        for index in db.get_indexes('pokestop'):
+            if index.columns[0] == 'last_updated':
+                has_last_updated_index = True
+                break
+        if not has_last_updated_index:
+            log.debug('pokestop.last_updated index is missing. Creating now.')
+            migrate(
+                migrator.add_index('pokestop', ('last_updated',), False)
+            )
