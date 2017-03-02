@@ -118,8 +118,8 @@ The most basic config you could use would look something like this:
 
 .. code-block:: bash
 
-  python ./runserver.py -a ptc -u "USERNAME_HERE" -p "PASSWORD_HERE" \
-   -l "a street address or lat/lng coords here" -st 3 -k "maps key here"
+  python ./runserver.py -a ptc -u [username] -p [password] \
+   -l "a street address or lat/lng coords here" -st 3 -k [maps key here]
 
 Open your browser to http://localhost:5000 and your pokemon will begin to show up! Happy hunting!
 
