@@ -2508,7 +2508,7 @@ def database_migrate(db, old_ver):
                            ';')
 
     if old_ver < 16:
-        log.info('This DB schema update can take some minutes. '
+        log.info('This DB schema update can take some time. '
                  'Please be patient.')
 
         # change some column types from INT to SMALLINT
