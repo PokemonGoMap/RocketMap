@@ -33,11 +33,36 @@ from pogom.proxy import check_proxies, proxies_refresher
 # Currently supported pgoapi.
 pgoapi_version = "1.1.7"
 
+
+class LogFilter(logging.Filter):
+    """Filters (lets through) all messages with level < LEVEL"""
+
+    def __init__(self, level):
+        self.level = level
+
+    def filter(self, record):
+        return record.levelno < self.level
+
+
 # Moved here so logger is configured at load time.
-logging.basicConfig(
-    format='%(asctime)s [%(threadName)16s][%(module)14s][%(levelname)8s] ' +
-    '%(message)s')
+formatter = logging.Formatter(
+    '%(asctime)s [%(threadName)16s][%(module)14s][%(levelname)8s] %(message)s')
+
+# Redirect messages lower than WARNING to stdout
+stdout_hdlr = logging.StreamHandler(sys.stdout)
+stdout_hdlr.setFormatter(formatter)
+log_filter = LogFilter(logging.WARNING)
+stdout_hdlr.addFilter(log_filter)
+stdout_hdlr.setLevel(logging.DEBUG)
+
+# Redirect messages equal or higher than WARNING to stderr
+stderr_hdlr = logging.StreamHandler(sys.stderr)
+stderr_hdlr.setFormatter(formatter)
+stderr_hdlr.setLevel(max(logging.DEBUG, logging.WARNING))
+
 log = logging.getLogger()
+log.addHandler(stdout_hdlr)
+log.addHandler(stderr_hdlr)
 
 # Make sure pogom/pgoapi is actually removed if it is an empty directory.
 # This is a leftover directory from the time pgoapi was embedded in
