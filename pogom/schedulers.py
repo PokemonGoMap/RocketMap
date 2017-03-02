@@ -1123,9 +1123,11 @@ class KeyScheduler(object):
         self.keys = {}
         for key in keys:
             self.keys[key] = {
+                'key': key,
                 'remaining': 0,
                 'maximum': 0,
-                'peak': 0
+                'peak': 0,
+                'expires': None,
             }
 
         self.key_cycle = itertools.cycle(keys)

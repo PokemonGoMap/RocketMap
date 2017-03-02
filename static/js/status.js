@@ -5,11 +5,12 @@ var monthArray = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep',
 var rawDataIsLoading = false
 var statusPagePassword = false
 var groupByWorker = true
+var showHashTable = true
+var showWorkersTable = true
 
 // Raw data updating
 var minUpdateDelay = 1000 // Minimum delay between updates (in ms).
 var lastRawUpdateTime = new Date()
-
 
 /*
  * Workers
@@ -34,6 +35,7 @@ function processMainWorker(i, worker) {
         addMainWorker(hash)
     }
 
+
     $('#name_' + hash).html(worker['worker_name'])
     $('#method_' + hash).html('(' + worker['method'] + ')')
     $('#message_' + hash).html(worker['message'].replace(/\n/g, '<br>'))
@@ -52,8 +54,21 @@ function addWorker(mainWorkerHash, workerHash) {
        <div id="message_${workerHash}"  class="status_cell"/>
      </div>
    `
-
     $(row).appendTo('#table_' + mainWorkerHash)
+}
+
+function addhashtable(mainKeyHash, keyHash) {
+    var hashrow = `
+    <div id="hashrow_${keyHash}" class="status_row">
+      <div id="key_${keyHash}" class="status_cell"/>
+      <div id="maximum_${keyHash}" class="status_cell"/>
+      <div id="remaining_${keyHash}" class="status_cell"/>
+      <div id="peak_${keyHash}" class="status_cell"/>
+      <div id="expires_${keyHash}" class="status_cell"/>
+      <div id="last_updated_${keyHash}" class="status_cell"/>
+    </div>
+    `
+    $(hashrow).appendTo('#hashtable_' + mainKeyHash)
 }
 
 function processWorker(i, worker) {
@@ -93,17 +108,102 @@ function processWorker(i, worker) {
     $('#message_' + hash).html(worker['message'])
 }
 
-function parseResult(result) {
-    if (groupByWorker) {
-        $.each(result.main_workers, processMainWorker)
+function processHashKeys(i, hashkey) {
+    var mainKeyHash = hashFnv32a(hashkey['key'], true)
+    var keyHash = hashFnv32a(hashkey['key'], true)
+    mainKeyHash = 'global'
+    if ($('#hashtable_global').length === 0) {
+        addhash('global')
     }
-    $.each(result.workers, processWorker)
+
+    if ($('#hashrow_' + keyHash).length === 0) {
+        addhashtable(mainKeyHash, keyHash)
+    }
+
+    var lastModified = new Date(hashkey['last_updated'])
+    lastModified = lastModified.getHours() + ':' +
+        ('0' + lastModified.getMinutes()).slice(-2) + ':' +
+        ('0' + lastModified.getSeconds()).slice(-2) + ' ' +
+        lastModified.getDate() + ' ' +
+        monthArray[lastModified.getMonth()] + ' ' +
+        lastModified.getFullYear()
+
+    var expires = new Date(hashkey['expires'])
+    expires = expires.getHours() + ':' +
+        ('0' + expires.getMinutes()).slice(-2) + ':' +
+        ('0' + expires.getSeconds()).slice(-2) + ' ' +
+        expires.getDate() + ' ' +
+        monthArray[expires.getMonth()] + ' ' +
+        expires.getFullYear()
+
+    $('#key_' + keyHash).html(hashkey['key'])
+    $('#maximum_' + keyHash).html(hashkey['maximum'])
+    $('#remaining_' + keyHash).html(hashkey['remaining'])
+    $('#peak_' + keyHash).html(hashkey['peak'])
+    $('#last_updated_' + keyHash).html(lastModified)
+    $('#expires_' + keyHash).html(expires)
 }
 
+function parseResult(result) {
+    if (groupByWorker && showWorkersTable) {
+        $.each(result.main_workers, processMainWorker)
+    }
+    if (showWorkersTable) {
+        $.each(result.workers, processWorker)
+    }
+    if (showHashTable) {
+        $.each(result.hashkeys, processHashKeys)
+    }
+}
 
 /*
  * Tables
  */
+function addhash(mainKeyHash) {
+    var hashtable = `
+    <div class="status_table" id="hashtable_${mainKeyHash}">
+     <div class="status_row header">
+     <div class="status_cell">
+       Hash Keys
+      </div>
+      <div class="status_cell">
+        Maximum RPM
+      </div>
+      <div class="status_cell">
+        RPM Left
+        </div>
+      <div class="status_cell">
+        Peak
+        </div>
+       <div class="status_cell">
+         Expires at
+       </div>
+       <div class="status_cell">
+         Last Modified
+       </div>
+     </div>
+   </div>`
+
+    $('#status_container').prepend(hashtable)
+    $(hashtable).find('.status_row.header .status_cell').click(hashtableSort)
+}
+
+function hashtableSort() {
+    var hashtable = $(this).parents('.status_table').eq(0)
+    var hashrow = hashtable.find('.status_row:gt(0)').toArray().sort(comparehashKeys($(this).index()))
+    this.asc = !this.asc
+    if (!this.asc) {
+        hashrow = hashrow.reverse()
+    }
+    for (var i = 0; i < hashrow.length; i++) {
+        hashtable.append(hashrow[i])
+    }
+}
+
+function getHashtableValue(hashrow, index) {
+    return $(hashrow).children('.status_cell').eq(index).html()
+}
+
 function addTable(hash) {
     var table = `
      <div class="status_table" id="table_${hash}">
@@ -133,8 +233,7 @@ function addTable(hash) {
            Message
          </div>
        </div>
-     </div>
-   `
+     </div>`
 
     table = $(table)
     table.appendTo('#status_container')
@@ -157,7 +256,6 @@ function getCellValue(row, index) {
     return $(row).children('.status_cell').eq(index).html()
 }
 
-
 /*
  * Helpers
  */
@@ -165,6 +263,13 @@ function compare(index) {
     return function (a, b) {
         var valA = getCellValue(a, index)
         var valB = getCellValue(b, index)
+        return $.isNumeric(valA) && $.isNumeric(valB) ? valA - valB : valA.localeCompare(valB)
+    }
+}
+function comparehashKeys(index) {
+    return function (a, b) {
+        var valA = getHashtableValue(a, index)
+        var valB = getHashtableValue(b, index)
         return $.isNumeric(valA) && $.isNumeric(valB) ? valA - valB : valA.localeCompare(valB)
     }
 }
@@ -262,6 +367,27 @@ $(document).ready(function () {
 
     $('#groupbyworker-switch').change(function () {
         groupByWorker = this.checked
+
+        $('#status_container .status_table').remove()
+        $('#status_container .worker').remove()
+
+        if (statusPagePassword) {
+            updateStatus()
+        }
+    })
+
+    $('#hashkey-switch').change(function () {
+        showHashTable = this.checked
+
+        $('#status_container .status_table').remove()
+        $('#status_container .worker').remove()
+
+        if (statusPagePassword) {
+            updateStatus()
+        }
+    })
+    $('#showworker-switch').change(function () {
+        showWorkersTable = this.checked
 
         $('#status_container .status_table').remove()
         $('#status_container .worker').remove()
