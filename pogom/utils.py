@@ -169,26 +169,24 @@ def get_args():
                                 default='', help='File containing a list of '
                                                  'Pokemon to NOT encounter for'
                                                  ' more stats.')
-                                                 
     webhook_list = parser.add_mutually_exclusive_group()
     webhook_list.add_argument('-wwht', '--webhook-whitelist',
-                                action='append', default=[],
-                                help=('List of Pokemon to send to '
-                                ' webhooks.'))
+                              action='append', default=[],
+                              help=('List of Pokemon to send to '
+                                    ' webhooks.'))
     webhook_list.add_argument('-wblk', '--webhook-blacklist',
-                                action='append', default=[],
-                                help=('List of Pokemon to NOT send to'
-                                ' webhooks.'))
+                              action='append', default=[],
+                              help=('List of Pokemon to NOT send to'
+                                    ' webhooks.'))
 
     webhook_list.add_argument('-wwhtf', '--webhook-whitelist-file',
-                                default='', help='File containing a list of '
-                                                 'Pokemon to send to'
-                                                 ' webhooks.')
+                              default='', help='File containing a list of '
+                                               'Pokemon to send to'
+                                               ' webhooks.')
     webhook_list.add_argument('-wblkf', '--webhook-blacklist-file',
-                                default='', help='File containing a list of '
-                                                 'Pokemon to NOT send to'
-                                                 ' webhooks.')
-                                        
+                              default='', help='File containing a list of '
+                                               'Pokemon to NOT send to'
+                                               ' webhooks.')
     parser.add_argument('-ld', '--login-delay',
                         help='Time delay between each login attempt.',
                         type=float, default=6)
@@ -663,17 +661,16 @@ def get_args():
         if args.webhook_whitelist_file:
             with open(args.webhook_whitelist_file) as f:
                 args.webhook_whitelist = [get_pokemon_id(name) for name in
-                                            f.read().splitlines()]
+                                          f.read().splitlines()]
         elif args.webhook_blacklist_file:
             with open(args.webhook_blacklist_file) as f:
                 args.webhook_blacklist = [get_pokemon_id(name) for name in
-                                            f.read().splitlines()]
+                                          f.read().splitlines()]
         else:
             args.webhook_blacklist = [int(i) for i in
-                                        args.webhook_blacklist]
+                                      args.webhook_blacklist]
             args.webhook_whitelist = [int(i) for i in
-                                        args.webhook_whitelist]
-                                        
+                                      args.webhook_whitelist]
         # Decide which scanning mode to use.
         if args.spawnpoint_scanning:
             args.scheduler = 'SpawnScan'
