@@ -24,7 +24,7 @@
 #max-failures:          # Maximum number of failures to parse locations before an account will go into a sleep for #account-rest-interval seconds (0 to disable), (default 5)
 #max-empty:             # Maximum number of empty scans before an account will go into a sleep for #account-rest-interval seconds. Reasonable to use with proxies (0 to disable), (default 0)
 #min-seconds-left:      # time that must be left on a spawn before considering it too late and skipping it (default 0)
-#status-name:           # enables writing status updates to the database - if you use multiple processes, each needs a unique value
+#status-name:           # you MUST add a status-name or /status will not show any data - if you use multiple processes, each needs a unique value
 
 # Pokemon IV
 #encounter:             # Set to true to start encounters to pull more info, like IVs or movesets. (default false)
