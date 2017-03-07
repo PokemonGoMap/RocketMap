@@ -517,11 +517,13 @@ class Pogom(Flask):
         return valid_input
 
     def get_stats(self):
+        args = get_args()
         return render_template('statistics.html',
                                lat=self.current_location[0],
                                lng=self.current_location[1],
                                gmaps_key=config['GMAPS_KEY'],
-                               valid_input=self.get_valid_stat_input()
+                               valid_input=self.get_valid_stat_input(),
+                               title=args.title
                                )
 
     def get_gymdata(self):
@@ -535,7 +537,9 @@ class Pogom(Flask):
         if args.status_page_password is None:
             abort(404)
 
-        return render_template('status.html')
+        return render_template('status.html',
+                               title=args.title
+                               )
 
     def post_status(self):
         args = get_args()
