@@ -164,7 +164,8 @@ class Pogom(Flask):
                                lang=config['LOCALE'],
                                is_fixed=fixed_display,
                                search_control=search_display,
-                               show_scan=scan_display
+                               show_scan=scan_display,
+                               title=args.title
                                )
 
     def raw_data(self):

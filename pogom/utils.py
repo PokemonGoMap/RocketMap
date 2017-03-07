@@ -406,6 +406,9 @@ def get_args():
     parser.add_argument('--disable-blacklist',
                         help=('Disable the global anti-scraper IP blacklist.'),
                         action='store_true', default=False)
+    parser.add_argument('--title',
+                        help=('Set title'),
+                        type=str, default='Rocket Map')
     verbosity = parser.add_mutually_exclusive_group()
     verbosity.add_argument('-v', '--verbose',
                            help=('Show debug messages from RocketMap ' +
