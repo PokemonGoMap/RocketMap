@@ -407,7 +407,7 @@ def get_args():
                         help=('Disable the global anti-scraper IP blacklist.'),
                         action='store_true', default=False)
     parser.add_argument('--title',
-                        help=('Set title'),
+                        help=('Set the map title'),
                         type=str, default='Rocket Map')
     verbosity = parser.add_mutually_exclusive_group()
     verbosity.add_argument('-v', '--verbose',
