@@ -34,6 +34,8 @@ For instructions on how to setup and run the tool, please refer to the project [
 **Please note, deployments are not supported officially.**
 [![Deploy](https://raw.githubusercontent.com/RocketMap/PokemonGo-Map-in-Cloud/master/images/deploy-to-jelastic.png)](https://jelastic.com/install-application/?manifest=https://raw.githubusercontent.com/RocketMap/PokemonGo-Map-in-Cloud/master/manifest.jps) [![Deploy on Scalingo](https://cdn.scalingo.com/deploy/button.svg)](https://my.scalingo.com/deploy?source=https://github.com/RocketMap/RocketMap#develop)
 
+You can also use [PokiiMap](http://pokiimap.readthedocs.io/en/latest/livemap.html#private-server) as a client to display data from a PokemonGo-Map server. Get it [here](http://pokiimap.readthedocs.io/en/latest/download.html)
+
 ## iOS Version
 
 There is an [iOS port](https://github.com/istornz/iPokeGo) in the works. All iOS related prs and issues please refer to this [repo](https://github.com/istornz/iPokeGo).
