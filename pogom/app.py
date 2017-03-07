@@ -67,7 +67,8 @@ class Pogom(Flask):
     def get_bookmarklet(self):
         args = get_args()
         return render_template('bookmarklet.html',
-                               domain=args.manual_captcha_domain)
+                               domain=args.manual_captcha_domain,
+                               title=args.title)
 
     def render_inject_js(self):
         args = get_args()
