@@ -35,6 +35,7 @@
                         [-spp STATUS_PAGE_PASSWORD] [-hk HASH_KEY] [-tut]
                         [-el ENCRYPT_LIB] [-odt ON_DEMAND_TIMEOUT]
                         [-v [filename.log] | -vv [filename.log]]
+                        [--title TITLE]
 
     Args that start with '--' (eg. -a) can also be set in a config file
     (default: <RocketMap Project Root>/config/config.ini or specified
@@ -321,3 +322,6 @@
                             Like verbose, but show debug messages from all modules
                             as well. Optionally specify file to log to. [env var:
                             POGOMAP_VERY_VERBOSE]
+      --title TITLE
+                            Changes the application title from 'Rocket Map'. [env
+                            var: POGOMAP_TITLE]
