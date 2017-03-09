@@ -222,7 +222,7 @@ def tutorial_pokestop_spin(api, map_dict, forts, step_location, account):
             if fort.get('type') == 1:
                 if spin_pokestop(api, fort, step_location):
                     log.debug(
-                        'Account %s successfully spun a Pokestop' +
+                        'Account %s successfully spun a Pokestop ' +
                         'after completed tutorial.',
                         account['username'])
                     return True
@@ -270,7 +270,7 @@ def spin_pokestop(api, fort, step_location):
         elif spin_result is 2:
             log.debug('Pokestop was not in range to spin.')
         elif spin_result is 3:
-            log.debug('Failedto spin Pokestop. Has recently been spun.')
+            log.debug('Failed to spin Pokestop. Has recently been spun.')
         elif spin_result is 4:
             log.debug('Failed to spin Pokestop. Inventory is full.')
         elif spin_result is 5:

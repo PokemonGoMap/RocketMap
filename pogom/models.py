@@ -1931,8 +1931,8 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                     api, map_dict, forts, step_location, account)
             else:
                 log.error(
-                    'Pokestop can not be spun since parsing Pokestops is not' +
-                    'active. Check if \'-nk\' flag is accidently set.')
+                    'Pokestop can not be spun since parsing Pokestops is ' +
+                    'not active. Check if \'-nk\' flag is accidently set.')
 
         for f in forts:
             if config['parse_pokestops'] and f.get('type') == 1:  # Pokestops.
