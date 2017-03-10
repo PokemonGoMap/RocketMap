@@ -1,5 +1,12 @@
 # Common Questions and Answers
 
+## What do the spawn point colors mean?
+
+purple = inactive, not ready to spawn yet.
+blue = about to spawn (light blue 5 mins before spawn, gets darker nearer to spawn time)
+green = spawning
+green becomes yellow then orange which fades to red as the spawn expires.
+
 ## Critical Error "Missing sprite files"
 
 Please consult #faq on the [RocketMap Discord](https://discord.gg/PWp2bAm).
