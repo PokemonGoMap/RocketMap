@@ -596,7 +596,7 @@ function spawnpointLabel(item) {
             </div>`
     }
 
-  str += `
+    str += `
       <div>
       <a href="javascript:getStats('${item.spawnpoint_id}')">Show 24 hour history</a>&nbsp;&nbsp;
     </div>`
