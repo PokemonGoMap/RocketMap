@@ -68,13 +68,15 @@ class Pogom(Flask):
 
     def render_robots_txt(self):
         return render_template('robots.txt')
-    
+
+   
     def spawn_history(self):
         d = {}
         spawnpoint_id = request.args.get('spawnpoint_id')
         d['spawn_history'] = Pokemon.get_spawn_history(spawnpoint_id)
 
         return jsonify(d)
+
 
     def get_bookmarklet(self):
         args = get_args()
