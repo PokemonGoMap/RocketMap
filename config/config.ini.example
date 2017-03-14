@@ -2,6 +2,7 @@
 # Authentication settings
 #auth-service:          # ptc (default) or google
 #username:
+#accountcsv:            # path to accounts file (csv format)
 #password:
 
 # Database settings
@@ -20,6 +21,7 @@
 #no-pokestops:          # disables pokestop scanning (default false)
 #scan-delay:            # default 10
 #step-limit:            # default 12
+#jitter:                # enables jitter during beehive scan (default false)
 #gym-info:              # enables detailed gym info collection (default false)
 #max-failures:          # Maximum number of failures to parse locations before an account will go into a sleep for #account-rest-interval seconds (0 to disable), (default 5)
 #max-empty:             # Maximum number of empty scans before an account will go into a sleep for #account-rest-interval seconds. Reasonable to use with proxies (0 to disable), (default 0)
@@ -47,6 +49,11 @@
 #wh-backoff-factor:     # Factor (in seconds) by which the delay until next retry will increase (default: 0.25).
 #wh-lfu-size:           # Webhook LFU cache max size (default: 1000).
 #print-status:          # Enable ENTER to switch between log view and a status view.  Use 'status' to start in status view and 'logs' to start in log view
+
+# 2captcha
+#captcha-solving:       # enables 2captcha solving for captcha'd accounts
+#captcha-key:           # your 2captcha api key 
+#captcha-dsk:           6LeeTScTAAAAADqvhqVMhPpr_vB9D364Ia-1dSgK # Datasite key, for now 6LeeTScTAAAAADqvhqVMhPpr_vB9D364Ia-1dSgK for PoGo
 
 # Webserver settings
 #host:                  # address to listen on (default 127.0.0.1)
