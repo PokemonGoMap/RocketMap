@@ -66,12 +66,12 @@ class Pogom(Flask):
         self.route("/spawn_history", methods=['GET'])(self.spawn_history)
 
     def spawn_history(self):
-         d = {}
-         spawnpoint_id = request.args.get('spawnpoint_id')
-         d['spawn_history'] = Pokemon.get_spawn_history(spawnpoint_id)
- 
-         return jsonify(d)
- 
+        d = {}
+        spawnpoint_id = request.args.get('spawnpoint_id')
+        d['spawn_history'] = Pokemon.get_spawn_history(spawnpoint_id)
+
+        return jsonify(d)
+
     def get_bookmarklet(self):
         args = get_args()
         return render_template('bookmarklet.html',

@@ -179,8 +179,8 @@
             $stats.classList.toggle('visible')
             if ($('#stats').hasClass('visible')) {
                 if ($('#spawn').hasClass('visible')) {
-            $spawn.classList.toggle('visible')
-        }
+                    $spawn.classList.toggle('visible')
+                }
             }
         })
     }
@@ -188,15 +188,15 @@
   // Event: Toggle spawn on click.
     if ($spawnToggle) {
         $spawnToggle.addEventListener('click', function (event) {
-          event.preventDefault()
-          event.stopPropagation()
-          $spawn.classList.toggle('visible')
-          if ($('#spawn').hasClass('visible')) {
-            if ($('#stats').hasClass('visible')) {
-               $stats.classList.toggle('visible')
-           }
-        }
-      })
+            event.preventDefault()
+            event.stopPropagation()
+            $spawn.classList.toggle('visible')
+            if ($('#spawn').hasClass('visible')) {
+              if ($('#stats').hasClass('visible')) {
+                $stats.classList.toggle('visible')
+            }
+          }
+        })
     }
 
     // Close.
@@ -268,9 +268,9 @@
     if ($spawnClose) {
      // Event: Hide stats on click.
         $spawnClose.addEventListener('click', function (event) {
-        event.preventDefault()
-        event.stopPropagation()
-        $spawn.classList.remove('visible')
-    })
+            event.preventDefault()
+            event.stopPropagation()
+            $spawn.classList.remove('visible')
+        })
     }
 })()
