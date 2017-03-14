@@ -145,3 +145,30 @@ function countMarkers(map) { // eslint-disable-line no-unused-vars
         document.getElementById('pokestopList').innerHTML = 'PokéStops markers are disabled'
     }
 }
+
+function getStats(spawnpointId) { // eslint-disable-line no-unused-vars
+    $('ul[name=spawnpointnest]').empty()
+    $('ul[name=spawnpointrest]').empty()
+    $('div[id=spacer]').empty()
+    $.ajax({
+        url: 'spawn_history?spawnpoint_id=' + spawnpointId,
+        dataType: 'json',
+        async: true,
+        success: function (data) {
+           document.getElementById('stats-nest-label').innerHTML = 'Nesting or Frequent'
+           document.getElementById('stats-spawn-label').innerHTML = 'Spawns'
+
+           $.each(data.spawn_history, function (count, id) {
+             if (id.count > 5)
+      $('ul[name=spawnpointnest]').append('<li style="float: left; list-style: none; height: 36px; margin-bottom: 50px; margin-right: 5px;"><i class="pokemon-large-sprite n' + id.pokemon_id + '"></i><span style="font-weight: bold;">   Spawned ' + id.count + ' Times</span></li><br>') &
+      $('div[id=spacer]').append('<br><br>')
+             else
+        $('ul[name=spawnpointrest]').append('<li style="float: left; list-style: none; height: 36px; margin-right: 5px;"><i class="pokemon-sprite n' + id.pokemon_id + '"></i><span style="font-weight: bold;">   Spawned ' + id.count + ' Times</span></li>')
+         })
+           document.getElementById('spawn').classList.add('visible')
+       },
+        error: function (jqXHR, status, error) {
+           console.log('Error loading stats: ' + error)
+       }
+    })
+}
