@@ -192,10 +192,10 @@
             event.stopPropagation()
             $spawn.classList.toggle('visible')
             if ($('#spawn').hasClass('visible')) {
-              if ($('#stats').hasClass('visible')) {
-                $stats.classList.toggle('visible')
+                if ($('#stats').hasClass('visible')) {
+                    $stats.classList.toggle('visible')
+                }
             }
-          }
         })
     }
 
