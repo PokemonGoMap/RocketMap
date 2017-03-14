@@ -64,7 +64,11 @@ class Pogom(Flask):
         self.route("/submit_token", methods=['POST'])(self.submit_token)
         self.route("/get_stats", methods=['GET'])(self.get_account_stats)
         self.route("/spawn_history", methods=['GET'])(self.spawn_history)
+        self.route("/robots.txt", methods=['GET'])(self.render_robots_txt)
 
+    def render_robots_txt(self):
+        return render_template('robots.txt')
+    
     def spawn_history(self):
         d = {}
         spawnpoint_id = request.args.get('spawnpoint_id')
