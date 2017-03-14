@@ -137,8 +137,8 @@
     if ($spawn) {
      // Event: Prevent clicks/taps inside the stats from bubbling.
         addEventsListener($spawn, 'click touchend', function (event) {
-         event.stopPropagation()
-     })
+            event.stopPropagation()
+        })
     }
     // Event: Hide nav on body click/tap.
     addEventsListener($body, 'click touchend', function (event) {
@@ -178,26 +178,26 @@
             event.stopPropagation()
             $stats.classList.toggle('visible')
             if ($('#stats').hasClass('visible')) {
-        if ($('#spawn').hasClass('visible')) {
-          $spawn.classList.toggle('visible')
-      }
-    }
+                if ($('#spawn').hasClass('visible')) {
+            $spawn.classList.toggle('visible')
+        }
+            }
         })
     }
 
   // Event: Toggle spawn on click.
     if ($spawnToggle) {
-      $spawnToggle.addEventListener('click', function (event) {
-        event.preventDefault()
-        event.stopPropagation()
-        $spawn.classList.toggle('visible')
-        if ($('#spawn').hasClass('visible')) {
-           if ($('#stats').hasClass('visible')) {
-             $stats.classList.toggle('visible')
-         }
-       }
-    })
-  }
+        $spawnToggle.addEventListener('click', function (event) {
+          event.preventDefault()
+          event.stopPropagation()
+          $spawn.classList.toggle('visible')
+          if ($('#spawn').hasClass('visible')) {
+            if ($('#stats').hasClass('visible')) {
+               $stats.classList.toggle('visible')
+           }
+        }
+      })
+    }
 
     // Close.
 
@@ -216,12 +216,12 @@
         $stats.appendChild($statsClose)
     }
     if ($spawn) {
-         $spawnClose = document.createElement('a')
-         $spawnClose.href = '#'
-         $spawnClose.className = 'close'
-         $spawnClose.tabIndex = 0
-         $spawn.appendChild($spawnClose)
-     }
+        $spawnClose = document.createElement('a')
+        $spawnClose.href = '#'
+        $spawnClose.className = 'close'
+        $spawnClose.tabIndex = 0
+        $spawn.appendChild($spawnClose)
+    }
     $gymSidebarClose = document.createElement('a')
     $gymSidebarClose.href = '#'
     $gymSidebarClose.className = 'close'
@@ -267,10 +267,10 @@
     }
     if ($spawnClose) {
      // Event: Hide stats on click.
-    $spawnClose.addEventListener('click', function (event) {
-            event.preventDefault()
-            event.stopPropagation()
-            $spawn.classList.remove('visible')
-        })
-}
+        $spawnClose.addEventListener('click', function (event) {
+        event.preventDefault()
+        event.stopPropagation()
+        $spawn.classList.remove('visible')
+    })
+    }
 })()
