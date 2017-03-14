@@ -40,7 +40,8 @@ from pgoapi.utilities import f2i
 from pgoapi import utilities as util
 from pgoapi.hash_server import HashServer
 
-from .models import parse_map, GymDetails, parse_gyms, MainWorker, WorkerStatus
+from .models import parse_map, GymDetails, parse_gyms, MainWorker, \
+                    WorkerStatus, HashKeys
 from .fakePogoApi import FakePogoApi
 from .utils import now, generate_device_info
 from .transform import get_new_coords, jitter_location
@@ -736,12 +737,10 @@ def search_worker_thread(args, account_queue, account_failures,
             # Force storing of previous worker info to keep consistency
             if 'starttime' in status:
                 dbq.put((WorkerStatus, {0: WorkerStatus.db_format(status)}))
-
             status['starttime'] = now()
 
             # Track per loop.
             first_login = True
-
             # Make sure the scheduler is done for valid locations
             while not scheduler.ready:
                 time.sleep(1)
@@ -987,6 +986,27 @@ def search_worker_thread(args, account_queue, account_failures,
                         time.sleep(3)
                         break
 
+                    if args.hash_key:
+                        key_instance = key_scheduler.keys[key]
+                        key_instance['remaining'] = HashServer.status.get(
+                                'remaining', 0)
+
+                        if key_instance['maximum'] == 0:
+                            key_instance['maximum'] = (
+                                HashServer.status.get('maximum', 0))
+
+                        peak = (
+                            key_instance['maximum'] -
+                            key_instance['remaining'])
+
+                        if key_instance['peak'] < peak:
+                            key_instance['peak'] = peak
+
+                        expires = HashServer.status.get('expiration', 0)
+                        if expires > 0:
+                            key_instance['expires'] = (
+                                datetime.utcfromtimestamp(expires))
+
                     parsed = parse_map(args, response_dict, step_location,
                                        dbq, whq, api, scan_date)
                     scheduler.task_done(status, parsed)
@@ -1002,6 +1022,17 @@ def search_worker_thread(args, account_queue, account_failures,
                         step_location[0], step_location[1],
                         parsed['count'])
                     log.debug(status['message'])
+                    key_out = {}
+                    key_out[0] = key_instance
+                    key_out[0]['key'] = key
+                    dbq.put((HashKeys, key_out))
+                    log.debug(
+                            ('Hash Key {} has {}/{} RPM ' +
+                             'left.').format(key,
+                                             key_instance[
+                                                 'remaining'],
+                                             key_instance[
+                                                 'maximum']))
                 except Exception as e:
                     parsed = False
                     status['fail'] += 1
@@ -1096,20 +1127,6 @@ def search_worker_thread(args, account_queue, account_failures,
                         if gym_responses:
                             parse_gyms(args, gym_responses,
                                        whq, dbq)
-
-                if args.hash_key:
-                    key_instance = key_scheduler.keys[key_scheduler.current()]
-                    key_instance['remaining'] = HashServer.status.get(
-                        'remaining', 0)
-
-                    if key_instance['maximum'] == 0:
-                        key_instance['maximum'] = HashServer.status.get(
-                            'maximum', 0)
-
-                    peak = key_instance['maximum'] - key_instance['remaining']
-
-                    if key_instance['peak'] < peak:
-                        key_instance['peak'] = peak
 
                 # Delay the desired amount after "scan" completion.
                 delay = scheduler.delay(status['last_scan_date'])
