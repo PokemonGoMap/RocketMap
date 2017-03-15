@@ -71,7 +71,8 @@ class Pogom(Flask):
     def get_bookmarklet(self):
         args = get_args()
         return render_template('bookmarklet.html',
-                               domain=args.manual_captcha_domain)
+                               domain=args.manual_captcha_domain,
+                               title=args.title)
 
     def render_inject_js(self):
         args = get_args()
@@ -168,7 +169,8 @@ class Pogom(Flask):
                                lang=config['LOCALE'],
                                is_fixed=fixed_display,
                                search_control=search_display,
-                               show_scan=scan_display
+                               show_scan=scan_display,
+                               title=args.title
                                )
 
     def raw_data(self):
@@ -520,11 +522,13 @@ class Pogom(Flask):
         return valid_input
 
     def get_stats(self):
+        args = get_args()
         return render_template('statistics.html',
                                lat=self.current_location[0],
                                lng=self.current_location[1],
                                gmaps_key=config['GMAPS_KEY'],
-                               valid_input=self.get_valid_stat_input()
+                               valid_input=self.get_valid_stat_input(),
+                               title=args.title
                                )
 
     def get_gymdata(self):
@@ -538,7 +542,9 @@ class Pogom(Flask):
         if args.status_page_password is None:
             abort(404)
 
-        return render_template('status.html')
+        return render_template('status.html',
+                               title=args.title
+                               )
 
     def post_status(self):
         args = get_args()
