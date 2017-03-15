@@ -2,10 +2,9 @@
 
 ## What do the spawn point colors mean?
 
-Purple: Spawnpoint is inactive and **not**  about to spawn within the next 5 minutes.
-Blue: About to spawn, light blue 5 minutes before spawn, gets darker as spawn time nears.
-Green: Spawnpoint is active, Pokémon has just spawned.
-Fading from green to orange: green becomes yellow then orange which fades to red as the spawn expires.
+* A **grey** dot represents a spawn point that is more than 5 minutes from spawning.
+* A **light blue** dot represents a spawn point that will spawn in 5 minutes. **Light blue** changes to **dark blue** and finally into **purple** just before spawn time.
+* A **green dot** represents a fresh spawn. This will transition to **yellow**, through **orange** and finally **red** (like a stop light) as it is about to despawn.
 
 ## Critical Error "Missing sprite files"
 
