@@ -406,7 +406,7 @@ def get_args():
     parser.add_argument('--disable-blacklist',
                         help=('Disable the global anti-scraper IP blacklist.'),
                         action='store_true', default=False)
-    parser.add_argument('-tp', '--trusted-proxies', default=None,
+    parser.add_argument('-tp', '--trusted-proxies', default=[],
                         action='append',
                         help=('Enables the use of X-FORWARDED-FOR headers ' +
                               'to identify the IP of clients connecting ' +
