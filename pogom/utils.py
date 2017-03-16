@@ -406,6 +406,11 @@ def get_args():
     parser.add_argument('--disable-blacklist',
                         help=('Disable the global anti-scraper IP blacklist.'),
                         action='store_true', default=False)
+    parser.add_argument('-tp', '--trusted-proxies', default=[],
+                        action='append',
+                        help=('Enables the use of X-FORWARDED-FOR headers ' +
+                              'to identify the IP of clients connecting ' +
+                              'through these trusted proxies.'))
     verbosity = parser.add_mutually_exclusive_group()
     verbosity.add_argument('-v', '--verbose',
                            help=('Show debug messages from RocketMap ' +
@@ -879,6 +884,6 @@ def generate_device_info():
 
 def extract_sprites():
     log.debug("Extracting sprites...")
-    zip = zipfile('static01.zip', 'r')
+    zip = zipfile.ZipFile('static01.zip', 'r')
     zip.extractall('static')
     zip.close()

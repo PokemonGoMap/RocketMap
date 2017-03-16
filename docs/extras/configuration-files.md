@@ -29,9 +29,9 @@ There is a default example configuration file underneath the project home in /co
 
 ## Example config file
 
-  See the file in the config directory named **config.ini.example**.  This file contains a list of all the commands that can be set in configuration files.  Remember that the arguments specified on the commandline will over-ride an option in the config file.
-
-  Running this config file from the commandline using the -cf configuration flag:
+See the file in the config directory named **config.ini.example**.  This file contains a list of all the commands that can be set in configuration files.  Remember that the arguments specified on the commandline will over-ride an option in the config file.
+ 
+Running this config file from the commandline using the -cf configuration flag:
 
      python runserver.py -cf config/config.ini.example
       
