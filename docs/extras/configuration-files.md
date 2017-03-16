@@ -17,7 +17,7 @@ There is a default example configuration file underneath the project home in /co
     keyname: value
     e.g.   host: 0.0.0.0
 
-  For parameters that may be repeated:
+  For parameters that may be repeated (usernames, passwords, black/whitelists, hashkeys):
 
     keyname: [ value1, value2, ...]
     e.g.   username: [ randomjoe, bonnieclyde ]
@@ -29,29 +29,26 @@ There is a default example configuration file underneath the project home in /co
 
 ## Example config file
 
-  <pre>
-  -- contents of file myconfig.seattle --
-  username: [ randomjoe, bob ]
-  password: [ password1, password2 ]
-  location: seattle, wa
-  step-limit: 5
-  gmaps-key: MyGmapsKeyGoesHereSomeLongString
-  print-status: True
-  -- end of file --
-  </pre>
+  See the file in the config directory named **config.ini.example**.  This file contains a list of all the commands that can be set in configuration files.  Remember that the arguments specified on the commandline will over-ride an option in the config file.
 
-  Running this config file as:
+  Running this config file from the commandline using the -cf configuration flag:
 
-     python runserver.py -cf myconfig.seattle
-
-  would be the same as running with the following command line:
-
-     python runserver.py -u randomjoe -p password1 -u bob -p password2 -l "seattle, wa" -st 5 -k MyGmapsKeyGoesHereSomeLongString -ps
-     
+     python runserver.py -cf config/config.ini.example
+      
 ##  List of Possible Flags     
+
+See the **config.ini.example** or the [Command Line Documentation](https://rocketmap.readthedocs.io/en/develop/extras/commandline.html) in this wiki.  You can also find them in the python code in the pogom directory in **utils.py**
 
 ## Running multiple configs
 
-   One common way of running multiple locations is to use two configuration files each with common or default database values, but with different location specs. The first configuration running as both a scanner and a server, and in the second configuration file, use the *no-server* flag to not start the web interface for the second configuration.   In the config file, this would mean including a line like:
+   One common way of running multiple locations is to use multiple configuration files each with common or default database values, but with different location specs. The first configuration running as a **server**(with -os flag), and in the second configuration file, use the **no-server**(with -ns flag) to not start the web interface for any other configuration.   
+   
+   In the first config file, this would mean including a line like:
+        
+    `only-server: true`
+    
 
-   no-server: True
+    In the second config file, this would mean including a line like:
+        
+    `no-server: true`
+
