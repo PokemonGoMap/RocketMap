@@ -41,14 +41,26 @@ See the **config.ini.example** or the [Command Line Documentation](https://rocke
 
 ## Running multiple configs
 
-   One common way of running multiple locations is to use multiple configuration files each with common or default database values, but with different location specs. The first configuration running as a **server**(with -os flag), and in the second configuration file, use the **no-server**(with -ns flag) to not start the web interface for any other configuration.   
+One common way of running multiple locations is to use multiple configuration files each with common or default database values, but with different location specs. The first configuration running as a **server**(with -os flag) which will only start the webserver, and in the second configuration file, use the **no-server**(with -ns flag) to not start only the searcher interface for any other configuration. You can run as many no-server instances as you need and they will all display on the single webserver.
    
-   In the first config file, this would mean including a line like:
-        
-    `only-server: true`
+In the first config file, this would mean including a line like:
+```        
+only-server: true
+```
     
+In the second config file, this would mean including a line like:
+```        
+no-server: true
+```
 
-    In the second config file, this would mean including a line like:
-        
-    `no-server: true`
+The config files use a relative path from the main RocketMap directory(the location of runserver.py, so if they were stored in the config directory you'd reference each instance in the following way:
 
+First Instance
+```
+python runserver.py -cf config/first_config.ini
+```
+
+Second Instance
+```
+python runserver.py -cf config/second_config.ini
+```
