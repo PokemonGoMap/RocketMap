@@ -63,13 +63,19 @@ class Pogom(Flask):
         self.route("/inject.js", methods=['GET'])(self.render_inject_js)
         self.route("/submit_token", methods=['POST'])(self.submit_token)
         self.route("/get_stats", methods=['GET'])(self.get_account_stats)
+        self.route("/robots.txt", methods=['GET'])(self.render_robots_txt)
+
+    def render_robots_txt(self):
+        return render_template('robots.txt')
 
     def get_bookmarklet(self):
-        return render_template('bookmarklet.html')
+        args = get_args()
+        return render_template('bookmarklet.html',
+                               domain=args.manual_captcha_domain)
 
     def render_inject_js(self):
         args = get_args()
-        return render_template("inject.js",
+        return render_template('inject.js',
                                domain=args.manual_captcha_domain,
                                timer=args.manual_captcha_refresh)
 
@@ -91,8 +97,12 @@ class Pogom(Flask):
         return r
 
     def validate_request(self):
-        if self._ip_is_blacklisted(request.remote_addr):
-            log.debug('Denied access to %s.', request.remote_addr)
+        args = get_args()
+        ip_addr = request.remote_addr
+        if ip_addr in args.trusted_proxies:
+            ip_addr = request.headers.get('X-Forwarded-For', ip_addr)
+        if self._ip_is_blacklisted(ip_addr):
+            log.debug('Denied access to %s.', ip_addr)
             abort(403)
 
     def _ip_is_blacklisted(self, ip):

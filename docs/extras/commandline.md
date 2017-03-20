@@ -7,14 +7,16 @@
                         [-wph WORKERS_PER_HIVE] [-l LOCATION] [-nj]
                         [-st STEP_LIMIT] [-sd SCAN_DELAY]
                         [--spawn-delay SPAWN_DELAY] [-enc] [-cs] [-ck CAPTCHA_KEY]
-                        [-cds CAPTCHA_DSK] [-ed ENCOUNTER_DELAY]
+                        [-cds CAPTCHA_DSK] [-mcd MANUAL-CAPTCHA-DOMAIN]
+                        [-mcr MANUAL-CAPTCHA-REFRESH]
+                        [-mct MANUAL-CAPTCHA-TIMEOUT] [-ed ENCOUNTER_DELAY]
                         [-ewht ENCOUNTER_WHITELIST | -eblk ENCOUNTER_BLACKLIST | -ewhtf ENCOUNTER_WHITELIST_FILE | -eblkf ENCOUNTER_BLACKLIST_FILE]
                         [-ld LOGIN_DELAY] [-lr LOGIN_RETRIES] [-mf MAX_FAILURES]
                         [-me MAX_EMPTY] [-bsr BAD_SCAN_RETRY]
                         [-msl MIN_SECONDS_LEFT] [-dc] [-H HOST] [-P PORT]
                         [-L LOCALE] [-c] [-m MOCK] [-ns] [-os] [-nsc] [-fl] -k
                         GMAPS_KEY [--skip-empty] [-C] [-D DB] [-cd] [-np] [-ng]
-                        [-nk] [-ss [SPAWNPOINT_SCANNING]] [-speed] [-kph KPH]
+                        [-nk] [-ss [SPAWNPOINT_SCANNING]] [-speed] [-kph KPH] [-ldur DURATION]
                         [--dump-spawnpoints] [-pd PURGE_DATA] [-px PROXY] [-pxsc]
                         [-pxt PROXY_TIMEOUT] [-pxd PROXY_DISPLAY]
                         [-pxf PROXY_FILE] [-pxr PROXY_REFRESH]
@@ -34,7 +36,7 @@
                         [-spp STATUS_PAGE_PASSWORD] [-hk HASH_KEY] [-tut]
                         [-el ENCRYPT_LIB] [-odt ON_DEMAND_TIMEOUT]
                         [-v [filename.log] | -vv [filename.log]]
- 
+
     Args that start with '--' (eg. -a) can also be set in a config file
     (default: <RocketMap Project Root>/config/config.ini or specified
     via -cf). The recognized syntax for setting (key, value) pairs is based on the
@@ -43,7 +45,7 @@
     documentation. If an arg is specified in more than one place, then commandline
     values override environment variables which override config file values which
     override defaults.
- 
+
     optional arguments:
       -h, --help            show this help message and exit [env var:
                             POGOMAP_HELP]
@@ -104,8 +106,18 @@
       -ck CAPTCHA_KEY, --captcha-key CAPTCHA_KEY
                             2Captcha API key. [env var: POGOMAP_CAPTCHA_KEY]
       -cds CAPTCHA_DSK, --captcha-dsk CAPTCHA_DSK
-                            PokemonGo captcha data-sitekey. [env var:
+                            Pokemon Go captcha data-sitekey. [env var:
                             POGOMAP_CAPTCHA_DSK]
+      -mcd MANUAL-CAPTCHA-DOMAIN --manual-captcha-domain
+                            Domain to where captcha tokens will be sent
+                            (default: http://127.0.0.1:5000)
+      -mcr MANUAL-CAPTCHA-REFRESH --manual-captcha-refresh
+                            Time available before captcha page refreshes
+                            (default: 30 seconds)
+      -mct MANUAL-CAPTCHA-TIMEOUT -manual-captcha-timeout
+                            Maximum time captchas will wait for manual captcha
+                            solving. On timeout, if enabled, 2Captcha will be
+                            used to solve captcha. (default: 0 - disabled)
       -ed ENCOUNTER_DELAY, --encounter-delay ENCOUNTER_DELAY
                             Time delay between encounter pokemon in scan threads.
                             [env var: POGOMAP_ENCOUNTER_DELAY]
@@ -195,6 +207,10 @@
                             scan closest spawns. [env var: POGOMAP_SPEED_SCAN]
       -kph KPH, --kph KPH   Set a maximum speed in km/hour for scanner movement.
                             [env var: POGOMAP_KPH]
+      -ldur DURATION, --lure-duration DURATION
+                            Change duration for lures set on pokestops. This is
+                            useful for events that extend lure duration.
+                            [env var: POGOMAP_LURE_DURATION]
       --dump-spawnpoints    Dump the spawnpoints from the db to json (only for use
                             with -ss). [env var: POGOMAP_DUMP_SPAWNPOINTS]
       -pd PURGE_DATA, --purge-data PURGE_DATA

@@ -10,33 +10,29 @@ Live visualization of all the pokemon (with option to show gyms and pokestops) i
 ## Features:
 
 * Shows Pokemon, Pokestops, and gyms with a clean GUI.
-* Notifications 
+* Notifications
 * Lure information
 * Multithreaded mode
 * Filters
 * Independent worker threads (many can be used simulatenously to quickly generate a livemap of a huge geographical area)
-* Localization (en, fr, pt_br, de, ru, ja, zh_tw, zh_cn, zh_hk)
+* Localization (en, fr, pt_br, de, ru, ko, ja, zh_tw, zh_cn, zh_hk)
 * DB storage (sqlite or mysql) of all found pokemon
 * Incredibly fast, efficient searching algorithm (compared to everything else available)
 
 ## Information
-* [Discord](https://discord.gg/PWp2bAm) for general support
+* [Discord](https://discord.gg/rocketmap) for general support
 * [Documentation](https://rocketmap.readthedocs.io/) for installation and usage docs
 * ~~[feathub](http://feathub.com/PokemonGoMap/PokemonGo-Map) to request new features~~ Use a Github issue, tag with [Feature Request].
 * [Github Issues](https://github.com/RocketMap/RocketMap/issues) for reporting bugs (not for support!)
 
 ## Installation
 
-For instructions on how to setup and run the tool, please refer to the project [documentation](https://rocketmap.readthedocs.io) or the ~~[video guide](https://www.youtube.com/watch?v=2ACJHCNZ3ow)~~ Video guide to be replaced
+For instructions on how to setup and run the tool, please refer to the project [documentation](https://rocketmap.readthedocs.io).
 
 ## Deployment
 
-**Please note, deployments are not supported officially.**
+**Please note, deployments are not supported officially. You are using these deployment links at your own risk.**
 [![Deploy](https://raw.githubusercontent.com/RocketMap/PokemonGo-Map-in-Cloud/master/images/deploy-to-jelastic.png)](https://jelastic.com/install-application/?manifest=https://raw.githubusercontent.com/RocketMap/PokemonGo-Map-in-Cloud/master/manifest.jps) [![Deploy on Scalingo](https://cdn.scalingo.com/deploy/button.svg)](https://my.scalingo.com/deploy?source=https://github.com/RocketMap/RocketMap#develop)
-
-## iOS Version
-
-There is an [iOS port](https://github.com/istornz/iPokeGo) in the works. All iOS related prs and issues please refer to this [repo](https://github.com/istornz/iPokeGo).
 
 ## Contributions
 

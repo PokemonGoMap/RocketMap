@@ -20,7 +20,7 @@ from flask_cache_bust import init_cache_busting
 
 from pogom import config
 from pogom.app import Pogom
-from pogom.utils import get_args, now
+from pogom.utils import get_args, now, extract_sprites
 from pogom.altitude import get_gmaps_altitude
 
 from pogom.search import search_overseer_thread
@@ -35,13 +35,13 @@ pgoapi_version = "1.1.7"
 
 # Moved here so logger is configured at load time.
 logging.basicConfig(
-    format='%(asctime)s [%(threadName)16s][%(module)14s][%(levelname)8s] ' +
+    format='%(asctime)s [%(threadName)18s][%(module)14s][%(levelname)8s] ' +
     '%(message)s')
 log = logging.getLogger()
 
 # Make sure pogom/pgoapi is actually removed if it is an empty directory.
 # This is a leftover directory from the time pgoapi was embedded in
-# PokemonGo-Map.
+# RocketMap.
 # The empty directory will cause problems with `import pgoapi` so it needs to
 # go.
 # Now also removes the pogom/libencrypt and pokecrypt-pgoapi folders,
@@ -158,8 +158,9 @@ def main():
         if not os.path.isfile(
                 os.path.join(os.path.dirname(__file__),
                              'static/icons-sprite.png')):
-            log.critical('Missing sprite files.')
-            sys.exit()
+            log.info('Sprite files not present, extracting bundled ones...')
+            extract_sprites()
+            log.info('Done!')
 
     # These are very noisy, let's shush them up a bit.
     logging.getLogger('peewee').setLevel(logging.INFO)
