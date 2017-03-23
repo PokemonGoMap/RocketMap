@@ -10,7 +10,7 @@ module.exports = function(grunt) {
 		stderr: false
 		},
 		target: {
-			command: 'ls -l ' 
+			command: './map_default.py'
 			}
 	},
     sass: {
