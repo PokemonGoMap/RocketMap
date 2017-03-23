@@ -578,7 +578,7 @@ function pokestopLabel(expireTime, latitude, longitude) {
 function formatSpawnTime(seconds) {
     // the addition and modulo are required here because the db stores when a spawn disappears
     // the subtraction to get the appearance time will knock seconds under 0 if the spawn happens in the previous hour
-    return ('0' + Math.floor(((seconds + 3600) % 3600) / 60)).substr(-2) + ':' + ('0' + seconds % 60).substr(-2)
+    return ('0' + Math.floor(((seconds + 3600) % 3600) / 60)).substr(-2) + ':' + ('0' + (seconds >= 0 ? seconds % 60 : 60 + (seconds % 60))).substr(-2)
 }
 
 function spawnpointLabel(item) {
