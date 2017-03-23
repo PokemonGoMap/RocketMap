@@ -29,7 +29,7 @@
     "grunt-usemin": "latest",
     "grunt-newer": "^1.2.0",
     "jit-grunt": "^0.10.0",
-	"grunt-shell": "latest"
+    "grunt-shell": "latest"
   },
   "scripts": {
     "postinstall": "grunt build",
