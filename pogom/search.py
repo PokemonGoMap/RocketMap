@@ -1100,7 +1100,6 @@ def search_worker_thread(args, account_queue, account_failures,
                                        whq, dbq)
 
                     if args.hash_key:
-                        key = HashServer.status.get('token', 0)
                         key_instance = key_scheduler.keys[key]
                         key_instance['remaining'] = HashServer.status.get(
                             'remaining', 0)
