@@ -7,6 +7,7 @@ var statusPagePassword = false
 var groupByWorker = true
 var showHashTable = true
 var showWorkersTable = true
+var hashkeys = {}
 
 // Raw data updating
 var minUpdateDelay = 1000 // Minimum delay between updates (in ms).
@@ -62,6 +63,7 @@ function addhashtable(mainKeyHash, keyHash) {
     <div id="hashrow_${keyHash}" class="status_row">
       <div id="key_${keyHash}" class="status_cell"/>
       <div id="maximum_${keyHash}" class="status_cell"/>
+      <div id="remaining_${keyHash}" class="status_cell"/>
       <div id="average_${keyHash}" class="status_cell"/>
       <div id="peak_${keyHash}" class="status_cell"/>
       <div id="expires_${keyHash}" class="status_cell"/>
@@ -118,7 +120,29 @@ function processHashKeys(i, hashkey) {
 
     if ($('#hashrow_' + keyHash).length === 0) {
         addhashtable(mainKeyHash, keyHash)
+        var keyValues = {
+            samples: [],
+            average: 0,
+            count: 0
+        }
+
+        hashkeys[hashkey['key']] = keyValues
     }
+
+    var writeIndex = hashkeys[hashkey['key']].count % 100
+    hashkeys[hashkey['key']].count += 1
+    hashkeys[hashkey['key']].samples[writeIndex] = hashkey['peak']
+    var numSamples = hashkeys[hashkey['key']].samples.length
+    var sumSamples = 0
+    for (var j = 0; j < numSamples; j++) {
+        sumSamples += hashkeys[hashkey['key']].samples[j]
+    }
+
+    if (numSamples > 0) {
+        hashkeys[hashkey['key']].average = sumSamples / numSamples
+    }
+
+    var remaining = hashkey['maximum'] - hashkeys[hashkey['key']].average
 
     var lastUpdated = new Date(hashkey['last_updated'])
     lastUpdated = lastUpdated.getHours() + ':' +
@@ -138,7 +162,8 @@ function processHashKeys(i, hashkey) {
 
     $('#key_' + keyHash).html(hashkey['key'])
     $('#maximum_' + keyHash).html(hashkey['maximum'])
-    $('#average_' + keyHash).html(hashkey['average'])
+    $('#remaining_' + keyHash).html(remaining.toFixed(2))
+    $('#average_' + keyHash).html(hashkeys[hashkey['key']].average.toFixed(2))
     $('#peak_' + keyHash).html(hashkey['peak'])
     $('#last_updated_' + keyHash).html(lastUpdated)
     $('#expires_' + keyHash).html(expires)
@@ -168,6 +193,9 @@ function createHashTable(mainKeyHash) {
       </div>
       <div class="status_cell">
         Maximum RPM
+      </div>
+      <div class="status_cell">
+        RPM Left
       </div>
       <div class="status_cell">
         Average Per Minute
@@ -372,10 +400,6 @@ $(document).ready(function () {
 
         $('#status_container .status_table').remove()
         $('#status_container .worker').remove()
-
-        if (statusPagePassword) {
-            updateStatus()
-        }
     })
 
     $('#hashkey-switch').change(function () {
@@ -383,19 +407,12 @@ $(document).ready(function () {
 
         $('#status_container .status_table').remove()
         $('#status_container .worker').remove()
-
-        if (statusPagePassword) {
-            updateStatus()
-        }
     })
+
     $('#showworker-switch').change(function () {
         showWorkersTable = this.checked
 
         $('#status_container .status_table').remove()
         $('#status_container .worker').remove()
-
-        if (statusPagePassword) {
-            updateStatus()
-        }
     })
 })

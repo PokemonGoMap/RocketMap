@@ -987,30 +987,10 @@ def search_worker_thread(args, account_queue, account_failures,
                         time.sleep(3)
                         break
 
-                    if args.hash_key:
-                        key_instance = key_scheduler.keys[key]
-                        key_instance['remaining'] = HashServer.status.get(
-                            'remaining', 0)
-
-                        key_instance['maximum'] = (
-                            HashServer.status.get('maximum', 0))
-
-                        peak = (
-                            key_instance['maximum'] -
-                            key_instance['remaining'])
-
-                        if key_instance['peak'] < peak:
-                            key_instance['peak'] = peak
-
-                        expires = HashServer.status.get('expiration', 0)
-
-                        if expires > 0:
-                            key_instance['expires'] = (
-                                datetime.utcfromtimestamp(expires))
-
                     parsed = parse_map(args, response_dict, step_location,
                                        dbq, whq, api, scan_date, account)
                     scheduler.task_done(status, parsed)
+
                     if parsed['count'] > 0:
                         status['success'] += 1
                         consecutive_noitems = 0
@@ -1023,15 +1003,6 @@ def search_worker_thread(args, account_queue, account_failures,
                         step_location[0], step_location[1],
                         parsed['count'])
                     log.debug(status['message'])
-                    hashkeys_db = {}
-                    hashkeys_db[0] = key_instance.copy()
-                    hashkeys_db[0]['key'] = key
-                    hashkeys_db[0].pop('remaining', None)
-                    dbq.put((HashKeys, hashkeys_db))
-                    log.debug(
-                        ('Hash key {} has {}/{} RPM ' +
-                         'left.').format(key, key_instance['remaining'],
-                                         key_instance['maximum']))
 
                 except Exception as e:
                     parsed = False
@@ -1128,6 +1099,34 @@ def search_worker_thread(args, account_queue, account_failures,
                             parse_gyms(args, gym_responses,
                                        whq, dbq)
 
+                    if args.hash_key:
+                        key = HashServer.status.get('token', 0)
+                        key_instance = key_scheduler.keys[key]
+                        key_instance['remaining'] = HashServer.status.get(
+                            'remaining', 0)
+
+                        key_instance['maximum'] = (
+                            HashServer.status.get('maximum', 0))
+
+                        peak = (
+                            key_instance['maximum'] -
+                            key_instance['remaining'])
+
+                        if key_instance['peak'] < peak:
+                            key_instance['peak'] = peak
+
+                        expires = HashServer.status.get('expiration', 0)
+
+                        if expires > 0:
+                            key_instance['expires'] = (
+                                datetime.utcfromtimestamp(expires))
+
+                        db_update_hashkeys(key, dbq, key_instance)
+                        log.debug(
+                            ('Hash key {} has {}/{} RPM ' +
+                             'left.').format(key, key_instance['remaining'],
+                                             key_instance['maximum']))
+
                 # Delay the desired amount after "scan" completion.
                 delay = scheduler.delay(status['last_scan_date'])
 
@@ -1155,13 +1154,13 @@ def search_worker_thread(args, account_queue, account_failures,
             time.sleep(args.scan_delay)
 
 
-def db_update_hashkey(key, db_updates_queue, key_instance):
-
+def db_update_hashkeys(key, dbq, key_instance):
+    # Copy the Hash key instance to remove remaining and insert values into db.
     hashkeys_db = {}
     hashkeys_db[0] = key_instance.copy()
     hashkeys_db[0]['key'] = key
     hashkeys_db[0].pop('remaining', None)
-    db_updates_queue.put((HashKeys, hashkeys_db))
+    dbq.put((HashKeys, hashkeys_db))
 
 
 def map_request(api, position, no_jitter=False):

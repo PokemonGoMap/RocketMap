@@ -1124,7 +1124,6 @@ class KeyScheduler(object):
         for key in keys:
             self.keys[key] = {
                 'remaining': 0,
-                'average': 0,
                 'maximum': 0,
                 'peak': 0,
                 'expires': None
