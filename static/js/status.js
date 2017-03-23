@@ -113,6 +113,7 @@ function processWorker(i, worker) {
 }
 
 function processHashKeys(i, hashkey) {
+    var key = hashkey['key']
     var mainKeyHash = hashFnv32a(hashkey['key'], true)
     var keyHash = hashFnv32a(hashkey['key'], true)
     mainKeyHash = 'global'
@@ -128,23 +129,23 @@ function processHashKeys(i, hashkey) {
             count: 0
         }
 
-        hashkeys[hashkey['key']] = keyValues
+        hashkeys['key'] = keyValues
     }
 
-    var writeIndex = hashkeys[hashkey['key']].count % 100
-    hashkeys[hashkey['key']].count += 1
-    hashkeys[hashkey['key']].samples[writeIndex] = hashkey['peak']
-    var numSamples = hashkeys[hashkey['key']].samples.length
+    var writeIndex = hashkeys['key'].count % 100
+    hashkeys['key'].count += 1
+    hashkeys['key'].samples[writeIndex] = hashkey['peak']
+    var numSamples = hashkeys['key'].samples.length
     var sumSamples = 0
     for (var j = 0; j < numSamples; j++) {
-        sumSamples += hashkeys[hashkey['key']].samples[j]
+        sumSamples += hashkeys['key'].samples[j]
     }
 
     if (numSamples > 0) {
-        hashkeys[hashkey['key']].average = sumSamples / numSamples
+        hashkeys['key'].average = sumSamples / numSamples
     }
 
-    var remaining = hashkey['maximum'] - hashkeys[hashkey['key']].average
+    var remaining = hashkey['maximum'] - hashkeys['key'].average
 
     var lastUpdated = new Date(hashkey['last_updated'])
 
@@ -169,7 +170,7 @@ function processHashKeys(i, hashkey) {
     $('#key_' + keyHash).html(hashkey['key'])
     $('#maximum_' + keyHash).html(hashkey['maximum'])
     $('#remaining_' + keyHash).html(remaining.toFixed(2))
-    $('#average_' + keyHash).html(hashkeys[hashkey['key']].average.toFixed(2))
+    $('#average_' + keyHash).html(hashkeys['key'].average.toFixed(2))
     $('#peak_' + keyHash).html(hashkey['peak'])
     $('#last_updated_' + keyHash).html(lastUpdated)
     $('#expires_' + keyHash).html(expires)
