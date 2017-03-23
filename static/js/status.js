@@ -58,7 +58,7 @@ function addWorker(mainWorkerHash, workerHash) {
     $(row).appendTo('#table_' + mainWorkerHash)
 }
 
-function addhashtable(mainKeyHash, keyHash) {
+function addHashtable(mainKeyHash, keyHash) {
     var hashrow = `
     <div id="hashrow_${keyHash}" class="status_row">
       <div id="key_${keyHash}" class="status_cell"/>
@@ -93,12 +93,14 @@ function processWorker(i, worker) {
     }
 
     var lastModified = new Date(worker['last_modified'])
-    lastModified = lastModified.getHours() + ':' +
-        ('0' + lastModified.getMinutes()).slice(-2) + ':' +
-        ('0' + lastModified.getSeconds()).slice(-2) + ' ' +
-        lastModified.getDate() + ' ' +
-        monthArray[lastModified.getMonth()] + ' ' +
-        lastModified.getFullYear()
+
+    // Use YYYY-MM-DD HH:MM:SS formatted dates to enable simple sorting
+    lastModified = lastModified.getFullYear() + '-' +
+    ('0' + (lastModified.getMonth() + 1)).slice(-2) + '-' +
+    ('0' + lastModified.getDate()).slice(-2) + ' ' +
+    ('0' + lastModified.getHours()).slice(-2) + ':' +
+    ('0' + lastModified.getMinutes()).slice(-2) + ':' +
+    ('0' + lastModified.getSeconds()).slice(-2)
 
     $('#username_' + hash).html(worker['username'])
     $('#success_' + hash).html(worker['success'])
@@ -119,7 +121,7 @@ function processHashKeys(i, hashkey) {
     }
 
     if ($('#hashrow_' + keyHash).length === 0) {
-        addhashtable(mainKeyHash, keyHash)
+        addHashtable(mainKeyHash, keyHash)
         var keyValues = {
             samples: [],
             average: 0,
@@ -145,20 +147,24 @@ function processHashKeys(i, hashkey) {
     var remaining = hashkey['maximum'] - hashkeys[hashkey['key']].average
 
     var lastUpdated = new Date(hashkey['last_updated'])
-    lastUpdated = lastUpdated.getHours() + ':' +
-        ('0' + lastUpdated.getMinutes()).slice(-2) + ':' +
-        ('0' + lastUpdated.getSeconds()).slice(-2) + ' ' +
-        lastUpdated.getDate() + ' ' +
-        monthArray[lastUpdated.getMonth()] + ' ' +
-        lastUpdated.getFullYear()
+
+    // Use YYYY-MM-DD HH:MM:SS formatted dates to enable simple sorting
+    lastUpdated = lastUpdated.getFullYear() + '-' +
+    ('0' + (lastUpdated.getMonth() + 1)).slice(-2) + '-' +
+    ('0' + lastUpdated.getDate()).slice(-2) + ' ' +
+    ('0' + lastUpdated.getHours()).slice(-2) + ':' +
+    ('0' + lastUpdated.getMinutes()).slice(-2) + ':' +
+    ('0' + lastUpdated.getSeconds()).slice(-2)
 
     var expires = new Date(hashkey['expires'])
-    expires = expires.getHours() + ':' +
-        ('0' + expires.getMinutes()).slice(-2) + ':' +
-        ('0' + expires.getSeconds()).slice(-2) + ' ' +
-        expires.getDate() + ' ' +
-        monthArray[expires.getMonth()] + ' ' +
-        expires.getFullYear()
+
+    // Use YYYY-MM-DD HH:MM:SS formatted dates to enable simple sorting
+    expires = expires.getFullYear() + '-' +
+    ('0' + (expires.getMonth() + 1)).slice(-2) + '-' +
+    ('0' + expires.getDate()).slice(-2) + ' ' +
+    ('0' + expires.getHours()).slice(-2) + ':' +
+    ('0' + expires.getMinutes()).slice(-2) + ':' +
+    ('0' + expires.getSeconds()).slice(-2)
 
     $('#key_' + keyHash).html(hashkey['key'])
     $('#maximum_' + keyHash).html(hashkey['maximum'])
