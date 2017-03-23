@@ -96,11 +96,11 @@ function processWorker(i, worker) {
 
     // Use YYYY-MM-DD HH:MM:SS formatted dates to enable simple sorting
     lastModified = lastModified.getFullYear() + '-' +
-    ('0' + (lastModified.getMonth() + 1)).slice(-2) + '-' +
-    ('0' + lastModified.getDate()).slice(-2) + ' ' +
-    ('0' + lastModified.getHours()).slice(-2) + ':' +
-    ('0' + lastModified.getMinutes()).slice(-2) + ':' +
-    ('0' + lastModified.getSeconds()).slice(-2)
+        ('0' + (lastModified.getMonth() + 1)).slice(-2) + '-' +
+        ('0' + lastModified.getDate()).slice(-2) + ' ' +
+        ('0' + lastModified.getHours()).slice(-2) + ':' +
+        ('0' + lastModified.getMinutes()).slice(-2) + ':' +
+        ('0' + lastModified.getSeconds()).slice(-2)
 
     $('#username_' + hash).html(worker['username'])
     $('#success_' + hash).html(worker['success'])
@@ -150,21 +150,21 @@ function processHashKeys(i, hashkey) {
 
     // Use YYYY-MM-DD HH:MM:SS formatted dates to enable simple sorting
     lastUpdated = lastUpdated.getFullYear() + '-' +
-    ('0' + (lastUpdated.getMonth() + 1)).slice(-2) + '-' +
-    ('0' + lastUpdated.getDate()).slice(-2) + ' ' +
-    ('0' + lastUpdated.getHours()).slice(-2) + ':' +
-    ('0' + lastUpdated.getMinutes()).slice(-2) + ':' +
-    ('0' + lastUpdated.getSeconds()).slice(-2)
+        ('0' + (lastUpdated.getMonth() + 1)).slice(-2) + '-' +
+        ('0' + lastUpdated.getDate()).slice(-2) + ' ' +
+        ('0' + lastUpdated.getHours()).slice(-2) + ':' +
+        ('0' + lastUpdated.getMinutes()).slice(-2) + ':' +
+        ('0' + lastUpdated.getSeconds()).slice(-2)
 
     var expires = new Date(hashkey['expires'])
 
     // Use YYYY-MM-DD HH:MM:SS formatted dates to enable simple sorting
     expires = expires.getFullYear() + '-' +
-    ('0' + (expires.getMonth() + 1)).slice(-2) + '-' +
-    ('0' + expires.getDate()).slice(-2) + ' ' +
-    ('0' + expires.getHours()).slice(-2) + ':' +
-    ('0' + expires.getMinutes()).slice(-2) + ':' +
-    ('0' + expires.getSeconds()).slice(-2)
+        ('0' + (expires.getMonth() + 1)).slice(-2) + '-' +
+        ('0' + expires.getDate()).slice(-2) + ' ' +
+        ('0' + expires.getHours()).slice(-2) + ':' +
+        ('0' + expires.getMinutes()).slice(-2) + ':' +
+        ('0' + expires.getSeconds()).slice(-2)
 
     $('#key_' + keyHash).html(hashkey['key'])
     $('#maximum_' + keyHash).html(hashkey['maximum'])
