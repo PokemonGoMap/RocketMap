@@ -1691,7 +1691,7 @@ class HashKeys(BaseModel):
             'peak': 0,
             'expires': None,
             'last_updated': None
-            }
+        }
 
 
 def hex_bounds(center, steps=None, radius=None):
