@@ -1114,11 +1114,11 @@ def search_worker_thread(args, account_queue, account_failures,
                     if key_instance['peak'] < peak:
                         key_instance['peak'] = peak
 
-                    if key_instance['expires'] == 'N/A':
+                    if key_instance['expires'] == 0:
                         expires = HashServer.status.get(
-                            'expiration', 'N/A')
+                            'expiration', 0)
 
-                        if expires != 'N/A':
+                        if expires != 0:
                             expires = datetime.utcfromtimestamp(expires)
 
                         key_instance['expires'] = expires
