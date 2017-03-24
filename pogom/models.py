@@ -1676,7 +1676,7 @@ class HashKeys(BaseModel):
     key = CharField(primary_key=True, max_length=20)
     maximum = SmallIntegerField(default=0)
     peak = SmallIntegerField(default=0)
-    expires = DateTimeField(default=0, null=True)
+    expires = DateTimeField(default=0, None=True)
     last_updated = DateTimeField(default=datetime.utcnow)
 
     @staticmethod
@@ -1688,8 +1688,9 @@ class HashKeys(BaseModel):
 
         return query[0] if query else {
             'maximum': 0,
+            'remaining': 0,
             'peak': 0,
-            'expires': None,
+            'expires': 'N/A',
             'last_updated': None
         }
 
