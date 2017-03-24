@@ -9,6 +9,8 @@
 # Some options are integers, others are string.
 # This will be used to differentiate between them
 
+from shutil import copyfile
+
 option_type = {}
 config_opts = {}
 
@@ -27,12 +29,20 @@ option_type['startAtUserLocation'] = 'boolean'
 option_type['zoomLevel'] = 'integer'
 
 mapjs = "static/js/map.common.js"
+mapjs_custom = "static/js/map.common-custom.js"
 map_defaults = "config/map-defaults.ini"
 
 
 def read_config():
     file_dict = {}
-    raw_contents = open(map_defaults).readlines()
+    try:
+        raw_contents = open(map_defaults).readlines()
+    except:
+        # If this can't be read, then we're just going to exit.
+        print "File '" + map_defaults + "' doesn't exist." \
+              " This is not fatal."
+        exit(0)
+        
     for line in raw_contents:
         # build a dictionary of settings and values
         if not line.startswith("#") and not line.startswith("\n"):
@@ -43,6 +53,21 @@ def read_config():
 
 
 def main():
+    
+    # First thing is copy the stock map.common.js
+    # to map.common-custom.js
+    # This will leave map.common.js alone so that
+    # any updates to the main repo will be able to
+    # be pulled down without issue.
+    # map.common-custom.js will not be in the main repo
+    try: 
+        copyfile(mapjs, mapjs_custom)
+    except:
+        print "There was an unrecoverable error copying " \
+              "'" + mapjs + "' to '" + mapjs_custom + "'"
+        raise
+        exit(1)
+        
     mapjs_arr = open(mapjs).readlines()
 #    for line in mapjs_arr:
 #        print line,
@@ -70,7 +95,7 @@ def main():
                             mapjs_arr[j] = new_line + ": " + value + ",\n"
                         break
     # Now write the file out
-    mapjs_out = open(mapjs, 'w')
+    mapjs_out = open(mapjs_custom, 'w')
     for line in mapjs_arr:
         mapjs_out.write(line)
     mapjs_out.close()

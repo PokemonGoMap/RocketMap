@@ -35,7 +35,7 @@ module.exports = function(grunt) {
         files: {
           'static/dist/js/app.built.js': 'static/js/app.js',
           'static/dist/js/map.built.js': 'static/js/map.js',
-          'static/dist/js/map.common.built.js': 'static/js/map.common.js',
+          'static/dist/js/map.common.built.js': 'static/js/map.common-custom.js',
           'static/dist/js/mobile.built.js': 'static/js/mobile.js',
           'static/dist/js/stats.built.js': 'static/js/stats.js',
           'static/dist/js/statistics.built.js': 'static/js/statistics.js',
