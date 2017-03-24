@@ -1690,7 +1690,7 @@ class HashKeys(BaseModel):
             'maximum': 0,
             'remaining': 0,
             'peak': 0,
-            'expires': 'N/A',
+            'expires': 0,
             'last_updated': None
         }
 
