@@ -9,8 +9,6 @@
 # Some options are integers, others are string.
 # This will be used to differentiate between them
 
-from shutil import copyfile
-
 option_type = {}
 config_opts = {}
 
@@ -54,20 +52,6 @@ def read_config():
 
 def main():
     
-    # First thing is copy the stock map.common.js
-    # to map.common-custom.js
-    # This will leave map.common.js alone so that
-    # any updates to the main repo will be able to
-    # be pulled down without issue.
-    # map.common-custom.js will not be in the main repo
-    try: 
-        copyfile(mapjs, mapjs_custom)
-    except:
-        print "There was an unrecoverable error copying " \
-              "'" + mapjs + "' to '" + mapjs_custom + "'"
-        raise
-        exit(1)
-        
     mapjs_arr = open(mapjs).readlines()
 #    for line in mapjs_arr:
 #        print line,

@@ -7,11 +7,14 @@ module.exports = function(grunt) {
     pkg: grunt.file.readJSON('package.json'),
 	shell: {
 		options: {
-		stderr: false
+		    stderr: false
 		},
 		target: {
-			command: './map_default.py'
-			}
+			command: [
+			         'cp static/js/map.common.js static/js/map.common-custom.js',
+		             './map_default.py'
+			].join('&&')
+	   }
 	},
     sass: {
       dist: {
