@@ -110,9 +110,8 @@ function processWorker(i, worker) {
 }
 
 function processHashKeys(i, hashkey) {
-    var mainKeyHash = hashFnv32a(hashkey['key'], true)
     var keyHash = hashFnv32a(hashkey['key'], true)
-    mainKeyHash = 'global'
+    var mainKeyHash = 'global'
     if ($('#hashtable_global').length === 0) {
         createHashTable('global')
     }
