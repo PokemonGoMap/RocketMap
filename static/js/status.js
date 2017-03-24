@@ -110,7 +110,6 @@ function processWorker(i, worker) {
 }
 
 function processHashKeys(i, hashkey) {
-    // var key = hashkeys['key']
     var mainKeyHash = hashFnv32a(hashkey['key'], true)
     var keyHash = hashFnv32a(hashkey['key'], true)
     mainKeyHash = 'global'
