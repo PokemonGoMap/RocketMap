@@ -1676,7 +1676,7 @@ class HashKeys(BaseModel):
     key = CharField(primary_key=True, max_length=20)
     maximum = SmallIntegerField(default=0)
     peak = SmallIntegerField(default=0)
-    expires = DateTimeField(default=0, None=True)
+    expires = DateTimeField(default=0)
     last_updated = DateTimeField(default=datetime.utcnow)
 
     @staticmethod
