@@ -40,7 +40,6 @@ def read_config():
         print "File '" + map_defaults + "' doesn't exist." \
               " This is not fatal."
         exit(0)
-        
     for line in raw_contents:
         # build a dictionary of settings and values
         if not line.startswith("#") and not line.startswith("\n"):
@@ -51,10 +50,7 @@ def read_config():
 
 
 def main():
-    
     mapjs_arr = open(mapjs).readlines()
-#    for line in mapjs_arr:
-#        print line,
     config_dict = read_config()
     # loop through the file array and compare it to the hash key of options
     for i in range(len(mapjs_arr)):
