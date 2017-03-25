@@ -127,7 +127,7 @@ function processHashKeys(i, hashkey) {
         hashkeys[key] = keyValues
     }
 
-    var writeIndex = hashkeys[key].count % 100
+    var writeIndex = hashkeys[key].count % 60
     hashkeys[key].count += 1
     hashkeys[key].samples[writeIndex] = hashkey['peak']
     var numSamples = hashkeys[key].samples.length
@@ -140,7 +140,7 @@ function processHashKeys(i, hashkey) {
         hashkeys[key].average = sumSamples / numSamples
     }
 
-    var remaining = hashkey['maximum'] - hashkeys[key].average
+    var remaining = hashkey['maximum'] - hashkey['peak']
 
     var lastUpdated = new Date(hashkey['last_updated'])
 
@@ -164,7 +164,7 @@ function processHashKeys(i, hashkey) {
 
     $('#key_' + keyHash).html(key)
     $('#maximum_' + keyHash).html(hashkey['maximum'])
-    $('#remaining_' + keyHash).html(remaining.toFixed(2))
+    $('#remaining_' + keyHash).html(remaining.toFixed())
     $('#average_' + keyHash).html(hashkeys[key].average.toFixed(2))
     $('#peak_' + keyHash).html(hashkey['peak'])
     $('#last_updated_' + keyHash).html(lastUpdated)
@@ -182,7 +182,6 @@ function parseResult(result) {
         $.each(result.hashkeys, processHashKeys)
     }
 }
-
 /*
  * Tables
  */
