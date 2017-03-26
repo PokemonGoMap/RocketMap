@@ -199,7 +199,7 @@ function createHashTable(mainKeyHash) {
         RPM Left
       </div>
       <div class="status_cell">
-        Average Per Minute
+        Average
         </div>
       <div class="status_cell">
         Peak
