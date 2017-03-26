@@ -1688,7 +1688,6 @@ class HashKeys(BaseModel):
 
         return query[0] if query else {
             'maximum': 0,
-            'remaining': 0,
             'peak': 0,
             'expires': 0,
             'last_updated': None
