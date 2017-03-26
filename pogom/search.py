@@ -537,7 +537,15 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
                     i].get_overseer_message()
 
         # Let's update the total stats and add that info to message
-        update_total_stats(threadStatus, last_account_status)
+        # Added exception handler as dict items change
+        try:
+            update_total_stats(threadStatus, last_account_status)
+        except Exception as e:
+            log.error(
+                'Update total stats had an Exception: {}.'.format(
+                    repr(e)))
+            traceback.print_exc(file=sys.stdout)
+            time.sleep(10)
         threadStatus['Overseer']['message'] += '\n' + get_stats_message(
             threadStatus)
 
