@@ -392,7 +392,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
     if args.hash_key:
         log.info('Enabling hashing key scheduler...')
         key_scheduler = schedulers.KeyScheduler(args.hash_key,
-												db_updates_queue)
+                                                db_updates_queue)
 
     if(args.print_status):
         log.info('Starting status printer thread...')
