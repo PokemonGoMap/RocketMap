@@ -1133,10 +1133,12 @@ class KeyScheduler(object):
         self.curr_key = ''
 
         hashkeys = self.keys.copy()
+        hashkeys_db = {}
         for key in hashkeys:
-            hashkeys[key].pop('remaining', None)
-            hashkeys[key]['key'] = key
-        db_updates_queue.put((HashKeys, hashkeys))
+            hashkeys_db[key] = hashkeys[key].copy()
+            hashkeys_db[key].pop('remaining', None)
+            hashkeys_db[key]['key'] = key
+        db_updates_queue.put((HashKeys, hashkeys_db))
 
     def keys(self):
         return self.keys

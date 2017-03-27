@@ -127,6 +127,7 @@ function processHashKeys(i, hashkey) {
         hashkeys[key] = keyValues
     }
 
+    // Calculate average value for Hash keys.
     var writeIndex = hashkeys[key].count % 60
     hashkeys[key].count += 1
     hashkeys[key].samples[writeIndex] = hashkey['peak']

@@ -392,7 +392,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
     if args.hash_key:
         log.info('Enabling hashing key scheduler...')
         key_scheduler = schedulers.KeyScheduler(args.hash_key,
-                                                db_updates_queue)
+												db_updates_queue)
 
     if(args.print_status):
         log.info('Starting status printer thread...')
@@ -738,10 +738,12 @@ def search_worker_thread(args, account_queue, account_failures,
             # Force storing of previous worker info to keep consistency
             if 'starttime' in status:
                 dbq.put((WorkerStatus, {0: WorkerStatus.db_format(status)}))
+
             status['starttime'] = now()
 
             # Track per loop.
             first_login = True
+
             # Make sure the scheduler is done for valid locations
             while not scheduler.ready:
                 time.sleep(1)
@@ -990,7 +992,6 @@ def search_worker_thread(args, account_queue, account_failures,
                     parsed = parse_map(args, response_dict, step_location,
                                        dbq, whq, api, scan_date, account)
                     scheduler.task_done(status, parsed)
-
                     if parsed['count'] > 0:
                         status['success'] += 1
                         consecutive_noitems = 0
@@ -1003,7 +1004,6 @@ def search_worker_thread(args, account_queue, account_failures,
                         step_location[0], step_location[1],
                         parsed['count'])
                     log.debug(status['message'])
-
                 except Exception as e:
                     parsed = False
                     status['fail'] += 1
@@ -1124,11 +1124,11 @@ def search_worker_thread(args, account_queue, account_failures,
 
                         key_instance['expires'] = expires
 
-                    db_update_hashkeys(key, dbq, key_instance)
                     log.debug(
                         ('Hash key {} has {}/{} RPM ' +
                          'left.').format(key, key_instance['remaining'],
                                          key_instance['maximum']))
+                    db_update_hashkeys(key, dbq, key_instance)
 
                 # Delay the desired amount after "scan" completion.
                 delay = scheduler.delay(status['last_scan_date'])
