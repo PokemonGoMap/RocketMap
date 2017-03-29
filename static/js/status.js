@@ -130,7 +130,7 @@ function processHashKeys(i, hashkey) {
     // Calculate average value for Hash keys.
     var writeIndex = hashkeys[key].count % 60
     hashkeys[key].count += 1
-    hashkeys[key].samples[writeIndex] = hashkey['peak']
+    hashkeys[key].samples[writeIndex] = hashkey['maximum'] - hashkey['remaining']
     var numSamples = hashkeys[key].samples.length
     var sumSamples = 0
     for (var j = 0; j < numSamples; j++) {
@@ -140,8 +140,6 @@ function processHashKeys(i, hashkey) {
     if (numSamples > 0) {
         hashkeys[key].average = sumSamples / numSamples
     }
-
-    var remaining = hashkey['maximum'] - hashkey['peak']
 
     var lastUpdated = new Date(hashkey['last_updated'])
 
@@ -165,7 +163,7 @@ function processHashKeys(i, hashkey) {
 
     $('#key_' + keyHash).html(key)
     $('#maximum_' + keyHash).html(hashkey['maximum'])
-    $('#remaining_' + keyHash).html(remaining.toFixed())
+    $('#remaining_' + keyHash).html(hashkey['remaining'])
     $('#average_' + keyHash).html(hashkeys[key].average.toFixed(2))
     $('#peak_' + keyHash).html(hashkey['peak'])
     $('#last_updated_' + keyHash).html(lastUpdated)

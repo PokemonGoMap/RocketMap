@@ -1100,7 +1100,6 @@ def search_worker_thread(args, account_queue, account_failures,
                                        whq, dbq)
 
                 if args.hash_key:
-                    key = HashServer.status.get('token', 0)
                     key_instance = key_scheduler.keys[key]
                     key_instance['remaining'] = HashServer.status.get(
                         'remaining', 0)
@@ -1115,11 +1114,11 @@ def search_worker_thread(args, account_queue, account_failures,
                     if key_instance['peak'] < peak:
                         key_instance['peak'] = peak
 
-                    if key_instance['expires'] == 0:
+                    if key_instance['expires'] is None:
                         expires = HashServer.status.get(
-                            'expiration', 0)
+                            'expiration', None)
 
-                        if expires != 0:
+                        if expires is not None:
                             expires = datetime.utcfromtimestamp(expires)
 
                         key_instance['expires'] = expires
@@ -1128,7 +1127,10 @@ def search_worker_thread(args, account_queue, account_failures,
                         ('Hash key {} has {}/{} RPM ' +
                          'left.').format(key, key_instance['remaining'],
                                          key_instance['maximum']))
-                    db_update_hashkeys(key, dbq, key_instance)
+                    hashkeys = {}
+                    hashkeys[key] = key_instance
+                    hashkeys[key]['key'] = key
+                    dbq.put((HashKeys, hashkeys))
 
                 # Delay the desired amount after "scan" completion.
                 delay = scheduler.delay(status['last_scan_date'])
@@ -1155,15 +1157,6 @@ def search_worker_thread(args, account_queue, account_failures,
                                      'last_fail_time': now(),
                                      'reason': 'exception'})
             time.sleep(args.scan_delay)
-
-
-def db_update_hashkeys(key, dbq, key_instance):
-    # Copy the Hash key instance to remove remaining and insert values into db.
-    hashkeys_db = {}
-    hashkeys_db[key] = key_instance.copy()
-    hashkeys_db[key]['key'] = key
-    hashkeys_db[key].pop('remaining', None)
-    dbq.put((HashKeys, hashkeys_db))
 
 
 def map_request(api, position, no_jitter=False):

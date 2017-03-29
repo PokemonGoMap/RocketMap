@@ -1675,8 +1675,9 @@ class Token(flaskDb.Model):
 class HashKeys(BaseModel):
     key = CharField(primary_key=True, max_length=20)
     maximum = SmallIntegerField(default=0)
+    remaining = SmallIntegerField(default=0)
     peak = SmallIntegerField(default=0)
-    expires = DateTimeField(default=0)
+    expires = DateTimeField(null=True)
     last_updated = DateTimeField(default=datetime.utcnow)
 
     @staticmethod
@@ -1688,8 +1689,9 @@ class HashKeys(BaseModel):
 
         return query[0] if query else {
             'maximum': 0,
+            'remaining': 0,
             'peak': 0,
-            'expires': 0,
+            'expires': None,
             'last_updated': None
         }
 
