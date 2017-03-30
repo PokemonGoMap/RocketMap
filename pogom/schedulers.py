@@ -1132,7 +1132,7 @@ class KeyScheduler(object):
         self.key_cycle = itertools.cycle(keys)
         self.curr_key = ''
 
-        hashkeys = self.keys.copy()
+        hashkeys = self.keys
         for key in hashkeys:
             hashkeys[key]['key'] = key
         db_updates_queue.put((HashKeys, hashkeys))
