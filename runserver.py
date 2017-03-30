@@ -191,7 +191,6 @@ def main():
         logger.setLevel(logging.INFO)
         logger.addHandler(handler)
 
-
     # Use lat/lng directly if matches such a pattern.
     prog = re.compile("^(\-?\d+\.\d+),?\s?(\-?\d+\.\d+)$")
     res = prog.match(args.location)
