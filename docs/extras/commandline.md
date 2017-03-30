@@ -46,6 +46,7 @@
     override defaults.
 
     optional arguments:
+      -al, --access-logs    Write web logs to access.log
       -h, --help            show this help message and exit [env var:
                             POGOMAP_HELP]
       -cf CONFIG, --config CONFIG
