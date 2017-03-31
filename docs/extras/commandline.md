@@ -40,7 +40,7 @@
                         [filename.log]]
 
     Args that start with '--' (eg. -a) can also be set in a config file
-    (C:\Stage\RocketMap\pogom\../config/config.ini or specified via -cf). The
+    (/config/config.ini or specified via -cf). The
     recognized syntax for setting (key, value) pairs is based on the INI and YAML
     formats (e.g. key=value or foo=TRUE). For full documentation of the
     differences from the standards please refer to the ConfigArgParse
@@ -80,7 +80,7 @@
                             POGOMAP_ACCOUNTCSV]
       -bh, --beehive        Use beehive configuration for multiple accounts, one
                             account per hex. Make sure to keep -st under 5, and -w
-                            under the totalamount of accounts available. [env var:
+                            under the total amount of accounts available. [env var:
                             POGOMAP_BEEHIVE]
       -wph WORKERS_PER_HIVE, --workers-per-hive WORKERS_PER_HIVE
                             Only referenced when using --beehive. Sets number of

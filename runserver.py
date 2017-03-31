@@ -185,7 +185,7 @@ def main():
         logging.getLogger('werkzeug').setLevel(logging.DEBUG)
 
     # Web access logs.
-    if args.access_log:
+    if args.access_logs:
         logger = logging.getLogger('werkzeug')
         handler = logging.FileHandler('access.log')
         logger.setLevel(logging.INFO)
