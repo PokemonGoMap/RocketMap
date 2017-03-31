@@ -1779,7 +1779,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
     # Consolidate the individual lists in each cell into two lists of Pokemon
     # and a list of forts.
     cells = map_dict['responses']['GET_MAP_OBJECTS']['map_cells']
-    # Get the level for the pokestop spin in any case delete inventory 
+    # Get the level for the pokestop spin in any case delete inventory
     if args.complete_tutorial and config['parse_pokestops']:
         level = get_player_level(map_dict)
     if 'GET_INVENTORY' in map_dict['responses']:
@@ -1789,7 +1789,6 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
         if i == 0:
             now_date = datetime.utcfromtimestamp(
                                 cell['current_timestamp_ms'] / 1000)
-        nearby_pokemon += cell.get('nearby_pokemons', [])
         nearby_pokemon += len(cell.get('nearby_pokemons', []))
         # Parse everything for stats (counts).  Future enhancement -- we don't
         # necessarily need to know *how many* forts/wild/nearby were found but
@@ -1932,8 +1931,8 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                 req.download_settings()
                 req.get_buddy_walked()
                 encounter_result = req.call()
-                encounter_result = clear_dict_response(encounter_result);
-                
+                encounter_result = clear_dict_response(encounter_result)
+
                 captcha_url = encounter_result['responses']['CHECK_CHALLENGE'][
                         'challenge_url']  # Check for captcha
                 if len(captcha_url) > 1:  # Throw warning but finish parsing
@@ -1990,7 +1989,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                 wh_update_queue.put(('pokemon', wh_poke))
 
     wild_pokemon = len(wild_pokemon)
-                
+
     if forts and (config['parse_pokestops'] or config['parse_gyms']):
         if config['parse_pokestops']:
             stop_ids = [f['id'] for f in forts if f.get('type') == 1]
@@ -2102,7 +2101,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                     'last_modified': datetime.utcfromtimestamp(
                         f['last_modified_timestamp_ms'] / 1000.0),
                 }
-        
+
         forts = len(forts)
 
     log.info('Parsing found Pokemon: %d, nearby: %d, pokestops: %d, gyms: %d.',
@@ -2349,7 +2348,7 @@ def db_updater(args, q, db):
                           default_timer() - last_upsert)
                 del model
                 del data
-                          
+
                 if q.qsize() > 50:
                     log.warning(
                         "DB queue is > 50 (@%d); try increasing --db-threads.",

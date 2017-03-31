@@ -891,11 +891,12 @@ def extract_sprites():
     zip.extractall('static')
     zip.close()
 
-def clear_dict_response(response, keep_inventory = False):
+
+def clear_dict_response(response, keep_inventory=False):
     if 'platform_returns' in response:
         del response['platform_returns']
     if 'responses' not in response:
-        return response;
+        return response
     if 'GET_INVENTORY' in response['responses'] and not keep_inventory:
         del response['responses']['GET_INVENTORY']
     if 'GET_HATCHED_EGGS' in response['responses']:

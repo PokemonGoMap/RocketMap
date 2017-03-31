@@ -96,7 +96,7 @@ def wh_updater(args, queue, key_cache):
                     else:
                         log.debug('Not resending %s to webhook: %s.',
                                   whtype, ident)
-            
+
             del whtype
             del message
             del ident

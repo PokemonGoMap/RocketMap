@@ -1027,7 +1027,7 @@ def search_worker_thread(args, account_queue, account_failures,
                                                            account['username'])
                     log.exception('{}. Exception message: {}'.format(
                         status['message'], repr(e)))
-                    del response_dict                        
+                    del response_dict
 
                 # Get detailed information about gyms.
                 if args.gym_info and parsed:
@@ -1194,10 +1194,10 @@ def gym_request(api, position, gym):
                   calc_distance(position, [gym['latitude'], gym['longitude']]))
         req = api.create_request()
         req.get_gym_details(gym_id=gym['gym_id'],
-                                player_latitude=f2i(position[0]),
-                                player_longitude=f2i(position[1]),
-                                gym_latitude=gym['latitude'],
-                                gym_longitude=gym['longitude'])
+                            player_latitude=f2i(position[0]),
+                            player_longitude=f2i(position[1]),
+                            gym_latitude=gym['latitude'],
+                            gym_longitude=gym['longitude'])
         req.check_challenge()
         req.get_hatched_eggs()
         req.get_inventory()
