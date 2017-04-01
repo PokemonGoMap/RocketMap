@@ -1766,7 +1766,9 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
     skipped = 0
     stopsskipped = 0
     forts = []
+    forts_count = 0
     wild_pokemon = []
+    wild_pokemon_count = 0
     nearby_pokemon = 0
     spawn_points = {}
     scan_spawn_points = {}
@@ -1794,9 +1796,20 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
         # necessarily need to know *how many* forts/wild/nearby were found but
         # we'd like to know whether or not *any* were found to help determine
         # if a scan was actually bad.
-        wild_pokemon += cell.get('wild_pokemons', [])
+        if config['parse_pokemon']:
+            wild_pokemon += cell.get('wild_pokemons', [])
+        else:
+            wild_pokemon_count += len(cell.get('wild_pokemons', []))
 
-        forts += cell.get('forts', [])
+        if config['parse_pokestops'] or config['parse_gyms']:
+            forts += cell.get('forts', [])
+        else:
+            forts_count += len(cell.get('forts', []))
+
+    if wild_pokemon:
+        wild_pokemon_count = len(wild_pokemon)
+    if forts:
+        forts_count = len(forts)
 
     del map_dict['responses']['GET_MAP_OBJECTS']
 
@@ -1988,7 +2001,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                 })
                 wh_update_queue.put(('pokemon', wh_poke))
 
-    wild_pokemon = len(wild_pokemon)
+        del wild_pokemon
 
     if forts and (config['parse_pokestops'] or config['parse_gyms']):
         if config['parse_pokestops']:
@@ -2102,7 +2115,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                         f['last_modified_timestamp_ms'] / 1000.0),
                 }
 
-        forts = len(forts)
+        del forts
 
     log.info('Parsing found Pokemon: %d, nearby: %d, pokestops: %d, gyms: %d.',
              len(pokemon) + skipped,
@@ -2170,7 +2183,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
         # After parsing the forts, we'll mark this scan as bad due to
         # a possible speed violation.
         return {
-            'count': wild_pokemon + forts,
+            'count': wild_pokemon_count + forts_count,
             'gyms': gyms,
             'sp_id_list': sp_id_list,
             'bad_scan': True,
@@ -2178,7 +2191,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
         }
 
     return {
-        'count': wild_pokemon + forts,
+        'count': wild_pokemon_count + forts_count,
         'gyms': gyms,
         'sp_id_list': sp_id_list,
         'bad_scan': False,
