@@ -232,8 +232,7 @@ def main():
 
     # if we're clearing the db, do not bother with the blacklist
     if args.clear_db:
-        args.disable_blacklist=True
-        
+        args.disable_blacklist = True
     app = Pogom(__name__)
     app.before_request(app.validate_request)
 
@@ -245,7 +244,6 @@ def main():
         elif os.path.isfile(args.db):
             os.remove(args.db)
     create_tables(db)
-    
     if args.clear_db:
         log.info("Drop and recreate is complete. Now remove -cd and restart.")
         sys.exit()

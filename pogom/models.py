@@ -2383,8 +2383,9 @@ def create_tables(db):
               Token, LocationAltitude]
     for table in tables:
         log.info("Creating table: %s", table.__name__)
-        db.create_tables([table], safe=True)        
-    db.close()
+        db.create_tables([table], safe=True)
+        db.close()
+
 
 def drop_tables(db):
     tables = [Pokemon, Pokestop, Gym, ScannedLocation, Versions,
