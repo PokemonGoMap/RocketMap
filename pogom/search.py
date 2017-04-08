@@ -1027,7 +1027,8 @@ def search_worker_thread(args, account_queue, account_failures,
                                                            account['username'])
                     log.exception('{}. Exception message: {}'.format(
                         status['message'], repr(e)))
-                    del response_dict
+                    if response_dict is not None:
+                        del response_dict
 
                 # Get detailed information about gyms.
                 if args.gym_info and parsed:
