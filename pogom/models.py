@@ -1724,10 +1724,11 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
             log.info('Common causes: captchas or IP bans.')
             abandon_loc = True
         else:
-            # No wild or nearby Pokemon but there are forts.  It's probably
-            # a speed violation.
-            log.warning('No nearby or wild Pokemon but there are visible gyms '
-                        'or pokestops. Possible speed violation.')
+            if not args.no_pokemon:
+                # No wild or nearby Pokemon but there are forts.  It's probably
+                # a speed violation.
+                log.warning('No nearby or wild Pokemon but there are visible '
+                            'gyms or pokestops. Possible speed violation.')
             if not (config['parse_pokestops'] or config['parse_gyms']):
                 # If we're not going to parse the forts, then we'll just
                 # exit here.
