@@ -40,7 +40,7 @@ args = get_args()
 flaskDb = FlaskDB()
 cache = TTLCache(maxsize=100, ttl=60 * 5)
 
-db_schema_version = 16
+db_schema_version = 17
 
 
 class MyRetryDB(RetryOperationalError, PooledMySQLDatabase):
@@ -94,7 +94,8 @@ class Pokemon(BaseModel):
     # We are base64 encoding the ids delivered by the api
     # because they are too big for sqlite to handle.
     encounter_id = CharField(primary_key=True, max_length=50)
-    spawnpoint_id = CharField(index=True)
+    spawnpoint_id = CharField(index=True, null=True)
+    pokestop_id = CharField(null=True)
     pokemon_id = SmallIntegerField(index=True)
     latitude = DoubleField()
     longitude = DoubleField()
@@ -270,7 +271,8 @@ class Pokemon(BaseModel):
         '''
         :param pokemon_id: id of Pokemon that we need appearances for
         :param timediff: limiting period of the selection
-        :return: list of Pokemon appearances over a selected period
+        :return: list of Pokemon appearances over a selected
+        period (excluding lured appearances)
         '''
         if timediff:
             timediff = datetime.utcnow() - timediff
@@ -323,7 +325,8 @@ class Pokemon(BaseModel):
                  .select(Pokemon.latitude, Pokemon.longitude,
                          Pokemon.spawnpoint_id,
                          (date_secs(Pokemon.disappear_time)).alias('time'),
-                         fn.Count(Pokemon.spawnpoint_id).alias('count')))
+                         fn.Count(Pokemon.spawnpoint_id).alias('count'))
+                 .where(Pokemon.spawnpoint_id.is_null(False)))
 
         if timestamp > 0:
             query = (query
@@ -396,8 +399,10 @@ class Pokemon(BaseModel):
         query = (query.where((Pokemon.latitude <= n) &
                              (Pokemon.latitude >= s) &
                              (Pokemon.longitude >= w) &
-                             (Pokemon.longitude <= e)
+                             (Pokemon.longitude <= e) &
+                             (Pokemon.spawnpoint_id.is_null(False))
                              ))
+
         # Sqlite doesn't support distinct on columns.
         if args.db_type == 'mysql':
             query = query.distinct(Pokemon.spawnpoint_id)
@@ -1757,6 +1762,61 @@ def hex_bounds(center, steps=None, radius=None):
     return (n, e, s, w)
 
 
+def construct_pokemon_dict(pokemons, p, encounter_result, disappear_time,
+                           lure_info=None):
+    if lure_info is None:
+        encounter_id = p['encounter_id']
+        spawnpoint_id = p['spawn_point_id']
+        pokestop_id = None
+        pokemon_id = p['pokemon_data']['pokemon_id']
+    else:
+        encounter_id = lure_info['encounter_id']
+        spawnpoint_id = None
+        pokestop_id = b64encode(str(p['id']))
+        pokemon_id = lure_info['active_pokemon_id']
+
+    pokemons[encounter_id] = {
+        'encounter_id': b64encode(str(encounter_id)),
+        'spawnpoint_id': spawnpoint_id,
+        'pokestop_id': pokestop_id,
+        'pokemon_id': pokemon_id,
+        'latitude': p['latitude'],
+        'longitude': p['longitude'],
+        'disappear_time': disappear_time,
+        'individual_attack': None,
+        'individual_defense': None,
+        'individual_stamina': None,
+        'move_1': None,
+        'move_2': None,
+        'height': None,
+        'weight': None,
+        'gender': None
+    }
+
+    pokemon_info = None
+    if encounter_result is not None:
+        if lure_info is not None and encounter_result['responses'][
+                'DISK_ENCOUNTER']['result'] == 1:
+            pokemon_info = encounter_result['responses'][
+                'DISK_ENCOUNTER']['pokemon_data']
+        if lure_info is None and 'wild_pokemon' in encounter_result[
+                'responses']['ENCOUNTER']:
+            pokemon_info = encounter_result['responses']['ENCOUNTER'][
+                'wild_pokemon']['pokemon_data']
+
+    if pokemon_info is not None:
+        pokemons[encounter_id].update({
+            'individual_attack': pokemon_info.get('individual_attack', 0),
+            'individual_defense': pokemon_info.get('individual_defense', 0),
+            'individual_stamina': pokemon_info.get('individual_stamina', 0),
+            'move_1': pokemon_info['move_1'],
+            'move_2': pokemon_info['move_2'],
+            'height': pokemon_info['height_m'],
+            'weight': pokemon_info['weight_kg'],
+            'gender': pokemon_info['pokemon_display']['gender']
+        })
+
+
 # todo: this probably shouldn't _really_ be in "models" anymore, but w/e.
 def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
               api, now_date, account):
@@ -1776,6 +1836,8 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
     new_spawn_points = []
     sp_id_list = []
     now_secs = date_secs(now_date)
+    encountered_pokemon = []
+    fort_pokemon = []
     captcha_url = ''
 
     # Consolidate the individual lists in each cell into two lists of Pokemon
@@ -1951,40 +2013,8 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                 if len(captcha_url) > 1:  # Throw warning but finish parsing
                     log.debug('Account encountered a reCaptcha.')
 
-            pokemon[p['encounter_id']] = {
-                'encounter_id': b64encode(str(p['encounter_id'])),
-                'spawnpoint_id': p['spawn_point_id'],
-                'pokemon_id': p['pokemon_data']['pokemon_id'],
-                'latitude': p['latitude'],
-                'longitude': p['longitude'],
-                'disappear_time': disappear_time,
-                'individual_attack': None,
-                'individual_defense': None,
-                'individual_stamina': None,
-                'move_1': None,
-                'move_2': None,
-                'height': None,
-                'weight': None,
-                'gender': None
-            }
-
-            if (encounter_result is not None and 'wild_pokemon'
-                    in encounter_result['responses']['ENCOUNTER']):
-                pokemon_info = encounter_result['responses'][
-                    'ENCOUNTER']['wild_pokemon']['pokemon_data']
-                pokemon[p['encounter_id']].update({
-                    'individual_attack': pokemon_info.get(
-                        'individual_attack', 0),
-                    'individual_defense': pokemon_info.get(
-                        'individual_defense', 0),
-                    'individual_stamina': pokemon_info.get(
-                        'individual_stamina', 0),
-                    'move_1': pokemon_info['move_1'],
-                    'move_2': pokemon_info['move_2'],
-                    'height': pokemon_info['height_m'],
-                    'weight': pokemon_info['weight_kg'],
-                    'gender': pokemon_info['pokemon_display']['gender'],
-                })
+            construct_pokemon_dict(pokemon, p, encounter_result,
+                                   disappear_time, lure_info=None)
 
             if args.webhooks:
 
@@ -2028,6 +2058,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
         for f in forts:
             if config['parse_pokestops'] and f.get('type') == 1:  # Pokestops.
                 if 'active_fort_modifier' in f:
+                    lure_info = f.get('lure_info')
                     lure_expiration = (datetime.utcfromtimestamp(
                         f['last_modified_timestamp_ms'] / 1000.0) +
                         timedelta(minutes=args.lure_duration))
@@ -2044,6 +2075,69 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                                 lure_expiration.timetuple()),
                             'active_fort_modifier': active_fort_modifier
                         }))
+
+                    if (args.lured_pokemon and lure_info is not None
+                            and config['parse_pokemon']):
+                        # pre-build a list of encountered pokemon
+                        fort_encounter_id = [
+                            b64encode(str(lure_info['encounter_id']))]
+                        if fort_encounter_id:
+                            query = (Pokemon
+                                     .select()
+                                     .where((Pokemon.disappear_time >
+                                             datetime.utcnow()) &
+                                            (Pokemon.encounter_id <<
+                                             fort_encounter_id))
+                                     .dicts()
+                                     )
+                            fort_pokemon = [(p['encounter_id'],
+                                             p['pokestop_id']) for p in query]
+
+                        # Don't parse pokemon we've already encountered.
+                        # Avoids IVs getting nulled out on rescanning.
+                        if ((b64encode(str(
+                                lure_info['encounter_id'])), f['id'])
+                                in fort_pokemon):
+                            skipped += 1
+                            continue
+
+                        disappear_time = datetime.utcfromtimestamp(
+                            lure_info['lure_expires_timestamp_ms'] / 1000)
+
+                        encounter_result = None
+                        if (args.encounter and (
+                                lure_info['active_pokemon_id']
+                                in args.encounter_whitelist or
+                                lure_info['active_pokemon_id'] not
+                                in args.encounter_blacklist and
+                                not args.encounter_whitelist)):
+                            time.sleep(args.encounter_delay)
+                            encounter_result = api.disk_encounter(
+                                encounter_id=lure_info['encounter_id'],
+                                fort_id=f['id'],
+                                player_latitude=step_location[0],
+                                player_longitude=step_location[1])
+                        construct_pokemon_dict(pokemon, f, encounter_result,
+                                               disappear_time, lure_info)
+
+                        if args.webhooks:
+                            wh_poke = pokemon[lure_info['encounter_id']].copy()
+                            wh_poke.update({
+                                'disappear_time': calendar.timegm(
+                                    disappear_time.timetuple()),
+                                'last_modified_time':
+                                p['last_modified_timestamp_ms'],
+                                'time_until_hidden_ms':
+                                p['time_till_hidden_ms']
+                                # We don't know yet what do with this,
+                                # so let's comment it for now
+                                # 'verified': SpawnPoint.tth_found(sp),
+                                # 'seconds_until_despawn':
+                                # seconds_until_despawn,
+                                # 'spawn_start': start_end[0],
+                                # 'spawn_end': start_end[1]
+                            })
+                            wh_update_queue.put(('pokemon', wh_poke))
                 else:
                     lure_expiration, active_fort_modifier = None, None
 
@@ -2727,3 +2821,9 @@ def database_migrate(db, old_ver):
                 migrator.add_index('pokestop', ('last_updated',), False)
             )
         log.info('Schema upgrade complete.')
+
+    if old_ver < 17:
+        migrate(
+            migrator.drop_not_null('pokemon', 'spawnpoint_id'),
+            migrator.add_column('pokemon', 'pokestop_id', CharField(null=True))
+        )
