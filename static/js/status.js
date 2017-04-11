@@ -10,15 +10,15 @@ var hashkeys = {}
 var minUpdateDelay = 1000 // Minimum delay between updates (in ms).
 var lastRawUpdateTime = new Date()
 
-function getFormattedDate(iDate) {
+function getformattedDate(iDate) {
 // Use YYYY-MM-DD HH:MM:SS formatted dates to enable simple sorting
-	iDate = iDate.getFullYear() + '-' +
-	('0' + (iDate.getMonth() + 1)).slice(-2) + '-' +
-	('0' + iDate.getDate()).slice(-2) + ' ' +
-	('0' + iDate.getHours()).slice(-2) + ':' +
-	('0' + iDate.getMinutes()).slice(-2) + ':' +
-	('0' + iDate.getSeconds()).slice(-2)
-	return iDate
+	formatedDate = formatedDate.getFullYear() + '-' +
+	('0' + (formatedDate.getMonth() + 1)).slice(-2) + '-' +
+	('0' + formatedDate.getDate()).slice(-2) + ' ' +
+	('0' + formatedDate.getHours()).slice(-2) + ':' +
+	('0' + formatedDate.getMinutes()).slice(-2) + ':' +
+	('0' + formatedDate.getSeconds()).slice(-2)
+	return formatedDate
  }
 
 
@@ -102,7 +102,7 @@ function processWorker(i, worker) {
     }
 
     var lastModified = new Date(worker['last_modified'])
-    lastModified = getFormattedDate(lastModified)
+    lastModified = getformattedDate(lastModified)
 
     $('#username_' + hash).html(worker['username'])
     $('#success_' + hash).html(worker['success'])
@@ -147,9 +147,9 @@ function processHashKeys(i, hashkey) {
     }
 
     var lastUpdated = new Date(hashkey['last_updated'])
-		lastUpdated = getFormattedDate(lastUpdated)
+		lastUpdated = getformattedDate(lastUpdated)
     var expires = new Date(hashkey['expires'])
-		expires = getFormattedDate(expires)
+		expires = getformattedDate(expires)
 
     $('#key_' + keyHash).html(key)
     $('#maximum_' + keyHash).html(hashkey['maximum'])
