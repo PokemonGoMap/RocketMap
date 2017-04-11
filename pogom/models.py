@@ -1695,6 +1695,13 @@ class HashKeys(BaseModel):
             'last_updated': None
         }
 
+    @staticmethod
+    def get_obfuscated_keys():
+        hashkeys = HashKeys.get_all()
+        for i, s in enumerate(hashkeys):
+            hashkeys[i]['key'] = s['key'][:-9] + '*'*9
+        return hashkeys
+
 
 def hex_bounds(center, steps=None, radius=None):
     # Make a box that is (70m * step_limit * 2) + 70m away from the

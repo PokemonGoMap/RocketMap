@@ -554,12 +554,7 @@ class Pogom(Flask):
             d['login'] = 'ok'
             d['main_workers'] = MainWorker.get_all()
             d['workers'] = WorkerStatus.get_all()
-            # Get Hash key values from database and obfuscate the last 9 digits
-            # of the key to keep it safe from scrapers.
-            hashkeys = HashKeys.get_all()
-            for i, s in enumerate(hashkeys):
-                hashkeys[i]['key'] = s['key'][:-9] + '*'*9
-            d['hashkeys'] = hashkeys
+            d['hashkeys'] = HashKeys.get_obfuscated_keys()
         else:
             d['login'] = 'failed'
         return jsonify(d)
