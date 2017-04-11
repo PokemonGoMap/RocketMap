@@ -10,6 +10,18 @@ var hashkeys = {}
 var minUpdateDelay = 1000 // Minimum delay between updates (in ms).
 var lastRawUpdateTime = new Date()
 
+function getFormattedDate(iDate) {
+// Use YYYY-MM-DD HH:MM:SS formatted dates to enable simple sorting
+	iDate = iDate.getFullYear() + '-' +
+	('0' + (iDate.getMonth() + 1)).slice(-2) + '-' +
+	('0' + iDate.getDate()).slice(-2) + ' ' +
+	('0' + iDate.getHours()).slice(-2) + ':' +
+	('0' + iDate.getMinutes()).slice(-2) + ':' +
+	('0' + iDate.getSeconds()).slice(-2)
+	return iDate
+ }
+
+
 /*
  * Workers
  */
@@ -90,14 +102,7 @@ function processWorker(i, worker) {
     }
 
     var lastModified = new Date(worker['last_modified'])
-
-    // Use YYYY-MM-DD HH:MM:SS formatted dates to enable simple sorting
-    lastModified = lastModified.getFullYear() + '-' +
-        ('0' + (lastModified.getMonth() + 1)).slice(-2) + '-' +
-        ('0' + lastModified.getDate()).slice(-2) + ' ' +
-        ('0' + lastModified.getHours()).slice(-2) + ':' +
-        ('0' + lastModified.getMinutes()).slice(-2) + ':' +
-        ('0' + lastModified.getSeconds()).slice(-2)
+    lastModified = getFormattedDate(lastModified)
 
     $('#username_' + hash).html(worker['username'])
     $('#success_' + hash).html(worker['success'])
@@ -142,24 +147,9 @@ function processHashKeys(i, hashkey) {
     }
 
     var lastUpdated = new Date(hashkey['last_updated'])
-
-    // Use YYYY-MM-DD HH:MM:SS formatted dates to enable simple sorting
-    lastUpdated = lastUpdated.getFullYear() + '-' +
-        ('0' + (lastUpdated.getMonth() + 1)).slice(-2) + '-' +
-        ('0' + lastUpdated.getDate()).slice(-2) + ' ' +
-        ('0' + lastUpdated.getHours()).slice(-2) + ':' +
-        ('0' + lastUpdated.getMinutes()).slice(-2) + ':' +
-        ('0' + lastUpdated.getSeconds()).slice(-2)
-
+		lastUpdated = getFormattedDate(lastUpdated)
     var expires = new Date(hashkey['expires'])
-
-    // Use YYYY-MM-DD HH:MM:SS formatted dates to enable simple sorting
-    expires = expires.getFullYear() + '-' +
-        ('0' + (expires.getMonth() + 1)).slice(-2) + '-' +
-        ('0' + expires.getDate()).slice(-2) + ' ' +
-        ('0' + expires.getHours()).slice(-2) + ':' +
-        ('0' + expires.getMinutes()).slice(-2) + ':' +
-        ('0' + expires.getSeconds()).slice(-2)
+		expires = getFormattedDate(expires)
 
     $('#key_' + keyHash).html(key)
     $('#maximum_' + keyHash).html(hashkey['maximum'])
