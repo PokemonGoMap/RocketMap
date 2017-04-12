@@ -1140,17 +1140,11 @@ function loadRawData() {
                 rawDataIsLoading = true
             }
         },
+        success: function () {
+            document.getElementById('errstat').innerHTML = '<a href="#">Rocket Map - Scanning</a>'
+        },
         error: function () {
-            if (!$timeoutDialog) {
-                var opts = {
-                    title: 'Reduce marker settings'
-                }
-
-                $timeoutDialog = $('<div>Hmm... we\'re having problems getting data for your criteria. Try reducing what you\'re showing and zooming in to limit what\'s returned.</div>').dialog(opts)
-                $timeoutDialog.dialog('open')
-            } else if (!$timeoutDialog.dialog('isOpen')) {
-                $timeoutDialog.dialog('open')
-            }
+            document.getElementById('errstat').innerHTML = '<a href="#">Rocket Map - Error receiving data</a>'
         },
         complete: function () {
             rawDataIsLoading = false
