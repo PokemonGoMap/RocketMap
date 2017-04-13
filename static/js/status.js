@@ -10,14 +10,14 @@ var hashkeys = {}
 var minUpdateDelay = 1000 // Minimum delay between updates (in ms).
 var lastRawUpdateTime = new Date()
 
-function getformattedDate(formattedDate) {
+function getFormattedDate(unFormattedDate) {
 // Use YYYY-MM-DD HH:MM:SS formatted dates to enable simple sorting
-    formattedDate = formattedDate.getFullYear() + '-' +
-    ('0' + (formattedDate.getMonth() + 1)).slice(-2) + '-' +
-    ('0' + formattedDate.getDate()).slice(-2) + ' ' +
-    ('0' + formattedDate.getHours()).slice(-2) + ':' +
-    ('0' + formattedDate.getMinutes()).slice(-2) + ':' +
-    ('0' + formattedDate.getSeconds()).slice(-2)
+    var formattedDate = unFormattedDate.getFullYear() + '-' +
+    ('0' + (unFormattedDate.getMonth() + 1)).slice(-2) + '-' +
+    ('0' + unFormattedDate.getDate()).slice(-2) + ' ' +
+    ('0' + unFormattedDate.getHours()).slice(-2) + ':' +
+    ('0' + unFormattedDate.getMinutes()).slice(-2) + ':' +
+    ('0' + unFormattedDate.getSeconds()).slice(-2)
     return formattedDate
 }
 
@@ -100,8 +100,7 @@ function processWorker(i, worker) {
         addWorker(mainWorkerHash, hash)
     }
 
-    var lastModified = new Date(worker['last_modified'])
-    lastModified = getformattedDate(lastModified)
+    var lastModified = getFormattedDate(new Date(worker['last_modified']))
 
     $('#username_' + hash).html(worker['username'])
     $('#success_' + hash).html(worker['success'])
@@ -145,10 +144,8 @@ function processHashKeys(i, hashkey) {
         hashkeys[key].average = sumSamples / numSamples
     }
 
-    var lastUpdated = new Date(hashkey['last_updated'])
-    lastUpdated = getformattedDate(lastUpdated)
-    var expires = new Date(hashkey['expires'])
-    expires = getformattedDate(expires)
+    var lastUpdated = getFormattedDate(new Date(hashkey['last_updated']))
+    var expires = getFormattedDate(new Date(hashkey['expires']))
 
     $('#key_' + keyHash).html(key)
     $('#maximum_' + keyHash).html(hashkey['maximum'])
