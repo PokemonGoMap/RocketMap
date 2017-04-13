@@ -1139,11 +1139,26 @@ function loadRawData() {
                 rawDataIsLoading = true
             }
         },
-        success: function () {
-            document.getElementById('errstat').innerHTML = '<a href="#">Rocket Map - Scanning</a>'
-        },
         error: function () {
-            document.getElementById('errstat').innerHTML = '<a href="#">Rocket Map - Error receiving data</a>'
+            // Display error toast
+            toastr["error"]("Please check connectivity or reduce marker settings.", "Error getting Data")
+            toastr.options = {
+                            "closeButton": true,
+                            "debug": false,
+                            "newestOnTop": true,
+                            "progressBar": false,
+                            "positionClass": "toast-top-right",
+                            "preventDuplicates": true,
+                            "onclick": null,
+                            "showDuration": "300",
+                            "hideDuration": "1000",
+                            "timeOut": "25000",
+                            "extendedTimeOut": "1000",
+                            "showEasing": "swing",
+                            "hideEasing": "linear",
+                            "showMethod": "fadeIn",
+                            "hideMethod": "fadeOut"
+                         }
         },
         complete: function () {
             rawDataIsLoading = false
