@@ -18,6 +18,7 @@ var $selectSearchIconMarker
 var $selectGymMarkerStyle
 var $selectLocationIconMarker
 var $switchGymSidebar
+var $toastr
 
 var language = document.documentElement.lang === '' ? 'en' : document.documentElement.lang
 var idToPokemon = {}
@@ -1143,22 +1144,22 @@ function loadRawData() {
             // Display error toast
             toastr["error"]("Please check connectivity or reduce marker settings.", "Error getting Data")
             toastr.options = {
-                            "closeButton": true,
-                            "debug": false,
-                            "newestOnTop": true,
-                            "progressBar": false,
-                            "positionClass": "toast-top-right",
-                            "preventDuplicates": true,
-                            "onclick": null,
-                            "showDuration": "300",
-                            "hideDuration": "1000",
-                            "timeOut": "25000",
-                            "extendedTimeOut": "1000",
-                            "showEasing": "swing",
-                            "hideEasing": "linear",
-                            "showMethod": "fadeIn",
-                            "hideMethod": "fadeOut"
-                         }
+                'closeButton': true,
+                'debug': false,
+                'newestOnTop': true,
+                'progressBar': false,
+                'positionClass': 'toast-top-right',
+                'preventDuplicates': true,
+                'onclick': null,
+                'showDuration': '300',
+                'hideDuration': '1000',
+                'timeOut': '25000',
+                'extendedTimeOut': '1000',
+                'showEasing': 'swing',
+                'hideEasing': 'linear',
+                'showMethod': 'fadeIn',
+                'hideMethod': 'fadeOut'
+            }
         },
         complete: function () {
             rawDataIsLoading = false
