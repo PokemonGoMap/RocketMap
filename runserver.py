@@ -184,6 +184,13 @@ def main():
         logging.getLogger('rpc_api').setLevel(logging.DEBUG)
         logging.getLogger('werkzeug').setLevel(logging.DEBUG)
 
+    # Web access logs.
+    if args.access_logs:
+        logger = logging.getLogger('werkzeug')
+        handler = logging.FileHandler('access.log')
+        logger.setLevel(logging.INFO)
+        logger.addHandler(handler)
+
     # Use lat/lng directly if matches such a pattern.
     prog = re.compile("^(\-?\d+\.\d+),?\s?(\-?\d+\.\d+)$")
     res = prog.match(args.location)
@@ -230,6 +237,9 @@ def main():
     config['LOCALE'] = args.locale
     config['CHINA'] = args.china
 
+    # if we're clearing the db, do not bother with the blacklist
+    if args.clear_db:
+        args.disable_blacklist = True
     app = Pogom(__name__)
     app.before_request(app.validate_request)
 
@@ -241,6 +251,9 @@ def main():
         elif os.path.isfile(args.db):
             os.remove(args.db)
     create_tables(db)
+    if args.clear_db:
+        log.info("Drop and recreate is complete. Now remove -cd and restart.")
+        sys.exit()
 
     app.set_current_location(position)
 

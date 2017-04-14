@@ -61,7 +61,7 @@ def get_args():
         default_config_files=defaultconfigfiles,
         auto_env_var_prefix='POGOMAP_')
     parser.add_argument('-cf', '--config',
-                        is_config_file=True, help='Configuration file')
+                        is_config_file=True, help='Set configuration file')
     parser.add_argument('-a', '--auth-service', type=str.lower,
                         action='append', default=[],
                         help=('Auth Services, either one for all accounts ' +
@@ -89,7 +89,7 @@ def get_args():
     parser.add_argument('-bh', '--beehive',
                         help=('Use beehive configuration for multiple ' +
                               'accounts, one account per hex.  Make sure ' +
-                              'to keep -st under 5, and -w under the total' +
+                              'to keep -st under 5, and -w under the total ' +
                               'amount of accounts available.'),
                         action='store_true', default=False)
     parser.add_argument('-wph', '--workers-per-hive',
@@ -115,6 +115,9 @@ def get_args():
     parser.add_argument('-nj', '--no-jitter',
                         help=("Don't apply random -9m to +9m jitter to " +
                               "location."),
+                        action='store_true', default=False)
+    parser.add_argument('-al', '--access-logs',
+                        help=("Write web logs to access.log."),
                         action='store_true', default=False)
     parser.add_argument('-st', '--step-limit', help='Steps.', type=int,
                         default=12)
@@ -895,3 +898,21 @@ def extract_sprites():
     zip = zipfile.ZipFile('static01.zip', 'r')
     zip.extractall('static')
     zip.close()
+
+
+def clear_dict_response(response, keep_inventory=False):
+    if 'platform_returns' in response:
+        del response['platform_returns']
+    if 'responses' not in response:
+        return response
+    if 'GET_INVENTORY' in response['responses'] and not keep_inventory:
+        del response['responses']['GET_INVENTORY']
+    if 'GET_HATCHED_EGGS' in response['responses']:
+        del response['responses']['GET_HATCHED_EGGS']
+    if 'CHECK_AWARDED_BADGES' in response['responses']:
+        del response['responses']['CHECK_AWARDED_BADGES']
+    if 'DOWNLOAD_SETTINGS' in response['responses']:
+        del response['responses']['DOWNLOAD_SETTINGS']
+    if 'GET_BUDDY_WALKED' in response['responses']:
+        del response['responses']['GET_BUDDY_WALKED']
+    return response

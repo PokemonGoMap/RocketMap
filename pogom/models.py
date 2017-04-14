@@ -29,10 +29,11 @@ from timeit import default_timer
 from . import config
 from .utils import get_pokemon_name, get_pokemon_rarity, get_pokemon_types, \
     get_args, cellid, in_radius, date_secs, clock_between, secs_between, \
-    get_move_name, get_move_damage, get_move_energy, get_move_type
+    get_move_name, get_move_damage, get_move_energy, get_move_type, \
+    clear_dict_response
 from .transform import transform_from_wgs_to_gcj, get_new_coords
 from .customLog import printPokemon
-from .account import tutorial_pokestop_spin
+from .account import tutorial_pokestop_spin, get_player_level
 log = logging.getLogger(__name__)
 
 args = get_args()
@@ -866,14 +867,14 @@ class ScannedLocation(BaseModel):
 
         d = {}
         for sl in list(query):
-            key = "{},{}".format(sl['latitude'], sl['longitude'])
+            key = "{}".format(sl['cellid'])
             d[key] = sl
 
         return d
 
     @classmethod
     def find_in_locs(cls, loc, locs):
-        key = "{},{}".format(loc[0], loc[1])
+        key = "{}".format(cellid(loc))
         return locs[key] if key in locs else cls.new_loc(loc)
 
     # Return value of a particular scan from loc, or default dict if not found.
@@ -895,8 +896,13 @@ class ScannedLocation(BaseModel):
         for cell, scan in scans.iteritems():
             if initial[cell]['done'] and not force:
                 continue
-
+            # Difference in degrees at the equator for 70m is actually 0.00063
+            # degrees and gets smaller the further north or south you go
+            deg_at_lat = 0.0007 / math.cos(math.radians(scan['loc'][0]))
             for sp in spawn_points:
+                if (abs(sp['latitude'] - scan['loc'][0]) > 0.0008 or
+                        abs(sp['longitude'] - scan['loc'][1]) > deg_at_lat):
+                    continue
                 if in_radius((sp['latitude'], sp['longitude']),
                              scan['loc'], distance):
                     scan_spawn_point[cell + sp['id']] = {
@@ -921,12 +927,38 @@ class ScannedLocation(BaseModel):
 
     # Return list of dicts for upcoming valid band times.
     @classmethod
-    def get_cell_to_linked_spawn_points(cls, cellids):
+    def get_cell_to_linked_spawn_points(cls, cellids, location_change_date):
+
+        # Get all spawnpoints from the hive's cells
+        sp_from_cells = (ScanSpawnPoint
+                         .select(ScanSpawnPoint.spawnpoint)
+                         .where(ScanSpawnPoint.scannedlocation << cellids)
+                         .alias('spcells'))
+        # A new SL (new ones are created when the location changes) or
+        # it can be a cell from another active hive
+        one_sp_scan = (ScanSpawnPoint
+                       .select(ScanSpawnPoint.spawnpoint,
+                               fn.MAX(ScanSpawnPoint.scannedlocation).alias(
+                                       'cellid'))
+                       .join(sp_from_cells, on=sp_from_cells.c.spawnpoint_id
+                             == ScanSpawnPoint.spawnpoint)
+                       .join(cls, on=(cls.cellid ==
+                             ScanSpawnPoint.scannedlocation))
+                       .where(((cls.last_modified >= (location_change_date)) &
+                               (cls.last_modified > (
+                                datetime.utcnow() - timedelta(minutes=60)))) |
+                              (cls.cellid << cellids))
+                       .group_by(ScanSpawnPoint.spawnpoint)
+                       .alias('maxscan'))
+        # As scan locations overlap,spawnpoints can belong to up to 3 locations
+        # This sub-query effectively assigns each SP to exactly one location.
+
         query = (SpawnPoint
-                 .select(SpawnPoint, cls.cellid)
-                 .join(ScanSpawnPoint)
-                 .join(cls)
-                 .where(cls.cellid << cellids).dicts())
+                 .select(SpawnPoint, one_sp_scan.c.cellid)
+                 .join(one_sp_scan, on=(SpawnPoint.id ==
+                                        one_sp_scan.c.spawnpoint_id))
+                 .where(one_sp_scan.c.cellid << cellids)
+                 .dicts())
         l = list(query)
         ret = {}
         for item in l:
@@ -987,8 +1019,8 @@ class ScannedLocation(BaseModel):
     # Checks if now falls within an unfilled band for a scanned location.
     # Returns the updated scan location dict.
     @classmethod
-    def update_band(cls, scan):
-        now_date = datetime.utcnow()
+    def update_band(cls, scan, now_date):
+
         scan['last_modified'] = now_date
 
         if scan['done']:
@@ -1045,40 +1077,22 @@ class ScannedLocation(BaseModel):
             scan_loc['band' + str(i)] = -1
 
     @classmethod
-    def select_in_hex(cls, center, steps):
+    def select_in_hex(cls, locs):
         # There should be a way to delegate this to SpawnPoint.select_in_hex,
         # but w/e.
+        cells = []
+        for i, e in enumerate(locs):
+            cells.append(cellid(e[1]))
 
-        R = 6378.1  # KM radius of the earth
-        hdist = ((steps * 120.0) - 50.0) / 1000.0
-        n, e, s, w = hex_bounds(center, steps)
-
-        # Get all spawns in that box.
+        # Get all spawns for the locations.
         sp = list(cls
                   .select()
-                  .where((cls.latitude <= n) &
-                         (cls.latitude >= s) &
-                         (cls.longitude >= w) &
-                         (cls.longitude <= e))
+                  .where(cls.cellid << cells)
                   .dicts())
 
         # For each spawn work out if it is in the hex (clipping the diagonals).
         in_hex = []
         for spawn in sp:
-            # Get the offset from the center of each spawn in km.
-            offset = [math.radians(spawn['latitude'] - center[0]) * R,
-                      math.radians(spawn['longitude'] - center[1]) *
-                      (R * math.cos(math.radians(center[0])))]
-            # Check against the 4 lines that make up the diagonals.
-            if (offset[1] + (offset[0] * 0.5)) > hdist:  # Too far NE.
-                continue
-            if (offset[1] - (offset[0] * 0.5)) > hdist:  # Too far SE
-                continue
-            if ((offset[0] * 0.5) - offset[1]) > hdist:  # Too far NW
-                continue
-            if ((0 - offset[1]) - (offset[0] * 0.5)) > hdist:  # Too far SW
-                continue
-            # If it gets to here it's a good spawn.
             in_hex.append(spawn)
         return in_hex
 
@@ -1297,25 +1311,35 @@ class SpawnPoint(BaseModel):
                 continue
 
             endpoints = SpawnPoint.start_end(sp, scan_delay)
-            cls.add_if_not_scanned('spawn', l, sp, scan, endpoints[0],
-                                   endpoints[1], now_date, now_secs, sp_by_id)
+            cls.add_if_not_scanned('spawn', l, sp, scan,
+                                   endpoints[0], endpoints[1], now_date,
+                                   now_secs, sp_by_id)
 
             # Check to see if still searching for valid TTH.
             if cls.tth_found(sp):
                 continue
 
             # Add a spawnpoint check between latest_seen and earliest_unseen.
-            start = sp['latest_seen'] + scan_delay
+            start = sp['latest_seen']
             end = sp['earliest_unseen']
 
-            cls.add_if_not_scanned(
-                'TTH', l, sp, scan, start, end, now_date, now_secs, sp_by_id)
+            # So if the gap between start and end < 89 seconds make the gap
+            # 89 seconds
+            if ((end > start and end - start < 89) or
+                    (start > end and (end + 3600) - start < 89)):
+                end = (start + 89) % 3600
+            # So we move the search gap on 45 to within 45 and 89 seconds from
+            # the last scan. TTH appears in the last 90 seconds of the Spawn.
+            start = sp['latest_seen'] + 45
+
+            cls.add_if_not_scanned('TTH', l, sp, scan,
+                                   start, end, now_date, now_secs, sp_by_id)
 
         return l
 
     @classmethod
-    def add_if_not_scanned(cls, kind, l, sp, scan, start, end, now_date,
-                           now_secs, sp_by_id):
+    def add_if_not_scanned(cls, kind, l, sp, scan, start,
+                           end, now_date, now_secs, sp_by_id):
         # Make sure later than now_secs.
         while end < now_secs:
             start, end = start + 3600, end + 3600
@@ -1324,8 +1348,11 @@ class SpawnPoint(BaseModel):
         while start > end:
             start -= 3600
 
+        while start < 0:
+            start, end = start + 3600, end + 3600
+
         last_scanned = sp_by_id[sp['id']]['last_scanned']
-        if (now_date - last_scanned).total_seconds() > now_secs - start:
+        if ((now_date - last_scanned).total_seconds() > now_secs - start):
             l.append(ScannedLocation._q_init(scan, start, end, kind, sp['id']))
 
     # Given seconds after the hour and a spawnpoint dict, return which quartile
@@ -1336,7 +1363,45 @@ class SpawnPoint(BaseModel):
                     3600) / 15 / 60)
 
     @classmethod
-    def select_in_hex(cls, center, steps):
+    def select_in_hex_by_cellids(cls, cellids, location_change_date):
+        # Get all spawnpoints from the hive's cells
+        sp_from_cells = (ScanSpawnPoint
+                         .select(ScanSpawnPoint.spawnpoint)
+                         .where(ScanSpawnPoint.scannedlocation << cellids)
+                         .alias('spcells'))
+        # Allocate a spawnpoint to one cell only, this can either be
+        # A new SL (new ones are created when the location changes) or
+        # it can be a cell from another active hive
+        one_sp_scan = (ScanSpawnPoint
+                       .select(ScanSpawnPoint.spawnpoint,
+                               fn.MAX(ScanSpawnPoint.scannedlocation).alias(
+                                       'Max_ScannedLocation_id'))
+                       .join(sp_from_cells, on=sp_from_cells.c.spawnpoint_id
+                             == ScanSpawnPoint.spawnpoint)
+                       .join(ScannedLocation, on=(ScannedLocation.cellid
+                             == ScanSpawnPoint.scannedlocation))
+                       .where(((ScannedLocation.last_modified
+                               >= (location_change_date)) & (
+                                ScannedLocation.last_modified > (
+                                 datetime.utcnow() - timedelta(minutes=60)))) |
+                              (ScannedLocation.cellid << cellids))
+                       .group_by(ScanSpawnPoint.spawnpoint)
+                       .alias('maxscan'))
+
+        query = (cls
+                 .select(cls)
+                 .join(one_sp_scan,
+                       on=(one_sp_scan.c.spawnpoint_id == cls.id))
+                 .where(one_sp_scan.c.Max_ScannedLocation_id << cellids)
+                 .dicts())
+
+        in_hex = []
+        for spawn in list(query):
+            in_hex.append(spawn)
+        return in_hex
+
+    @classmethod
+    def select_in_hex_by_location(cls, center, steps):
         R = 6378.1  # KM radius of the earth
         hdist = ((steps * 120.0) - 50.0) / 1000.0
         n, e, s, w = hex_bounds(center, steps)
@@ -1390,24 +1455,10 @@ class SpawnpointDetectionData(BaseModel):
 
     @staticmethod
     def set_default_earliest_unseen(sp):
-        sp['earliest_unseen'] = (sp['latest_seen'] + 14 * 60) % 3600
+        sp['earliest_unseen'] = (sp['latest_seen'] + 15 * 60) % 3600
 
     @classmethod
     def classify(cls, sp, scan_loc, now_secs, sighting=None):
-
-        # To reduce CPU usage, give an intial reading of 15 minute spawns if
-        # not done with initial scan of location.
-        if not scan_loc['done']:
-            sp['kind'] = 'hhhs'
-            if not sp['earliest_unseen']:
-                sp['latest_seen'] = now_secs
-                cls.set_default_earliest_unseen(sp)
-
-            elif clock_between(sp['latest_seen'], now_secs,
-                               sp['earliest_unseen']):
-                sp['latest_seen'] = now_secs
-
-            return
 
         # Get past sightings.
         query = list(cls.select()
@@ -1418,13 +1469,37 @@ class SpawnpointDetectionData(BaseModel):
         if sighting:
             query.append(sighting)
 
+        tth_found = False
+        for s in query:
+            if s['tth_secs'] is not None:
+                tth_found = True
+                tth_secs = (s['tth_secs'] - 1) % 3600
+
+        # To reduce CPU usage, give an intial reading of 15 minute spawns if
+        # not done with initial scan of location.
+        if not scan_loc['done']:
+            # We only want to reset a SP if it is new and not due the
+            # location changing (which creates new Scannedlocations)
+            if not tth_found:
+                sp['kind'] = 'hhhs'
+                if not sp['earliest_unseen']:
+                    sp['latest_seen'] = now_secs
+                    cls.set_default_earliest_unseen(sp)
+
+                elif clock_between(sp['latest_seen'], now_secs,
+                                   sp['earliest_unseen']):
+                    sp['latest_seen'] = now_secs
+            return
+
         # Make a record of links, so we can reset earliest_unseen
         # if it changes.
         old_kind = str(sp['kind'])
-
         # Make a sorted list of the seconds after the hour.
         seen_secs = sorted(map(lambda x: date_secs(x['scan_time']), query))
-
+        # Include and entry for the TTH if it found
+        if tth_found:
+            seen_secs.append(tth_secs)
+            seen_secs.sort()
         # Add the first seen_secs to the end as a clock wrap around.
         if seen_secs:
             seen_secs.append(seen_secs[0] + 3600)
@@ -1438,7 +1513,7 @@ class SpawnpointDetectionData(BaseModel):
         # An hour minus the largest gap in minutes gives us the duration the
         # spawn was there.  Round up to the nearest 15 minute interval for our
         # current best guess duration.
-        duration = (int((59 - max_gap / 60.0) / 15) + 1) * 15
+        duration = (int((60 - max_gap / 60.0) / 15) + 1) * 15
 
         # If the second largest gap is larger than 15 minutes, then there are
         # two gaps greater than 15 minutes.  It must be a double spawn.
@@ -1458,7 +1533,8 @@ class SpawnpointDetectionData(BaseModel):
         if sp['kind'] != 'ssss':
 
             if (not sp['earliest_unseen'] or
-                    sp['earliest_unseen'] != sp['latest_seen']):
+                    sp['earliest_unseen'] != sp['latest_seen'] or
+                    not tth_found):
 
                 # New latest_seen will be just before max_gap.
                 sp['latest_seen'] = seen_secs[gap_list.index(max_gap)]
@@ -1467,7 +1543,6 @@ class SpawnpointDetectionData(BaseModel):
                 # spawn has changed, reset to latest_seen + 14 minutes.
                 if not sp['earliest_unseen'] or sp['kind'] != old_kind:
                     cls.set_default_earliest_unseen(sp)
-
             return
 
         # Only ssss spawns from here below.
@@ -1691,63 +1766,68 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
     skipped = 0
     stopsskipped = 0
     forts = []
+    forts_count = 0
     wild_pokemon = []
-    nearby_pokemon = []
+    wild_pokemon_count = 0
+    nearby_pokemon = 0
     spawn_points = {}
     scan_spawn_points = {}
     sightings = {}
     new_spawn_points = []
     sp_id_list = []
-    now_secs = date_secs(now_date)
     captcha_url = ''
 
     # Consolidate the individual lists in each cell into two lists of Pokemon
     # and a list of forts.
     cells = map_dict['responses']['GET_MAP_OBJECTS']['map_cells']
-    for cell in cells:
-        nearby_pokemon += cell.get('nearby_pokemons', [])
+    # Get the level for the pokestop spin in any case delete inventory
+    if args.complete_tutorial and config['parse_pokestops']:
+        level = get_player_level(map_dict)
+    if 'GET_INVENTORY' in map_dict['responses']:
+        del map_dict['responses']['GET_INVENTORY']
+    for i, cell in enumerate(cells):
+        # If we have map responses then use the time from the request
+        if i == 0:
+            now_date = datetime.utcfromtimestamp(
+                                cell['current_timestamp_ms'] / 1000)
+        nearby_pokemon += len(cell.get('nearby_pokemons', []))
         # Parse everything for stats (counts).  Future enhancement -- we don't
         # necessarily need to know *how many* forts/wild/nearby were found but
         # we'd like to know whether or not *any* were found to help determine
         # if a scan was actually bad.
-        wild_pokemon += cell.get('wild_pokemons', [])
+        if config['parse_pokemon']:
+            wild_pokemon += cell.get('wild_pokemons', [])
+        else:
+            wild_pokemon_count += len(cell.get('wild_pokemons', []))
 
-        forts += cell.get('forts', [])
+        if config['parse_pokestops'] or config['parse_gyms']:
+            forts += cell.get('forts', [])
+        else:
+            forts_count += len(cell.get('forts', []))
+
+    now_secs = date_secs(now_date)
+    if wild_pokemon:
+        wild_pokemon_count = len(wild_pokemon)
+    if forts:
+        forts_count = len(forts)
+
+    del map_dict['responses']['GET_MAP_OBJECTS']
 
     # If there are no wild or nearby Pokemon . . .
     if not wild_pokemon and not nearby_pokemon:
         # . . . and there are no gyms/pokestops then it's unusable/bad.
-        abandon_loc = False
-
         if not forts:
             log.warning('Bad scan. Parsing found absolutely nothing.')
             log.info('Common causes: captchas or IP bans.')
-            abandon_loc = True
         else:
             # No wild or nearby Pokemon but there are forts.  It's probably
             # a speed violation.
             log.warning('No nearby or wild Pokemon but there are visible gyms '
                         'or pokestops. Possible speed violation.')
-            if not (config['parse_pokestops'] or config['parse_gyms']):
-                # If we're not going to parse the forts, then we'll just
-                # exit here.
-                abandon_loc = True
-
-        if abandon_loc:
-            scan_loc = ScannedLocation.get_by_loc(step_location)
-            ScannedLocation.update_band(scan_loc)
-            db_update_queue.put((ScannedLocation, {0: scan_loc}))
-
-            return {
-                'count': 0,
-                'gyms': gyms,
-                'spawn_points': spawn_points,
-                'bad_scan': True
-            }
 
     scan_loc = ScannedLocation.get_by_loc(step_location)
     done_already = scan_loc['done']
-    ScannedLocation.update_band(scan_loc)
+    ScannedLocation.update_band(scan_loc, now_date)
     just_completed = not done_already and scan_loc['done']
 
     if wild_pokemon and config['parse_pokemon']:
@@ -1757,7 +1837,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
         # the database.
         query = (Pokemon
                  .select(Pokemon.encounter_id, Pokemon.spawnpoint_id)
-                 .where((Pokemon.disappear_time > datetime.utcnow()) &
+                 .where((Pokemon.disappear_time >= now_date) &
                         (Pokemon.encounter_id << encounter_ids))
                  .dicts())
 
@@ -1790,7 +1870,8 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                 d_t_secs = date_secs(datetime.utcfromtimestamp(
                     (p['last_modified_timestamp_ms'] +
                      p['time_till_hidden_ms']) / 1000.0))
-                if sp['latest_seen'] != sp['earliest_unseen']:
+                if (sp['latest_seen'] != sp['earliest_unseen'] or
+                        not sp['last_scanned']):
                     log.info('TTH found for spawnpoint %s.', sp['id'])
                     sighting['tth_secs'] = d_t_secs
 
@@ -1856,13 +1937,14 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                     spawn_point_id=p['spawn_point_id'],
                     player_latitude=step_location[0],
                     player_longitude=step_location[1])
-                encounter_result = req.check_challenge()
-                encounter_result = req.get_hatched_eggs()
-                encounter_result = req.get_inventory()
-                encounter_result = req.check_awarded_badges()
-                encounter_result = req.download_settings()
-                encounter_result = req.get_buddy_walked()
+                req.check_challenge()
+                req.get_hatched_eggs()
+                req.get_inventory()
+                req.check_awarded_badges()
+                req.download_settings()
+                req.get_buddy_walked()
                 encounter_result = req.call()
+                encounter_result = clear_dict_response(encounter_result)
 
                 captcha_url = encounter_result['responses']['CHECK_CHALLENGE'][
                         'challenge_url']  # Check for captcha
@@ -1919,6 +2001,8 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                 })
                 wh_update_queue.put(('pokemon', wh_poke))
 
+        del wild_pokemon
+
     if forts and (config['parse_pokestops'] or config['parse_gyms']):
         if config['parse_pokestops']:
             stop_ids = [f['id'] for f in forts if f.get('type') == 1]
@@ -1935,7 +2019,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
         if args.complete_tutorial and not (len(captcha_url) > 1):
             if config['parse_pokestops']:
                 tutorial_pokestop_spin(
-                    api, map_dict, forts, step_location, account)
+                    api, level, forts, step_location, account)
             else:
                 log.error(
                     'Pokestop can not be spun since parsing Pokestops is ' +
@@ -1992,7 +2076,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
 
                 pokestops[f['id']] = {
                     'pokestop_id': f['id'],
-                    'enabled': f['enabled'],
+                    'enabled': f.get('enabled', 0),
                     'latitude': f['latitude'],
                     'longitude': f['longitude'],
                     'last_modified': datetime.utcfromtimestamp(
@@ -2031,9 +2115,11 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                         f['last_modified_timestamp_ms'] / 1000.0),
                 }
 
+        del forts
+
     log.info('Parsing found Pokemon: %d, nearby: %d, pokestops: %d, gyms: %d.',
              len(pokemon) + skipped,
-             len(nearby_pokemon),
+             nearby_pokemon,
              len(pokestops) + stopsskipped,
              len(gyms))
 
@@ -2046,30 +2132,37 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
             # Don't overwrite changes from this parse with DB version.
             sp = spawn_points[sp['id']]
         else:
+            # If the cell has completed, we need to classify all
+            # the SPs that were not picked up in the scan
+            if just_completed:
+                SpawnpointDetectionData.classify(sp, scan_loc, now_secs)
+                spawn_points[sp['id']] = sp
             if SpawnpointDetectionData.unseen(sp, now_secs):
                 spawn_points[sp['id']] = sp
             endpoints = SpawnPoint.start_end(sp, args.spawn_delay)
             if clock_between(endpoints[0], now_secs, endpoints[1]):
                 sp['missed_count'] += 1
                 spawn_points[sp['id']] = sp
-                log.warning('%s kind spawnpoint %s has no Pokemon %d times '
-                            'in a row.', sp['kind'], sp['id'],
-                            sp['missed_count'])
-                log.info('Possible causes: Still doing initial scan, super '
-                         'rare double spawnpoint during')
-                log.info('hidden period, or Niantic has removed spawnpoint.')
+                log.warning('%s kind spawnpoint %s has no Pokemon %d times'
+                            ' in a row.',
+                            sp['kind'], sp['id'], sp['missed_count'])
+                log.info('Possible causes: Still doing initial scan, super'
+                         ' rare double spawnpoint during')
+                log.info('hidden period, or Niantic has removed '
+                         'spawnpoint.')
 
         if (not SpawnPoint.tth_found(sp) and scan_loc['done'] and
-                (sp['earliest_unseen'] - sp['latest_seen'] -
+                (now_secs - sp['latest_seen'] -
                  args.spawn_delay) % 3600 < 60):
-            log.warning('Spawnpoint %s was unable to locate a TTH, with only '
-                        '%ss after Pokemon last seen.', sp['id'],
-                        (sp['earliest_unseen'] - sp['latest_seen']) % 3600)
+            log.warning('Spawnpoint %s was unable to locate a TTH, with '
+                        'only %ss after Pokemon last seen.', sp['id'],
+                        (now_secs - sp['latest_seen']) % 3600)
             log.info('Restarting current 15 minute search for TTH.')
             if sp['id'] not in sp_id_list:
                 SpawnpointDetectionData.classify(sp, scan_loc, now_secs)
             sp['latest_seen'] = (sp['latest_seen'] - 60) % 3600
-            sp['earliest_unseen'] = (sp['earliest_unseen'] + 14 * 60) % 3600
+            sp['earliest_unseen'] = (
+                sp['earliest_unseen'] + 14 * 60) % 3600
             spawn_points[sp['id']] = sp
 
     db_update_queue.put((ScannedLocation, {0: scan_loc}))
@@ -2090,17 +2183,19 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
         # After parsing the forts, we'll mark this scan as bad due to
         # a possible speed violation.
         return {
-            'count': len(wild_pokemon) + len(forts),
+            'count': wild_pokemon_count + forts_count,
             'gyms': gyms,
             'sp_id_list': sp_id_list,
-            'bad_scan': True
+            'bad_scan': True,
+            'scan_secs': now_secs
         }
 
     return {
-        'count': len(wild_pokemon) + len(forts),
+        'count': wild_pokemon_count + forts_count,
         'gyms': gyms,
         'sp_id_list': sp_id_list,
-        'bad_scan': False
+        'bad_scan': False,
+        'scan_secs': now_secs
     }
 
 
@@ -2264,6 +2359,8 @@ def db_updater(args, q, db):
                           len(data),
                           q.qsize(),
                           default_timer() - last_upsert)
+                del model
+                del data
 
                 if q.qsize() > 50:
                     log.warning(
@@ -2377,20 +2474,28 @@ def bulk_upsert(cls, data, db):
 def create_tables(db):
     db.connect()
     verify_database_schema(db)
-    db.create_tables([Pokemon, Pokestop, Gym, ScannedLocation, GymDetails,
-                      GymMember, GymPokemon, Trainer, MainWorker, WorkerStatus,
-                      SpawnPoint, ScanSpawnPoint, SpawnpointDetectionData,
-                      Token, LocationAltitude], safe=True)
-    db.close()
+    tables = [Pokemon, Pokestop, Gym, ScannedLocation, GymDetails,
+              GymMember, GymPokemon, Trainer, MainWorker, WorkerStatus,
+              SpawnPoint, ScanSpawnPoint, SpawnpointDetectionData,
+              Token, LocationAltitude]
+    for table in tables:
+        log.info("Creating table: %s", table.__name__)
+        db.create_tables([table], safe=True)
+        db.close()
 
 
 def drop_tables(db):
+    tables = [Pokemon, Pokestop, Gym, ScannedLocation, Versions,
+              GymDetails, GymMember, GymPokemon, Trainer, MainWorker,
+              WorkerStatus, SpawnPoint, ScanSpawnPoint,
+              SpawnpointDetectionData, LocationAltitude,
+              Token]
     db.connect()
-    db.drop_tables([Pokemon, Pokestop, Gym, ScannedLocation, Versions,
-                    GymDetails, GymMember, GymPokemon, Trainer, MainWorker,
-                    WorkerStatus, SpawnPoint, ScanSpawnPoint,
-                    SpawnpointDetectionData, LocationAltitude,
-                    Token, Versions], safe=True)
+    db.execute_sql('SET FOREIGN_KEY_CHECKS=0;')
+    for table in tables:
+        log.info("Dropping table: %s", table.__name__)
+        db.drop_tables([table], safe=True)
+    db.execute_sql('SET FOREIGN_KEY_CHECKS=1;')
     db.close()
 
 
