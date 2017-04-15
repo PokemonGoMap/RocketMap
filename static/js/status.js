@@ -123,16 +123,15 @@ function processHashKeys(i, hashkey) {
         addHashtable('global', keyHash)
         var keyValues = {
             samples: [],
-            average: 0,
-            count: 0
+            nextSampleIndex: 0
         }
 
         hashkeys[key] = keyValues
     }
 
     // Calculate average value for Hash keys.
-    var writeIndex = hashkeys[key].count % 60
-    hashkeys[key].count += 1
+    var writeIndex = hashkeys[key].nextSampleIndex % 60
+    hashkeys[key].nextSampleIndex += 1
     hashkeys[key].samples[writeIndex] = hashkey['maximum'] - hashkey['remaining']
     var numSamples = hashkeys[key].samples.length
     var sumSamples = 0
@@ -141,7 +140,7 @@ function processHashKeys(i, hashkey) {
     }
 
     if (numSamples > 0) {
-        hashkeys[key].average = sumSamples / numSamples
+        var average = sumSamples / numSamples
     }
 
     var lastUpdated = getFormattedDate(new Date(hashkey['last_updated']))
@@ -150,7 +149,7 @@ function processHashKeys(i, hashkey) {
     $('#key_' + keyHash).html(key)
     $('#maximum_' + keyHash).html(hashkey['maximum'])
     $('#remaining_' + keyHash).html(hashkey['remaining'])
-    $('#average_' + keyHash).html(hashkeys[key].average.toFixed(2))
+    $('#average_' + keyHash).html(average.toFixed(2))
     $('#peak_' + keyHash).html(hashkey['peak'])
     $('#last_updated_' + keyHash).html(lastUpdated)
     $('#expires_' + keyHash).html(expires)
