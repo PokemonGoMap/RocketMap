@@ -28,9 +28,8 @@ from timeit import default_timer
 
 from . import config
 from .utils import get_pokemon_name, get_pokemon_rarity, get_pokemon_types, \
-    get_args, cellid, in_radius, date_secs, clock_between, secs_between, \
-    get_move_name, get_move_damage, get_move_energy, get_move_type, \
-    clear_dict_response
+    get_args, cellid, in_radius, date_secs, clock_between, get_move_name, \
+    get_move_damage, get_move_energy, get_move_type, clear_dict_response
 from .transform import transform_from_wgs_to_gcj, get_new_coords
 from .customLog import printPokemon
 
@@ -533,10 +532,6 @@ class Pokestop(BaseModel):
 
 
 class Gym(BaseModel):
-    UNCONTESTED = 0
-    TEAM_MYSTIC = 1
-    TEAM_VALOR = 2
-    TEAM_INSTINCT = 3
 
     gym_id = CharField(primary_key=True, max_length=50)
     team_id = SmallIntegerField()
@@ -974,22 +969,6 @@ class ScannedLocation(BaseModel):
 
         return ret
 
-    @staticmethod
-    def visible_forts(step_location):
-        distance = 0.45
-        n, e, s, w = hex_bounds(step_location, radius=distance * 1000)
-        for g in Gym.get_gyms(s, w, n, e).values():
-            if in_radius((g['latitude'], g['longitude']), step_location,
-                         distance):
-                return True
-
-        for g in Pokestop.get_stops(s, w, n, e):
-            if in_radius((g['latitude'], g['longitude']), step_location,
-                         distance):
-                return True
-
-        return False
-
     # Return list of dicts for upcoming valid band times.
     @classmethod
     def get_times(cls, scan, now_date, scanned_locations):
@@ -1361,13 +1340,6 @@ class SpawnPoint(BaseModel):
         if ((now_date - last_scanned).total_seconds() > now_secs - start):
             l.append(ScannedLocation._q_init(scan, start, end, kind, sp['id']))
 
-    # Given seconds after the hour and a spawnpoint dict, return which quartile
-    # of the spawnpoint the secs falls in.
-    @staticmethod
-    def get_quartile(secs, sp):
-        return int(((secs - sp['earliest_unseen'] + 15 * 60 + 3600 - 1) %
-                    3600) / 15 / 60)
-
     @classmethod
     def select_in_hex_by_cellids(cls, cellids, location_change_date):
         # Get all spawnpoints from the hive's cells
@@ -1647,24 +1619,6 @@ class SpawnpointDetectionData(BaseModel):
             return False
 
         sp['earliest_unseen'] = now_secs
-
-        return True
-
-    # Expand a 30 minute spawn with a new seen point based on which endpoint it
-    #  is closer to.  Return true if sp changed.
-    @classmethod
-    def clock_extend(cls, sp, new_secs):
-        # Check if this is a new earliest time.
-        if clock_between(sp['earliest_seen'], new_secs, sp['latest_seen']):
-            return False
-
-        # Extend earliest or latest seen depending on which is closer to the
-        # new point.
-        if (secs_between(new_secs, sp['earliest_seen']) <
-                secs_between(new_secs, sp['latest_seen'])):
-            sp['earliest_seen'] = new_secs
-        else:
-            sp['latest_seen'] = new_secs
 
         return True
 

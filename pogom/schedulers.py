@@ -339,9 +339,6 @@ class SpawnScan(BaseScheduler):
 
     def __init__(self, queues, status, args):
         BaseScheduler.__init__(self, queues, status, args)
-        # On the first scan, we want to search the last 15 minutes worth of
-        # spawns to get existing pokemon onto the map.
-        self.firstscan = True
 
         # If we are only scanning for pokestops/gyms, the scan radius can be
         # 450m.  Otherwise 70m.
@@ -488,7 +485,6 @@ class SpeedScan(HexSearch):
         self.spawns_found = 0
         self.spawns_missed_delay = {}
         self.scans_done = 0
-        self.scans_missed = 0
         self.scans_missed_list = []
         # Minutes between queue refreshes. Should be less than 10 to allow for
         # new bands during Initial scan
@@ -506,7 +502,6 @@ class SpeedScan(HexSearch):
         self.spawns_found = 0
         self.spawns_missed_delay = {}
         self.scans_done = 0
-        self.scans_missed = 0
         self.scans_missed_list = []
 
     def _locks_init(self):
@@ -860,7 +855,6 @@ class SpeedScan(HexSearch):
                 time.sleep(1)
 
             now_date = datetime.utcnow()
-            now_time = time.time()
             n = 0  # count valid scans reviewed
             q = self.queues[0]
             ms = ((now_date - self.refresh_date).total_seconds() +
@@ -996,7 +990,7 @@ class SpeedScan(HexSearch):
                 log.debug('Enumerating queue found best location: %s.',
                           repr(best))
 
-            prefix = 'Calc %.2f for %d scans:' % (time.time() - now_time, n)
+
             loc = best.get('loc', [])
             step = best.get('step', 0)
             secs_to_arrival = best.get('secs_to_arrival', 0)
@@ -1056,8 +1050,6 @@ class SpeedScan(HexSearch):
                 if secs_to_arrival > 179 - self.args.scan_delay:
                     secs_to_arrival = 179 - self.args.scan_delay
                 return -1, 0, 0, 0, messages, max(secs_to_arrival, 0)
-
-            prefix += ' Step %d,' % (step)
 
             # Check again if another worker heading there.
             # TODO: Check if this is still necessary. I believe this was
