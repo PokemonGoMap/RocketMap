@@ -139,9 +139,7 @@ function processHashKeys(i, hashkey) {
         sumSamples += hashkeys[key].samples[j]
     }
 
-    if (numSamples > 0) {
-        var average = sumSamples / numSamples
-    }
+    var average = sumSamples / Math.max(numSamples, 1) // Avoid division by zero.
 
     var lastUpdated = getFormattedDate(new Date(hashkey['last_updated']))
     var expires = getFormattedDate(new Date(hashkey['expires']))
