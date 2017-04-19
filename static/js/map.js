@@ -18,7 +18,6 @@ var $selectSearchIconMarker
 var $selectGymMarkerStyle
 var $selectLocationIconMarker
 var $switchGymSidebar
-var toastr
 
 var language = document.documentElement.lang === '' ? 'en' : document.documentElement.lang
 var idToPokemon = {}
@@ -1142,7 +1141,7 @@ function loadRawData() {
         },
         error: function () {
             // Display error toast
-            toastr['error']('Please check connectivity or reduce marker settings.', 'Error getting Data')
+            toastr['error']('Please check connectivity or reduce marker settings.', 'Error getting data')
             toastr.options = {
                 'closeButton': true,
                 'debug': false,
