@@ -112,7 +112,7 @@
 #only-server                    # Server-Only Mode. Starts only the Webserver without the searcher.
 #locale:                        # Pokemon translation
 #search-control                 # Enables search control.
-#no-fixed-location              # Shows the search bar for use in shared maps.
+#no-fixed-location              # Disables the fixed map location and shows the search bar for use in shared maps.
 #cors                           # Enable CORS on web server.
 #ssl-certificate:               # Path to ssl certificate
 #ssl-privatekey:                # Path to ssl private key
