@@ -234,7 +234,7 @@ def get_args():
                         action='store_true', dest='search_control',
                         default=False)
     parser.add_argument('-nfl', '--no-fixed-location',
-                        help='Disables a fix map location and shows the ' +
+                        help='Disables a fixed map location and shows the ' +
                         'search bar for use in shared maps.',
                         action='store_false', dest='fixed_location',
                         default=True)
