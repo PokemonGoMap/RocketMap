@@ -403,11 +403,15 @@ function pokemonLabel(name, rarity, types, disappearTime, id, latitude, longitud
         typesDisplay += getTypeSpan(type)
     })
     var details = ''
+    var cpText = ''
+    if (cp != null) {
+        var cpText = `| CP: <b>${cp}</b>`
+    }
     if (atk != null) {
         var iv = getIv(atk, def, sta)
         details = `
             <div>
-                IV: ${iv.toFixed(1)}% (${atk}/${def}/${sta})
+                IV: ${iv.toFixed(1)}% (${atk}/${def}/${sta}) ${cpText}
             </div>
             <div>
                 Moves: ${pMove1} / ${pMove2}
@@ -418,13 +422,6 @@ function pokemonLabel(name, rarity, types, disappearTime, id, latitude, longitud
         details += `
             <div>
                 Gender: ${GenderType[gender - 1]} | Weight: ${weight.toFixed(2)}kg | Height: ${height.toFixed(2)}m
-            </div>
-            `
-    }
-    if (cp != null) {
-        details += `
-            <div>
-                CP: ${cp}
             </div>
             `
     }
