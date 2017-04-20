@@ -10,15 +10,9 @@ var hashkeys = {}
 var minUpdateDelay = 1000 // Minimum delay between updates (in ms).
 var lastRawUpdateTime = new Date()
 
-function getFormattedDate(unFormattedDate) {
+function getFormattedDate(unFormattedDate) { // eslintrc no-undef
 // Use YYYY-MM-DD HH:MM:SS formatted dates to enable simple sorting
-    var formattedDate = unFormattedDate.getFullYear() + '-' +
-    ('0' + (unFormattedDate.getMonth() + 1)).slice(-2) + '-' +
-    ('0' + unFormattedDate.getDate()).slice(-2) + ' ' +
-    ('0' + unFormattedDate.getHours()).slice(-2) + ':' +
-    ('0' + unFormattedDate.getMinutes()).slice(-2) + ':' +
-    ('0' + unFormattedDate.getSeconds()).slice(-2)
-    return formattedDate
+    return moment(unFormattedDate).format('YYYY-MM-DD HH:mm:ss')
 }
 
 /*
@@ -72,7 +66,7 @@ function addHashtable(mainKeyHash, keyHash) {
       <div id="key_${keyHash}" class="status_cell"/>
       <div id="maximum_${keyHash}" class="status_cell"/>
       <div id="remaining_${keyHash}" class="status_cell"/>
-      <div id="average_${keyHash}" class="status_cell"/>
+      <div id="usage_${keyHash}" class="status_cell"/>
       <div id="peak_${keyHash}" class="status_cell"/>
       <div id="expires_${keyHash}" class="status_cell"/>
       <div id="last_updated_${keyHash}" class="status_cell"/>
@@ -139,7 +133,7 @@ function processHashKeys(i, hashkey) {
         sumSamples += hashkeys[key].samples[j]
     }
 
-    var average = sumSamples / Math.max(numSamples, 1) // Avoid division by zero.
+    var usage = sumSamples / Math.max(numSamples, 1) // Avoid division by zero.
 
     var lastUpdated = getFormattedDate(new Date(hashkey['last_updated']))
     var expires = getFormattedDate(new Date(hashkey['expires']))
@@ -147,7 +141,7 @@ function processHashKeys(i, hashkey) {
     $('#key_' + keyHash).html(key)
     $('#maximum_' + keyHash).html(hashkey['maximum'])
     $('#remaining_' + keyHash).html(hashkey['remaining'])
-    $('#average_' + keyHash).html(average.toFixed(2))
+    $('#usage_' + keyHash).html(usage.toFixed(2))
     $('#peak_' + keyHash).html(hashkey['peak'])
     $('#last_updated_' + keyHash).html(lastUpdated)
     $('#expires_' + keyHash).html(expires)
@@ -181,7 +175,7 @@ function createHashTable(mainKeyHash) {
         RPM Left
       </div>
       <div class="status_cell">
-        Average
+        Usage
         </div>
       <div class="status_cell">
         Peak
