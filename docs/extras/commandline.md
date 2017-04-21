@@ -4,13 +4,14 @@
                         [-p PASSWORD] [-w WORKERS] [-asi ACCOUNT_SEARCH_INTERVAL]
                         [-ari ACCOUNT_REST_INTERVAL] [-ac ACCOUNTCSV] [-bh]
                         [-wph WORKERS_PER_HIVE] [-l LOCATION] [-alt ALTITUDE]
-                        [-altv ALTITUDE_VARIANCE] [-uac] [-nj] [-st STEP_LIMIT]
-                        [-sd SCAN_DELAY] [--spawn-delay SPAWN_DELAY] [-enc] [-cs]
-                        [-ck CAPTCHA_KEY] [-cds CAPTCHA_DSK]
-                        [-mcd MANUAL_CAPTCHA_DOMAIN] [-mcr MANUAL_CAPTCHA_REFRESH]
+                        [-altv ALTITUDE_VARIANCE] [-uac] [-nj] [-al]
+                        [-st STEP_LIMIT] [-sd SCAN_DELAY]
+                        [--spawn-delay SPAWN_DELAY] [-enc] [-cs] [-ck CAPTCHA_KEY]
+                        [-cds CAPTCHA_DSK] [-mcd MANUAL_CAPTCHA_DOMAIN]
+                        [-mcr MANUAL_CAPTCHA_REFRESH]
                         [-mct MANUAL_CAPTCHA_TIMEOUT] [-ed ENCOUNTER_DELAY]
                         [-ewht ENCOUNTER_WHITELIST | -eblk ENCOUNTER_BLACKLIST | -ewhtf ENCOUNTER_WHITELIST_FILE | -eblkf ENCOUNTER_BLACKLIST_FILE]
-                        [-wwht WEBHOOK_WHITELIST | -wblk WEBHOOK_BLACKLIST | -wwhtf WEBHOOK_WHITELIST_FILE | -wblkf WEBHOOK_BLACKLIST_FILE]
+						[-wwht WEBHOOK_WHITELIST | -wblk WEBHOOK_BLACKLIST | -wwhtf WEBHOOK_WHITELIST_FILE | -wblkf WEBHOOK_BLACKLIST_FILE]
                         [-ld LOGIN_DELAY] [-lr LOGIN_RETRIES] [-mf MAX_FAILURES]
                         [-me MAX_EMPTY] [-bsr BAD_SCAN_RETRY]
                         [-msl MIN_SECONDS_LEFT] [-dc] [-H HOST] [-P PORT]
@@ -36,17 +37,18 @@
                         [-spp STATUS_PAGE_PASSWORD] [-hk HASH_KEY] [-tut] [-novc]
                         [-vci VERSION_CHECK_INTERVAL] [-el ENCRYPT_LIB]
                         [-odt ON_DEMAND_TIMEOUT] [--disable-blacklist]
-                        [-v [filename.log] | -vv [filename.log]]
+                        [-tp TRUSTED_PROXIES] [-v [filename.log] | -vv
+                        [filename.log]]
 
     Args that start with '--' (eg. -a) can also be set in a config file
-    (default: <RocketMap Project Root>/config/config.ini or specified
-    via -cf). The recognized syntax for setting (key, value) pairs is based on the
-    INI and YAML formats (e.g. key=value or foo=TRUE). For full documentation of
-    the differences from the standards please refer to the ConfigArgParse
+    (/config/config.ini or specified via -cf). The
+    recognized syntax for setting (key, value) pairs is based on the INI and YAML
+    formats (e.g. key=value or foo=TRUE). For full documentation of the
+    differences from the standards please refer to the ConfigArgParse
     documentation. If an arg is specified in more than one place, then commandline
     values override environment variables which override config file values which
     override defaults.
-    
+
     optional arguments:
       -h, --help            show this help message and exit [env var:
                             POGOMAP_HELP]
@@ -79,7 +81,7 @@
                             POGOMAP_ACCOUNTCSV]
       -bh, --beehive        Use beehive configuration for multiple accounts, one
                             account per hex. Make sure to keep -st under 5, and -w
-                            under the totalamount of accounts available. [env var:
+                            under the total amount of accounts available. [env var:
                             POGOMAP_BEEHIVE]
       -wph WORKERS_PER_HIVE, --workers-per-hive WORKERS_PER_HIVE
                             Only referenced when using --beehive. Sets number of
@@ -100,6 +102,8 @@
                             var: POGOMAP_USE_ALTITUDE_CACHE]
       -nj, --no-jitter      Don't apply random -9m to +9m jitter to location. [env
                             var: POGOMAP_NO_JITTER]
+      -al, --access-logs    Write web logs to access.log. [env var:
+                            POGOMAP_ACCESS_LOGS]
       -st STEP_LIMIT, --step-limit STEP_LIMIT
                             Steps. [env var: POGOMAP_STEP_LIMIT]
       -sd SCAN_DELAY, --scan-delay SCAN_DELAY
@@ -149,16 +153,18 @@
                             POGOMAP_ENCOUNTER_BLACKLIST_FILE]
       -wwht WEBHOOK_WHITELIST, --webhook-whitelist WEBHOOK_WHITELIST
                             List of Pokemon to send to webhooks. [env var:
-                            POGOMAP_WEBHOOK_WHITELIST]
-      -wblk WEBHOOK_BLACKLIST, --webhook-blacklist WEBHOOK_BLACKLIST
+							POGOMAP_WEBHOOK_WHITELIST]
+	  -wblk WEBHOOK_BLACKLIST, --webhook-blacklist WEBHOOK_BLACKLIST
                             List of Pokemon to NOT send to webhooks. [env var:
                             POGOMAP_WEBHOOK_BLACKLIST]
-      -wwhtf WEBHOOK_WHITELIST_FILE, --webhook-whitelist-file WEBHOOK_WHITELIST_FILE
+						    -wwhtf WEBHOOK_WHITELIST_FILE,
+      --webhook-whitelist-file WEBHOOK_WHITELIST_FILE
                             File containing a list of Pokemon to send to webhooks.
                             [env var: POGOMAP_WEBHOOK_WHITELIST_FILE]
-      -wblkf WEBHOOK_BLACKLIST_FILE, --webhook-blacklist-file WEBHOOK_BLACKLIST_FILE
-                            File containing a list of Pokemon to NOT send to
-                            webhooks. [env var: POGOMAP_WEBHOOK_BLACKLIST_FILE]
+						    -wblkf WEBHOOK_BLACKLIST_FILE,
+       --webhook-blacklist-file WEBHOOK_BLACKLIST_FILE
+	                        File containing a list of Pokemon to NOTsend to webhooks. 
+							[env var: POGOMAP_WEBHOOK_BLACKLIST_FILE]
       -ld LOGIN_DELAY, --login-delay LOGIN_DELAY
                             Time delay between each login attempt. [env var:
                             POGOMAP_LOGIN_DELAY]
@@ -352,6 +358,10 @@
                             POGOMAP_ON_DEMAND_TIMEOUT]
       --disable-blacklist   Disable the global anti-scraper IP blacklist. [env
                             var: POGOMAP_DISABLE_BLACKLIST]
+      -tp TRUSTED_PROXIES, --trusted-proxies TRUSTED_PROXIES
+                            Enables the use of X-FORWARDED-FOR headers to identify
+                            the IP of clients connecting through these trusted
+                            proxies. [env var: POGOMAP_TRUSTED_PROXIES]
       -v [filename.log], --verbose [filename.log]
                             Show debug messages from RocketMap and pgoapi.
                             Optionally specify file to log to. [env var:
@@ -360,4 +370,3 @@
                             Like verbose, but show debug messages from all modules
                             as well. Optionally specify file to log to. [env var:
                             POGOMAP_VERY_VERBOSE]
-						
