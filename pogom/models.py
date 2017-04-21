@@ -108,7 +108,7 @@ class Pokemon(BaseModel):
     height = FloatField(null=True)
     gender = SmallIntegerField(null=True)
     cp = SmallIntegerField(null=True)
-    cp_multiplier = FloatField(null=True)
+    cp_multiplier = DoubleField(null=True)
     last_modified = DateTimeField(
         null=True, index=True, default=datetime.utcnow)
 
