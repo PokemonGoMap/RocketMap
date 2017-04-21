@@ -2737,7 +2737,7 @@ def database_migrate(db, old_ver):
     if old_ver < 17:
         migrate(
             migrator.add_column('pokemon', 'cp',
-                                IntegerField(null=True, default=0))
+                                SmallIntegerField(null=True, default=0))
         )
     if old_ver < 18:
         migrate(
