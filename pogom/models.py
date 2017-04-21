@@ -2742,5 +2742,5 @@ def database_migrate(db, old_ver):
     if old_ver < 18:
         migrate(
             migrator.add_column('pokemon', 'cp_multiplier',
-                                DoubleField(null=True, default=0))
+                                DecimalField(20,19,null=True, default=0))
         )
