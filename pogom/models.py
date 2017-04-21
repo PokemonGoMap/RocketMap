@@ -1897,24 +1897,25 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                     'gender': pokemon_info['pokemon_display']['gender'],
                 })
 
-            if (args.webhooks and (p['pokemon_data']['pokemon_id']
-                                   in args.webhook_whitelist or
-                                   p['pokemon_data']['pokemon_id']
-                                   not in args.webhook_blacklist and
-                                   not args.webhook_whitelist)):
-                wh_poke = pokemon[p['encounter_id']].copy()
-                wh_poke.update({
-                    'disappear_time': calendar.timegm(
-                        disappear_time.timetuple()),
-                    'last_modified_time': p['last_modified_timestamp_ms'],
-                    'time_until_hidden_ms': p['time_till_hidden_ms'],
-                    'verified': SpawnPoint.tth_found(sp),
-                    'seconds_until_despawn': seconds_until_despawn,
-                    'spawn_start': start_end[0],
-                    'spawn_end': start_end[1]
-                })
-                wh_update_queue.put(('pokemon', wh_poke))
-
+            if args.webhooks:
+                pokemon_id = p['pokemon_data']['pokemon_id']
+                if (pokemon_id in args.webhook_whitelist or
+                    (pokemon_id not in args.webhook_whitelist and pokemon_id
+                    not in args.webhook_blacklist)):
+                           log.info("SENDING TO %i WEBHOOK", pokemon_id)
+                           wh_poke = pokemon[p['encounter_id']].copy()
+                           wh_poke.update({
+                               'disappear_time': calendar.timegm(
+                               disappear_time.timetuple()),
+                               'last_modified_time': p['last_modified_timestamp_ms'],
+                               'time_until_hidden_ms': p['time_till_hidden_ms'],
+                               'verified': SpawnPoint.tth_found(sp),
+                               'seconds_until_despawn': seconds_until_despawn,
+                               'spawn_start': start_end[0],
+                               'spawn_end': start_end[1]
+                               })
+                           wh_update_queue.put(('pokemon', wh_poke))
+                
     if forts and (config['parse_pokestops'] or config['parse_gyms']):
         if config['parse_pokestops']:
             stop_ids = [f['id'] for f in forts if f.get('type') == 1]
