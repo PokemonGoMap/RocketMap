@@ -37,6 +37,7 @@ def send_to_webhook(session, message_type, message):
 
     for w in args.webhooks:
         try:
+            print(data)
             session.post(w, json=data, timeout=(None, req_timeout),
                          background_callback=__wh_completed)
         except requests.exceptions.ReadTimeout:
