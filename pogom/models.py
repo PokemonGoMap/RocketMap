@@ -108,6 +108,7 @@ class Pokemon(BaseModel):
     height = FloatField(null=True)
     gender = SmallIntegerField(null=True)
     cp = SmallIntegerField(null=True)
+    cp_multiplier = FloatField(null=True)
     last_modified = DateTimeField(
         null=True, index=True, default=datetime.utcnow)
 
@@ -1967,7 +1968,8 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                 'height': None,
                 'weight': None,
                 'gender': None,
-                'cp': None
+                'cp': None,
+                'cp_multiplier': None
             }
 
             if (encounter_result is not None and 'wild_pokemon'
@@ -1986,7 +1988,8 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                     'height': pokemon_info['height_m'],
                     'weight': pokemon_info['weight_kg'],
                     'gender': pokemon_info['pokemon_display']['gender'],
-                    'cp': pokemon_info['cp']
+                    'cp': pokemon_info['cp'],
+                    'cp_multiplier': pokemon_info['cp_multiplier']
                 })
 
             if args.webhooks:
@@ -2735,4 +2738,9 @@ def database_migrate(db, old_ver):
         migrate(
             migrator.add_column('pokemon', 'cp',
                                 IntegerField(null=True, default=0))
+        )
+    if old_ver < 18:
+        migrate(
+            migrator.add_column('pokemon', 'cp_multiplier',
+                                FloatField(null=True, default=0))
         )
