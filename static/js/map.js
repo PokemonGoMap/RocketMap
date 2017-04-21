@@ -18,7 +18,6 @@ var $selectSearchIconMarker
 var $selectGymMarkerStyle
 var $selectLocationIconMarker
 var $switchGymSidebar
-var $timeoutDialog
 
 var language = document.documentElement.lang === '' ? 'en' : document.documentElement.lang
 var idToPokemon = {}
@@ -68,6 +67,7 @@ var gymPrestige = [2000, 4000, 8000, 12000, 16000, 20000, 30000, 40000, 50000]
 var audio = new Audio('static/sounds/ding.mp3')
 
 var GenderType = ['♂', '♀', '⚪']
+
 
 /*
   text place holders:
@@ -393,6 +393,15 @@ function openMapDirections(lat, lng) { // eslint-disable-line no-unused-vars
     window.open(url, '_blank')
 }
 
+// Converts timestamp to readable String
+function getDateStr(t) {
+    var dateStr = 'Unknown'
+    if (t) {
+        dateStr = moment(t).format('YYYY-MM-DD HH:mm:ss')
+    }
+    return dateStr
+}
+
 function pokemonLabel(name, rarity, types, disappearTime, id, latitude, longitude, encounterId, atk, def, sta, move1, move2, weight, height, gender) {
     var disappearDate = new Date(disappearTime)
     var rarityDisplay = rarity ? '(' + rarity + ')' : ''
@@ -450,7 +459,7 @@ function pokemonLabel(name, rarity, types, disappearTime, id, latitude, longitud
     return contentstring
 }
 
-function gymLabel(teamName, teamId, gymPoints, latitude, longitude, lastScanned = null, name = null, members = [], gymId) {
+function gymLabel(teamName, teamId, gymPoints, latitude, longitude, lastScanned = null, lastModified = null, name = null, members = [], gymId) {
     var memberStr = ''
     for (var i = 0; i < members.length; i++) {
         memberStr += `
@@ -460,13 +469,8 @@ function gymLabel(teamName, teamId, gymPoints, latitude, longitude, lastScanned 
             </span>`
     }
 
-    var lastScannedStr
-    if (lastScanned) {
-        var lastScannedDate = new Date(lastScanned)
-        lastScannedStr = `${lastScannedDate.getFullYear()}-${pad(lastScannedDate.getMonth() + 1)}-${pad(lastScannedDate.getDate())} ${pad(lastScannedDate.getHours())}:${pad(lastScannedDate.getMinutes())}:${pad(lastScannedDate.getSeconds())}`
-    } else {
-        lastScannedStr = 'Unknown'
-    }
+    var lastScannedStr = getDateStr(lastScanned)
+    var lastModifiedStr = getDateStr(lastModified)
     var directionsStr = ''
     if (!Store.get('useGymSidebar')) {
         directionsStr = `<div>
@@ -492,6 +496,9 @@ function gymLabel(teamName, teamId, gymPoints, latitude, longitude, lastScanned 
                     </div>
                     <div>
                         Last Scanned: ${lastScannedStr}
+                    </div>
+                    <div>
+                        Last Modified: ${lastModifiedStr}
                     </div>
                     ${directionsStr}
                 </center>
@@ -522,6 +529,9 @@ function gymLabel(teamName, teamId, gymPoints, latitude, longitude, lastScanned 
                     </div>
                     <div>
                         Last Scanned: ${lastScannedStr}
+                    </div>
+                    <div>
+                        Last Modified: ${lastModifiedStr}
                     </div>
                     ${directionsStr}
                 </center>
@@ -769,7 +779,7 @@ function setupGymMarker(item) {
     }
 
     marker.infoWindow = new google.maps.InfoWindow({
-        content: gymLabel(gymTypes[item['team_id']], item['team_id'], item['gym_points'], item['latitude'], item['longitude'], item['last_scanned'], item['name'], item['pokemon'], item['gym_id']),
+        content: gymLabel(gymTypes[item['team_id']], item['team_id'], item['gym_points'], item['latitude'], item['longitude'], item['last_scanned'], item['last_modified'], item['name'], item['pokemon'], item['gym_id']),
         disableAutoPan: true
     })
 
@@ -812,7 +822,7 @@ function updateGymMarker(item, marker) {
         url: 'static/forts/' + Store.get('gymMarkerStyle') + '/' + gymTypes[item['team_id']] + (item['team_id'] !== 0 ? '_' + getGymLevel(item['gym_points']) : '') + '.png',
         scaledSize: new google.maps.Size(48, 48)
     })
-    marker.infoWindow.setContent(gymLabel(gymTypes[item['team_id']], item['team_id'], item['gym_points'], item['latitude'], item['longitude'], item['last_scanned'], item['name'], item['pokemon'], item['gym_id']))
+    marker.infoWindow.setContent(gymLabel(gymTypes[item['team_id']], item['team_id'], item['gym_points'], item['latitude'], item['longitude'], item['last_scanned'], item['last_modified'], item['name'], item['pokemon'], item['gym_id']))
     return marker
 }
 
@@ -1141,15 +1151,24 @@ function loadRawData() {
             }
         },
         error: function () {
-            if (!$timeoutDialog) {
-                var opts = {
-                    title: 'Reduce marker settings'
-                }
-
-                $timeoutDialog = $('<div>Hmm... we\'re having problems getting data for your criteria. Try reducing what you\'re showing and zooming in to limit what\'s returned.</div>').dialog(opts)
-                $timeoutDialog.dialog('open')
-            } else if (!$timeoutDialog.dialog('isOpen')) {
-                $timeoutDialog.dialog('open')
+            // Display error toast
+            toastr['error']('Please check connectivity or reduce marker settings.', 'Error getting data')
+            toastr.options = {
+                'closeButton': true,
+                'debug': false,
+                'newestOnTop': true,
+                'progressBar': false,
+                'positionClass': 'toast-top-right',
+                'preventDuplicates': true,
+                'onclick': null,
+                'showDuration': '300',
+                'hideDuration': '1000',
+                'timeOut': '25000',
+                'extendedTimeOut': '1000',
+                'showEasing': 'swing',
+                'hideEasing': 'linear',
+                'showMethod': 'fadeIn',
+                'hideMethod': 'fadeOut'
             }
         },
         complete: function () {
@@ -1720,7 +1739,8 @@ function showGymDetails(id) { // eslint-disable-line no-unused-vars
         var gymLevel = getGymLevel(result.gym_points)
         var nextLvlPrestige = gymPrestige[gymLevel - 1] || 50000
         var prestigePercentage = (result.gym_points / nextLvlPrestige) * 100
-        var lastScannedDate = new Date(result.last_scanned)
+        var lastScannedDateStr = getDateStr(result.last_scanned)
+        var lastModifiedDateStr = getDateStr(result.last_modified)
         var freeSlots = result.pokemon.length ? gymLevel - result.pokemon.length : 0
         var freeSlotsStr = freeSlots ? ` - ${freeSlots} Free Slots` : ''
         var gymLevelStr = ''
@@ -1751,7 +1771,10 @@ function showGymDetails(id) { // eslint-disable-line no-unused-vars
                 </div>
                 ${gymLevelStr}
                 <div style="font-size: .7em;">
-                    Last Scanned: ${lastScannedDate.getFullYear()}-${pad(lastScannedDate.getMonth() + 1)}-${pad(lastScannedDate.getDate())} ${pad(lastScannedDate.getHours())}:${pad(lastScannedDate.getMinutes())}:${pad(lastScannedDate.getSeconds())}
+                    Last Scanned: ${lastScannedDateStr}
+                </div>
+                <div style="font-size: .7em;">
+                    Last Modified: ${lastModifiedDateStr}
                 </div>
                 <div>
                     <a href='javascript:void(0);' onclick='javascript:openMapDirections(${result.latitude},${result.longitude});' title='View in Maps'>Get directions</a>
@@ -1853,7 +1876,7 @@ function showGymDetails(id) { // eslint-disable-line no-unused-vars
                     <b>${result.guard_pokemon_name}</b>
 
                     <p style="font-size: .75em; margin: 5px;">
-                        No additional gym information is available for this gym. Make sure you are collecting <a href="https://pgm.readthedocs.io/en/develop/extras/gyminfo.html">detailed gym info.</a>
+                        No additional gym information is available for this gym. Make sure you are collecting <a href="https://rocketmap.readthedocs.io/en/develop/extras/gyminfo.html">detailed gym info.</a>
                         If you have detailed gym info collection running, this gym's Pokemon information may be out of date.
                     </p>
                 </center>

@@ -61,7 +61,7 @@ def get_args():
         default_config_files=defaultconfigfiles,
         auto_env_var_prefix='POGOMAP_')
     parser.add_argument('-cf', '--config',
-                        is_config_file=True, help='Configuration file')
+                        is_config_file=True, help='Set configuration file')
     parser.add_argument('-a', '--auth-service', type=str.lower,
                         action='append', default=[],
                         help=('Auth Services, either one for all accounts ' +
@@ -89,7 +89,7 @@ def get_args():
     parser.add_argument('-bh', '--beehive',
                         help=('Use beehive configuration for multiple ' +
                               'accounts, one account per hex.  Make sure ' +
-                              'to keep -st under 5, and -w under the total' +
+                              'to keep -st under 5, and -w under the total ' +
                               'amount of accounts available.'),
                         action='store_true', default=False)
     parser.add_argument('-wph', '--workers-per-hive',
@@ -115,6 +115,9 @@ def get_args():
     parser.add_argument('-nj', '--no-jitter',
                         help=("Don't apply random -9m to +9m jitter to " +
                               "location."),
+                        action='store_true', default=False)
+    parser.add_argument('-al', '--access-logs',
+                        help=("Write web logs to access.log."),
                         action='store_true', default=False)
     parser.add_argument('-st', '--step-limit', help='Steps.', type=int,
                         default=12)
@@ -244,13 +247,15 @@ def get_args():
                         help=('Server-Only Mode. Starts only the Webserver ' +
                               'without the searcher.'),
                         action='store_true', default=False)
-    parser.add_argument('-nsc', '--no-search-control',
-                        help='Disables search control.',
-                        action='store_false', dest='search_control',
+    parser.add_argument('-sc', '--search-control',
+                        help='Enables search control.',
+                        action='store_true', dest='search_control',
+                        default=False)
+    parser.add_argument('-nfl', '--no-fixed-location',
+                        help='Disables a fixed map location and shows the ' +
+                        'search bar for use in shared maps.',
+                        action='store_false', dest='fixed_location',
                         default=True)
-    parser.add_argument('-fl', '--fixed-location',
-                        help='Hides the search bar for use in shared maps.',
-                        action='store_true', default=False)
     parser.add_argument('-k', '--gmaps-key',
                         help='Google Maps Javascript API Key.',
                         required=True)
@@ -424,6 +429,11 @@ def get_args():
     parser.add_argument('--disable-blacklist',
                         help=('Disable the global anti-scraper IP blacklist.'),
                         action='store_true', default=False)
+    parser.add_argument('-tp', '--trusted-proxies', default=[],
+                        action='append',
+                        help=('Enables the use of X-FORWARDED-FOR headers ' +
+                              'to identify the IP of clients connecting ' +
+                              'through these trusted proxies.'))
     verbosity = parser.add_mutually_exclusive_group()
     verbosity.add_argument('-v', '--verbose',
                            help=('Show debug messages from RocketMap ' +
@@ -913,3 +923,21 @@ def extract_sprites():
     zip = zipfile.ZipFile('static01.zip', 'r')
     zip.extractall('static')
     zip.close()
+
+
+def clear_dict_response(response, keep_inventory=False):
+    if 'platform_returns' in response:
+        del response['platform_returns']
+    if 'responses' not in response:
+        return response
+    if 'GET_INVENTORY' in response['responses'] and not keep_inventory:
+        del response['responses']['GET_INVENTORY']
+    if 'GET_HATCHED_EGGS' in response['responses']:
+        del response['responses']['GET_HATCHED_EGGS']
+    if 'CHECK_AWARDED_BADGES' in response['responses']:
+        del response['responses']['CHECK_AWARDED_BADGES']
+    if 'DOWNLOAD_SETTINGS' in response['responses']:
+        del response['responses']['DOWNLOAD_SETTINGS']
+    if 'GET_BUDDY_WALKED' in response['responses']:
+        del response['responses']['GET_BUDDY_WALKED']
+    return response
