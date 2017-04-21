@@ -68,6 +68,13 @@ var audio = new Audio('static/sounds/ding.mp3')
 
 var GenderType = ['♂', '♀', '⚪']
 
+var LevelCP = [0.09399999678134918,0.16639786958694458,0.21573247015476227,0.25572004914283750,0.29024988412857056,
+0.32108759880065920,0.34921267628669740,0.37523558735847473,0.39956727623939514,0.42250001430511475,
+0.4431075453758240,0.4627983868122101,0.48168495297431946,0.49985843896865845,0.5173939466476440,
+0.5343543291091919,0.5507926940917969,0.5667545199394226,0.5822789072990417,0.5974000096321106,
+0.6121572852134705,0.6265671253204346,0.6406529545783997,0.6544356346130371,0.6679340004920960,
+0.6811649203300476,0.6941436529159546,0.7068842053413391,0.7193990945816040,0.7317000031471252]
+
 /*
   text place holders:
   <pkm> - pokemon name
@@ -392,7 +399,7 @@ function openMapDirections(lat, lng) { // eslint-disable-line no-unused-vars
     window.open(url, '_blank')
 }
 
-function pokemonLabel(name, rarity, types, disappearTime, id, latitude, longitude, encounterId, atk, def, sta, move1, move2, weight, height, gender, cp) {
+function pokemonLabel(name, rarity, types, disappearTime, id, latitude, longitude, encounterId, atk, def, sta, move1, move2, weight, height, gender, cp, cpmultiplier) {
     var disappearDate = new Date(disappearTime)
     var rarityDisplay = rarity ? '(' + rarity + ')' : ''
     var typesDisplay = ''
@@ -407,11 +414,15 @@ function pokemonLabel(name, rarity, types, disappearTime, id, latitude, longitud
     if (cp != null) {
         var cpText = `| CP: <b>${cp}</b>`
     }
+    var cpLevel = ''
+    if (cpmultiplier != null) {
+        var cpLevel = `| LVL: <b>${LevelCP.indexOf(cpmultiplier)+1}</b>`
+    }
     if (atk != null) {
         var iv = getIv(atk, def, sta)
         details = `
             <div>
-                IV: ${iv.toFixed(1)}% (${atk}/${def}/${sta}) ${cpText}
+                IV: ${iv.toFixed(1)}% (${atk}/${def}/${sta}) ${cpText} ${cpLevel}
             </div>
             <div>
                 Moves: ${pMove1} / ${pMove2}
@@ -720,7 +731,7 @@ function customizePokemonMarker(marker, item, skipNotification) {
     }
 
     marker.infoWindow = new google.maps.InfoWindow({
-        content: pokemonLabel(item['pokemon_name'], item['pokemon_rarity'], item['pokemon_types'], item['disappear_time'], item['pokemon_id'], item['latitude'], item['longitude'], item['encounter_id'], item['individual_attack'], item['individual_defense'], item['individual_stamina'], item['move_1'], item['move_2'], item['weight'], item['height'], item['gender'], item['cp']),
+        content: pokemonLabel(item['pokemon_name'], item['pokemon_rarity'], item['pokemon_types'], item['disappear_time'], item['pokemon_id'], item['latitude'], item['longitude'], item['encounter_id'], item['individual_attack'], item['individual_defense'], item['individual_stamina'], item['move_1'], item['move_2'], item['weight'], item['height'], item['gender'], item['cp'], item['cp_multiplier']),
         disableAutoPan: true
     })
 
