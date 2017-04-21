@@ -32,6 +32,7 @@ from pogom.proxy import check_proxies, proxies_refresher
 
 # Currently supported pgoapi.
 pgoapi_version = "1.1.7"
+ssl._create_default_https_context = ssl._create_unverified_context
 
 # Moved here so logger is configured at load time.
 logging.basicConfig(
