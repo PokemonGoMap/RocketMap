@@ -176,20 +176,23 @@ def get_args():
     webhook_list.add_argument('-wwht', '--webhook-whitelist',
                               action='append', default=[],
                               help=('List of Pokemon to send to '
-                                    ' webhooks.'))
+                                    'webhooks. Specified as Pokemon ID.'))
     webhook_list.add_argument('-wblk', '--webhook-blacklist',
                               action='append', default=[],
-                              help=('List of Pokemon to NOT send to'
-                                    ' webhooks.'))
-
+                              help=('List of Pokemon NOT to send to '
+                                    'webhooks. Specified as Pokemon ID.'))
     webhook_list.add_argument('-wwhtf', '--webhook-whitelist-file',
                               default='', help='File containing a list of '
-                                               'Pokemon to send to'
-                                               ' webhooks.')
+                                               'Pokemon to send to '
+                                               'webhooks. Pokemon are ' 
+                                               ' specified by their name, '
+                                               ' one on each line.')
     webhook_list.add_argument('-wblkf', '--webhook-blacklist-file',
                               default='', help='File containing a list of '
-                                               'Pokemon to NOT send to'
-                                               ' webhooks.')
+                                               'Pokemon NOT to send to'
+                                               'webhooks. Pokemon are ' 
+                                               ' specified by their name, '
+                                               ' one on each line.')
     parser.add_argument('-ld', '--login-delay',
                         help='Time delay between each login attempt.',
                         type=float, default=6)
