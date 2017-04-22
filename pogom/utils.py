@@ -184,13 +184,13 @@ def get_args():
     webhook_list.add_argument('-wwhtf', '--webhook-whitelist-file',
                               default='', help='File containing a list of '
                                                'Pokemon to send to '
-                                               'webhooks. Pokemon are ' 
+                                               'webhooks. Pokemon are '
                                                ' specified by their name, '
                                                ' one on each line.')
     webhook_list.add_argument('-wblkf', '--webhook-blacklist-file',
                               default='', help='File containing a list of '
                                                'Pokemon NOT to send to'
-                                               'webhooks. Pokemon are ' 
+                                               'webhooks. Pokemon are '
                                                ' specified by their name, '
                                                ' one on each line.')
     parser.add_argument('-ld', '--login-delay',
