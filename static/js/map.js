@@ -68,15 +68,14 @@ var audio = new Audio('static/sounds/ding.mp3')
 
 var GenderType = ['♂', '♀', '⚪']
 
-<<<<<<< HEAD
-var LevelCP = ['0.0939999967813','0.166397869587','0.215732470155','0.255720049143','0.290249884128571',
-'0.321087598801','0.349212676287','0.375235587358','0.399567276239','0.422500014305115',
-'0.443107545376','0.46279838681221','0.481684952974','0.499858438969','0.517393946648',
-'0.534354329109','0.550792694092','0.566754519939','0.582278907299042','0.597400009632',
+
+var LevelCP = ['0.0939999967813','0.166397869587','0.215732470155','0.255720049143','0.290249884129',
+'0.321087598801','0.349212676287','0.375235587358','0.399567276239','0.422500014305',
+'0.443107545376','0.462798386812','0.481684952974','0.499858438969','0.517393946648',
+'0.534354329109','0.550792694092','0.566754519939','0.582278907299','0.597400009632',
 '0.612157285213','0.62656712532','0.6406529545784','0.654435634613','0.667934000492',
 '0.68116492033','0.694143652916','0.706884205341','0.719399094582','0.731700003147']
-=======
->>>>>>> RocketMap/develop
+
 
 /*
   text place holders:
@@ -402,9 +401,7 @@ function openMapDirections(lat, lng) { // eslint-disable-line no-unused-vars
     window.open(url, '_blank')
 }
 
-<<<<<<< HEAD
-function pokemonLabel(name, rarity, types, disappearTime, id, latitude, longitude, encounterId, atk, def, sta, move1, move2, weight, height, gender, cp, cpmultiplier) {
-=======
+
 // Converts timestamp to readable String
 function getDateStr(t) {
     var dateStr = 'Unknown'
@@ -414,8 +411,7 @@ function getDateStr(t) {
     return dateStr
 }
 
-function pokemonLabel(name, rarity, types, disappearTime, id, latitude, longitude, encounterId, atk, def, sta, move1, move2, weight, height, gender) {
->>>>>>> RocketMap/develop
+function pokemonLabel(name, rarity, types, disappearTime, id, latitude, longitude, encounterId, atk, def, sta, move1, move2, weight, height, gender, cp, cpmultiplier) {
     var disappearDate = new Date(disappearTime)
     var rarityDisplay = rarity ? '(' + rarity + ')' : ''
     var typesDisplay = ''
