@@ -172,6 +172,27 @@ def get_args():
                                 default='', help='File containing a list of '
                                                  'Pokemon to NOT encounter for'
                                                  ' more stats.')
+    webhook_list = parser.add_mutually_exclusive_group()
+    webhook_list.add_argument('-wwht', '--webhook-whitelist',
+                              action='append', default=[],
+                              help=('List of Pokemon to send to '
+                                    'webhooks. Specified as Pokemon ID.'))
+    webhook_list.add_argument('-wblk', '--webhook-blacklist',
+                              action='append', default=[],
+                              help=('List of Pokemon NOT to send to '
+                                    'webhooks. Specified as Pokemon ID.'))
+    webhook_list.add_argument('-wwhtf', '--webhook-whitelist-file',
+                              default='', help='File containing a list of '
+                                               'Pokemon to send to '
+                                               'webhooks. Pokemon are '
+                                               ' specified by their name, '
+                                               ' one on each line.')
+    webhook_list.add_argument('-wblkf', '--webhook-blacklist-file',
+                              default='', help='File containing a list of '
+                                               'Pokemon NOT to send to'
+                                               'webhooks. Pokemon are '
+                                               ' specified by their name, '
+                                               ' one on each line.')
     parser.add_argument('-ld', '--login-delay',
                         help='Time delay between each login attempt.',
                         type=float, default=6)
@@ -229,13 +250,15 @@ def get_args():
                         help=('Server-Only Mode. Starts only the Webserver ' +
                               'without the searcher.'),
                         action='store_true', default=False)
-    parser.add_argument('-nsc', '--no-search-control',
-                        help='Disables search control.',
-                        action='store_false', dest='search_control',
+    parser.add_argument('-sc', '--search-control',
+                        help='Enables search control.',
+                        action='store_true', dest='search_control',
+                        default=False)
+    parser.add_argument('-nfl', '--no-fixed-location',
+                        help='Disables a fixed map location and shows the ' +
+                        'search bar for use in shared maps.',
+                        action='store_false', dest='fixed_location',
                         default=True)
-    parser.add_argument('-fl', '--fixed-location',
-                        help='Hides the search bar for use in shared maps.',
-                        action='store_true', default=False)
     parser.add_argument('-k', '--gmaps-key',
                         help='Google Maps Javascript API Key.',
                         required=True)
@@ -648,6 +671,19 @@ def get_args():
             args.encounter_whitelist = [int(i) for i in
                                         args.encounter_whitelist]
 
+        if args.webhook_whitelist_file:
+            with open(args.webhook_whitelist_file) as f:
+                args.webhook_whitelist = [get_pokemon_id(name) for name in
+                                          f.read().splitlines()]
+        elif args.webhook_blacklist_file:
+            with open(args.webhook_blacklist_file) as f:
+                args.webhook_blacklist = [get_pokemon_id(name) for name in
+                                          f.read().splitlines()]
+        else:
+            args.webhook_blacklist = [int(i) for i in
+                                      args.webhook_blacklist]
+            args.webhook_whitelist = [int(i) for i in
+                                      args.webhook_whitelist]
         # Decide which scanning mode to use.
         if args.spawnpoint_scanning:
             args.scheduler = 'SpawnScan'

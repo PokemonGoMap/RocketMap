@@ -378,6 +378,7 @@ class Pokemon(BaseModel):
                 spawnpoints[key]['time'] = disappear_time
                 spawnpoints[key]['count'] = count
 
+        # Helping out the GC.
         for sp in spawnpoints.values():
             del sp['count']
 
@@ -941,11 +942,11 @@ class ScannedLocation(BaseModel):
         one_sp_scan = (ScanSpawnPoint
                        .select(ScanSpawnPoint.spawnpoint,
                                fn.MAX(ScanSpawnPoint.scannedlocation).alias(
-                                       'cellid'))
+                                   'cellid'))
                        .join(sp_from_cells, on=sp_from_cells.c.spawnpoint_id
                              == ScanSpawnPoint.spawnpoint)
                        .join(cls, on=(cls.cellid ==
-                             ScanSpawnPoint.scannedlocation))
+                                      ScanSpawnPoint.scannedlocation))
                        .where(((cls.last_modified >= (location_change_date)) &
                                (cls.last_modified > (
                                 datetime.utcnow() - timedelta(minutes=60)))) |
@@ -1377,15 +1378,17 @@ class SpawnPoint(BaseModel):
         one_sp_scan = (ScanSpawnPoint
                        .select(ScanSpawnPoint.spawnpoint,
                                fn.MAX(ScanSpawnPoint.scannedlocation).alias(
-                                       'Max_ScannedLocation_id'))
+                                   'Max_ScannedLocation_id'))
                        .join(sp_from_cells, on=sp_from_cells.c.spawnpoint_id
                              == ScanSpawnPoint.spawnpoint)
-                       .join(ScannedLocation, on=(ScannedLocation.cellid
-                             == ScanSpawnPoint.scannedlocation))
+                       .join(
+                           ScannedLocation,
+                           on=(ScannedLocation.cellid
+                               == ScanSpawnPoint.scannedlocation))
                        .where(((ScannedLocation.last_modified
-                               >= (location_change_date)) & (
-                                ScannedLocation.last_modified > (
-                                 datetime.utcnow() - timedelta(minutes=60)))) |
+                                >= (location_change_date)) & (
+                           ScannedLocation.last_modified > (
+                               datetime.utcnow() - timedelta(minutes=60)))) |
                               (ScannedLocation.cellid << cellids))
                        .group_by(ScanSpawnPoint.spawnpoint)
                        .alias('maxscan'))
@@ -1782,16 +1785,18 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
     # Consolidate the individual lists in each cell into two lists of Pokemon
     # and a list of forts.
     cells = map_dict['responses']['GET_MAP_OBJECTS']['map_cells']
-    # Get the level for the pokestop spin in any case delete inventory
-    if args.complete_tutorial and config['parse_pokestops']:
-        level = get_player_level(map_dict)
+    # Get the level for the pokestop spin, and to send to webhook.
+    level = get_player_level(map_dict)
+
+    # Helping out the GC.
     if 'GET_INVENTORY' in map_dict['responses']:
         del map_dict['responses']['GET_INVENTORY']
+
     for i, cell in enumerate(cells):
         # If we have map responses then use the time from the request
         if i == 0:
             now_date = datetime.utcfromtimestamp(
-                                cell['current_timestamp_ms'] / 1000)
+                cell['current_timestamp_ms'] / 1000)
         nearby_pokemon += len(cell.get('nearby_pokemons', []))
         # Parse everything for stats (counts).  Future enhancement -- we don't
         # necessarily need to know *how many* forts/wild/nearby were found but
@@ -1949,7 +1954,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                 encounter_result = clear_dict_response(encounter_result)
 
                 captcha_url = encounter_result['responses']['CHECK_CHALLENGE'][
-                        'challenge_url']  # Check for captcha
+                    'challenge_url']  # Check for captcha
                 if len(captcha_url) > 1:  # Throw warning but finish parsing
                     log.debug('Account encountered a reCaptcha.')
 
@@ -1993,20 +1998,24 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                 })
 
             if args.webhooks:
-
-                wh_poke = pokemon[p['encounter_id']].copy()
-                wh_poke.update({
-                    'disappear_time': calendar.timegm(
-                        disappear_time.timetuple()),
-                    'last_modified_time': p['last_modified_timestamp_ms'],
-                    'time_until_hidden_ms': p['time_till_hidden_ms'],
-                    'verified': SpawnPoint.tth_found(sp),
-                    'seconds_until_despawn': seconds_until_despawn,
-                    'spawn_start': start_end[0],
-                    'spawn_end': start_end[1]
-                })
-                wh_update_queue.put(('pokemon', wh_poke))
-
+                pokemon_id = p['pokemon_data']['pokemon_id']
+                if (pokemon_id in args.webhook_whitelist or
+                    (not args.webhook_whitelist and pokemon_id
+                     not in args.webhook_blacklist)):
+                    wh_poke = pokemon[p['encounter_id']].copy()
+                    wh_poke.update({
+                        'disappear_time': calendar.timegm(
+                                          disappear_time.timetuple()),
+                        'last_modified_time': p['last_modified_timestamp_ms'],
+                        'time_until_hidden_ms': p['time_till_hidden_ms'],
+                        'verified': SpawnPoint.tth_found(sp),
+                        'seconds_until_despawn': seconds_until_despawn,
+                        'spawn_start': start_end[0],
+                        'spawn_end': start_end[1],
+                        'player_level': level
+                        })
+                    wh_update_queue.put(('pokemon', wh_poke))
+        # Helping out the GC.
         del wild_pokemon
 
     if forts and (config['parse_pokestops'] or config['parse_gyms']):
@@ -2121,6 +2130,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                         f['last_modified_timestamp_ms'] / 1000.0),
                 }
 
+        # Helping out the GC.
         del forts
 
     log.info('Parsing found Pokemon: %d, nearby: %d, pokestops: %d, gyms: %d.',
@@ -2365,6 +2375,8 @@ def db_updater(args, q, db):
                           len(data),
                           q.qsize(),
                           default_timer() - last_upsert)
+
+                # Helping out the GC.
                 del model
                 del data
 
@@ -2417,7 +2429,7 @@ def clean_db_loop(args):
                                   timedelta(hours=args.purge_data)))))
                 rows = query.execute()
                 end = datetime.utcnow()
-                diff = end-start
+                diff = end - start
                 log.info("Completed purge of old Pokemon spawns. "
                          "%i deleted in %f seconds.",
                          rows, diff.total_seconds())

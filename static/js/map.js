@@ -68,12 +68,15 @@ var audio = new Audio('static/sounds/ding.mp3')
 
 var GenderType = ['♂', '♀', '⚪']
 
+<<<<<<< HEAD
 var LevelCP = ['0.0939999967813','0.166397869587','0.215732470155','0.255720049143','0.290249884128571',
 '0.321087598801','0.349212676287','0.375235587358','0.399567276239','0.422500014305115',
 '0.443107545376','0.46279838681221','0.481684952974','0.499858438969','0.517393946648',
 '0.534354329109','0.550792694092','0.566754519939','0.582278907299042','0.597400009632',
 '0.612157285213','0.62656712532','0.6406529545784','0.654435634613','0.667934000492',
 '0.68116492033','0.694143652916','0.706884205341','0.719399094582','0.731700003147']
+=======
+>>>>>>> RocketMap/develop
 
 /*
   text place holders:
@@ -399,7 +402,20 @@ function openMapDirections(lat, lng) { // eslint-disable-line no-unused-vars
     window.open(url, '_blank')
 }
 
+<<<<<<< HEAD
 function pokemonLabel(name, rarity, types, disappearTime, id, latitude, longitude, encounterId, atk, def, sta, move1, move2, weight, height, gender, cp, cpmultiplier) {
+=======
+// Converts timestamp to readable String
+function getDateStr(t) {
+    var dateStr = 'Unknown'
+    if (t) {
+        dateStr = moment(t).format('YYYY-MM-DD HH:mm:ss')
+    }
+    return dateStr
+}
+
+function pokemonLabel(name, rarity, types, disappearTime, id, latitude, longitude, encounterId, atk, def, sta, move1, move2, weight, height, gender) {
+>>>>>>> RocketMap/develop
     var disappearDate = new Date(disappearTime)
     var rarityDisplay = rarity ? '(' + rarity + ')' : ''
     var typesDisplay = ''
@@ -464,7 +480,7 @@ function pokemonLabel(name, rarity, types, disappearTime, id, latitude, longitud
     return contentstring
 }
 
-function gymLabel(teamName, teamId, gymPoints, latitude, longitude, lastScanned = null, name = null, members = [], gymId) {
+function gymLabel(teamName, teamId, gymPoints, latitude, longitude, lastScanned = null, lastModified = null, name = null, members = [], gymId) {
     var memberStr = ''
     for (var i = 0; i < members.length; i++) {
         memberStr += `
@@ -474,13 +490,8 @@ function gymLabel(teamName, teamId, gymPoints, latitude, longitude, lastScanned 
             </span>`
     }
 
-    var lastScannedStr
-    if (lastScanned) {
-        var lastScannedDate = new Date(lastScanned)
-        lastScannedStr = `${lastScannedDate.getFullYear()}-${pad(lastScannedDate.getMonth() + 1)}-${pad(lastScannedDate.getDate())} ${pad(lastScannedDate.getHours())}:${pad(lastScannedDate.getMinutes())}:${pad(lastScannedDate.getSeconds())}`
-    } else {
-        lastScannedStr = 'Unknown'
-    }
+    var lastScannedStr = getDateStr(lastScanned)
+    var lastModifiedStr = getDateStr(lastModified)
     var directionsStr = ''
     if (!Store.get('useGymSidebar')) {
         directionsStr = `<div>
@@ -506,6 +517,9 @@ function gymLabel(teamName, teamId, gymPoints, latitude, longitude, lastScanned 
                     </div>
                     <div>
                         Last Scanned: ${lastScannedStr}
+                    </div>
+                    <div>
+                        Last Modified: ${lastModifiedStr}
                     </div>
                     ${directionsStr}
                 </center>
@@ -536,6 +550,9 @@ function gymLabel(teamName, teamId, gymPoints, latitude, longitude, lastScanned 
                     </div>
                     <div>
                         Last Scanned: ${lastScannedStr}
+                    </div>
+                    <div>
+                        Last Modified: ${lastModifiedStr}
                     </div>
                     ${directionsStr}
                 </center>
@@ -783,7 +800,7 @@ function setupGymMarker(item) {
     }
 
     marker.infoWindow = new google.maps.InfoWindow({
-        content: gymLabel(gymTypes[item['team_id']], item['team_id'], item['gym_points'], item['latitude'], item['longitude'], item['last_scanned'], item['name'], item['pokemon'], item['gym_id']),
+        content: gymLabel(gymTypes[item['team_id']], item['team_id'], item['gym_points'], item['latitude'], item['longitude'], item['last_scanned'], item['last_modified'], item['name'], item['pokemon'], item['gym_id']),
         disableAutoPan: true
     })
 
@@ -826,7 +843,7 @@ function updateGymMarker(item, marker) {
         url: 'static/forts/' + Store.get('gymMarkerStyle') + '/' + gymTypes[item['team_id']] + (item['team_id'] !== 0 ? '_' + getGymLevel(item['gym_points']) : '') + '.png',
         scaledSize: new google.maps.Size(48, 48)
     })
-    marker.infoWindow.setContent(gymLabel(gymTypes[item['team_id']], item['team_id'], item['gym_points'], item['latitude'], item['longitude'], item['last_scanned'], item['name'], item['pokemon'], item['gym_id']))
+    marker.infoWindow.setContent(gymLabel(gymTypes[item['team_id']], item['team_id'], item['gym_points'], item['latitude'], item['longitude'], item['last_scanned'], item['last_modified'], item['name'], item['pokemon'], item['gym_id']))
     return marker
 }
 
@@ -1743,7 +1760,8 @@ function showGymDetails(id) { // eslint-disable-line no-unused-vars
         var gymLevel = getGymLevel(result.gym_points)
         var nextLvlPrestige = gymPrestige[gymLevel - 1] || 50000
         var prestigePercentage = (result.gym_points / nextLvlPrestige) * 100
-        var lastScannedDate = new Date(result.last_scanned)
+        var lastScannedDateStr = getDateStr(result.last_scanned)
+        var lastModifiedDateStr = getDateStr(result.last_modified)
         var freeSlots = result.pokemon.length ? gymLevel - result.pokemon.length : 0
         var freeSlotsStr = freeSlots ? ` - ${freeSlots} Free Slots` : ''
         var gymLevelStr = ''
@@ -1774,7 +1792,10 @@ function showGymDetails(id) { // eslint-disable-line no-unused-vars
                 </div>
                 ${gymLevelStr}
                 <div style="font-size: .7em;">
-                    Last Scanned: ${lastScannedDate.getFullYear()}-${pad(lastScannedDate.getMonth() + 1)}-${pad(lastScannedDate.getDate())} ${pad(lastScannedDate.getHours())}:${pad(lastScannedDate.getMinutes())}:${pad(lastScannedDate.getSeconds())}
+                    Last Scanned: ${lastScannedDateStr}
+                </div>
+                <div style="font-size: .7em;">
+                    Last Modified: ${lastModifiedDateStr}
                 </div>
                 <div>
                     <a href='javascript:void(0);' onclick='javascript:openMapDirections(${result.latitude},${result.longitude});' title='View in Maps'>Get directions</a>
