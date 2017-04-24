@@ -2491,7 +2491,10 @@ def create_tables(db):
               SpawnPoint, ScanSpawnPoint, SpawnpointDetectionData,
               Token, LocationAltitude]
     for table in tables:
-        log.info("Creating table: %s", table.__name__)
+        if not table.table_exists():
+            log.info("Creating table: %s", table.__name__)
+        else:
+            log.debug("Creating table: %s", table.__name__)
         db.create_tables([table], safe=True)
         db.close()
 
@@ -2505,7 +2508,10 @@ def drop_tables(db):
     db.connect()
     db.execute_sql('SET FOREIGN_KEY_CHECKS=0;')
     for table in tables:
-        log.info("Dropping table: %s", table.__name__)
+        if table.table_exists():
+            log.info("Dropping table: %s", table.__name__)
+        else:
+            log.debug("Dropping table: %s", table.__name__)
         db.drop_tables([table], safe=True)
     db.execute_sql('SET FOREIGN_KEY_CHECKS=1;')
     db.close()
