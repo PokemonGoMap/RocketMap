@@ -2510,9 +2510,7 @@ def drop_tables(db):
     for table in tables:
         if table.table_exists():
             log.info("Dropping table: %s", table.__name__)
-        else:
-            log.debug("Dropping table: %s", table.__name__)
-        db.drop_tables([table], safe=True)
+            db.drop_tables([table], safe=True)
     db.execute_sql('SET FOREIGN_KEY_CHECKS=1;')
     db.close()
 
