@@ -2492,11 +2492,12 @@ def create_tables(db):
               Token, LocationAltitude]
     for table in tables:
         if not table.table_exists():
-            log.info("Creating table: %s", table.__name__)
+            log.info('Creating table: %s', table.__name__)
+            db.create_tables([table], safe=True)
         else:
-            log.debug("Table already exists: %s", table.__name__)
-        db.create_tables([table], safe=True)
-        db.close()
+            log.debug('Skipping table %s, it already exists.', table.__name__)
+
+    db.close()
 
 
 def drop_tables(db):
@@ -2509,8 +2510,9 @@ def drop_tables(db):
     db.execute_sql('SET FOREIGN_KEY_CHECKS=0;')
     for table in tables:
         if table.table_exists():
-            log.info("Dropping table: %s", table.__name__)
+            log.info('Dropping table: %s', table.__name__)
             db.drop_tables([table], safe=True)
+
     db.execute_sql('SET FOREIGN_KEY_CHECKS=1;')
     db.close()
 
