@@ -44,3 +44,11 @@ RocketMap gives you a live visualization map of nearby Pokémon, Pokéstops, and
     :glob:
 
     extras/*
+    
+    .. toctree::
+    :titlesonly:
+    :maxdepth: 1
+    :caption: Community Tools
+    :glob:
+
+    tools/*
