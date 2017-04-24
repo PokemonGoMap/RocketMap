@@ -2494,7 +2494,7 @@ def create_tables(db):
         if not table.table_exists():
             log.info("Creating table: %s", table.__name__)
         else:
-            log.debug("Creating table: %s", table.__name__)
+            log.debug("Table already exists: %s", table.__name__)
         db.create_tables([table], safe=True)
         db.close()
 
