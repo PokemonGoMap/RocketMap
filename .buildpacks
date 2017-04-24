@@ -1,2 +1,2 @@
-https://github.com/Scalingo/nodejs-buildpack.git
-https://github.com/Scalingo/python-buildpack
+https://github.com/heroku/heroku-buildpack-nodejs
+https://github.com/heroku/heroku-buildpack-python
