@@ -1795,6 +1795,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
         if i == 0:
             now_date = datetime.utcfromtimestamp(
                 cell['current_timestamp_ms'] / 1000)
+
         nearby_pokemon += len(cell.get('nearby_pokemons', []))
         # Parse everything for stats (counts).  Future enhancement -- we don't
         # necessarily need to know *how many* forts/wild/nearby were found but
@@ -1803,13 +1804,13 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
         if config['parse_pokemon']:
             wild_pokemon += cell.get('wild_pokemons', [])
 
+        if config['parse_pokestops'] or config['parse_gyms']:
+            forts += cell.get('forts', [])
+
         # Update count regardless of Pokémon parsing or not, we need the count.
         # Length is O(1).
         wild_pokemon_count += len(cell.get('wild_pokemons', []))
         forts_count += len(cell.get('forts', []))
-
-        if config['parse_pokestops'] or config['parse_gyms']:
-            forts += cell.get('forts', [])
 
     now_secs = date_secs(now_date)
     if wild_pokemon:
