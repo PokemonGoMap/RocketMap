@@ -58,6 +58,6 @@ sed -i "s,DIRECTORY,$directory," "$HOME/supervisor/supervisord.conf"
 sed -i "s/LOC/$initloc/" "$HOME/supervisor/supervisord.conf"
 
 # Adding the folder to supervisord.conf [inclues]
-if [ -z $(grep -i "hex$hexnum/\*.ini" supervisord.conf) ]; then
+if grep -q "hex$hexnum/\*.ini" supervisord.conf; then
   echo "files = hex$hexnum/*.ini" >> supervisord.conf
 fi
