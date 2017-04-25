@@ -1899,7 +1899,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                     'gender': pokemon_info['pokemon_display']['gender']
                 })
 
-                # Check for Unown's alphabetic character
+                # Check for Unown's alphabetic character.
                 if pokemon_info['pokemon_id'] == 201:
                     pokemon[p['encounter_id']]['form'] = pokemon_info[
                         'pokemon_display'].get('form', None)
