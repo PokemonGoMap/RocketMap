@@ -1207,9 +1207,10 @@ def map_request(api, position, no_jitter=False):
         return response
 
     except HashingOfflineException as e:
-        log.warning('Hashing Server offline.')
+        log.warning('Hashing server is unreachable, it might be offline.')
     except BadHashRequestException as e:
-        log.warning('Invalid/Expired Hash Key check your config.')
+        log.warning(('Invalid or expired hashing key:' +
+                    (api._hash_server_token + '.')))
     except Exception as e:
         log.warning('Exception while downloading map: %s', repr(e))
         return False
