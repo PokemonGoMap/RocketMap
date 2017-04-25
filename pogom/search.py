@@ -38,7 +38,8 @@ from requests.packages.urllib3.util.retry import Retry
 from pgoapi import PGoApi
 from pgoapi.utilities import f2i
 from pgoapi import utilities as util
-from pgoapi.hash_server import HashServer
+from pgoapi.hash_server import HashServer, BadHashRequestException, \
+                               HashingOfflineException
 
 from .models import parse_map, GymDetails, parse_gyms, MainWorker, \
                     WorkerStatus, HashKeys
@@ -1205,6 +1206,10 @@ def map_request(api, position, no_jitter=False):
         response = clear_dict_response(response, True)
         return response
 
+    except HashingOfflineException as e:
+        log.warning('Hashing Server offline.')
+    except BadHashRequestException as e:
+        log.warning('Invalid/Expired Hash Key check your config.')
     except Exception as e:
         log.warning('Exception while downloading map: %s', repr(e))
         return False
