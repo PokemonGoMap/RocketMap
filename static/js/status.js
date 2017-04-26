@@ -10,8 +10,8 @@ var hashkeys = {}
 var minUpdateDelay = 1000 // Minimum delay between updates (in ms).
 var lastRawUpdateTime = new Date()
 
-function getFormattedDate(unFormattedDate) { // eslintrc no-undef
-// Use YYYY-MM-DD HH:MM:SS formatted dates to enable simple sorting
+function getFormattedDate(unFormattedDate) { // eslintrc no-undef.
+// Use YYYY-MM-DD HH:MM:SS formatted dates to enable simple sorting.
     return moment(unFormattedDate).format('YYYY-MM-DD HH:mm:ss')
 }
 
