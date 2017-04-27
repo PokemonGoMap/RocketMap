@@ -141,10 +141,6 @@ function processHashKeys(i, hashkey) {
         expires = 'Unknown/Invalid'
     }
 
-    if (moment(expires).isSame(moment(expires))) {
-        expires = 'Expired'
-    }
-
     $('#key_' + keyHash).html(key)
     $('#maximum_' + keyHash).html(hashkey['maximum'])
     $('#remaining_' + keyHash).html(hashkey['remaining'])
