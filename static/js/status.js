@@ -137,6 +137,9 @@ function processHashKeys(i, hashkey) {
 
     var lastUpdated = getFormattedDate(new Date(hashkey['last_updated']))
     var expires = getFormattedDate(new Date(hashkey['expires']))
+    if (moment(expires).isBefore(moment())) {
+            expires = 'Unknown/Invalid'
+    }
 
     $('#key_' + keyHash).html(key)
     $('#maximum_' + keyHash).html(hashkey['maximum'])
@@ -189,6 +192,7 @@ function createHashTable(mainKeyHash) {
      </div>
    </div>`
 
+    hashtable = $(hashtable)
     $('#status_container').prepend(hashtable)
     $(hashtable).find('.status_row.header .status_cell').click(sortHashTable)
 }
