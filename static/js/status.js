@@ -138,7 +138,7 @@ function processHashKeys(i, hashkey) {
     var lastUpdated = getFormattedDate(new Date(hashkey['last_updated']))
     var expires = getFormattedDate(new Date(hashkey['expires']))
     if (moment(expires).isBefore(moment.utc())) {
-            expires = 'Unknown/Invalid'
+        expires = 'Unknown/Invalid'
     }
 
     $('#key_' + keyHash).html(key)
