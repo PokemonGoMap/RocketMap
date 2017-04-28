@@ -40,7 +40,7 @@ args = get_args()
 flaskDb = FlaskDB()
 cache = TTLCache(maxsize=100, ttl=60 * 5)
 
-db_schema_version = 18
+db_schema_version = 17
 
 
 class MyRetryDB(RetryOperationalError, PooledMySQLDatabase):
@@ -107,6 +107,7 @@ class Pokemon(BaseModel):
     weight = FloatField(null=True)
     height = FloatField(null=True)
     gender = SmallIntegerField(null=True)
+    form = SmallIntegerField(null=True)
     cp = SmallIntegerField(null=True)
     cp_multiplier = CharField(max_length=25, null=True)
     last_modified = DateTimeField(
@@ -1975,6 +1976,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                 'height': None,
                 'weight': None,
                 'gender': None,
+                'form': None,
                 'cp': None,
                 'cp_multiplier': None
             }
@@ -1998,6 +2000,11 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                     'cp': pokemon_info['cp'],
                     'cp_multiplier': str(pokemon_info['cp_multiplier'])
                 })
+
+                # Check for Unown's alphabetic character.
+                if pokemon_info['pokemon_id'] == 201:
+                    pokemon[p['encounter_id']]['form'] = pokemon_info[
+                        'pokemon_display'].get('form', None)
 
             if args.webhooks:
                 pokemon_id = p['pokemon_data']['pokemon_id']
@@ -2750,15 +2757,17 @@ def database_migrate(db, old_ver):
             migrate(
                 migrator.add_index('pokestop', ('last_updated',), False)
             )
-        log.info('Schema upgrade complete.')
         
     if old_ver < 17:
         migrate(
+            migrator.add_column('pokemon', 'form',
+                                SmallIntegerField(null=True)),
             migrator.add_column('pokemon', 'cp',
-                                SmallIntegerField(null=True, default=0))
-        )
-    if old_ver < 18:
-        migrate(
+                                SmallIntegerField(null=True, default=0)),
             migrator.add_column('pokemon', 'cp_multiplier',
                                 CharField(null=True, max_length=25, default=0))
+
         )
+
+    # Always log that we're done.
+    log.info('Schema upgrade complete.')
