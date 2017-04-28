@@ -189,11 +189,7 @@ def __get_key_fields(whtype):
         'pokemon': ['spawnpoint_id', 'pokemon_id', 'latitude', 'longitude',
                     'disappear_time', 'move_1', 'move_2',
                     'individual_stamina', 'individual_defense',
-<<<<<<< HEAD
-                    'individual_attack', 'cp', 'cp_multiplier'],
-=======
-                    'individual_attack', 'form'],
->>>>>>> RocketMap/develop
+                    'individual_attack', 'form', 'cp', 'cp_multiplier'],
         'gym': ['team_id', 'guard_pokemon_id',
                 'gym_points', 'enabled', 'latitude', 'longitude'],
         'gym_details': ['latitude', 'longitude', 'team', 'pokemon']
