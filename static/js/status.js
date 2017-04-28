@@ -202,8 +202,9 @@ function createHashTable(mainKeyHash) {
 }
 
 function sortHashTable() {
+    var hashtable = $(this).parents('.status_table').eq(0)
     var comparator = compareHashTable($(this).index())
-    var hashrow = createHashTable.find('.status_row:gt(0)').toArray()
+    var hashrow = hashtable.find('.status_row:gt(0)').toArray()
 
 // Sort the array.
     hashrow.sort(comparator)
@@ -212,7 +213,7 @@ function sortHashTable() {
         hashrow = hashrow.reverse()
     }
     for (var i = 0; i < hashrow.length; i++) {
-        createHashTable.append(hashrow[i])
+        hashtable.append(hashrow[i])
     }
 }
 
