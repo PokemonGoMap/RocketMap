@@ -2872,6 +2872,6 @@ def database_migrate(db, old_ver):
             migrator.add_column('pokemon', 'cp_multiplier',
                                 FloatField(null=True))
         )
-        
+
     # Always log that we're done.
     log.info('Schema upgrade complete.')
