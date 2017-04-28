@@ -433,7 +433,7 @@ function pokemonLabel(item) {
     var gender = item['gender']
     var form = item['form']
     var cp = item['cp']
-    var cpmultiplier = item['cpmultiplier']
+    var cpmultiplier = item['cp_multiplier']
 
     $.each(types, function (index, type) {
         typesDisplay += getTypeSpan(type)
