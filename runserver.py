@@ -3,7 +3,6 @@
 
 import os
 import sys
-import shutil
 import logging
 import time
 import re
@@ -14,13 +13,12 @@ from distutils.version import StrictVersion
 
 from threading import Thread, Event
 from queue import Queue
-from cachetools import LFUCache
 from flask_cors import CORS
 from flask_cache_bust import init_cache_busting
 
 from pogom import config
 from pogom.app import Pogom
-from pogom.utils import get_args, now
+from pogom.utils import get_args, now, extract_sprites
 from pogom.altitude import get_gmaps_altitude
 
 from pogom.search import search_overseer_thread
@@ -35,36 +33,9 @@ pgoapi_version = "1.1.7"
 
 # Moved here so logger is configured at load time.
 logging.basicConfig(
-    format='%(asctime)s [%(threadName)16s][%(module)14s][%(levelname)8s] ' +
+    format='%(asctime)s [%(threadName)18s][%(module)14s][%(levelname)8s] ' +
     '%(message)s')
 log = logging.getLogger()
-
-# Make sure pogom/pgoapi is actually removed if it is an empty directory.
-# This is a leftover directory from the time pgoapi was embedded in
-# PokemonGo-Map.
-# The empty directory will cause problems with `import pgoapi` so it needs to
-# go.
-# Now also removes the pogom/libencrypt and pokecrypt-pgoapi folders,
-# don't cause issues but aren't needed.
-oldpgoapiPath = os.path.join(os.path.dirname(__file__), "pogom/pgoapi")
-oldlibPath = os.path.join(os.path.dirname(__file__), "pokecrypt-pgoapi")
-oldoldlibPath = os.path.join(os.path.dirname(__file__), "pogom/libencrypt")
-if os.path.isdir(oldpgoapiPath):
-    log.warn("I found a really really old pgoapi thing, but its no longer " +
-             "used. Going to remove it...", oldpgoapiPath)
-    shutil.rmtree(oldpgoapiPath)
-    log.warn("Done!")
-if os.path.isdir(oldlibPath):
-    log.warn("I found the pokecrypt-pgoapi folder/submodule, but its no " +
-             "longer used. Going to remove it...", oldpgoapiPath)
-    shutil.rmtree(oldlibPath)
-    log.warn("Done!")
-if os.path.isdir(oldoldlibPath):
-    log.warn("I found the old libencrypt folder, from when we used to " +
-             "bundle encrypt libs, but its no longer used. " +
-             "Going to remove it...", oldpgoapiPath)
-    shutil.rmtree(oldoldlibPath)
-    log.warn("Done!")
 
 # Assert pgoapi is installed.
 try:
@@ -158,8 +129,9 @@ def main():
         if not os.path.isfile(
                 os.path.join(os.path.dirname(__file__),
                              'static/icons-sprite.png')):
-            log.critical('Missing sprite files.')
-            sys.exit()
+            log.info('Sprite files not present, extracting bundled ones...')
+            extract_sprites()
+            log.info('Done!')
 
     # These are very noisy, let's shush them up a bit.
     logging.getLogger('peewee').setLevel(logging.INFO)
@@ -182,6 +154,13 @@ def main():
         logging.getLogger('pgoapi.rpc_api').setLevel(logging.DEBUG)
         logging.getLogger('rpc_api').setLevel(logging.DEBUG)
         logging.getLogger('werkzeug').setLevel(logging.DEBUG)
+
+    # Web access logs.
+    if args.access_logs:
+        logger = logging.getLogger('werkzeug')
+        handler = logging.FileHandler('access.log')
+        logger.setLevel(logging.INFO)
+        logger.addHandler(handler)
 
     # Use lat/lng directly if matches such a pattern.
     prog = re.compile("^(\-?\d+\.\d+),?\s?(\-?\d+\.\d+)$")
@@ -229,6 +208,9 @@ def main():
     config['LOCALE'] = args.locale
     config['CHINA'] = args.china
 
+    # if we're clearing the db, do not bother with the blacklist
+    if args.clear_db:
+        args.disable_blacklist = True
     app = Pogom(__name__)
     app.before_request(app.validate_request)
 
@@ -240,6 +222,9 @@ def main():
         elif os.path.isfile(args.db):
             os.remove(args.db)
     create_tables(db)
+    if args.clear_db:
+        log.info("Drop and recreate is complete. Now remove -cd and restart.")
+        sys.exit()
 
     app.set_current_location(position)
 
@@ -272,12 +257,12 @@ def main():
         t.daemon = True
         t.start()
 
-    # WH updates queue & WH gym/pokéstop unique key LFU cache.
-    # The LFU cache will stop the server from resending the same data an
-    # infinite number of times.
-    # TODO: Rework webhooks entirely so a LFU cache isn't necessary.
+    # WH updates queue & WH unique key LFU caches.
+    # The LFU caches will stop the server from resending the same data an
+    # infinite number of times. The caches will be instantiated in the
+    # webhook's startup code.
     wh_updates_queue = Queue()
-    wh_key_cache = LFUCache(maxsize=args.wh_lfu_size)
+    wh_key_cache = {}
 
     # Thread to process webhook updates.
     for i in range(args.wh_threads):

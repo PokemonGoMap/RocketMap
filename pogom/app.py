@@ -63,6 +63,10 @@ class Pogom(Flask):
         self.route("/inject.js", methods=['GET'])(self.render_inject_js)
         self.route("/submit_token", methods=['POST'])(self.submit_token)
         self.route("/get_stats", methods=['GET'])(self.get_account_stats)
+        self.route("/robots.txt", methods=['GET'])(self.render_robots_txt)
+
+    def render_robots_txt(self):
+        return render_template('robots.txt')
 
     def get_bookmarklet(self):
         args = get_args()
@@ -93,8 +97,12 @@ class Pogom(Flask):
         return r
 
     def validate_request(self):
-        if self._ip_is_blacklisted(request.remote_addr):
-            log.debug('Denied access to %s.', request.remote_addr)
+        args = get_args()
+        ip_addr = request.remote_addr
+        if ip_addr in args.trusted_proxies:
+            ip_addr = request.headers.get('X-Forwarded-For', ip_addr)
+        if self._ip_is_blacklisted(ip_addr):
+            log.debug('Denied access to %s.', ip_addr)
             abort(403)
 
     def _ip_is_blacklisted(self, ip):
@@ -145,11 +153,23 @@ class Pogom(Flask):
         args = get_args()
         if args.on_demand_timeout > 0:
             self.search_control.clear()
-        fixed_display = "none" if args.fixed_location else "inline"
-        search_display = "inline" if (args.search_control and
-                                      args.on_demand_timeout <= 0) else "none"
-        scan_display = "none" if (args.only_server or args.fixed_location or
-                                  args.spawnpoint_scanning) else "inline"
+
+        search_display = True if (args.search_control and
+                                  args.on_demand_timeout <= 0) else False
+
+        scan_display = False if (args.only_server or args.fixed_location or
+                                 args.spawnpoint_scanning) else True
+
+        visibility_flags = {
+            'gyms': not args.no_gyms,
+            'pokemons': not args.no_pokemon,
+            'pokestops': not args.no_pokestops,
+            'gym_info': args.gym_info,
+            'encounter': args.encounter,
+            'scan_display': scan_display,
+            'search_display': search_display,
+            'fixed_display': not args.fixed_location
+        }
 
         map_lat = self.current_location[0]
         map_lng = self.current_location[1]
@@ -162,9 +182,7 @@ class Pogom(Flask):
                                lng=map_lng,
                                gmaps_key=config['GMAPS_KEY'],
                                lang=config['LOCALE'],
-                               is_fixed=fixed_display,
-                               search_control=search_display,
-                               show_scan=scan_display
+                               show=visibility_flags
                                )
 
     def raw_data(self):
@@ -238,7 +256,8 @@ class Pogom(Flask):
         d['oNeLat'] = neLat
         d['oNeLng'] = neLng
 
-        if request.args.get('pokemon', 'true') == 'true':
+        if (request.args.get('pokemon', 'true') == 'true' and
+                not args.no_pokemon):
             if request.args.get('ids'):
                 ids = [int(x) for x in request.args.get('ids').split(',')]
                 d['pokemons'] = Pokemon.get_active_by_id(ids, swLat, swLng,
@@ -273,7 +292,8 @@ class Pogom(Flask):
                                              neLat, neLng))
                 d['reids'] = reids
 
-        if request.args.get('pokestops', 'true') == 'true':
+        if (request.args.get('pokestops', 'true') == 'true' and
+                not args.no_pokestops):
             if lastpokestops != 'true':
                 d['pokestops'] = Pokestop.get_stops(swLat, swLng, neLat, neLng,
                                                     lured=luredonly)
@@ -287,7 +307,7 @@ class Pogom(Flask):
                                            oNeLat=oNeLat, oNeLng=oNeLng,
                                            lured=luredonly))
 
-        if request.args.get('gyms', 'true') == 'true':
+        if request.args.get('gyms', 'true') == 'true' and not args.no_gyms:
             if lastgyms != 'true':
                 d['gyms'] = Gym.get_gyms(swLat, swLng, neLat, neLng)
             else:

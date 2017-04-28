@@ -1,7 +1,7 @@
 Basic Installation
 ##################
 
-These instructions cover an instation from a **release** as well as from a git clone.
+These instructions cover an installation from the develop branch in git.
 
 Prerequisites
 *************
@@ -68,12 +68,8 @@ Linux/OSX:
 
   sudo -H pip install -r requirements.txt
 
-``git`` Version Extra Steps
+Building Front-End Assets
 ===========================
-
-.. warning::
-
-  This only applies if you are running from a ``git clone``.
 
 In order to run from a git clone, you must compile the front-end assets with node. Make sure you have node installed for your platform:
 
@@ -122,8 +118,25 @@ The most basic config you could use would look something like this:
 
 .. code-block:: bash
 
-  python ./runserver.py -a ptc -u "USERNAME_HERE" -p "PASSWORD_HERE" \
-   -l "a street address or lat/lng coords here" -st 3 -k "maps key here"
+python ./runserver.py -ac accounts.csv -tut -st 10 \
+ -l "a street address or lat/lng coords here" -k "MAPS_KEY_HERE" \
+ -hk "HASH_KEY_HERE" -cs -ck "CAPTCHA_KEY"
+
+Let's run through this startup command to make sure you understand what flags are being set.
+
+* -ac accounts.csv
+Load accounts from CSV (Comma Seperated Values) file containing "auth_service,username,passwd" lines. [More Info](http://rocketmap.readthedocs.io/en/develop/extras/multi-account.html)
+
+* -tut
+Complete ToS and tutorial steps on accounts if they haven't already. [More Info](http://rocketmap.readthedocs.io/en/develop/extras/multi-account.html)
+
+* -hk "HASH_KEY_HERE"
+Key used to access the hash server. [More Info](http://rocketmap.readthedocs.io/en/develop/extras/hashing.html)
+
+* -cs -ck "CAPTCHA_KEY"
+Enables captcha solving and 2Captcha API key. (Manual captcha available, see [Full Info](http://rocketmap.readthedocs.io/en/develop/extras/captchas.html))
+
+Another thing to note is that all of these flags can be set inside of a configuration file to avoid clutter on the command line. View [this page](http://rocketmap.readthedocs.io/en/develop/extras/configuration-files.html) to see how.
 
 Open your browser to http://localhost:5000 and your pokemon will begin to show up! Happy hunting!
 
@@ -132,7 +145,7 @@ Updating the Application
 
 RocketMap is a very active project and updates often. You can follow the `latest changes <https://github.com/RocketMap/RocketMap/commits/develop>`_ to see what's changing.
 
-If you are running a ``git`` version, you can update with a few quick commands:
+You can update with a few quick commands:
 
 .. code-block:: bash
 
