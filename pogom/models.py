@@ -107,6 +107,7 @@ class Pokemon(BaseModel):
     move_1 = SmallIntegerField(null=True)
     move_2 = SmallIntegerField(null=True)
     cp = SmallIntegerField(null=True)
+    cp_multiplier = FloatField(null=True)
     weight = FloatField(null=True)
     height = FloatField(null=True)
     gender = SmallIntegerField(null=True)
@@ -2064,6 +2065,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                 'move_1': None,
                 'move_2': None,
                 'cp': None,
+                'cp_multiplier': None,
                 'height': None,
                 'weight': None,
                 'gender': None,
@@ -2092,6 +2094,8 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                 if encounter_level >= 30:
                     pokemon[p['encounter_id']][
                         'cp'] = pokemon_info.get('cp', None)
+                    pokemon[p['encounter_id']][
+                        'cp_multiplier'] = pokemon_info.get('cp_multiplier', None)
 
                 # Check for Unown's alphabetic character.
                 if pokemon_info['pokemon_id'] == 201:
@@ -2862,5 +2866,11 @@ def database_migrate(db, old_ver):
                                 SmallIntegerField(null=True))
         )
 
+    if old_ver < 19:
+        migrate(
+            migrator.add_column('pokemon', 'cp_multiplier',
+                                FloatField(null=True))
+        )
+        
     # Always log that we're done.
     log.info('Schema upgrade complete.')
