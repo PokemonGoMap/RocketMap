@@ -41,7 +41,8 @@ from pgoapi.utilities import f2i
 from pgoapi import utilities as util
 from pgoapi.hash_server import HashServer, BadHashRequestException, \
                                HashingOfflineException
-from .models import parse_map, GymDetails, parse_gyms, MainWorker, WorkerStatus
+from .models import parse_map, GymDetails, parse_gyms, MainWorker, \
+                    WorkerStatus, HashKeys
 from .utils import now, clear_dict_response
 from .transform import get_new_coords, jitter_location
 from .account import (setup_api, check_login, get_tutorial_state,
