@@ -412,16 +412,10 @@ function getDateStr(t) {
     return dateStr
 }
 
-<<<<<<< HEAD
-function pokemonLabel(name, rarity, types, disappearTime, id, latitude, longitude, encounterId, atk, def, sta, move1, move2, weight, height, gender, cp, cpmultiplier) {
-    var disappearDate = new Date(disappearTime)
-    var rarityDisplay = rarity ? '(' + rarity + ')' : ''
-=======
 function pokemonLabel(item) {
     var name = item['pokemon_name']
     var rarityDisplay = item['pokemon_rarity'] ? '(' + item['pokemon_rarity'] + ')' : ''
     var types = item['pokemon_types']
->>>>>>> RocketMap/develop
     var typesDisplay = ''
     var encounterId = item['encounter_id']
     var id = item['pokemon_id']
@@ -438,13 +432,14 @@ function pokemonLabel(item) {
     var height = item['height']
     var gender = item['gender']
     var form = item['form']
+    var cp = item['cp']
+    var cpmultiplier = item['cpmultiplier']
 
     $.each(types, function (index, type) {
         typesDisplay += getTypeSpan(type)
     })
 
     var details = ''
-<<<<<<< HEAD
     var cpText = ''
     if (cp != null) {
         var cpText = `| CP: <b>${cp}</b>`
@@ -453,10 +448,7 @@ function pokemonLabel(item) {
     if (cpmultiplier != null) {
         var cpLevel = `| LVL: <b>${LevelCP.indexOf(cpmultiplier)+1}</b>`
     }
-    if (atk != null) {
-=======
     if (atk !== null && def !== null && sta !== null) {
->>>>>>> RocketMap/develop
         var iv = getIv(atk, def, sta)
         details = `
             <div>
@@ -773,11 +765,7 @@ function customizePokemonMarker(marker, item, skipNotification) {
     }
 
     marker.infoWindow = new google.maps.InfoWindow({
-<<<<<<< HEAD
-        content: pokemonLabel(item['pokemon_name'], item['pokemon_rarity'], item['pokemon_types'], item['disappear_time'], item['pokemon_id'], item['latitude'], item['longitude'], item['encounter_id'], item['individual_attack'], item['individual_defense'], item['individual_stamina'], item['move_1'], item['move_2'], item['weight'], item['height'], item['gender'], item['cp'], item['cp_multiplier']),
-=======
         content: pokemonLabel(item),
->>>>>>> RocketMap/develop
         disableAutoPan: true
     })
 
