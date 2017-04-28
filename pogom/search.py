@@ -39,10 +39,10 @@ from requests.packages.urllib3.util.retry import Retry
 
 from pgoapi.utilities import f2i
 from pgoapi import utilities as util
-from pgoapi.hash_server import HashServer, BadHashRequestException, \
-                               HashingOfflineException
-from .models import parse_map, GymDetails, parse_gyms, MainWorker, \
-                    WorkerStatus, HashKeys
+from pgoapi.hash_server import (HashServer, BadHashRequestException,
+                                HashingOfflineException)
+from .models import (parse_map, GymDetails, parse_gyms, MainWorker,
+                     WorkerStatus, HashKeys)
 from .utils import now, clear_dict_response
 from .transform import get_new_coords, jitter_location
 from .account import (setup_api, check_login, get_tutorial_state,
@@ -1122,10 +1122,13 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
 
                         key_instance['expires'] = expires
 
-                    log.debug(
-                        ('Hash key {} has {}/{} RPM ' +
-                         'left.').format(key, key_instance['remaining'],
-                                         key_instance['maximum']))
+                    log.debug('Hash key %s has %s/%s left', key,
+                              key_instance['remaining'],
+                              key_instance['maximum'])
+                    # log.debug(
+                    #    ('Hash key {} has {}/{} RPM ' +
+                    #     'left.').format(key, key_instance['remaining'],
+                    #                     key_instance['maximum']))
                     hashkeys = {}
                     hashkeys[key] = key_instance
                     hashkeys[key]['key'] = key
@@ -1191,8 +1194,8 @@ def map_request(api, position, no_jitter=False):
     except HashingOfflineException as e:
         log.warning('Hashing server is unreachable, it might be offline.')
     except BadHashRequestException as e:
-        log.warning('Invalid or expired hashing key:' +
-                    api._hash_server_token + '.')
+        log.warning('Invalid or expired hashing key: %s.',
+                    api._hash_server_token)
     except Exception as e:
         log.warning('Exception while downloading map: %s', repr(e))
         return False

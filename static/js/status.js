@@ -11,7 +11,7 @@ var minUpdateDelay = 1000 // Minimum delay between updates (in ms).
 var lastRawUpdateTime = new Date()
 
 function getFormattedDate(unFormattedDate) { // eslintrc no-undef.
-// Use YYYY-MM-DD HH:MM:SS formatted dates to enable simple sorting.
+    // Use YYYY-MM-DD HH:MM:SS formatted dates to enable simple sorting.
     return moment(unFormattedDate).format('YYYY-MM-DD HH:mm:ss')
 }
 
@@ -202,14 +202,17 @@ function createHashTable(mainKeyHash) {
 }
 
 function sortHashTable() {
-    var hashtable = $(this).parents('.status_table').eq(0)
-    var hashrow = hashtable.find('.status_row:gt(0)').toArray().sort(compareHashTable($(this).index()))
+    var comparator = compareHashTable($(this).index())
+    var hashrow = createHashTable.find('.status_row:gt(0)').toArray()
+
+// Sort the array.
+    hashrow.sort(comparator)
     this.asc = !this.asc
     if (!this.asc) {
         hashrow = hashrow.reverse()
     }
     for (var i = 0; i < hashrow.length; i++) {
-        hashtable.append(hashrow[i])
+        createHashTable.append(hashrow[i])
     }
 }
 
