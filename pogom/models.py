@@ -2095,7 +2095,8 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                     pokemon[p['encounter_id']][
                         'cp'] = pokemon_info.get('cp', None)
                     pokemon[p['encounter_id']][
-                        'cp_multiplier'] = pokemon_info.get('cp_multiplier', None)
+                        'cp_multiplier'] = pokemon_info.get(
+                        'cp_multiplier', None)
 
                 # Check for Unown's alphabetic character.
                 if pokemon_info['pokemon_id'] == 201:
