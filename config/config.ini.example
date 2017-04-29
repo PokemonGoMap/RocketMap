@@ -61,6 +61,14 @@
 #dump-spawnpoints               # Dump the spawnpoints from the db to json (only for use with -ss).
 
 
+# Geofence settings
+###################
+
+#geofence-file:	                # Geofence file to define outer borders of the scan area.
+#forbidden-file:                # File to define forbidden areas inside scan area. Regarded this as inverted geofence. Can be combined with geofence-file.
+#no-matplotlib:                 # Prevents the usage of matplotlib when running on incompatible hardware. (default=False)
+
+
 # Search settings
 #################
 
@@ -102,7 +110,10 @@
 #encounter-delay:               # Delay in seconds before starting an encounter. Must not be zero. (default=1)
 #high-lvl-accounts:             # File containing a list high level accounts, in the format "auth_service,username,password"
 #enc-whitelist-file:            # File containing a list of Pokemon IDs to encounter for IV/CPs. Requires L30 or higher accounts in --high-lvl-accounts.
+<<<<<<< HEAD
 #hlvl-kph:                      # Set a maximum speed in km/hour for high level account scanning. (default=25)
+=======
+>>>>>>> Initial PR commit
 
 
 # Webserver settings
@@ -137,7 +148,10 @@
 #proxy-rotation:                # Enable proxy rotation with account changing for search threads (none/round/random). (default='none')
 
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> Initial PR commit
 # Webhook settings
 ##################
 
@@ -183,4 +197,8 @@
 #no-version-check               # Disable API version check. (default=False)
 #version-check-interval:        # Interval to check API version in seconds (Default: in range [60, 300]).
 #mock:                          # Mock mode - point to a fpgo endpoint instead of using the real PogoApi,
+<<<<<<< HEAD
                                 # ec: http://127.0.0.1:9090 (default='')
+=======
+                                # ec: http://127.0.0.1:9090 (default='')
+>>>>>>> Initial PR commit

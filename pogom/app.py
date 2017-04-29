@@ -372,6 +372,35 @@ class Pogom(Flask):
                             oSwLat=oSwLat, oSwLng=oSwLng,
                             oNeLat=oNeLat, oNeLng=oNeLng))
 
+        if request.args.get('geofences', 'true') == 'true':
+            geofences_db = Geofence.get_geofences()
+
+            d['geofences'] = {}
+            geofence = {}
+            lastGeofenceID = 0
+
+            if geofences_db:
+                for g in geofences_db:
+                    if (g['geofence_id'] != lastGeofenceID):
+                        if (lastGeofenceID > 0):
+                            # Push current geofence, we start a new one after.
+                            d['geofences'][geofence['name']] = geofence
+
+                        geofence = {
+                            'forbidden': g['forbidden'],
+                            'name': g['name'],
+                            'coordinates': []
+                        }
+
+                    coordinate = {
+                        'lat': g['latitude'],
+                        'lng': g['longitude']
+                    }
+                    geofence['coordinates'].append(coordinate)
+                    lastGeofenceID = g['geofence_id']
+
+                d['geofences'][geofence['name']] = geofence
+
         if request.args.get('status', 'false') == 'true':
             args = get_args()
             d = {}

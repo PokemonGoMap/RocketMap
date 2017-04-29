@@ -271,6 +271,10 @@ class HexSearch(BaseScheduler):
             else:
                 results = results[-7:] + results[:-7]
 
+        # Geofence results.
+        if self.args.geofences.is_enabled():
+            results = self.args.geofences.geofence_results(results)
+
         # Add the required appear and disappear times.
         locationsZeroed = []
         for step, location in enumerate(results, 1):
@@ -367,6 +371,15 @@ class SpawnScan(BaseScheduler):
             log.debug('Loading spawn points from database')
             self.locations = SpawnPoint.get_spawnpoints_in_hex(
                 self.scan_location, self.args.step_limit)
+
+        # Geofence spawnpoints
+        if self.args.geofences.is_enabled():
+            self.locations = self.args.geofences.geofence_ss_locations(
+                self.locations)
+            log.debug(
+                'Geofenced spawns (%s): %s',
+                len(self.locations),
+                self.locations)
 
         # Well shit...
         # if not self.locations:
@@ -523,7 +536,9 @@ class SpeedScan(HexSearch):
         self.scans = scans
         db_update_queue.put((ScannedLocation, initial))
         log.info('%d steps created', len(scans))
-        self.band_spacing = int(10 * 60 / len(scans))
+        if len(scans) > 0:
+            self.band_spacing = int(10 * 60 / len(scans))
+
         self.band_status()
         spawnpoints = SpawnPoint.select_in_hex_by_location(
             self.scan_location, self.args.step_limit)
@@ -573,6 +588,10 @@ class SpeedScan(HexSearch):
                     # current ring
                     loc = get_new_coords(star_loc, xdist * (j), 210 + 60 * i)
                     results.append((loc[0], loc[1], 0))
+
+        # Geofence results
+        if self.args.geofences.is_enabled():
+            results = self.args.geofences.geofence_results(results)
 
         generated_locations = []
         for step, location in enumerate(results):

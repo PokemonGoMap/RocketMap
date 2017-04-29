@@ -36,6 +36,7 @@
     "countMarkers": true,
     "skel": true,
     "setupPokemonMarker": true,
+    "randomColor": false,
 
     "isTouchDevice": true,
     "isMobileDevice": true,

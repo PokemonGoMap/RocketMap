@@ -2761,6 +2761,7 @@ def create_tables(db):
               GymMember, GymPokemon, Trainer, MainWorker, WorkerStatus,
               SpawnPoint, ScanSpawnPoint, SpawnpointDetectionData,
               Token, LocationAltitude, PlayerLocale, HashKeys]
+>>>>>>> Initial PR commit
     for table in tables:
         if not table.table_exists():
             log.info('Creating table: %s', table.__name__)
