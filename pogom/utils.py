@@ -981,5 +981,5 @@ def calc_pokemon_level(cp_multiplier):
                          2.838007664 * cp_multiplier + 0.8539209906)
     else:
         pokemon_level = 171.0112688 * cp_multiplier - 95.20425243
-    pokemon_level = (round(pokemon_level) * 2) / 2
+    pokemon_level = int((round(pokemon_level) * 2) / 2)
     return pokemon_level
