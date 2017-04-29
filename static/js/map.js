@@ -455,7 +455,6 @@ function pokemonLabel(item) {
                 IV: ${iv.toFixed(1)}% (${atk}/${def}/${sta}) ${cpText} ${cpLevel}
             </div>
             `
-
         details += `
             <div>
                 Moves: ${pMove1} / ${pMove2}
