@@ -205,8 +205,7 @@ function sortHashTable() {
     var hashtable = $(this).parents('.status_table').first()
     var comparator = compareHashTable($(this).index())
     var hashrow = hashtable.find('.status_row:gt(0)').toArray()
-
-// Sort the array.
+    // Sort the array.
     hashrow.sort(comparator)
     this.asc = !this.asc
     if (!this.asc) {
@@ -259,7 +258,10 @@ function addTable(hash) {
 
 function tableSort() {
     var table = $(this).parents('.status_table').first()
-    var rows = table.find('.status_row:gt(0)').toArray().sort(compare($(this).index()))
+    var comparator = compare($(this).index())
+    var rows = table.find('.status_row:gt(0)').toArray()
+    // Sort the array.
+    rows.sort(comparator)
     this.asc = !this.asc
     if (!this.asc) {
         rows = rows.reverse()
