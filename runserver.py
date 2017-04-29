@@ -3,7 +3,6 @@
 
 import os
 import sys
-import shutil
 import logging
 import time
 import re
@@ -14,7 +13,6 @@ from distutils.version import StrictVersion
 
 from threading import Thread, Event
 from queue import Queue
-from cachetools import LFUCache
 from flask_cors import CORS
 from flask_cache_bust import init_cache_busting
 
@@ -38,33 +36,6 @@ logging.basicConfig(
     format='%(asctime)s [%(threadName)18s][%(module)14s][%(levelname)8s] ' +
     '%(message)s')
 log = logging.getLogger()
-
-# Make sure pogom/pgoapi is actually removed if it is an empty directory.
-# This is a leftover directory from the time pgoapi was embedded in
-# RocketMap.
-# The empty directory will cause problems with `import pgoapi` so it needs to
-# go.
-# Now also removes the pogom/libencrypt and pokecrypt-pgoapi folders,
-# don't cause issues but aren't needed.
-oldpgoapiPath = os.path.join(os.path.dirname(__file__), "pogom/pgoapi")
-oldlibPath = os.path.join(os.path.dirname(__file__), "pokecrypt-pgoapi")
-oldoldlibPath = os.path.join(os.path.dirname(__file__), "pogom/libencrypt")
-if os.path.isdir(oldpgoapiPath):
-    log.warn("I found a really really old pgoapi thing, but its no longer " +
-             "used. Going to remove it...", oldpgoapiPath)
-    shutil.rmtree(oldpgoapiPath)
-    log.warn("Done!")
-if os.path.isdir(oldlibPath):
-    log.warn("I found the pokecrypt-pgoapi folder/submodule, but its no " +
-             "longer used. Going to remove it...", oldpgoapiPath)
-    shutil.rmtree(oldlibPath)
-    log.warn("Done!")
-if os.path.isdir(oldoldlibPath):
-    log.warn("I found the old libencrypt folder, from when we used to " +
-             "bundle encrypt libs, but its no longer used. " +
-             "Going to remove it...", oldpgoapiPath)
-    shutil.rmtree(oldoldlibPath)
-    log.warn("Done!")
 
 # Assert pgoapi is installed.
 try:
@@ -286,12 +257,12 @@ def main():
         t.daemon = True
         t.start()
 
-    # WH updates queue & WH gym/pokéstop unique key LFU cache.
-    # The LFU cache will stop the server from resending the same data an
-    # infinite number of times.
-    # TODO: Rework webhooks entirely so a LFU cache isn't necessary.
+    # WH updates queue & WH unique key LFU caches.
+    # The LFU caches will stop the server from resending the same data an
+    # infinite number of times. The caches will be instantiated in the
+    # webhook's startup code.
     wh_updates_queue = Queue()
-    wh_key_cache = LFUCache(maxsize=args.wh_lfu_size)
+    wh_key_cache = {}
 
     # Thread to process webhook updates.
     for i in range(args.wh_threads):

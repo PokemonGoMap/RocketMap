@@ -18,7 +18,6 @@ var $selectSearchIconMarker
 var $selectGymMarkerStyle
 var $selectLocationIconMarker
 var $switchGymSidebar
-var $timeoutDialog
 
 var language = document.documentElement.lang === '' ? 'en' : document.documentElement.lang
 var idToPokemon = {}
@@ -67,7 +66,9 @@ var gymTypes = ['Uncontested', 'Mystic', 'Valor', 'Instinct']
 var gymPrestige = [2000, 4000, 8000, 12000, 16000, 20000, 30000, 40000, 50000]
 var audio = new Audio('static/sounds/ding.mp3')
 
-var GenderType = ['♂', '♀', '⚪']
+var genderType = ['♂', '♀', '⚲']
+var unownForm = ['unset', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '!', '?']
+
 
 /*
   text place holders:
@@ -393,39 +394,78 @@ function openMapDirections(lat, lng) { // eslint-disable-line no-unused-vars
     window.open(url, '_blank')
 }
 
-function pokemonLabel(name, rarity, types, disappearTime, id, latitude, longitude, encounterId, atk, def, sta, move1, move2, weight, height, gender) {
-    var disappearDate = new Date(disappearTime)
-    var rarityDisplay = rarity ? '(' + rarity + ')' : ''
+// Converts timestamp to readable String
+function getDateStr(t) {
+    var dateStr = 'Unknown'
+    if (t) {
+        dateStr = moment(t).format('YYYY-MM-DD HH:mm:ss')
+    }
+    return dateStr
+}
+
+function pokemonLabel(item) {
+    var name = item['pokemon_name']
+    var rarityDisplay = item['pokemon_rarity'] ? '(' + item['pokemon_rarity'] + ')' : ''
+    var types = item['pokemon_types']
     var typesDisplay = ''
-    var pMove1 = (moves[move1] !== undefined) ? i8ln(moves[move1]['name']) : 'gen/unknown'
-    var pMove2 = (moves[move2] !== undefined) ? i8ln(moves[move2]['name']) : 'gen/unknown'
+    var encounterId = item['encounter_id']
+    var id = item['pokemon_id']
+    var latitude = item['latitude']
+    var longitude = item['longitude']
+    var disappearTime = item['disappear_time']
+    var disappearDate = new Date(disappearTime)
+    var atk = item['individual_attack']
+    var def = item['individual_defense']
+    var sta = item['individual_stamina']
+    var pMove1 = (moves[item['move_1']] !== undefined) ? i8ln(moves[item['move_1']]['name']) : 'gen/unknown'
+    var pMove2 = (moves[item['move_2']] !== undefined) ? i8ln(moves[item['move_2']]['name']) : 'gen/unknown'
+    var weight = item['weight']
+    var height = item['height']
+    var gender = item['gender']
+    var form = item['form']
+    var cp = item['cp']
 
     $.each(types, function (index, type) {
         typesDisplay += getTypeSpan(type)
     })
+
     var details = ''
-    if (atk != null) {
+    if (atk !== null && def !== null && sta !== null) {
         var iv = getIv(atk, def, sta)
         details = `
             <div>
                 IV: ${iv.toFixed(1)}% (${atk}/${def}/${sta})
             </div>
+            `
+
+        if (cp !== null) {
+            details += `
+            <div>
+                CP: ${cp}
+            </div>
+            `
+        }
+
+        details += `
             <div>
                 Moves: ${pMove1} / ${pMove2}
             </div>
             `
     }
-    if (gender != null) {
+    if (gender !== null && weight !== null && height !== null) {
         details += `
             <div>
-                Gender: ${GenderType[gender - 1]} | Weight: ${weight.toFixed(2)}kg | Height: ${height.toFixed(2)}m
+                Gender: ${genderType[gender - 1]} | Weight: ${weight.toFixed(2)}kg | Height: ${height.toFixed(2)}m
             </div>
             `
     }
     var contentstring = `
         <div>
-            <b>${name}</b>
-            <span> - </span>
+            <b>${name}</b>`
+    if (id === 201 && form !== null && form > 0) {
+        contentstring += ` (${unownForm[item['form']]})`
+    }
+    contentstring += `<span> - </span>
             <small>
                 <a href='http://www.pokemon.com/us/pokedex/${id}' target='_blank' title='View in Pokedex'>#${id}</a>
             </small>
@@ -450,7 +490,7 @@ function pokemonLabel(name, rarity, types, disappearTime, id, latitude, longitud
     return contentstring
 }
 
-function gymLabel(teamName, teamId, gymPoints, latitude, longitude, lastScanned = null, name = null, members = [], gymId) {
+function gymLabel(teamName, teamId, gymPoints, latitude, longitude, lastScanned = null, lastModified = null, name = null, members = [], gymId) {
     var memberStr = ''
     for (var i = 0; i < members.length; i++) {
         memberStr += `
@@ -460,13 +500,8 @@ function gymLabel(teamName, teamId, gymPoints, latitude, longitude, lastScanned 
             </span>`
     }
 
-    var lastScannedStr
-    if (lastScanned) {
-        var lastScannedDate = new Date(lastScanned)
-        lastScannedStr = `${lastScannedDate.getFullYear()}-${pad(lastScannedDate.getMonth() + 1)}-${pad(lastScannedDate.getDate())} ${pad(lastScannedDate.getHours())}:${pad(lastScannedDate.getMinutes())}:${pad(lastScannedDate.getSeconds())}`
-    } else {
-        lastScannedStr = 'Unknown'
-    }
+    var lastScannedStr = getDateStr(lastScanned)
+    var lastModifiedStr = getDateStr(lastModified)
     var directionsStr = ''
     if (!Store.get('useGymSidebar')) {
         directionsStr = `<div>
@@ -492,6 +527,9 @@ function gymLabel(teamName, teamId, gymPoints, latitude, longitude, lastScanned 
                     </div>
                     <div>
                         Last Scanned: ${lastScannedStr}
+                    </div>
+                    <div>
+                        Last Modified: ${lastModifiedStr}
                     </div>
                     ${directionsStr}
                 </center>
@@ -522,6 +560,9 @@ function gymLabel(teamName, teamId, gymPoints, latitude, longitude, lastScanned 
                     </div>
                     <div>
                         Last Scanned: ${lastScannedStr}
+                    </div>
+                    <div>
+                        Last Modified: ${lastModifiedStr}
                     </div>
                     ${directionsStr}
                 </center>
@@ -717,7 +758,7 @@ function customizePokemonMarker(marker, item, skipNotification) {
     }
 
     marker.infoWindow = new google.maps.InfoWindow({
-        content: pokemonLabel(item['pokemon_name'], item['pokemon_rarity'], item['pokemon_types'], item['disappear_time'], item['pokemon_id'], item['latitude'], item['longitude'], item['encounter_id'], item['individual_attack'], item['individual_defense'], item['individual_stamina'], item['move_1'], item['move_2'], item['weight'], item['height'], item['gender']),
+        content: pokemonLabel(item),
         disableAutoPan: true
     })
 
@@ -769,7 +810,7 @@ function setupGymMarker(item) {
     }
 
     marker.infoWindow = new google.maps.InfoWindow({
-        content: gymLabel(gymTypes[item['team_id']], item['team_id'], item['gym_points'], item['latitude'], item['longitude'], item['last_scanned'], item['name'], item['pokemon'], item['gym_id']),
+        content: gymLabel(gymTypes[item['team_id']], item['team_id'], item['gym_points'], item['latitude'], item['longitude'], item['last_scanned'], item['last_modified'], item['name'], item['pokemon'], item['gym_id']),
         disableAutoPan: true
     })
 
@@ -812,7 +853,7 @@ function updateGymMarker(item, marker) {
         url: 'static/forts/' + Store.get('gymMarkerStyle') + '/' + gymTypes[item['team_id']] + (item['team_id'] !== 0 ? '_' + getGymLevel(item['gym_points']) : '') + '.png',
         scaledSize: new google.maps.Size(48, 48)
     })
-    marker.infoWindow.setContent(gymLabel(gymTypes[item['team_id']], item['team_id'], item['gym_points'], item['latitude'], item['longitude'], item['last_scanned'], item['name'], item['pokemon'], item['gym_id']))
+    marker.infoWindow.setContent(gymLabel(gymTypes[item['team_id']], item['team_id'], item['gym_points'], item['latitude'], item['longitude'], item['last_scanned'], item['last_modified'], item['name'], item['pokemon'], item['gym_id']))
     return marker
 }
 
@@ -1141,15 +1182,24 @@ function loadRawData() {
             }
         },
         error: function () {
-            if (!$timeoutDialog) {
-                var opts = {
-                    title: 'Reduce marker settings'
-                }
-
-                $timeoutDialog = $('<div>Hmm... we\'re having problems getting data for your criteria. Try reducing what you\'re showing and zooming in to limit what\'s returned.</div>').dialog(opts)
-                $timeoutDialog.dialog('open')
-            } else if (!$timeoutDialog.dialog('isOpen')) {
-                $timeoutDialog.dialog('open')
+            // Display error toast
+            toastr['error']('Please check connectivity or reduce marker settings.', 'Error getting data')
+            toastr.options = {
+                'closeButton': true,
+                'debug': false,
+                'newestOnTop': true,
+                'progressBar': false,
+                'positionClass': 'toast-top-right',
+                'preventDuplicates': true,
+                'onclick': null,
+                'showDuration': '300',
+                'hideDuration': '1000',
+                'timeOut': '25000',
+                'extendedTimeOut': '1000',
+                'showEasing': 'swing',
+                'hideEasing': 'linear',
+                'showMethod': 'fadeIn',
+                'hideMethod': 'fadeOut'
             }
         },
         complete: function () {
@@ -1720,7 +1770,8 @@ function showGymDetails(id) { // eslint-disable-line no-unused-vars
         var gymLevel = getGymLevel(result.gym_points)
         var nextLvlPrestige = gymPrestige[gymLevel - 1] || 50000
         var prestigePercentage = (result.gym_points / nextLvlPrestige) * 100
-        var lastScannedDate = new Date(result.last_scanned)
+        var lastScannedDateStr = getDateStr(result.last_scanned)
+        var lastModifiedDateStr = getDateStr(result.last_modified)
         var freeSlots = result.pokemon.length ? gymLevel - result.pokemon.length : 0
         var freeSlotsStr = freeSlots ? ` - ${freeSlots} Free Slots` : ''
         var gymLevelStr = ''
@@ -1751,7 +1802,10 @@ function showGymDetails(id) { // eslint-disable-line no-unused-vars
                 </div>
                 ${gymLevelStr}
                 <div style="font-size: .7em;">
-                    Last Scanned: ${lastScannedDate.getFullYear()}-${pad(lastScannedDate.getMonth() + 1)}-${pad(lastScannedDate.getDate())} ${pad(lastScannedDate.getHours())}:${pad(lastScannedDate.getMinutes())}:${pad(lastScannedDate.getSeconds())}
+                    Last Scanned: ${lastScannedDateStr}
+                </div>
+                <div style="font-size: .7em;">
+                    Last Modified: ${lastModifiedDateStr}
                 </div>
                 <div>
                     <a href='javascript:void(0);' onclick='javascript:openMapDirections(${result.latitude},${result.longitude});' title='View in Maps'>Get directions</a>
