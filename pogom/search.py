@@ -1125,10 +1125,6 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
                     log.debug('Hash key %s has %s/%s left', key,
                               key_instance['remaining'],
                               key_instance['maximum'])
-                    # log.debug(
-                    #    ('Hash key {} has {}/{} RPM ' +
-                    #     'left.').format(key, key_instance['remaining'],
-                    #                     key_instance['maximum']))
                     hashkeys = {}
                     hashkeys[key] = key_instance
                     hashkeys[key]['key'] = key
