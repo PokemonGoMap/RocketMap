@@ -139,9 +139,7 @@ function processHashKeys(i, hashkey) {
     var expires = getFormattedDate(new Date(hashkey['expires']))
     if (!moment(expires).unix()) {
         expires = 'Unknown/Invalid'
-    }
-
-    if (moment().isSameOrAfter(moment(expires))) {
+    } else if (moment().isSameOrAfter(moment(expires))) {
         expires = 'Expired'
     }
 
