@@ -15,9 +15,9 @@ if "needful" in fuck.lower():
     print("poon bang lure pls")
 elif fuck.lower() == "india":
     print("bang lure?")
+elif fuck.lower() == "zoom":
+    print("ZOOM ZOOM!")
 elif fuck.lower() != "no":
     print("you have been banned lol")
-elif fuck.lower() != "zoom":
-    print("ZOOM ZOOM!")
 else:
     print("bless u")
