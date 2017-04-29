@@ -33,7 +33,9 @@ from .utils import get_pokemon_name, get_pokemon_rarity, get_pokemon_types, \
     clear_dict_response
 from .transform import transform_from_wgs_to_gcj, get_new_coords
 from .customLog import printPokemon
-from .account import tutorial_pokestop_spin, get_player_level
+from .account import (tutorial_pokestop_spin, get_player_level, check_login,
+                      setup_api)
+
 log = logging.getLogger(__name__)
 
 args = get_args()
@@ -104,6 +106,7 @@ class Pokemon(BaseModel):
     individual_stamina = SmallIntegerField(null=True)
     move_1 = SmallIntegerField(null=True)
     move_2 = SmallIntegerField(null=True)
+    cp = SmallIntegerField(null=True)
     weight = FloatField(null=True)
     height = FloatField(null=True)
     gender = SmallIntegerField(null=True)
@@ -1765,7 +1768,6 @@ def hex_bounds(center, steps=None, radius=None):
 
 # todo: this probably shouldn't _really_ be in "models" anymore, but w/e.
 def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
-              api, now_date, account):
     pokemon = {}
     pokestops = {}
     gyms = {}
@@ -1932,34 +1934,8 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
             printPokemon(p['pokemon_data']['pokemon_id'], p[
                          'latitude'], p['longitude'], disappear_time)
 
-            # Scan for IVs and moves.
             encounter_result = None
-            if (args.encounter and (p['pokemon_data']['pokemon_id']
-                                    in args.encounter_whitelist or
-                                    p['pokemon_data']['pokemon_id']
-                                    not in args.encounter_blacklist and
-                                    not args.encounter_whitelist)):
                 time.sleep(args.encounter_delay)
-                # Setup encounter request envelope.
-                req = api.create_request()
-                encounter_result = req.encounter(
-                    encounter_id=p['encounter_id'],
-                    spawn_point_id=p['spawn_point_id'],
-                    player_latitude=step_location[0],
-                    player_longitude=step_location[1])
-                req.check_challenge()
-                req.get_hatched_eggs()
-                req.get_inventory()
-                req.check_awarded_badges()
-                req.download_settings()
-                req.get_buddy_walked()
-                encounter_result = req.call()
-                encounter_result = clear_dict_response(encounter_result)
-
-                captcha_url = encounter_result['responses']['CHECK_CHALLENGE'][
-                    'challenge_url']  # Check for captcha
-                if len(captcha_url) > 1:  # Throw warning but finish parsing
-                    log.debug('Account encountered a reCaptcha.')
 
             pokemon[p['encounter_id']] = {
                 'encounter_id': b64encode(str(p['encounter_id'])),
@@ -2021,7 +1997,6 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                         'seconds_until_despawn': seconds_until_despawn,
                         'spawn_start': start_end[0],
                         'spawn_end': start_end[1],
-                        'player_level': level
                     })
                     wh_update_queue.put(('pokemon', wh_poke))
 
