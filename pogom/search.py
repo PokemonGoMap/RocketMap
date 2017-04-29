@@ -1122,7 +1122,7 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
 
                         key_instance['expires'] = expires
 
-                    log.debug('Hash key %s has %s/%s left', key,
+                    log.debug('Hash key %s has %s/%s RPM left', key,
                               key_instance['remaining'],
                               key_instance['maximum'])
                     hashkeys = {}
