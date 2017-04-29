@@ -2119,7 +2119,8 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                         'spawn_start': start_end[0],
                         'spawn_end': start_end[1],
                         'player_level': encounter_level,
-                        'pokemon_level': calc_pokemon_level(wh_poke['cp_multiplier'])
+                        'pokemon_level': calc_pokemon_level(wh_poke[
+                            'cp_multiplier'])
                     })
                     wh_update_queue.put(('pokemon', wh_poke))
 
