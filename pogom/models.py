@@ -30,7 +30,7 @@ from . import config
 from .utils import get_pokemon_name, get_pokemon_rarity, get_pokemon_types, \
     get_args, cellid, in_radius, date_secs, clock_between, secs_between, \
     get_move_name, get_move_damage, get_move_energy, get_move_type, \
-    clear_dict_response
+    clear_dict_response, calc_pokemon_level
 from .transform import transform_from_wgs_to_gcj, get_new_coords
 from .customLog import printPokemon
 from .account import (tutorial_pokestop_spin, get_player_level, check_login,
@@ -2118,7 +2118,8 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                         'seconds_until_despawn': seconds_until_despawn,
                         'spawn_start': start_end[0],
                         'spawn_end': start_end[1],
-                        'player_level': encounter_level
+                        'player_level': encounter_level,
+                        'pokemon_level': calc_pokemon_level(wh_poke['cp_multiplier'])
                     })
                     wh_update_queue.put(('pokemon', wh_poke))
 
