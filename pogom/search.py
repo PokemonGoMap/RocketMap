@@ -28,6 +28,7 @@ import copy
 import requests
 import schedulers
 import terminalsize
+import pprint
 
 from datetime import datetime
 from threading import Thread, Lock
@@ -1129,10 +1130,13 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
                               key_instance['remaining'],
                               key_instance['maximum'])
 
-                    # Prepare object to send to database queue.
+                    # Prepare hashing keys to be sent to the db. But only
+                    # sent latest updates of the 'peak' value per key.
                     hashkeys = {}
                     hashkeys[key] = key_instance
                     hashkeys[key]['key'] = key
+                    hashkeys[key]['peak'] = (max(key_instance['peak'],
+                                             HashKeys.getStoredPeak(key)))
                     dbq.put((HashKeys, hashkeys))
 
                 # Delay the desired amount after "scan" completion.

@@ -1785,6 +1785,16 @@ class HashKeys(BaseModel):
             hashkeys[i]['key'] = s['key'][:-9] + '*'*9
         return hashkeys
 
+    @staticmethod
+    # Retrieve the last stored 'peak' value for each hashing key.
+    def getStoredPeak(key):
+            query = HashKeys.select(HashKeys.peak).where(HashKeys.key == key)
+            if len(query):
+                # only one row can be returned
+                return query[0].peak
+            else:
+                return 0
+
 
 def hex_bounds(center, steps=None, radius=None):
     # Make a box that is (70m * step_limit * 2) + 70m away from the
