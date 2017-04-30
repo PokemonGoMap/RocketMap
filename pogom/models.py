@@ -1779,6 +1779,7 @@ class HashKeys(BaseModel):
 
     @staticmethod
     def get_obfuscated_keys():
+        # Obfuscate hashing keys before we sent them to the front-end.
         hashkeys = HashKeys.get_all()
         for i, s in enumerate(hashkeys):
             hashkeys[i]['key'] = s['key'][:-9] + '*'*9

@@ -1097,8 +1097,10 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
                                        whq, dbq)
                             del gym_responses
 
+                # Update hashing key stats in the database based on the values
+                # reported back by the hashing server.
                 if args.hash_key:
-                    key = HashServer.status.get('token')
+                    key = HashServer.status.get('token', None)
                     key_instance = key_scheduler.keys[key]
                     key_instance['remaining'] = HashServer.status.get(
                         'remaining', 0)
@@ -1106,12 +1108,12 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
                     key_instance['maximum'] = (
                         HashServer.status.get('maximum', 0))
 
-                    peak = (
+                    usage = (
                         key_instance['maximum'] -
                         key_instance['remaining'])
 
-                    if key_instance['peak'] < peak:
-                        key_instance['peak'] = peak
+                    if key_instance['peak'] < usage:
+                        key_instance['peak'] = usage
 
                     if key_instance['expires'] is None:
                         expires = HashServer.status.get(
@@ -1119,12 +1121,15 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
 
                         if expires is not None:
                             expires = datetime.utcfromtimestamp(expires)
-
                         key_instance['expires'] = expires
+
+                    key_instance['last_updated'] = datetime.utcnow()
 
                     log.debug('Hash key %s has %s/%s RPM left.', key,
                               key_instance['remaining'],
                               key_instance['maximum'])
+
+                    # Prepare object to send to database queue.
                     hashkeys = {}
                     hashkeys[key] = key_instance
                     hashkeys[key]['key'] = key
