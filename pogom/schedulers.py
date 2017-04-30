@@ -936,9 +936,11 @@ class SpeedScan(HexSearch):
                     count_fresh_band += 1
 
                     # Update logging stats.
+                    band_time_remaining = (self.next_band_date - now_date)
                     if not min_fresh_band_time_remaining:
-                        min_fresh_band_time_remaining = (self.next_band_date -
-                                                         now_date)
+                        min_fresh_band_time_remaining = band_time_remaining
+                    elif band_time_remaining < min_fresh_band_time_remaining:
+                        min_fresh_band_time_remaining = band_time_remaining
 
                     continue
 
