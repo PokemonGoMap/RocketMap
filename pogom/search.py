@@ -28,7 +28,6 @@ import copy
 import requests
 import schedulers
 import terminalsize
-import pprint
 
 from datetime import datetime
 from threading import Thread, Lock
