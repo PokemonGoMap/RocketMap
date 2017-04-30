@@ -707,7 +707,9 @@ function getPokemonLevel(cpMultiplier) {
             pokemonLevel = pokemonLevel > parseFloat(lvl) ? parseFloat(lvl) : pokemonLevel
         }
     })
+    
     return pokemonLevel
+}
 
 function lpad(str, len, padstr) {
     return Array(Math.max(len - String(str).length + 1, 0)).join(padstr) + str
