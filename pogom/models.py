@@ -2091,7 +2091,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                 pokemon_info = encounter_result['responses'][
                     'ENCOUNTER']['wild_pokemon']['pokemon_data']
 
-                # IVs, moves and CP.
+                # IVs and CP.
                 individual_attack = pokemon_info.get('individual_attack', 0)
                 individual_defense = pokemon_info.get('individual_defense', 0)
                 individual_stamina = pokemon_info.get('individual_stamina', 0)
