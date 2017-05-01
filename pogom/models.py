@@ -1989,7 +1989,8 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                         # these single-use variables are making me ill.
                         if args.hash_key:
                             key = key_scheduler.next()
-                            log.debug('Using key %s for this encounter.', key)
+                            log.debug('Using hashing key %s for this'
+                                      + ' encounter.', key)
                             hlvl_api.activate_hash_server(key)
 
                     # We have an API object now. If necessary, store it.
@@ -2023,9 +2024,9 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                         if len(captcha_url) > 1:
                             # Flag account.
                             hlvl_account['captcha'] = True
-                            log.info('Account %s encountered a captcha.'
-                                     + ' Account will not be used.',
-                                     hlvl_account['username'])
+                            log.error('Account %s encountered a captcha.'
+                                      + ' Account will not be used.',
+                                      hlvl_account['username'])
                         else:
                             # Update level indicator before we clear the
                             # response.
