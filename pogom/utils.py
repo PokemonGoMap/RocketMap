@@ -131,6 +131,9 @@ def get_args():
                               'area. Regarded this as inverted geofence. ' +
                               'Can be combined with geofence-file.'),
                         default='')
+    parser.add_argument('-pgd', '--purge-geofence-data',
+                        help=('Removes old geofence data from the database.'),
+                        action='store_true', default=False)
     parser.add_argument('-nmpl', '--no-matplotlib',
                         help=('Prevents the usage of matplotlib when ' +
                               'running on incompatible hardware.'),

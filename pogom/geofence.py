@@ -17,7 +17,8 @@ class Geofences:
         self.geofences = {}
         self.db_updates_queue = db_updates_queue
 
-        Geofence.clear_all()  # Remove old geofences from DB.
+        if args.purge_geofence_data:
+            Geofence.clear_all()  # Remove old geofences from DB.
 
         # Initialize object
         if self.args.geofence_file or self.args.forbidden_file:
