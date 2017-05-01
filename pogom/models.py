@@ -2091,7 +2091,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                 pokemon_info = encounter_result['responses'][
                     'ENCOUNTER']['wild_pokemon']['pokemon_data']
 
-                # IVs.
+                # IVs, moves and CP.
                 individual_attack = pokemon_info.get('individual_attack', 0)
                 individual_defense = pokemon_info.get('individual_defense', 0)
                 individual_stamina = pokemon_info.get('individual_stamina', 0)
@@ -2109,22 +2109,18 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                           individual_stamina,
                           cp)
 
+                # Add encounter data to pokemon dict.
                 pokemon[p['encounter_id']].update({
                     'individual_attack': individual_attack,
                     'individual_defense': individual_defense,
                     'individual_stamina': individual_stamina,
-                    'move_1': pokemon_info['move_1'],
-                    'move_2': pokemon_info['move_2'],
-                    'height': pokemon_info['height_m'],
-                    'weight': pokemon_info['weight_kg']
+                    'cp': cp,
+                    'cp_multiplier'] = pokemon_info.get('cp_multiplier', None)
+                    'move_1': pokemon_info.get('move_1', None),
+                    'move_2': pokemon_info.get('move_2', None),
+                    'height': pokemon_info.get('height_m', None),
+                    'weight': pokemon_info.get('weight_kg', None)
                 })
-
-                # Only add CP if we're level 30+.
-                if encounter_level >= 30:
-                    pokemon[p['encounter_id']]['cp'] = cp
-                    pokemon[p['encounter_id']][
-                        'cp_multiplier'] = pokemon_info.get(
-                        'cp_multiplier', None)
 
             if args.webhooks:
                 if (pokemon_id in args.webhook_whitelist or
