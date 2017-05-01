@@ -19,10 +19,10 @@ class Geofences:
         self.forbidden_areas = []
         self.db_updates_queue = db_updates_queue
 
-        if args.purge_geofence_data:   # Remove old geofences from DB.
+        if args.purge_geofence_data:  # Remove old geofences from DB.
             Geofence.clear_all()
 
-        # Initialize object
+        # Initialization of object when geofence files are provided.
         if self.args.geofence_file or self.args.forbidden_file:
             self.geofence_file = self.args.geofence_file
             self.forbidden_file = self.args.forbidden_file
@@ -147,13 +147,13 @@ class Geofences:
                     if self.args.no_matplotlib:
                         if self.point_in_polygon_custom(
                                 point, va['polygon']):
-                            # coordinate is valid if in one valid area
+                            # Coordinate is valid if in one valid area.
                             geofenced_coordinates.append(c)
                             break
                     else:
                         if self.point_in_polygon_matplotlib(
                                 point, va['polygon']):
-                            # coordinate is valid if in one valid area
+                            # Coordinate is valid if in one valid area.
                             geofenced_coordinates.append(c)
                             break
         else:
@@ -169,14 +169,14 @@ class Geofences:
                     if self.args.no_matplotlib:
                         if self.point_in_polygon_custom(
                                 point, fa['polygon']):
-                            # coordinate is invalid if in one forbidden area
+                            # Coordinate is invalid if in one forbidden area.
                             geofenced_coordinates.pop(
                                 geofenced_coordinates.index(c))
                             break
                     else:
                         if self.point_in_polygon_matplotlib(
                                 point, fa['polygon']):
-                            # coordinate is invalid if in one forbidden area
+                            # Coordinate is invalid if in one forbidden area.
                             geofenced_coordinates.pop(
                                 geofenced_coordinates.index(c))
                             break
