@@ -1788,10 +1788,10 @@ class HashKeys(BaseModel):
     @staticmethod
     # Retrieve the last stored 'peak' value for each hashing key.
     def getStoredPeak(key):
-            query = HashKeys.select(HashKeys.peak).where(HashKeys.key == key)
-            if len(query):
+            result = HashKeys.select(HashKeys.peak).where(HashKeys.key == key)
+            if result:
                 # only one row can be returned
-                return query[0].peak
+                return result[0].peak
             else:
                 return 0
 
