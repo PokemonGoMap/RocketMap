@@ -54,7 +54,6 @@
 #beehive                        # Use beehive configuration for multiple accounts, one account per hex.
                                 # Make sure to keep -st under 5, and -w under the total amount of accounts available.
 #speed-scan                     # Use speed-scan as the search scheduler.
-#dump-spawnpoints               # Dump the spawnpoints from the db to json.
 
 
 # Search settings

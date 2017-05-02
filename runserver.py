@@ -7,7 +7,6 @@ import logging
 import time
 import re
 import ssl
-import json
 
 from distutils.version import StrictVersion
 
@@ -23,7 +22,7 @@ from pogom.altitude import get_gmaps_altitude
 
 from pogom.search import search_overseer_thread
 from pogom.models import (init_database, create_tables, drop_tables,
-                          Pokemon, db_updater, clean_db_loop)
+                          db_updater, clean_db_loop)
 from pogom.webhook import wh_updater
 
 from pogom.proxy import check_proxies, proxies_refresher
@@ -288,18 +287,6 @@ def main():
             log.info('Periodical proxies refresh disabled.')
 
         # Gather the Pokemon!
-
-        # Attempt to dump the spawn points (do this before starting threads of
-        # endure the woe).
-        if (args.spawnpoint_scanning and
-                args.spawnpoint_scanning != 'nofile' and
-                args.dump_spawnpoints):
-            with open(args.spawnpoint_scanning, 'w+') as file:
-                log.info('Saving spawn points to %s', args.spawnpoint_scanning)
-                spawns = Pokemon.get_spawnpoints_in_hex(
-                    position, args.step_limit)
-                file.write(json.dumps(spawns))
-                log.info('Finished exporting spawn points')
 
         argset = (args, new_location_queue, pause_bit,
                   heartbeat, db_updates_queue, wh_updates_queue)
