@@ -20,7 +20,7 @@
                     GMAPS_KEY [--skip-empty] [-C] [-D DB] [-cd] [-np] [-ng]
                     [-nk] [-speed] [-kph KPH]
                     [-hkph HLVL_KPH] [-ldur LURE_DURATION]
-                    [-pd PURGE_DATA] [-px PROXY] [-pxsc]
+                    [--dump-spawnpoints] [-pd PURGE_DATA] [-px PROXY] [-pxsc]
                     [-pxt PROXY_TIMEOUT] [-pxd PROXY_DISPLAY]
                     [-pxf PROXY_FILE] [-pxr PROXY_REFRESH]
                     [-pxo PROXY_ROTATION] [--db-type DB_TYPE]
@@ -241,6 +241,8 @@
                         Change duration for lures set on pokestops. This is
                         useful for events that extend lure duration. [env var:
                         POGOMAP_LURE_DURATION]
+    --dump-spawnpoints  Dump the spawnpoints from the db to spawnpoints.json
+                        [env var: POGOMAP_DUMP_SPAWNPOINTS]
     -pd PURGE_DATA, --purge-data PURGE_DATA
                         Clear Pokemon from database this many hours after they
                         disappear (0 to disable). [env var:
