@@ -2118,7 +2118,9 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                 # Only add CP if we're level 30+.
                 if encounter_level >= 30:
                     pokemon[p['encounter_id']]['cp'] = cp
-                    pokemon[p['encounter_id']]['cp_multiplier'] = cp_multiplier
+                    pokemon[p['encounter_id']][
+                        'cp_multiplier'] = pokemon_info.get(
+                        'cp_multiplier', None)
 
                 # Check for Unown's alphabetic character.
                 if pokemon_info['pokemon_id'] == 201:
