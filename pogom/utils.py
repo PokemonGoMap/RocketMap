@@ -289,6 +289,9 @@ def get_args():
                         help=('Use speed scanning to identify spawn points ' +
                               'and then scan closest spawns.'),
                         action='store_true', default=False)
+    parser.add_argument('--dump-spawnpoints',
+                        help=('Dump the spawnpoints from the db to json'),
+                        action='store_true', default=False)
     parser.add_argument('-kph', '--kph',
                         help=('Set a maximum speed in km/hour for scanner ' +
                               'movement.'),
