@@ -700,14 +700,14 @@ function getIv(atk, def, stm) {
 }
 
 function getPokemonLevel(cpMultiplier) {
-    var pokemonLevel = 40
-    cpMultiplier = Math.round(cpMultiplier * 1000000) / 1000000
-    $.each(cpMultipliers, function (lvl, cpm) {
-        if (cpMultiplier <= cpm) {
-            pokemonLevel = pokemonLevel > parseFloat(lvl) ? parseFloat(lvl) : pokemonLevel
-        }
-    })
-
+    if (cpMultiplier < 0.734) {
+        pokemonLevel = (58.35178527 * cpMultiplier * cpMultiplier - 
+                         2.838007664 * cpMultiplier + 0.8539209906)
+    } else {
+        pokemonLevel = 171.0112688 * cpMultiplier - 95.20425243
+    }
+    pokemonLevel = int((round(pokemonLevel) * 2) / 2)
+    
     return pokemonLevel
 }
 
