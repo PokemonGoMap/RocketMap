@@ -32,7 +32,7 @@ python runserver.py -ac accounts.csv -bh -st 5 -w 31 -l "Nashville, TN"
 
 PRO: TONS of Flexibility
 
-CON: Uses ***ALOT*** More Memory
+CON: Uses ***A LOT*** More Memory
 
 CON: Not as easy to make quick changes.  
 
