@@ -1,6 +1,6 @@
 # Webhooks
 
-As of [#2019](https://github.com/AHAAAAAAA/PokemonGo-Map/pull/2019), webhooks have been implemented into RocketMap. Using these webhooks are simple, and opens up a new realm of possibilities for over almost anything related to RocketMap.
+Webhooks have been implemented into RocketMap. Using these webhooks are simple, and opens up a new realm of possibilities for over almost anything related to RocketMap.
 
 ## How Do RocketMap Webhooks Work?
 
@@ -8,7 +8,8 @@ Every time an event occurs (e.g. a Pokemon spawns) a POST request will be sent t
 
 ## Types of Webhooks
 
-Pokemon Spawn webhooks are available. More webhooks should be on the way! If you're a developer, feel free to contribute by creating some more webhooks.
+Pokemon Spawn webhooks are available. 
+If you're a developer, feel free to contribute by creating some more webhooks.
 
 | Name | Notes |
 |---|---|
@@ -28,7 +29,6 @@ PokeAlarm is an example of a script you can run to accept webhook data and send 
 ## Configuring Webhooks
 Add `-wh http://my-webhook/location` argument when starting RocketMap (runserver.py) to define the location of your webhook. You can add multiple webhook locations to a single -wh argument to define multiple webhooks.
 
-
 ```
 
 To use this, RocketMap would be run with the following parameters:
@@ -37,3 +37,39 @@ To use this, RocketMap would be run with the following parameters:
 python runserver.py -a ptc -u [username] -p [password] -l "Location or lat/lon" -st 15 -k [google maps api key] -wh http://localhost:9876
 ```
 
+## Webhook Data
+
+The POST request made by RocketMap will contain the following data for each webhook type:
+
+```
+{
+   "message":{
+      "disappear_time":1493734519,
+      "form":null,
+      "seconds_until_despawn":1748,
+      "spawnpoint_id":"0d24fec01e7",
+      "cp_multiplier":null,
+      "move_2":null,
+      "height":null,
+      "time_until_hidden_ms":915847883,
+      "last_modified_time":1493732771124,
+      "cp":null,
+      "encounter_id":"AzMxMjYyNjhWeDI4ODgwNjI1Mg==",
+      "spawn_end":919,
+      "move_1":null,
+      "individual_defense":null,
+      "verified":true,
+      "weight":null,
+      "pokemon_id":187,
+      "player_level":6,
+      "individual_stamina":null,
+      "longitude":-4.325233518227877,
+      "spawn_start":25.55069872455855,
+      "pokemon_level":null,
+      "gender":null,
+      "latitude":****,
+      "individual_attack":null
+   },
+   "type":"pokemon"
+}
+```
