@@ -3,7 +3,7 @@ Beehive scanning enables your workers to be organized into seperate search areas
 
 ## Visual Representation
 
-![](../_static/img/beehive.png)
+![](../_static/img/Beehive3.png)
 `-bh -st 5 -w 19`
 
 ## Option #1: Intergrated beehive
@@ -12,7 +12,7 @@ PRO: Less Memory usage
 
 CON: Less Flexibility
 
-![](../_static/img/beehive2.png)
+![](../_static/img/Beehive2.png)
 Example of walking path assignments with 1 wph. 
 
 Command line option `-bh` or `--beehive` enables your workers to be organized into 1 search area per worker by default. The beehive will automatically center around your specified location `-l` and spirials out from there. This method uses the `-st` to determine the size of each hive. You increase the number of hives by adding more workers `-w`. You can also add more than one worker per a hive. For example, you can place two workers in a hive by using `-wph 2`. ***NOTE:*** Adding more than 1 worker per hive is only reccomended if you are using spped scheduler.  
