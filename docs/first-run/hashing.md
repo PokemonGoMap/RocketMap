@@ -1,4 +1,4 @@
-# Hash Keys
+# Hashing Keys
 
 ## What are hash keys for?
 Hash keys allow your client program (in this case RocketMap) to access the latest API using the Bossland Hashing service. Accessing Niantic's servers without using a hash key is using an older API that is easier for Niantic to flag and ban.

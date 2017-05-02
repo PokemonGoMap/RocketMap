@@ -1,4 +1,6 @@
-# Spawnpoint Scanning Scheduler
+# Spawnpoint Scheduler
+
+##Spawnpoint scanning is outdated. Speed Scheduler is a much better at doing what this attempts to accomplish. 
 
 If you already have a large number of known spawnpoints it may be worth looking into Spawnpoint Scanning
 
