@@ -4,11 +4,16 @@
 import time
 import logging
 
-from matplotlib.path import Path
-
 from .models import Geofence
 
 log = logging.getLogger(__name__)
+
+try:
+    from matplotlib.path import Path
+except ImportError as e:
+    log.warning('Exception while importing matplotlib: %s', repr(e))
+    log.warning('Enable "-nmptl" or "--no-matplotlib" to circumvent.')
+    pass
 
 
 class Geofences:
@@ -44,7 +49,7 @@ class Geofences:
         geofence_data = {}
         lenGeofenceData = 0
         name = ''
-        log.info('Looking for geofenced or forbidden areas')
+        log.info('Looking for geofenced or forbidden areas.')
 
         i = 0
         if self.geofence_file:
@@ -61,7 +66,7 @@ class Geofences:
                         nameLine = line.strip()
                         nameLine = nameLine.replace("[", "")
                         name = nameLine.replace("]", "")
-                        log.info('Found geofence: %s', name)
+                        log.debug('Found geofence: %s', name)
                         continue
 
                     if i not in geofence_data:
@@ -83,7 +88,8 @@ class Geofences:
             elapsedTime = endTime - startTime
             lenGeofenceData = len(geofence_data)
             log.info(
-                'Loaded %d geofences with a total of %d coordinates in %.2f s',
+                'Loaded %d geofences with a total of %d coordinates ' +
+                'in %.2f s.',
                 lenGeofenceData, j, elapsedTime)
 
         if self.forbidden_file:
@@ -100,7 +106,7 @@ class Geofences:
                         nameLine = line.strip()
                         nameLine = nameLine.replace("[", "")
                         name = nameLine.replace("]", "")
-                        log.info('Found forbidden area: %s', name)
+                        log.debug('Found forbidden area: %s', name)
                         continue
 
                     if i not in geofence_data:
@@ -122,7 +128,7 @@ class Geofences:
             elapsedTime = endTime - startTime
             log.info(
                 'Loaded %d forbidden areas with a total of %d coordinates ' +
-                'in %.2f s',
+                'in %.2f s.',
                 len(geofence_data) - lenGeofenceData, j, elapsedTime)
 
         self.geofences = geofence_data
@@ -184,7 +190,7 @@ class Geofences:
         endTime = time.time()
         elapsedTime = endTime - startTime
         log.info(
-            'Geofenced to %s coordinates in %.2f s',
+            'Geofenced to %s coordinates in %.2f s.',
             len(geofenced_coordinates), elapsedTime)
 
         return geofenced_coordinates
