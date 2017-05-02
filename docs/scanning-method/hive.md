@@ -12,10 +12,7 @@ PRO: Quicker Deployment
 
 PRO: Less Memory usage
 
-
 CON: Less Flexibility
-
-CON: Limited to 1 Hive 
 
 ![](../_static/img/Beehive2.png)
 
@@ -34,9 +31,6 @@ python runserver.py -ac accounts.csv -bh -st 5 -w 31 -l "Nashville, TN"
 ## Option #2: Use the RM Multi Location tool. 
 
 PRO: TONS of Flexibility
-
-PRO: As many hives as your set up will allow!
-
 
 CON: Uses ***A LOT*** More Memory
 
