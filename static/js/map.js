@@ -69,8 +69,6 @@ var audio = new Audio('static/sounds/ding.mp3')
 var genderType = ['♂', '♀', '⚲']
 var unownForm = ['unset', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '!', '?']
 
-var cpMultipliers = {1: 0.094, 2: 0.166398, 3: 0.215732, 4: 0.25572, 5: 0.29025, 6: 0.321088, 7: 0.349213, 8: 0.375236, 9: 0.399567, 10: 0.4225, 11: 0.443108, 12: 0.462798, 13: 0.481685, 14: 0.499858, 15: 0.517394, 16: 0.534354, 17: 0.550793, 18: 0.566755, 19: 0.582279, 20: 0.5974, 21: 0.612157, 22: 0.626567, 23: 0.640653, 24: 0.654436, 25: 0.667934, 26: 0.681165, 27: 0.694144, 28: 0.706884, 29: 0.719399, 30: 0.7317}
-
 
 /*
   text place holders:
@@ -706,7 +704,7 @@ function getPokemonLevel(cpMultiplier) {
     } else {
         pokemonLevel = 171.0112688 * cpMultiplier - 95.20425243
     }
-    pokemonLevel = (math.round(pokemonLevel) * 2) / 2
+    pokemonLevel = (Math.round(pokemonLevel) * 2) / 2
 
     return pokemonLevel
 }
