@@ -45,7 +45,14 @@ RocketMap gives you a live visualization map of nearby Pokémon, Pokéstops, and
 
     common-issues/*
 	
+.. toctree::
+    :titlesonly:
+    :maxdepth: 1
+    :caption: Scanning Methods
+    :glob:
 
+    scanning-method/*
+	
 .. toctree::
     :titlesonly:
     :maxdepth: 1
