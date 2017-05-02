@@ -291,7 +291,7 @@ def get_args():
                         action='store_true', default=False)
     parser.add_argument('--dump-spawnpoints',
                         help=('Dump the spawnpoints from the db to json'),
-                        action='store_true', default=False)
+                        default=False)
     parser.add_argument('-kph', '--kph',
                         help=('Set a maximum speed in km/hour for scanner ' +
                               'movement.'),
