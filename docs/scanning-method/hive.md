@@ -31,6 +31,10 @@ For each `-w`, you must have at least account one account. It is best to have at
 python runserver.py -ac accounts.csv -bh -st 5 -w 31 -l "Nashville, TN"
 ```
 
+### Using `-ns` and `-os`
+
+Even though `-bh` will only allow 1 beehive. You can add additional hives by starting a 2nd RocketMap instance with the flag `-ns`. This starts the searchers without starting another webserver. You can run as many instances with `-ns` as your server can keep up with. If all your instances are running `-ns` you will also want to start an instance with `-os`. This will start only the webserver. This becomes useful if you begin to seperate your RM instances across several copmuters all linked to the same database. 
+
 ## Option #2: Use the RM Multi Location tool. 
 
 PRO: TONS of Flexibility
