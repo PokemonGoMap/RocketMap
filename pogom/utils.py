@@ -285,15 +285,14 @@ def get_args():
                         help=('Disables PokeStops from the map (including ' +
                               'parsing them into local db).'),
                         action='store_true', default=False)
-    parser.add_argument('-ss', '--spawnpoint-scanning',
-                        help=('Use spawnpoint scanning (instead of hex ' +
-                              'grid). Scans in a circle based on step_limit ' +
-                              'when on DB.'),
-                        nargs='?', const='nofile', default=False)
     parser.add_argument('-speed', '--speed-scan',
                         help=('Use speed scanning to identify spawn points ' +
                               'and then scan closest spawns.'),
                         action='store_true', default=False)
+    parser.add_argument('--dump-spawnpoints',
+                        help=('Dump the spawnpoints from the db to the ' +
+                              'specified json file.'),
+                        default=False)
     parser.add_argument('-kph', '--kph',
                         help=('Set a maximum speed in km/hour for scanner ' +
                               'movement.'),
@@ -306,10 +305,6 @@ def get_args():
                         help=('Change duration for lures set on pokestops. ' +
                               'This is useful for events that extend lure ' +
                               'duration.'), type=int, default=30)
-    parser.add_argument('--dump-spawnpoints',
-                        help=('Dump the spawnpoints from the db to json ' +
-                              '(only for use with -ss).'),
-                        action='store_true', default=False)
     parser.add_argument('-pd', '--purge-data',
                         help=('Clear Pokemon from database this many hours ' +
                               'after they disappear (0 to disable).'),
@@ -714,9 +709,7 @@ def get_args():
             args.webhook_whitelist = [int(i) for i in
                                       args.webhook_whitelist]
         # Decide which scanning mode to use.
-        if args.spawnpoint_scanning:
-            args.scheduler = 'SpawnScan'
-        elif args.skip_empty:
+        if args.skip_empty:
             args.scheduler = 'HexSearchSpawnpoint'
         elif args.speed_scan:
             args.scheduler = 'SpeedScan'
