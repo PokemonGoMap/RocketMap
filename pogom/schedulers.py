@@ -884,8 +884,7 @@ class SpeedScan(HexSearch):
             last_action = status['last_scan_date']
 
             # Logging.
-            log.debug('Enumerating %s scan locations in queue.',
-                      len(q))
+            log.debug('Enumerating %s scan locations in queue.', len(q))
 
             # Keep some stats for logging purposes. If something goes wrong,
             # we can track what happened.
