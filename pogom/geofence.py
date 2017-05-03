@@ -1,6 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+import sys
 import time
 import logging
 
@@ -8,16 +9,21 @@ from .utils import get_args
 
 log = logging.getLogger(__name__)
 
-# Trying to import the, not to all hardware compatible, matplotlib.
-# Matlplotlib is faster for big calulations.
+args = get_args()
+
+# Trying to import matplotlib, which is not compatible with all hardware.
+# Matlplotlib is faster for big calculations.
 try:
     from matplotlib.path import Path
 except ImportError as e:
-    log.warning('Exception while importing matplotlib: %s', repr(e))
-    log.warning('Enable "-nmptl" or "--no-matplotlib" to circumvent.')
-    pass
-
-args = get_args()
+    if not args.no_matplotlib:
+        log.error('Exception while importing "matplotlib": %s', repr(e))
+        log.error(
+            'Aborting. Install "matplotlib" or ' +
+            'enable "-nmptl" or "--no-matplotlib" to circumvent.')
+        sys.exit()
+    else:
+        pass
 
 
 class Geofences:
