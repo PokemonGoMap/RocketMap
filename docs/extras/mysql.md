@@ -99,7 +99,7 @@ You should now be up and running. If you've encountered any errors it's most lik
 In this example, computer running RocketMap will be `Server A` while computer running MySQL will be `Server B`.
 
 You will follow above directions for II and III on Server B and directions for IV on Server A. 
-***However:*** The following steps will be diffrent. 
+***However:*** The following steps will be different. 
 
 Server B- III
 
