@@ -30,7 +30,7 @@ from . import config
 from .utils import (get_pokemon_name, get_pokemon_rarity, get_pokemon_types,
                     get_args, cellid, in_radius, date_secs, clock_between,
                     secs_between, get_move_name, get_move_damage,
-                    get_move_energy, get_move_type, clear_dict_response, 
+                    get_move_energy, get_move_type, clear_dict_response,
                     calc_pokemon_level)
 from .transform import transform_from_wgs_to_gcj, get_new_coords
 from .customLog import printPokemon
