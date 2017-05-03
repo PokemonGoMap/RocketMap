@@ -7,8 +7,6 @@
 *.json
 config/*
 !config/config.ini.example
-accounts/*
-!accounts/accounts.csv.example
 geofences/*
 !geofences/geofences.txt.example
 !geofences/forbidden.txt.example
