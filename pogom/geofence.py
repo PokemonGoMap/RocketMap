@@ -36,10 +36,9 @@ class Geofences:
             endTime = time.time()
             elapsedTime = endTime - startTime
             log.info(
-                'Loaded %d valid and %d forbidden areas in %.2f s.',
+                'Loaded %d valid and %d forbidden areas',
                 len(self.valid_areas),
-                len(self.forbidden_areas),
-                elapsedTime)
+                len(self.forbidden_areas))
 
     def is_enabled(self):
         enabled = False
