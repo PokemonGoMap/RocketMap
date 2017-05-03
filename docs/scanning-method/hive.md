@@ -15,7 +15,7 @@ PRO: Less Memory usage
 
 CON: Less Flexibility
 
-CON: Limited to 1 Hive 
+CON: Limited to 1 Hive (sorta) 
 
 ![](../_static/img/Beehive2.png)
 
