@@ -27,14 +27,11 @@ class Geofences:
         self.forbidden_areas = []
 
         if args.geofence_file or args.forbidden_file:
-            startTime = time.time()
             log.info('Looking for geofenced or forbidden areas.')
             self.valid_areas = self.parse_geofences_file(
                 args.geofence_file, forbidden=False)
             self.forbidden_areas = self.parse_geofences_file(
                 args.forbidden_file, forbidden=True)
-            endTime = time.time()
-            elapsedTime = endTime - startTime
             log.info(
                 'Loaded %d valid and %d forbidden areas',
                 len(self.valid_areas),
