@@ -8,8 +8,8 @@ from .utils import get_args
 
 log = logging.getLogger(__name__)
 
-# Trying to import the, not to all hardware compatible, matplotlib
-# Matlplotlib is faster for big calulations
+# Trying to import the, not to all hardware compatible, matplotlib.
+# Matlplotlib is faster for big calulations.
 try:
     from matplotlib.path import Path
 except ImportError as e:
