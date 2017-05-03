@@ -366,7 +366,7 @@ def main():
     config['GMAPS_KEY'] = args.gmaps_key
 
     # Create Geofences object and save into args
-    args.geofences = Geofences(args, db_updates_queue)
+    args.geofences = Geofences(args)
 
     if not args.only_server:
         # Check if we are able to scan.
