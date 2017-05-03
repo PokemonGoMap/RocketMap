@@ -365,9 +365,6 @@ def main():
     config['ROOT_PATH'] = app.root_path
     config['GMAPS_KEY'] = args.gmaps_key
 
-    # Create Geofences object and save into args
-    args.geofences = Geofences(args)
-
     if not args.only_server:
         # Check if we are able to scan.
         if not can_start_scanning(args):
