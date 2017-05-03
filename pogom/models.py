@@ -38,6 +38,15 @@ from .account import (tutorial_pokestop_spin, check_login,
 
 log = logging.getLogger(__name__)
 
+# Trying to import the, not to all hardware compatible, matplotlib
+# Matlplotlib is faster for big calulations
+try:
+    from matplotlib.path import Path
+except ImportError as e:
+    log.warning('Exception while importing matplotlib: %s', repr(e))
+    log.warning('Enable "-nmptl" or "--no-matplotlib" to circumvent.')
+    pass
+
 args = get_args()
 flaskDb = FlaskDB()
 cache = TTLCache(maxsize=100, ttl=60 * 5)

@@ -373,17 +373,17 @@ class Pogom(Flask):
                             oNeLat=oNeLat, oNeLng=oNeLng))
 
         if request.args.get('geofences', 'true') == 'true':
-            geofences_db = Geofence.get_geofences()
+            db_geofences = Geofence.get_geofences()
 
             d['geofences'] = {}
             geofence = {}
-            lastGeofenceID = 0
+            last_geofence_name = ''
 
-            if geofences_db:
-                for g in geofences_db:
-                    if (g['geofence_id'] != lastGeofenceID):
-                        if (lastGeofenceID > 0):
-                            # Push current geofence, we start a new one after.
+            if db_geofences:
+                for g in db_geofences:
+                    if (g['name'] != last_geofence_name):
+                        # Push current geofence to dict, if we find a new one
+                        if last_geofence_name:
                             d['geofences'][geofence['name']] = geofence
 
                         geofence = {
@@ -397,7 +397,7 @@ class Pogom(Flask):
                         'lng': g['longitude']
                     }
                     geofence['coordinates'].append(coordinate)
-                    lastGeofenceID = g['geofence_id']
+                    last_geofence_name = g['name']
 
                 d['geofences'][geofence['name']] = geofence
 

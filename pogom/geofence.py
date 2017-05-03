@@ -8,15 +8,9 @@ from .models import Geofence
 
 log = logging.getLogger(__name__)
 
-try:
-    from matplotlib.path import Path
-except ImportError as e:
-    log.warning('Exception while importing matplotlib: %s', repr(e))
-    log.warning('Enable "-nmptl" or "--no-matplotlib" to circumvent.')
-    pass
-
 
 class Geofences:
+
     def __init__(self, args, db_updates_queue):
         self.args = args
         self.geofences = {}
@@ -33,10 +27,7 @@ class Geofences:
             self.forbidden_file = self.args.forbidden_file
 
             self.parse_geofences()
-            self.push_db_geofences()
-
-    def get_geofences(self):
-        return self.geofences
+            self.upsert_geofences()
 
     def is_enabled(self):
         enabled = False
@@ -51,9 +42,9 @@ class Geofences:
         name = ''
         log.info('Looking for geofenced or forbidden areas.')
 
-        i = 0
+        geofence_id = 0
         if self.geofence_file:
-            j = 0
+            coordinates_id = 0
             startTime = time.time()
 
             # Read coordinates of geofences from file.
@@ -62,27 +53,27 @@ class Geofences:
                     if len(line.strip()) == 0:
                         continue
                     elif line.startswith("["):
-                        i = i + 1
+                        geofence_id = geofence_id + 1
                         nameLine = line.strip()
                         nameLine = nameLine.replace("[", "")
                         name = nameLine.replace("]", "")
                         log.debug('Found geofence: %s', name)
                         continue
 
-                    if i not in geofence_data:
-                        j = j + 1
-                        geofence_data[i] = {}
-                        geofence_data[i]['forbidden'] = False
-                        geofence_data[i]['name'] = name
-                        geofence_data[i]['polygon'] = []
+                    if geofence_id not in geofence_data:
+                        coordinates_id = coordinates_id + 1
+                        geofence_data[geofence_id] = {}
+                        geofence_data[geofence_id]['forbidden'] = False
+                        geofence_data[geofence_id]['name'] = name
+                        geofence_data[geofence_id]['polygon'] = []
                         lat, lon = line.strip().split(",")
                         LatLon = {'lat': float(lat), 'lon': float(lon)}
-                        geofence_data[i]['polygon'].append(LatLon)
+                        geofence_data[geofence_id]['polygon'].append(LatLon)
                     else:
-                        j = j + 1
+                        coordinates_id = coordinates_id + 1
                         lat, lon = (line.strip()).split(",")
                         LatLon = {'lat': float(lat), 'lon': float(lon)}
-                        geofence_data[i]['polygon'].append(LatLon)
+                        geofence_data[geofence_id]['polygon'].append(LatLon)
 
             endTime = time.time()
             elapsedTime = endTime - startTime
@@ -90,10 +81,12 @@ class Geofences:
             log.info(
                 'Loaded %d geofences with a total of %d coordinates ' +
                 'in %.2f s.',
-                lenGeofenceData, j, elapsedTime)
+                lenGeofenceData,
+                coordinates_id,
+                elapsedTime)
 
         if self.forbidden_file:
-            j = 0
+            coordinates_id = 0
             startTime = time.time()
 
             # Read coordinates of forbidden areas from file.
@@ -102,34 +95,36 @@ class Geofences:
                     if len(line.strip()) == 0:
                         continue
                     elif line.startswith("["):
-                        i = i + 1
+                        geofence_id = geofence_id + 1
                         nameLine = line.strip()
                         nameLine = nameLine.replace("[", "")
                         name = nameLine.replace("]", "")
                         log.debug('Found forbidden area: %s', name)
                         continue
 
-                    if i not in geofence_data:
-                        j = j + 1
-                        geofence_data[i] = {}
-                        geofence_data[i]['forbidden'] = True
-                        geofence_data[i]['name'] = name
-                        geofence_data[i]['polygon'] = []
+                    if geofence_id not in geofence_data:
+                        coordinates_id = coordinates_id + 1
+                        geofence_data[geofence_id] = {}
+                        geofence_data[geofence_id]['forbidden'] = True
+                        geofence_data[geofence_id]['name'] = name
+                        geofence_data[geofence_id]['polygon'] = []
                         lat, lon = line.strip().split(",")
                         LatLon = {'lat': float(lat), 'lon': float(lon)}
-                        geofence_data[i]['polygon'].append(LatLon)
+                        geofence_data[geofence_id]['polygon'].append(LatLon)
                     else:
-                        j = j + 1
+                        coordinates_id = coordinates_id + 1
                         lat, lon = (line.strip()).split(",")
                         LatLon = {'lat': float(lat), 'lon': float(lon)}
-                        geofence_data[i]['polygon'].append(LatLon)
+                        geofence_data[geofence_id]['polygon'].append(LatLon)
 
             endTime = time.time()
             elapsedTime = endTime - startTime
             log.info(
                 'Loaded %d forbidden areas with a total of %d coordinates ' +
                 'in %.2f s.',
-                len(geofence_data) - lenGeofenceData, j, elapsedTime)
+                len(geofence_data) - lenGeofenceData,
+                coordinates_id,
+                elapsedTime)
 
         self.geofences = geofence_data
 
@@ -139,53 +134,35 @@ class Geofences:
             else:
                 self.valid_areas.append(self.geofences[g])
 
+    def upsert_geofences(self):
+        Geofence.remove_duplicates(self.geofences)
+        db_geofences = Geofence.get_db_entries(self.geofences)
+        self.db_updates_queue.put((Geofence, db_geofences))
+        log.debug('Upserted %d geofence entries.', len(db_geofences))
+
     def get_geofenced_coordinates(self, coordinates):
         log.info('Found %d coordinates to geofence.', len(coordinates))
         geofenced_coordinates = []
         startTime = time.time()
         if self.valid_areas:
             for c in coordinates:
-                if self.args.spawnpoint_scanning:
-                    point = {'lat': c['lat'], 'lon': c['lng']}
-                else:
-                    point = {'lat': c[0], 'lon': c[1]}
                 for va in self.valid_areas:
-                    if self.args.no_matplotlib:
-                        if self.point_in_polygon_custom(
-                                point, va['polygon']):
-                            # Coordinate is valid if in one valid area.
-                            geofenced_coordinates.append(c)
-                            break
-                    else:
-                        if self.point_in_polygon_matplotlib(
-                                point, va['polygon']):
-                            # Coordinate is valid if in one valid area.
-                            geofenced_coordinates.append(c)
-                            break
+                    if self.is_coordinate_in_geofence(
+                            c, va):
+                        # Coordinate is valid if in one valid area.
+                        geofenced_coordinates.append(c)
+                        break
         else:
             geofenced_coordinates = coordinates
 
         if self.forbidden_areas:
             for c in reversed(geofenced_coordinates):
-                if self.args.spawnpoint_scanning:
-                    point = {'lat': c['lat'], 'lon': c['lng']}
-                else:
-                    point = {'lat': c[0], 'lon': c[1]}
                 for fa in self.forbidden_areas:
-                    if self.args.no_matplotlib:
-                        if self.point_in_polygon_custom(
-                                point, fa['polygon']):
-                            # Coordinate is invalid if in one forbidden area.
-                            geofenced_coordinates.pop(
-                                geofenced_coordinates.index(c))
-                            break
-                    else:
-                        if self.point_in_polygon_matplotlib(
-                                point, fa['polygon']):
-                            # Coordinate is invalid if in one forbidden area.
-                            geofenced_coordinates.pop(
-                                geofenced_coordinates.index(c))
-                            break
+                    if self.is_coordinate_in_geofence(c, fa):
+                        # Coordinate is invalid if in one forbidden area.
+                        geofenced_coordinates.pop(
+                            geofenced_coordinates.index(c))
+                        break
 
         endTime = time.time()
         elapsedTime = endTime - startTime
@@ -195,73 +172,13 @@ class Geofences:
 
         return geofenced_coordinates
 
-    def push_db_geofences(self):
-        db_geofences = {}
-        key = 0
-        id = 0
-        for key in range(1, len(self.geofences) + 1):
-            coords = 0
-            for coords in range(0, len(self.geofences[key]['polygon'])):
-                id = id + 1
-                db_geofences[id] = {
-                    'geofence_id': key,
-                    'forbidden': self.geofences[key]['forbidden'],
-                    'name': self.geofences[key]['name'],
-                    'coordinates_id': coords,
-                    'latitude': self.geofences[key]['polygon'][coords]['lat'],
-                    'longitude': self.geofences[key]['polygon'][coords]['lon']
-                }
-
-        self.db_updates_queue.put((Geofence, db_geofences))
-        log.debug('Upserted %d geofence entries.', len(db_geofences))
-
-    @staticmethod
-    def point_in_polygon_matplotlib(point, polygon):
-        pointTouple = (point['lat'], point['lon'])
-        polygonToupleList = []
-        for c in polygon:
-            coordinateTouple = (c['lat'], c['lon'])
-            polygonToupleList.append(coordinateTouple)
-
-        polygonToupleList.append(polygonToupleList[0])
-        path = Path(polygonToupleList)
-
-        return path.contains_point(pointTouple)
-
-    @staticmethod
-    def point_in_polygon_custom(point, polygon):
-        # Initialize first coordinate as default.
-        maxLat = polygon[0]['lat']
-        minLat = polygon[0]['lat']
-        maxLon = polygon[0]['lon']
-        minLon = polygon[0]['lon']
-
-        for coords in polygon:
-            maxLat = max(coords['lat'], maxLat)
-            minLat = min(coords['lat'], minLat)
-            maxLon = max(coords['lon'], maxLon)
-            minLon = min(coords['lon'], minLon)
-
-        if ((point['lat'] > maxLat) or (point['lat'] < minLat) or
-                (point['lon'] > maxLon) or (point['lon'] < minLon)):
-            return False
-
-        inside = False
-        lat1, lon1 = polygon[0]['lat'], polygon[0]['lon']
-        N = len(polygon)
-        for n in range(1, N+1):
-            lat2, lon2 = polygon[n % N]['lat'], polygon[n % N]['lon']
-            if (min(lon1, lon2) < point['lon'] <= max(lon1, lon2) and
-                    point['lat'] <= max(lat1, lat2)):
-                        if lon1 != lon2:
-                            latIntersection = (
-                                (point['lon'] - lon1) *
-                                (lat2 - lat1) / (lon2 - lon1) +
-                                lat1)
-
-                        if lat1 == lat2 or point['lat'] <= latIntersection:
-                            inside = not inside
-
-            lat1, lon1 = lat2, lon2
-
-        return inside
+    def is_coordinate_in_geofence(self, coordinate, geofence):
+        if self.args.spawnpoint_scanning:
+            point = {'lat': coordinate['lat'], 'lon': coordinate['lng']}
+        else:
+            point = {'lat': coordinate[0], 'lon': coordinate[1]}
+        polygon = geofence['polygon']
+        if self.args.no_matplotlib:
+            return Geofence.point_in_polygon_custom(point, polygon)
+        else:
+            return Geofence.point_in_polygon_matplotlib(point, polygon)
