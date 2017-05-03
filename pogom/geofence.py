@@ -23,21 +23,16 @@ args = get_args()
 class Geofences:
 
     def __init__(self):
-        self.geofence_file = args.geofence_file
-        self.forbidden_file = args.forbidden_file
-        self.no_matplotlib = args.no_matplotlib  # Check disabled matplotlib
-        self.spawnpoint_scanning = args.spawnpoint_scanning
-
         self.valid_areas = []
         self.forbidden_areas = []
 
-        if self.geofence_file or self.forbidden_file:
+        if args.geofence_file or args.forbidden_file:
             startTime = time.time()
             log.info('Looking for geofenced or forbidden areas.')
             self.valid_areas = self.parse_geofences_file(
-                self.geofence_file, forbidden=False)
+                args.geofence_file, forbidden=False)
             self.forbidden_areas = self.parse_geofences_file(
-                self.forbidden_file, forbidden=True)
+                args.forbidden_file, forbidden=True)
             endTime = time.time()
             elapsedTime = endTime - startTime
             log.info(
@@ -85,12 +80,12 @@ class Geofences:
         return geofenced_coordinates
 
     def is_coordinate_in_geofence(self, coordinate, geofence):
-        if self.spawnpoint_scanning:
+        if args.spawnpoint_scanning:
             point = {'lat': coordinate['lat'], 'lon': coordinate['lng']}
         else:
             point = {'lat': coordinate[0], 'lon': coordinate[1]}
         polygon = geofence['polygon']
-        if self.no_matplotlib:
+        if args.no_matplotlib:
             return self.is_point_in_polygon_custom(point, polygon)
         else:
             return self.is_point_in_polygon_matplotlib(point, polygon)

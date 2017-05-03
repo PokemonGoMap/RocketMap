@@ -25,7 +25,6 @@ from pogom.search import search_overseer_thread
 from pogom.models import (init_database, create_tables, drop_tables,
                           PlayerLocale, SpawnPoint, db_updater, clean_db_loop,
                           verify_table_encoding, verify_database_schema)
-from pogom.geofence import Geofences
 from pogom.webhook import wh_updater
 
 from pogom.proxy import load_proxies, check_proxies, proxies_refresher
