@@ -25,29 +25,29 @@ import traceback
 import random
 import time
 import copy
+import requests
+import schedulers
+import terminalsize
 
 from datetime import datetime
 from threading import Thread, Lock
 from queue import Queue, Empty
 from sets import Set
 from collections import deque
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
 
-from pgoapi import PGoApi
 from pgoapi.utilities import f2i
 from pgoapi import utilities as util
 from pgoapi.hash_server import HashServer
 
 from .models import parse_map, GymDetails, parse_gyms, MainWorker, WorkerStatus
-from .fakePogoApi import FakePogoApi
-from .utils import now, generate_device_info
+from .utils import now, clear_dict_response
 from .transform import get_new_coords, jitter_location
-from .account import check_login, get_tutorial_state, complete_tutorial
+from .account import (setup_api, check_login, get_tutorial_state,
+                      complete_tutorial, AccountSet)
 from .captcha import captcha_overseer_thread, handle_captcha
-
 from .proxy import get_new_proxy
-
-import schedulers
-import terminalsize
 
 log = logging.getLogger(__name__)
 
@@ -251,19 +251,19 @@ def status_printer(threadStatus, search_items_queue_array, db_updates_queue,
             status = '{:21} | {:9} | {:9} | {:9}'
             status_text.append(status.format('Key', 'Remaining', 'Maximum',
                                              'Peak'))
+            if hash_key is not None:
+                for key in hash_key:
+                    key_instance = key_scheduler.keys[key]
+                    key_text = key
 
-            for key in hash_key:
-                key_instance = key_scheduler.keys[key]
-                key_text = key
+                    if key_scheduler.current() == key:
+                        key_text += '*'
 
-                if key_scheduler.current() == key:
-                    key_text += '*'
-
-                status_text.append(status.format(
-                    key_text,
-                    key_instance['remaining'],
-                    key_instance['maximum'],
-                    key_instance['peak']))
+                    status_text.append(status.format(
+                        key_text,
+                        key_instance['remaining'],
+                        key_instance['maximum'],
+                        key_instance['peak']))
 
         # Print the status_text for the current screen.
         status_text.append((
@@ -299,7 +299,6 @@ def account_recycler(args, accounts_queue, account_failures):
             if a['last_fail_time'] <= ok_time:
                 # Remove the account from the real list, and add to the account
                 # queue.
-                a['status']['on_hold'] = False
                 log.info('Account {} returning to active duty.'.format(
                     a['account']['username']))
                 account_failures.remove(a)
@@ -349,8 +348,11 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
     search_items_queue_array = []
     scheduler_array = []
     account_queue = Queue()
+    account_sets = AccountSet(args.hlvl_kph)
     threadStatus = {}
     key_scheduler = None
+    api_version = '0.61.0'
+    api_check_time = 0
 
     '''
     Create a queue of accounts for workers to pull from. When a worker has
@@ -361,6 +363,15 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
     '''
     for i, account in enumerate(args.accounts):
         account_queue.put(account)
+
+    '''
+    Create sets of special case accounts.
+    Currently limited to L30+ IV/CP scanning.
+    '''
+    account_sets.create_set('30', args.accounts_L30)
+
+    # Debug.
+    log.info('Added %s accounts to the L30 pool.', len(args.accounts_L30))
 
     # Create a list for failed accounts.
     account_failures = []
@@ -455,17 +466,19 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
             'username': '',
             'proxy_display': proxy_display,
             'proxy_url': proxy_url,
-            'on_hold': False
         }
 
         t = Thread(target=search_worker_thread,
                    name='search-worker-{}'.format(i),
-                   args=(args, account_queue, account_failures,
+                   args=(args, account_queue, account_sets, account_failures,
                          account_captchas, search_items_queue, pause_bit,
                          threadStatus[workerId], db_updates_queue,
                          wh_queue, scheduler, key_scheduler))
         t.daemon = True
         t.start()
+
+    if not args.no_version_check:
+        log.info('Enabling new API force Watchdog.')
 
     # A place to track the current location.
     current_location = False
@@ -531,7 +544,15 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
                     i].get_overseer_message()
 
         # Let's update the total stats and add that info to message
-        update_total_stats(threadStatus, last_account_status)
+        # Added exception handler as dict items change
+        try:
+            update_total_stats(threadStatus, last_account_status)
+        except Exception as e:
+            log.error(
+                'Update total stats had an Exception: {}.'.format(
+                    repr(e)))
+            traceback.print_exc(file=sys.stdout)
+            time.sleep(10)
         threadStatus['Overseer']['message'] += '\n' + get_stats_message(
             threadStatus)
 
@@ -551,6 +572,11 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
         if args.webhook_scheduler_updates:
             wh_status_update(args, threadStatus['Overseer'], wh_queue,
                              scheduler_array[0])
+
+        # API Watchdog - Check if Niantic forces a new API.
+        if not args.no_version_check:
+            api_check_time = check_forced_version(args, api_version,
+                                                  api_check_time, pause_bit)
 
         # Now we just give a little pause here.
         time.sleep(1)
@@ -710,7 +736,7 @@ def generate_hive_locations(current_location, step_distance,
     return results
 
 
-def search_worker_thread(args, account_queue, account_failures,
+def search_worker_thread(args, account_queue, account_sets, account_failures,
                          account_captchas, search_items_queue, pause_bit,
                          status, dbq, whq, scheduler, key_scheduler):
 
@@ -722,19 +748,22 @@ def search_worker_thread(args, account_queue, account_failures,
     # This reinitializes the API and grabs a new account from the queue.
     while True:
         try:
+            # Force storing of previous worker info to keep consistency.
+            if 'starttime' in status:
+                dbq.put((WorkerStatus, {0: WorkerStatus.db_format(status)}))
+
             status['starttime'] = now()
 
             # Track per loop.
             first_login = True
 
-            # Make sure the scheduler is done for valid locations
+            # Make sure the scheduler is done for valid locations.
             while not scheduler.ready:
                 time.sleep(1)
 
-            if not status['on_hold']:
-                status['message'] = ('Waiting to get new account from the ' +
-                                     'queue...')
-                log.info(status['message'])
+            status['message'] = ('Waiting to get new account from the'
+                                 + ' queue...')
+            log.info(status['message'])
 
             # Get an account.
             account = account_queue.get()
@@ -761,32 +790,7 @@ def search_worker_thread(args, account_queue, account_failures,
             # for stat purposes.
             consecutive_noitems = 0
 
-            # Create the API instance this will use.
-            if args.mock != '':
-                api = FakePogoApi(args.mock)
-            else:
-                device_info = generate_device_info()
-                api = PGoApi(device_info=device_info)
-
-            # New account - new proxy.
-            if args.proxy:
-                # If proxy is not assigned yet or if proxy-rotation is defined
-                # - query for new proxy.
-                if ((not status['proxy_url']) or
-                        ((args.proxy_rotation is not None) and
-                         (args.proxy_rotation != 'none'))):
-
-                    proxy_num, status['proxy_url'] = get_new_proxy(args)
-                    if args.proxy_display.upper() != 'FULL':
-                        status['proxy_display'] = proxy_num
-                    else:
-                        status['proxy_display'] = status['proxy_url']
-
-            if status['proxy_url']:
-                log.debug('Using proxy %s', status['proxy_url'])
-                api.set_proxy({
-                    'http': status['proxy_url'],
-                    'https': status['proxy_url']})
+            api = setup_api(args, status)
 
             # The forever loop for the searches.
             while True:
@@ -804,9 +808,7 @@ def search_worker_thread(args, account_queue, account_failures,
                             account['username'],
                             args.max_failures)
                     log.warning(status['message'])
-                    status['on_hold'] = True
-                    account_failures.append({'status': status,
-                                             'account': account,
+                    account_failures.append({'account': account,
                                              'last_fail_time': now(),
                                              'reason': 'failures'})
                     # Exit this loop to get a new account and have the API
@@ -823,9 +825,7 @@ def search_worker_thread(args, account_queue, account_failures,
                         'accounts...').format(account['username'],
                                               args.max_empty)
                     log.warning(status['message'])
-                    status['on_hold'] = True
-                    account_failures.append({'status': status,
-                                             'account': account,
+                    account_failures.append({'account': account,
                                              'last_fail_time': now(),
                                              'reason': 'empty scans'})
                     # Exit this loop to get a new account and have the API
@@ -835,7 +835,7 @@ def search_worker_thread(args, account_queue, account_failures,
                 # If used proxy disappears from "live list" after background
                 # checking - switch account but do not freeze it (it's not an
                 # account failure).
-                if (args.proxy) and (not status['proxy_url'] in args.proxy):
+                if args.proxy and status['proxy_url'] not in args.proxy:
                     status['message'] = (
                         'Account {} proxy {} is not in a live list any ' +
                         'more. Switching accounts...').format(
@@ -855,17 +855,18 @@ def search_worker_thread(args, account_queue, account_failures,
                             'Account {} is being rotated out to rest.'.format(
                                 account['username']))
                         log.info(status['message'])
-                        status['on_hold'] = True
-                        account_failures.append({'status': status,
-                                                 'account': account,
+                        account_failures.append({'account': account,
                                                  'last_fail_time': now(),
                                                  'reason': 'rest interval'})
                         break
 
                 # Grab the next thing to search (when available).
-                step, step_location, appears, leaves, messages = (
+                step, step_location, appears, leaves, messages, wait = (
                     scheduler.next_item(status))
                 status['message'] = messages['wait']
+                # The next_item will return the value telling us how long
+                # to sleep. This way the status can be updated
+                time.sleep(wait)
 
                 # Using step as a flag for no valid next location returned.
                 if step == -1:
@@ -967,7 +968,7 @@ def search_worker_thread(args, account_queue, account_failures,
                     captcha = handle_captcha(args, status, api, account,
                                              account_failures,
                                              account_captchas, whq,
-                                             response_dict)
+                                             response_dict, step_location)
                     if captcha is not None and captcha:
                         # Make another request for the same location
                         # since the previous one was captcha'd.
@@ -975,13 +976,14 @@ def search_worker_thread(args, account_queue, account_failures,
                         response_dict = map_request(api, step_location,
                                                     args.no_jitter)
                     elif captcha is not None:
-                        status['on_hold'] = True
                         account_queue.task_done()
                         time.sleep(3)
                         break
 
                     parsed = parse_map(args, response_dict, step_location,
-                                       dbq, whq, api, scan_date)
+                                       dbq, whq, key_scheduler, api, status,
+                                       scan_date, account, account_sets)
+                    del response_dict
                     scheduler.task_done(status, parsed)
                     if parsed['count'] > 0:
                         status['success'] += 1
@@ -1008,6 +1010,8 @@ def search_worker_thread(args, account_queue, account_failures,
                                                            account['username'])
                     log.exception('{}. Exception message: {}'.format(
                         status['message'], repr(e)))
+                    if response_dict is not None:
+                        del response_dict
 
                 # Get detailed information about gyms.
                 if args.gym_info and parsed:
@@ -1075,7 +1079,7 @@ def search_worker_thread(args, account_queue, account_failures,
                             else:
                                 gym_responses[gym['gym_id']] = response[
                                     'responses']['GET_GYM_DETAILS']
-
+                            del response
                             # Increment which gym we're on for status messages.
                             current_gym += 1
 
@@ -1089,6 +1093,7 @@ def search_worker_thread(args, account_queue, account_failures,
                         if gym_responses:
                             parse_gyms(args, gym_responses,
                                        whq, dbq)
+                            del gym_responses
 
                 if args.hash_key:
                     key_instance = key_scheduler.keys[key_scheduler.current()]
@@ -1106,12 +1111,13 @@ def search_worker_thread(args, account_queue, account_failures,
 
                 # Delay the desired amount after "scan" completion.
                 delay = scheduler.delay(status['last_scan_date'])
-                status['message'] += ', sleeping {}s until {}.'.format(
+
+                status['message'] += ' Sleeping {}s until {}.'.format(
                     delay,
                     time.strftime(
                         '%H:%M:%S',
                         time.localtime(time.time() + args.scan_delay)))
-
+                log.info(status['message'])
                 time.sleep(delay)
 
         # Catch any process exceptions, log them, and continue the thread.
@@ -1124,9 +1130,7 @@ def search_worker_thread(args, account_queue, account_failures,
                 'with fresh account. See logs for details.').format(
                     account['username'])
             traceback.print_exc(file=sys.stdout)
-            status['on_hold'] = True
-            account_failures.append({'status': status,
-                                     'account': account,
+            account_failures.append({'account': account,
                                      'last_fail_time': now(),
                                      'reason': 'exception'})
             time.sleep(args.scan_delay)
@@ -1148,17 +1152,18 @@ def map_request(api, position, no_jitter=False):
         cell_ids = util.get_cell_ids(scan_location[0], scan_location[1])
         timestamps = [0, ] * len(cell_ids)
         req = api.create_request()
-        response = req.get_map_objects(latitude=f2i(scan_location[0]),
-                                       longitude=f2i(scan_location[1]),
-                                       since_timestamp_ms=timestamps,
-                                       cell_id=cell_ids)
-        response = req.check_challenge()
-        response = req.get_hatched_eggs()
-        response = req.get_inventory()
-        response = req.check_awarded_badges()
-        response = req.download_settings()
-        response = req.get_buddy_walked()
+        req.get_map_objects(latitude=f2i(scan_location[0]),
+                            longitude=f2i(scan_location[1]),
+                            since_timestamp_ms=timestamps,
+                            cell_id=cell_ids)
+        req.check_challenge()
+        req.get_hatched_eggs()
+        req.get_inventory()
+        req.check_awarded_badges()
+        req.download_settings()
+        req.get_buddy_walked()
         response = req.call()
+        response = clear_dict_response(response, True)
         return response
 
     except Exception as e:
@@ -1172,18 +1177,19 @@ def gym_request(api, position, gym):
                   gym['latitude'], gym['longitude'],
                   calc_distance(position, [gym['latitude'], gym['longitude']]))
         req = api.create_request()
-        x = req.get_gym_details(gym_id=gym['gym_id'],
-                                player_latitude=f2i(position[0]),
-                                player_longitude=f2i(position[1]),
-                                gym_latitude=gym['latitude'],
-                                gym_longitude=gym['longitude'])
-        x = req.check_challenge()
-        x = req.get_hatched_eggs()
-        x = req.get_inventory()
-        x = req.check_awarded_badges()
-        x = req.download_settings()
-        x = req.get_buddy_walked()
+        req.get_gym_details(gym_id=gym['gym_id'],
+                            player_latitude=f2i(position[0]),
+                            player_longitude=f2i(position[1]),
+                            gym_latitude=gym['latitude'],
+                            gym_longitude=gym['longitude'])
+        req.check_challenge()
+        req.get_hatched_eggs()
+        req.get_inventory()
+        req.check_awarded_badges()
+        req.download_settings()
+        req.get_buddy_walked()
         x = req.call()
+        x = clear_dict_response(x)
         # Print pretty(x).
         return x
 
@@ -1220,3 +1226,49 @@ def stagger_thread(args):
 # The delta from last stat to current stat
 def stat_delta(current_status, last_status, stat_name):
     return current_status.get(stat_name, 0) - last_status.get(stat_name, 0)
+
+
+def check_forced_version(args, api_version, api_check_time, pause_bit):
+    if int(time.time()) > api_check_time:
+        api_check_time = int(time.time()) + args.version_check_interval
+        forced_api = get_api_version(args)
+
+        if (api_version != forced_api and forced_api != 0):
+            pause_bit.set()
+            log.info(('Started with API: {}, ' +
+                      'Niantic forced to API: {}').format(
+                api_version,
+                forced_api))
+            log.info('Scanner paused due to forced Niantic API update.')
+            log.info('Stop the scanner process until RocketMap ' +
+                     'has updated.')
+
+    return api_check_time
+
+
+def get_api_version(args):
+    proxies = {}
+
+    if args.proxy:
+        num, proxy = get_new_proxy(args)
+        proxies = {
+            'http': proxy,
+            'https': proxy
+        }
+
+    try:
+        s = requests.Session()
+        s.mount('https://',
+                HTTPAdapter(max_retries=Retry(total=3,
+                                              backoff_factor=0.1,
+                                              status_forcelist=[500, 502,
+                                                                503, 504])))
+        r = s.get(
+            'https://pgorelease.nianticlabs.com/plfe/version',
+            proxies=proxies,
+            verify=False)
+        return r.text[2:] if (r.status_code == requests.codes.ok and
+                              r.text[2:].count('.') == 2) else 0
+    except Exception as e:
+        log.warning('error on API check: %s', repr(e))
+        return 0
