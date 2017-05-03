@@ -266,9 +266,5 @@ $(document).ready(function () {
 
         $('#status_container .status_table').remove()
         $('#status_container .worker').remove()
-
-        if (statusPagePassword) {
-            updateStatus()
-        }
     })
 })
