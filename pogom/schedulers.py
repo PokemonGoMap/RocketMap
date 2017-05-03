@@ -542,9 +542,7 @@ class SpeedScan(HexSearch):
         self.scans = scans
         db_update_queue.put((ScannedLocation, initial))
         log.info('%d steps created', len(scans))
-        if len(scans) > 0:
-            self.band_spacing = int(10 * 60 / len(scans))
-
+        self.band_spacing = int(10 * 60 / len(scans))
         self.band_status()
         spawnpoints = SpawnPoint.select_in_hex_by_location(
             self.scan_location, self.args.step_limit)
@@ -884,7 +882,8 @@ class SpeedScan(HexSearch):
             last_action = status['last_scan_date']
 
             # Logging.
-            log.debug('Enumerating %s scan locations in queue.', len(q))
+            log.debug('Enumerating %s scan locations in queue.',
+                      len(q))
 
             # Keep some stats for logging purposes. If something goes wrong,
             # we can track what happened.

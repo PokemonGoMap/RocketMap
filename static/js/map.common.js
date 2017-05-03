@@ -918,10 +918,6 @@ var StoreOptions = {
         default: false,
         type: StoreTypes.Boolean
     },
-    'showGeofences': {
-        default: true,
-        type: StoreTypes.Boolean
-    },
     'playSound': {
         default: false,
         type: StoreTypes.Boolean

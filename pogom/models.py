@@ -38,15 +38,6 @@ from .account import (tutorial_pokestop_spin, check_login,
 
 log = logging.getLogger(__name__)
 
-# Trying to import the, not to all hardware compatible, matplotlib
-# Matlplotlib is faster for big calulations
-try:
-    from matplotlib.path import Path
-except ImportError as e:
-    log.warning('Exception while importing matplotlib: %s', repr(e))
-    log.warning('Enable "-nmptl" or "--no-matplotlib" to circumvent.')
-    pass
-
 args = get_args()
 flaskDb = FlaskDB()
 cache = TTLCache(maxsize=100, ttl=60 * 5)
@@ -2770,7 +2761,6 @@ def create_tables(db):
               GymMember, GymPokemon, Trainer, MainWorker, WorkerStatus,
               SpawnPoint, ScanSpawnPoint, SpawnpointDetectionData,
               Token, LocationAltitude, PlayerLocale, HashKeys]
->>>>>>> Initial PR commit
     for table in tables:
         if not table.table_exists():
             log.info('Creating table: %s', table.__name__)

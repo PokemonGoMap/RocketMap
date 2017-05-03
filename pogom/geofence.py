@@ -4,22 +4,25 @@
 import time
 import logging
 
-from .models import Geofence
-
 log = logging.getLogger(__name__)
+
+# Trying to import the, not to all hardware compatible, matplotlib
+# Matlplotlib is faster for big calulations
+try:
+    from matplotlib.path import Path
+except ImportError as e:
+    log.warning('Exception while importing matplotlib: %s', repr(e))
+    log.warning('Enable "-nmptl" or "--no-matplotlib" to circumvent.')
+    pass
 
 
 class Geofences:
 
-    def __init__(self, args, db_updates_queue):
+    def __init__(self, args):
         self.args = args
         self.geofences = {}
         self.valid_areas = []
         self.forbidden_areas = []
-        self.db_updates_queue = db_updates_queue
-
-        if args.purge_geofence_data:  # Remove old geofences from DB.
-            Geofence.clear_all()
 
         # Initialization of object when geofence files are provided.
         if self.args.geofence_file or self.args.forbidden_file:
@@ -27,7 +30,6 @@ class Geofences:
             self.forbidden_file = self.args.forbidden_file
 
             self.parse_geofences()
-            self.upsert_geofences()
 
     def is_enabled(self):
         enabled = False
@@ -134,12 +136,6 @@ class Geofences:
             else:
                 self.valid_areas.append(self.geofences[g])
 
-    def upsert_geofences(self):
-        Geofence.remove_duplicates(self.geofences)
-        db_geofences = Geofence.get_db_entries(self.geofences)
-        self.db_updates_queue.put((Geofence, db_geofences))
-        log.debug('Upserted %d geofence entries.', len(db_geofences))
-
     def get_geofenced_coordinates(self, coordinates):
         log.info('Found %d coordinates to geofence.', len(coordinates))
         geofenced_coordinates = []
@@ -147,8 +143,7 @@ class Geofences:
         if self.valid_areas:
             for c in coordinates:
                 for va in self.valid_areas:
-                    if self.is_coordinate_in_geofence(
-                            c, va):
+                    if self.is_coordinate_in_geofence(c, va):
                         # Coordinate is valid if in one valid area.
                         geofenced_coordinates.append(c)
                         break
@@ -179,6 +174,57 @@ class Geofences:
             point = {'lat': coordinate[0], 'lon': coordinate[1]}
         polygon = geofence['polygon']
         if self.args.no_matplotlib:
-            return Geofence.point_in_polygon_custom(point, polygon)
+            return self.is_point_in_polygon_custom(point, polygon)
         else:
-            return Geofence.point_in_polygon_matplotlib(point, polygon)
+            return self.is_point_in_polygon_matplotlib(point, polygon)
+
+    @staticmethod
+    def is_point_in_polygon_matplotlib(point, polygon):
+        pointTouple = (point['lat'], point['lon'])
+        polygonToupleList = []
+        for c in polygon:
+            coordinateTouple = (c['lat'], c['lon'])
+            polygonToupleList.append(coordinateTouple)
+
+        polygonToupleList.append(polygonToupleList[0])
+        path = Path(polygonToupleList)
+
+        return path.contains_point(pointTouple)
+
+    @staticmethod
+    def is_point_in_polygon_custom(point, polygon):
+        # Initialize first coordinate as default.
+        maxLat = polygon[0]['lat']
+        minLat = polygon[0]['lat']
+        maxLon = polygon[0]['lon']
+        minLon = polygon[0]['lon']
+
+        for coords in polygon:
+            maxLat = max(coords['lat'], maxLat)
+            minLat = min(coords['lat'], minLat)
+            maxLon = max(coords['lon'], maxLon)
+            minLon = min(coords['lon'], minLon)
+
+        if ((point['lat'] > maxLat) or (point['lat'] < minLat) or
+                (point['lon'] > maxLon) or (point['lon'] < minLon)):
+            return False
+
+        inside = False
+        lat1, lon1 = polygon[0]['lat'], polygon[0]['lon']
+        N = len(polygon)
+        for n in range(1, N+1):
+            lat2, lon2 = polygon[n % N]['lat'], polygon[n % N]['lon']
+            if (min(lon1, lon2) < point['lon'] <= max(lon1, lon2) and
+                    point['lat'] <= max(lat1, lat2)):
+                        if lon1 != lon2:
+                            latIntersection = (
+                                (point['lon'] - lon1) *
+                                (lat2 - lat1) / (lon2 - lon1) +
+                                lat1)
+
+                        if lat1 == lat2 or point['lat'] <= latIntersection:
+                            inside = not inside
+
+            lat1, lon1 = lat2, lon2
+
+        return inside
