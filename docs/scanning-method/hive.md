@@ -1,4 +1,4 @@
-# Beehive Scheduler
+# Beehive Scanning
 Beehive scanning enables your workers to be organized into seperate search areas. This allows you to scan a larger area than by just increasing your `-st` alone. Beehive scanning still allows for `-speed`, however, the worker(s) will be split into seperate areas. 
 
 ## Visual Representation
