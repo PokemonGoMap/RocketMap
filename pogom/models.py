@@ -2144,7 +2144,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                         'spawn_end': start_end[1],
                         'player_level': encounter_level
                     })
-                    if encounter_level >= 30:
+                    if wh_poke['cp_multiplier'] is not None:
                         wh_poke.update({
                             'pokemon_level': calc_pokemon_level(
                                 wh_poke['cp_multiplier'])
