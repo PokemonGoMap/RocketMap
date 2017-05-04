@@ -241,7 +241,7 @@
                         Change duration for lures set on pokestops. This is
                         useful for events that extend lure duration. [env var:
                         POGOMAP_LURE_DURATION]
-    --dump-spawnpoints  Dump the spawnpoints from the db to spawnpoints.json
+    --dump-spawnpoints  Dump the spawnpoints from the db to specified JSON file.
                         [env var: POGOMAP_DUMP_SPAWNPOINTS]
     -pd PURGE_DATA, --purge-data PURGE_DATA
                         Clear Pokemon from database this many hours after they
