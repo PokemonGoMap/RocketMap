@@ -846,12 +846,10 @@ class SpeedScan(HexSearch):
                 time.sleep(1)
 
             now_date = datetime.utcnow()
-            n = 0  # count valid scans reviewed
             q = self.queues[0]
             ms = ((now_date - self.refresh_date).total_seconds() +
                   self.refresh_ms)
             best = {}
-            cant_reach = False
             worker_loc = [status['latitude'], status['longitude']]
             last_action = status['last_scan_date']
 
@@ -942,11 +940,8 @@ class SpeedScan(HexSearch):
                 # If we can't make it there before it disappears, don't bother
                 # trying.
                 if ms + secs_to_arrival > item['end']:
-                    cant_reach = True
                     count_late += 1
                     continue
-
-                n += 1
 
                 # Bands are top priority to find new spawns first
                 score = 1e12 if item['kind'] == 'band' else (
@@ -1013,7 +1008,7 @@ class SpeedScan(HexSearch):
                 return -1, 0, 0, 0, messages, 0
 
             if best.get('score', 0) == 0:
-                if cant_reach:
+                if count_late > 0:
                     messages['wait'] = ('Not able to reach any scan'
                                         + ' under the speed limit.')
                 return -1, 0, 0, 0, messages, 0
