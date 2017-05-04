@@ -10,11 +10,10 @@ import gc
 import time
 import geopy
 import math
-from peewee import InsertQuery, \
-    Check, CompositeKey, ForeignKeyField, \
-    SmallIntegerField, IntegerField, CharField, DoubleField, BooleanField, \
-    DateTimeField, fn, DeleteQuery, FloatField, SQL, TextField, JOIN, \
-    OperationalError
+from peewee import (InsertQuery, Check, CompositeKey, ForeignKeyField,
+                    SmallIntegerField, IntegerField, CharField, DoubleField,
+                    BooleanField, DateTimeField, fn, DeleteQuery, FloatField,
+                    SQL, TextField, JOIN, OperationalError)
 from playhouse.flask_utils import FlaskDB
 from playhouse.pool import PooledMySQLDatabase
 from playhouse.shortcuts import RetryOperationalError, case
@@ -27,9 +26,10 @@ from cachetools import cached
 from timeit import default_timer
 
 from . import config
-from .utils import get_pokemon_name, get_pokemon_rarity, get_pokemon_types, \
-    get_args, cellid, in_radius, date_secs, clock_between, get_move_name, \
-    get_move_damage, get_move_energy, get_move_type, clear_dict_response
+from .utils import (get_pokemon_name, get_pokemon_rarity, get_pokemon_types,
+                    get_args, cellid, in_radius, date_secs, clock_between,
+                    get_move_name, get_move_damage, get_move_energy,
+                    get_move_type, clear_dict_response)
 from .transform import transform_from_wgs_to_gcj, get_new_coords
 from .customLog import printPokemon
 
@@ -1090,10 +1090,6 @@ class MainWorker(BaseModel):
     accounts_working = IntegerField()
     accounts_captcha = IntegerField()
     accounts_failed = IntegerField()
-
-    @staticmethod
-    def get_total_captchas():
-        return MainWorker.select(fn.SUM(MainWorker.accounts_captcha)).scalar()
 
     @staticmethod
     def get_account_stats():

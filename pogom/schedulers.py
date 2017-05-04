@@ -78,7 +78,6 @@ class BaseScheduler(object):
         self.status = status
         self.args = args
         self.scan_location = False
-        self.size = None
         self.ready = False
 
     # Schedule function fills the queues with data.
@@ -97,9 +96,6 @@ class BaseScheduler(object):
     # Note: This function is called repeatedly while scanning is paused!
     def scanning_paused(self):
         self.empty_queues()
-
-    def getsize(self):
-        return self.size
 
     def get_overseer_message(self):
         nextitem = self.queues[0].queue[0]
@@ -300,7 +296,6 @@ class HexSearch(BaseScheduler):
             # queue.
             self.queues[0].put(location)
             log.debug("Added location {}".format(location))
-        self.size = len(self.locations)
         self.ready = True
 
 
@@ -458,7 +453,6 @@ class SpawnScan(BaseScheduler):
             log.debug("Added location {}".format(location))
 
         # Clear the locations list so it gets regenerated next cycle.
-        self.size = len(self.locations)
         self.locations = None
         self.ready = True
 
@@ -586,9 +580,6 @@ class SpeedScan(HexSearch):
             generated_locations.append(
                 (step, (location[0], location[1], altitude), 0, 0))
         return generated_locations
-
-    def getsize(self):
-        return len(self.queues[0])
 
     def get_overseer_message(self):
         n = 0
@@ -989,7 +980,6 @@ class SpeedScan(HexSearch):
             else:
                 log.debug('Enumerating queue found best location: %s.',
                           repr(best))
-
 
             loc = best.get('loc', [])
             step = best.get('step', 0)
