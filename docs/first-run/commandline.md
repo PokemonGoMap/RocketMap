@@ -18,7 +18,7 @@
                     [-msl MIN_SECONDS_LEFT] [-dc] [-H HOST] [-P PORT]
                     [-L LOCALE] [-c] [-m MOCK] [-ns] [-os] [-sc] [-nfl] -k
                     GMAPS_KEY [--skip-empty] [-C] [-D DB] [-cd] [-np] [-ng]
-                    [-nk] [-ss [SPAWNPOINT_SCANNING]] [-speed] [-kph KPH]
+                    [-nk] [-speed] [-kph KPH]
                     [-hkph HLVL_KPH] [-ldur LURE_DURATION]
                     [--dump-spawnpoints] [-pd PURGE_DATA] [-px PROXY] [-pxsc]
                     [-pxt PROXY_TIMEOUT] [-pxd PROXY_DISPLAY]
@@ -218,8 +218,8 @@
                         Google Maps Javascript API Key. [env var:
                         POGOMAP_GMAPS_KEY]
     --skip-empty          Enables skipping of empty cells in normal scans -
-                        requires previously populated database (not to be used
-                        with -ss) [env var: POGOMAP_SKIP_EMPTY]
+                        requires previously populated database
+                        [env var: POGOMAP_SKIP_EMPTY]
     -C, --cors            Enable CORS on web server. [env var: POGOMAP_CORS]
     -D DB, --db DB        Database filename for SQLite. [env var: POGOMAP_DB]
     -cd, --clear-db       Deletes the existing database before starting the
@@ -230,10 +230,6 @@
                         into local db). [env var: POGOMAP_NO_GYMS]
     -nk, --no-pokestops   Disables PokeStops from the map (including parsing
                         them into local db). [env var: POGOMAP_NO_POKESTOPS]
-    -ss [SPAWNPOINT_SCANNING], --spawnpoint-scanning [SPAWNPOINT_SCANNING]
-                        Use spawnpoint scanning (instead of hex grid). Scans
-                        in a circle based on step_limit when on DB. [env var:
-                        POGOMAP_SPAWNPOINT_SCANNING]
     -speed, --speed-scan  Use speed scanning to identify spawn points and then
                         scan closest spawns. [env var: POGOMAP_SPEED_SCAN]
     -kph KPH, --kph KPH   Set a maximum speed in km/hour for scanner movement.
@@ -246,8 +242,8 @@
                         Change duration for lures set on pokestops. This is
                         useful for events that extend lure duration. [env var:
                         POGOMAP_LURE_DURATION]
-    --dump-spawnpoints    Dump the spawnpoints from the db to json (only for use
-                        with -ss). [env var: POGOMAP_DUMP_SPAWNPOINTS]
+    --dump-spawnpoints    Dump the spawnpoints from the db to specified json file
+                          [env var: POGOMAP_DUMP_SPAWNPOINTS]
     -pd PURGE_DATA, --purge-data PURGE_DATA
                         Clear Pokemon from database this many hours after they
                         disappear (0 to disable). [env var:

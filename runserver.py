@@ -296,15 +296,13 @@ def main():
 
         # Attempt to dump the spawn points (do this before starting threads of
         # endure the woe).
-        if (args.spawnpoint_scanning and
-                args.spawnpoint_scanning != 'nofile' and
-                args.dump_spawnpoints):
+        if args.dump_spawnpoints:
             with open(args.spawnpoint_scanning, 'w+') as file:
                 log.info('Saving spawn points to %s', args.spawnpoint_scanning)
                 spawns = Pokemon.get_spawnpoints_in_hex(
                     position, args.step_limit)
                 file.write(json.dumps(spawns))
-                log.info('Finished exporting spawn points')
+                log.info('Finished exporting spawn points.')
 
         argset = (args, new_location_queue, pause_bit,
                   heartbeat, db_updates_queue, wh_updates_queue)

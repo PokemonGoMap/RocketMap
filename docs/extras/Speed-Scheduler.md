@@ -1,6 +1,6 @@
 # Speed Scheduler
 
-Speed Scheduler is an alternative scheduler to Hex Scan or Spawnpoint Scan with a speed limit and full support for spawnpoint discovery, exact spawnpoint spawntime and duration identification, and automatic transition from spawnpoint discovery to identification to only scanning spawnpoints.
+Speed Scheduler is an alternative scheduler to Hex Scan with a speed limit and full support for spawnpoint discovery, exact spawnpoint spawntime and duration identification, and automatic transition from spawnpoint discovery to identification to only scanning spawnpoints.
 
 ## Features
 
