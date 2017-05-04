@@ -15,13 +15,13 @@ PRO: Less Memory usage
 
 CON: Less Flexibility
 
-CON: Limited to 1 Hive (sorta) 
+CON: Limited to 1 Beehive per thread 
 
 ![](../_static/img/Beehive2.png)
 
 `Example of walking path assignments with 1 wph.`
 
-Command line option `-bh` or `--beehive` enables your workers to be organized into 1 search area per worker by default. The beehive will automatically center around your specified location `-l` and spirials out from there. This method uses the `-st` to determine the size of each hive. You increase the number of hives by adding more workers `-w`. You can also add more than one worker per a hive. For example, you can place two workers in a hive by using `-wph 2`. ***NOTE:*** Adding more than 1 worker per hive is only reccomended if you are using spped scheduler.  
+Command line option `-bh` or `--beehive` enables your workers to be organized into 1 search area per worker by default. The beehive will automatically center around your specified location `-l` and spirials out from there. This method uses the `-st` to determine the size of each hive. You increase the number of hives by adding more workers `-w`. You can also add more than one worker per a hive. For example, you can place two workers in a hive by using `-wph 2`. ***NOTE:*** Adding more than 1 worker per hive is only reccomended if you are using speed scheduler.  
 
 For each `-w`, you must have at least account one account. It is best to have at least 4 accounts per worker. This will allow your workers to always be working, no matter if the account encounters an error. It is also always a great idea to set an Account Search Interval `-asi`. This will limit each account to a certain ammount of search time before putting it to sleep. You can control the ammount of sleep with Account Rest Interval `-ari`. 
 
