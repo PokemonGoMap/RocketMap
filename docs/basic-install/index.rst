@@ -125,18 +125,18 @@ python ./runserver.py -ac accounts.csv -tut -st 10 \
 Let's run through this startup command to make sure you understand what flags are being set.
 
 * -ac accounts.csv
-Load accounts from CSV (Comma Seperated Values) file containing "auth_service,username,passwd" lines. [More Info](http://rocketmap.readthedocs.io/en/develop/extras/multi-account.html)
+Load accounts from CSV (Comma Seperated Values) file containing "auth_service,username,passwd" lines. `More Info <http://rocketmap.readthedocs.io/en/develop/first-run/multi-account.html>`_
 
 * -tut
-Complete ToS and tutorial steps on accounts if they haven't already. [More Info](http://rocketmap.readthedocs.io/en/develop/extras/multi-account.html)
+Complete ToS and tutorial steps on accounts if they haven't already. `More Info <http://rocketmap.readthedocs.io/en/develop/first-run/tutorial.html>`_
 
 * -hk "HASH_KEY_HERE"
-Key used to access the hash server. [More Info](http://rocketmap.readthedocs.io/en/develop/extras/hashing.html)
+Key used to access the hash server. `More Info <http://rocketmap.readthedocs.io/en/develop/first-run/hashing.html>`_
 
 * -cs -ck "CAPTCHA_KEY"
-Enables captcha solving and 2Captcha API key. (Manual captcha available, see [Full Info](http://rocketmap.readthedocs.io/en/develop/extras/captchas.html))
+Enables captcha solving and 2Captcha API key. (Manual captcha available, see `Full Info <http://rocketmap.readthedocs.io/en/develop/first-run/captchas.html>`_
 
-Another thing to note is that all of these flags can be set inside of a configuration file to avoid clutter on the command line. View [this page](http://rocketmap.readthedocs.io/en/develop/extras/configuration-files.html) to see how.
+Another thing to note is that all of these flags can be set inside of a configuration file to avoid clutter on the command line. View `this page <http://rocketmap.readthedocs.io/en/develop/first-run/configuration-files.html>`_ to see how. A full list of all commands are available `here <https://rocketmap.readthedocs.io/en/develop/first-run/commandline.html>`_
 
 Open your browser to http://localhost:5000 and your pokemon will begin to show up! Happy hunting!
 
