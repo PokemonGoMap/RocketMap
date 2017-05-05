@@ -30,7 +30,7 @@ Add `-wh http://my-webhook/location` argument when starting RocketMap (runserver
 python runserver.py -a ptc -u [username] -p [password] -l "Location or lat/lon" -st 15 -k [google maps api key] -wh http://localhost:9876
 ```
 
-## Public webhook server
+## RocketMap Public Webhook
 
 RM is collecting data for an up comming project. If you would like to donate your data, please fill out [this form](https://goo.gl/forms/ZCx6mQNngr0bAvRY2) and add `-wh [your webhook URL here] ` to your command line. 
 
