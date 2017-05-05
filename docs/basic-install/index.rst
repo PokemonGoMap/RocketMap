@@ -118,7 +118,7 @@ The most basic config you could use would look something like this:
 
 .. code-block:: bash
 
-python ./runserver.py -ac accounts.csv -tut -st 10 \
+ python ./runserver.py -ac accounts.csv -tut -st 10 \
  -l "a street address or lat/lng coords here" -k "MAPS_KEY_HERE" \
  -hk "HASH_KEY_HERE" -cs -ck "CAPTCHA_KEY"
 
@@ -134,7 +134,7 @@ Complete ToS and tutorial steps on accounts if they haven't already. `More Info 
 Key used to access the hash server. `More Info <http://rocketmap.readthedocs.io/en/develop/first-run/hashing.html>`_
 
 * -cs -ck "CAPTCHA_KEY"
-Enables captcha solving and 2Captcha API key. (Manual captcha available, see `Full Info <http://rocketmap.readthedocs.io/en/develop/first-run/captchas.html>`_
+Enables captcha solving and 2Captcha API key. (Manual captcha available, see `Full Info <http://rocketmap.readthedocs.io/en/develop/first-run/captchas.html>`_ )
 
 Another thing to note is that all of these flags can be set inside of a configuration file to avoid clutter on the command line. View `this page <http://rocketmap.readthedocs.io/en/develop/first-run/configuration-files.html>`_ to see how. A full list of all commands are available `here <https://rocketmap.readthedocs.io/en/develop/first-run/commandline.html>`_
 
