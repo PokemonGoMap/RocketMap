@@ -48,4 +48,4 @@ Either your key is expired, or the hashing servers are having issues.
 You are using invalid keys, or... you guessed it, the hashing servers are having issues.
 
 ## Is there a free trial key I could use?
-Yes, @seb#0609 is willing to prive you with a free key for a 48 hour period. Please DM him for more information! [click here for our discord server](https://discord.gg/rocketmap)
+Yes, @seb#0609 is willing to provide you with a free key for a 48 hour period. Please DM him for more information! [click here for our discord server](https://discord.gg/rocketmap)
