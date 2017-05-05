@@ -138,7 +138,8 @@ Enables captcha solving and 2Captcha API key. (Manual captcha available, see `Fu
 
 Another thing to note is that all of these flags can be set inside of a configuration file to avoid clutter on the command line. View `this page <http://rocketmap.readthedocs.io/en/develop/first-run/configuration-files.html>`_ to see how. A full list of all commands are available `here <https://rocketmap.readthedocs.io/en/develop/first-run/commandline.html>`_
 
-Open your browser to http://localhost:5000 and your pokemon will begin to show up! Happy hunting!
+Once your setup is running, open your browser to http://localhost:5000 and your pokemon will begin to show up! Happy hunting!
+=============================================================================================================================
 
 Updating the Application
 ************************
@@ -150,8 +151,8 @@ You can update with a few quick commands:
 .. code-block:: bash
 
   git pull
+  pip uninstall pgoapi
   pip install -r requirements.txt --upgrade (Prepend sudo -H on Linux)
-  npm install
   npm run build
 
 **IMPORTANT** Some updates will include database changes that run on first startup. These can take a while to update. You should run only **one** ``runserver.py`` command until you are certain that the DB has been updated. You will know almost immediatly that your DB needs updating by seing the following in the log/terminal screen **Detected database version 17, updating to 18** when it's done the log/terminal will continue as normal. This can take a while so be patient. Once it's done you can start all your instances like you normally would.
