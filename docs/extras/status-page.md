@@ -21,7 +21,7 @@ Remember to double-check your hashing keys before starting your instances. Inval
 
 | Name | Notes |
 |---|---|
-| `username` | This is the username to sign into the account. |
+| `username` | This is the username of the account. |
 | `success` | This is how many times RM attempted to scan with this account and got a good result. |
 | `fail` | This is how many times RM attempted to scan and encountered an exception. |
 | `no items` | This is how many times RM attempted to scan and recieved no results. |

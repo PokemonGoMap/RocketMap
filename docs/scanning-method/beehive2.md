@@ -15,7 +15,7 @@ PRO: Less Memory usage
 
 CON: Less Flexibility
 
-CON: Limited to 1 Beehive per thread 
+CON: Limited to 1 Beehive per RM instance 
 
 ![](../_static/img/Beehive2.png)
 

@@ -20,22 +20,26 @@ If you're a developer, feel free to contribute by creating some more webhooks.
 | `gym_defeated` |  Emitted every time a Gym is defeated (prestige changes) |
 | `gym_conquered` |  Emitted every time the owner of a Gym is changed |
 
+## Configuring Webhooks
+Add `-wh http://my-webhook/location` argument when starting RocketMap (runserver.py) to define the location of your webhook. You can add multiple webhook locations to a single -wh argument to define multiple webhooks.
+
+
+### To use this, RocketMap would be run with the following parameters:
+
+```
+python runserver.py -a ptc -u [username] -p [password] -l "Location or lat/lon" -st 15 -k [google maps api key] -wh http://localhost:9876
+```
+
+## Public webhook server
+
+RM is collecting data for an up comming project. If you would like to donate your data, please fill out [this form](https://goo.gl/forms/ZCx6mQNngr0bAvRY2) and add `-wh [your webhook URL here] ` to your command line. 
+
 ## PokeAlarm
 
 PokeAlarm is an example of a script you can run to accept webhook data and send it elsewhere. In PokeAlarm's usage it is publishing that information on Facebook, Twitter, Discord, etc. 
 
 [Learn More Here](https://github.com/kvangent/PokeAlarm)
 
-## Configuring Webhooks
-Add `-wh http://my-webhook/location` argument when starting RocketMap (runserver.py) to define the location of your webhook. You can add multiple webhook locations to a single -wh argument to define multiple webhooks.
-
-```
-
-To use this, RocketMap would be run with the following parameters:
-
-```
-python runserver.py -a ptc -u [username] -p [password] -l "Location or lat/lon" -st 15 -k [google maps api key] -wh http://localhost:9876
-```
 
 ## Webhook Data
 

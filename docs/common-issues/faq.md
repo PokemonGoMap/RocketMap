@@ -1,4 +1,4 @@
-# Common Questions and Answers
+﻿# Common Questions and Answers
 
 ### What do the spawn point colors mean?
 
@@ -63,7 +63,7 @@ For a rough guide you can use the formulas at the bottom of this page.
 
 ### example.py isn't working right!
 
-Seb deleted it, it was the only good thing leftin our lives too. Seb has murdered us all. 
+Seb deleted it, it was the only good thing left in our lives. Seb has murdered us all. 
 
 ### I have problems with my database because......
 
