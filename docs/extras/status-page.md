@@ -16,3 +16,11 @@ Remember to double-check your hashing keys before starting your instances. Inval
 
 ![Example Login Page](https://i.imgur.com/TEBNprW.png)
 ![Example Status Page](https://i.imgur.com/ieu5w1V.png)
+
+### Understanding the stats
+
+`remaining` - This is how many requests can be made across instances using this hashing key in the current minute.
+`maximum` - This is the most requests per minute that can be made using this hashing key. *Note:* Bosslandhas reported tracking is off, so you might get slightly more than this. 
+`peak` - The most requests per minute that has occurred since the last time your database was dropped. (If using sqlite, this will since the last time you started that instance.)
+`average` - The average requests made per minute.   
+`expiration` - When this hashing ket is set to expire. 
