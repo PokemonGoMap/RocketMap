@@ -31,7 +31,7 @@ Remember to double-check your hashing keys before starting your instances. Inval
 ![](../_static/img/hashcool.png)
 ![](../_static/img/hashexpired.png)
 
-### Understanding the stats
+### Understanding the hashing stats
 
 | Name | Notes |
 |---|---|
