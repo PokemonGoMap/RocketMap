@@ -33,7 +33,7 @@ Specify `-hk YourHashKeyHere -hk YourSecondHashKeyHere ...`.
 If you use a configuration file, use `hash-key: [YourHashKeyHere, YourSecondHashKeyHere, ...]` in the file.
 
 ## If you have multiple keys, how does RM decide which one to use? 
-RM will load balance the keys untill a key is full. For example, if you had a 150 key and 500 key both will be used equally untill the 150 is full then only the 500 key would be utilized. 
+RM will load balance the keys until a key is full. For example, if you had a 150 key and 500 key both will be used equally until the 150 is full then only the 500 key would be utilized. 
 
 ## What does HashingQuotaExceededException('429: Request limited, error: ',) mean?
 Any variant of this means you've exceeded the Requests Per Minute that your key allows. Currently, this is not being tracked accurately by Bossland, therefore, you will get more hasinging requests than wht you are paying for. 
