@@ -6,6 +6,7 @@ RocketMap gives you a live visualization map of nearby Pokémon, Pokéstops, and
 .. image:: _static/img/cover.png
     :align: center
 
+[ `Wanting to install and run RocketMap for the first time? Start here! <https://rocketmap.readthedocs.io/en/develop/basic-install/index.html>`_ ]
 [ `Official GitHub <https://github.com/RocketMap/RocketMap>`_ ] [ `Discord Support <https://discord.gg/rocketmap>`_ ] [ `GitHub Issues <https://github.com/RocketMap/RocketMap/issues>`_ ]
 
 .. toctree::
