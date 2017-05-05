@@ -1,7 +1,7 @@
 # Hashing Keys
 
 ## What are hash keys for?
-Hash keys allow your client program (in this case RocketMap) to access the latest API using the Bossland Hashing service. Accessing Niantic's servers without using a hash key is using an older API that is easier for Niantic to flag and ban. RocketMap does not support scanning wothout a hashing key.
+Hash keys allow your client program (in this case RocketMap) to access the latest API using the Bossland Hashing service. Accessing Niantic's servers without using a hash key is using an older API that is easier for Niantic to flag and ban. RocketMap does not support scanning without a hashing key at this time.
 
 ## Where do I get a hash key?
 [Check out this FAQ](https://talk.pogodev.org/d/55-api-hashing-service-f-a-q)
@@ -38,7 +38,7 @@ If you use a configuration file, use `hash-key: [YourHashKeyHere, YourSecondHash
 RM will load balance the keys until a key is full. For example, if you had a 150 rpm key and 500 rpm key, both would be used equally until the 150 rpm key is full then only the 500 rpm key would be utilized. 
 
 ## What does HashingQuotaExceededException('429: Request limited, error: ',) mean?
-Any variant of this means you've exceeded the Requests Per Minute that your key allows. Currently, this is not being tracked accurately by Bossland, therefore, you will get more hasinging requests than wht you are paying for. 
+Any variant of this means you've exceeded the Requests Per Minute that your key allows. Currently, this is not being tracked accurately by Bossland, therefore, you will get more hashing requests than what you are paying for. 
 
 ## How about [ WARNING] Exception while downloading map: HashingOfflineException('502 Server Error',)
 Hashing server is temporarily unavailable (possibly offline).
