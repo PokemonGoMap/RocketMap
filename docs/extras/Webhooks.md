@@ -43,7 +43,7 @@ PokeAlarm is an example of a script you can run to accept webhook data and send 
 
 ## Webhook Data
 
-The POST request made by RocketMap will contain the following data for each webhook type:
+The POST request made by RocketMap will contain the following data for pokemon type webhooks:
 
 ```
 {
