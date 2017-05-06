@@ -36,7 +36,7 @@ Remember to double-check your hashing keys before starting your instances. Inval
 | Name | Notes |
 |---|---|
 | `remaining` | This is how many requests can be made across instances using this hashing key in the current minute. |
-|`maximum` | This is the most requests per minute that can be made using this hashing key. *Note:* Bosslandhas reported tracking is off, so you might get slightly more than this. |
-| `peak` | The most requests per minute that has occurred since the last time your database was dropped. (If using sqlite, this will since the last time you started that instance.) |
-| `average` | The average requests made per minute. |
-| `expiration` | When this hashing ket is set to expire. | 
+|`maximum` | This is the most requests per minute that can be made using this hashing key. *Note:* Bossland has reported tracking is off, so you might get slightly more than this. |
+| `peak` | The most requests per minute that has occurred since the last time you started an instance. |
+| `usage` | The average requests made per minute. |
+| `expiration` | When this hashing key is set to expire. | 

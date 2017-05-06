@@ -1,9 +1,9 @@
 # Hashing Keys
 
-## What are hash keys for?
-Hash keys allow your client program (in this case RocketMap) to access the latest API using the Bossland Hashing service. Accessing Niantic's servers without using a hash key is using an older API that is easier for Niantic to flag and ban. RocketMap does not support scanning without a hashing key at this time.
+## What are hashing keys for?
+Hashing keys allow your client program (in this case RocketMap) to access the latest API using the Bossland Hashing service. Accessing Niantic's servers without using a hashing key is using an older API that is easier for Niantic to flag and ban. RocketMap does not support scanning without a hashing key at this time.
 
-## Where do I get a hash key?
+## Where do I get a hashing key?
 [Check out this FAQ](https://talk.pogodev.org/d/55-api-hashing-service-f-a-q)
 
 ## How many RPMs will I use?
@@ -21,16 +21,16 @@ You can get a more detailed view of how many Hashing key calls are being used by
 | Name | Notes |
 |---|---|
 | `remaining` | This is how many requests can be made across instances using this hashing key in the current minute. |
-|`maximum` | This is the most requests per minute that can be made using this hashing key. *Note:* Bosslandhas reported tracking is off, so you might get slightly more than this. |
-| `peak` | The most requests per minute that has occurred since the last time your database was dropped. (If using sqlite, this will since the last time you started that instance.) |
+|`maximum` | This is the most requests per minute that can be made using this hashing key. *Note:* Bossland has reported tracking is off, so you might get slightly more than this. |
+| `peak` | The most requests per minute that has occurred since the last time you started an instance. |
 | `average` | The average requests made per minute. |
-| `expiration` | When this hashing ket is set to expire. |
+| `expiration` | When this hashing key is set to expire. |
 
-## Where do I enter my hash key?
+## Where do I enter my hashing key?
 Use `-hk YourHashKeyHere` / `--hash-key YourHashKeyHere`.  
 If you use a configuration file, add the line `hash-key: YourHashKeyHere` to that file.
 
-## What if I have more than one hash key?
+## What if I have more than one hashing key?
 Specify `-hk YourHashKeyHere -hk YourSecondHashKeyHere ...`.  
 If you use a configuration file, use `hash-key: [YourHashKeyHere, YourSecondHashKeyHere, ...]` in the file.
 
@@ -40,11 +40,11 @@ RM will load balance the keys until a key is full. For example, if you had a 150
 ## What does HashingQuotaExceededException('429: Request limited, error: ',) mean?
 Any variant of this means you've exceeded the Requests Per Minute that your key allows. Currently, this is not being tracked accurately by Bossland, therefore, you will get more hashing requests than what you are paying for. 
 
-## How about [ WARNING] Exception while downloading map: HashingOfflineException('502 Server Error',)
-Hashing server is temporarily unavailable (possibly offline).
+## How about [ WARNING] Hashing server is unreachable, it might be offline.
+Hashing server is temporarily unavailable (possibly offline). This could be due to maintenance or server failure. Please checkout discord for more information is you start getting this error. 
 
-## And this one? BadHashRequestException('400: Bad request, error: Unauthorized',)
-Either your key is expired, or the hashing servers are having issues.
+## And this one? Invalid or expired hashing key: %s. + api._hash_server_token
+Either your key is expired, the hashing servers are having issues, or you have mistyped your key. 
 
 ## This one? TempHashingBanException('Your IP was temporarily banned for sending too many requests with invalid keys',)
 You are using invalid keys, or... you guessed it, the hashing servers are having issues.
