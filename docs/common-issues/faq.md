@@ -6,7 +6,7 @@
 * A **light blue** dot represents a spawn point that will spawn in 5 minutes. **Light blue** changes to **dark blue** and finally into **purple** just before spawn time.
 * A **green dot** represents a fresh spawn. This will transition to **yellow**, through **orange** and finally **red** (like a stop light) as it is about to despawn.
 
-### Critical Error "Missing sprite files"
+### All I see are numbers? Where are the pokemon?
 
 Please consult #faq on the [RocketMap Discord](https://discord.gg/rocketmap).
 
@@ -50,11 +50,11 @@ It is a lot simplier to use a [config file](http://rocketmap.readthedocs.io/en/d
 
 ### Can I scan for free or do I need to pay for a hash key?
 
-Using a [hash key](https://hashing.pogodev.org/) uses the latest api and reduces captchas or removes them almost completely using a level 2 account or above. [More Informatiion about Hashing Keys!](https://rocketmap.readthedocs.io/en/develop/first-run/hashing.html)
+Using a [hash key](https://hashing.pogodev.org/) uses the latest api and reduces captchas or removes them almost completely using a level 2 account or above. [More Informatiion about Hashing Keys!](https://rocketmap.readthedocs.io/en/develop/first-run/hashing.html) To protect your accounts, scanning without a hashing key is no longer supported in RM. 
 
 ### Is there anything I can do to lower captchas?
 
-Yes, you can level your workers to level two (spin a single pokéstop manually), this reduces captchas a lot. You may also consider scanning a smaller area, using less workers or encountering less pokemon for IV.
+Yes, you can run with `-tut` to level your workers to level two (spinning a single pokéstop), this reduces captchas a lot. You may also consider scanning a smaller area, using less workers or encountering less pokemon for IV.
 
 ### How many workers do I need?
 
