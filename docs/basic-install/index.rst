@@ -17,6 +17,7 @@ Credentials
 
  * You'll need an active Pokemon Trainer Club account or Google account
  * Get a :doc:`google-maps`
+ * Get a `Hashing Key <https://rocketmap.readthedocs.io/en/develop/first-run/hashing.html>`_
 
 Downloading the Application
 ***************************
