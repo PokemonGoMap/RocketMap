@@ -26,7 +26,7 @@ You can get a more detailed view of how many Hashing key calls are being used by
 | `average` | The average requests made per minute. |
 | `expiration` | When this hashing key is set to expire. |
 
-##Common Questions
+## Common Questions
 
 ### Where do I enter my hashing key?
 Use `-hk YourHashKeyHere` / `--hash-key YourHashKeyHere`.  
