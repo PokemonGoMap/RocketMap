@@ -4,11 +4,18 @@
 var rawDataIsLoading = false
 var statusPagePassword = false
 var groupByWorker = true
+var showHashTable = true
+var showWorkersTable = true
+var hashkeys = {}
 
 // Raw data updating
 var minUpdateDelay = 1000 // Minimum delay between updates (in ms).
 var lastRawUpdateTime = new Date()
 
+function getFormattedDate(unFormattedDate) { // eslintrc no-undef.
+    // Use YYYY-MM-DD HH:MM:SS formatted dates to enable simple sorting.
+    return moment(unFormattedDate).format('YYYY-MM-DD HH:mm:ss')
+}
 
 /*
  * Workers
@@ -33,6 +40,7 @@ function processMainWorker(i, worker) {
         addMainWorker(hash)
     }
 
+
     $('#name_' + hash).html(worker['worker_name'])
     $('#method_' + hash).html('(' + worker['method'] + ')')
     $('#message_' + hash).html(worker['message'].replace(/\n/g, '<br>'))
@@ -55,8 +63,22 @@ function addWorker(mainWorkerHash, workerHash) {
      <div id="row_${workerHash}" class="status_row">` + columns + `
      </div>
    `
-
     $(row).appendTo('#table_' + mainWorkerHash)
+}
+
+function addHashtable(mainKeyHash, keyHash) {
+    var hashrow = `
+    <div id="hashrow_${keyHash}" class="status_row">
+      <div id="key_${keyHash}" class="status_cell"/>
+      <div id="maximum_${keyHash}" class="status_cell"/>
+      <div id="remaining_${keyHash}" class="status_cell"/>
+      <div id="usage_${keyHash}" class="status_cell"/>
+      <div id="peak_${keyHash}" class="status_cell"/>
+      <div id="expires_${keyHash}" class="status_cell"/>
+      <div id="last_updated_${keyHash}" class="status_cell"/>
+    </div>
+    `
+    $(hashrow).appendTo('#hashtable_' + mainKeyHash)
 }
 
 function processWorker(i, worker) {
@@ -78,15 +100,7 @@ function processWorker(i, worker) {
         addWorker(mainWorkerHash, hash)
     }
 
-    var lastModified = new Date(worker['last_modified'])
-
-    // Use YYYY-MM-DD HH:MM:SS formatted dates to enable simple sorting
-    lastModified = lastModified.getFullYear() + '-' +
-        ('0' + (lastModified.getMonth() + 1)).slice(-2) + '-' +
-        ('0' + lastModified.getDate()).slice(-2) + ' ' +
-        ('0' + lastModified.getHours()).slice(-2) + ':' +
-        ('0' + lastModified.getMinutes()).slice(-2) + ':' +
-        ('0' + lastModified.getSeconds()).slice(-2)
+    var lastModified = getFormattedDate(new Date(worker['last_modified']))
 
     $('#username_' + hash).html(worker['username'])
     $('#success_' + hash).html(worker['success'])
@@ -98,20 +112,121 @@ function processWorker(i, worker) {
     $('#message_' + hash).html(worker['message'])
 }
 
+function processHashKeys(i, hashkey) {
+    var key = hashkey['key']
+    var keyHash = hashFnv32a(key, true)
+    if ($('#hashtable_global').length === 0) {
+        createHashTable('global')
+    }
+
+    if ($('#hashrow_' + keyHash).length === 0) {
+        addHashtable('global', keyHash)
+        var keyValues = {
+            samples: [],
+            nextSampleIndex: 0
+        }
+
+        hashkeys[key] = keyValues
+    }
+
+    // Calculate average value for Hash keys.
+    var writeIndex = hashkeys[key].nextSampleIndex % 60
+    hashkeys[key].nextSampleIndex += 1
+    hashkeys[key].samples[writeIndex] = hashkey['maximum'] - hashkey['remaining']
+    var numSamples = hashkeys[key].samples.length
+    var sumSamples = 0
+    for (var j = 0; j < numSamples; j++) {
+        sumSamples += hashkeys[key].samples[j]
+    }
+
+    var usage = sumSamples / Math.max(numSamples, 1) // Avoid division by zero.
+
+    var lastUpdated = getFormattedDate(new Date(hashkey['last_updated']))
+    var expires = getFormattedDate(new Date(hashkey['expires']))
+    if (!moment(expires).unix()) {
+        expires = 'Unknown/Invalid'
+    } else if (moment().isSameOrAfter(moment(expires))) {
+        expires = 'Expired'
+    }
+
+    $('#key_' + keyHash).html(key)
+    $('#maximum_' + keyHash).html(hashkey['maximum'])
+    $('#remaining_' + keyHash).html(hashkey['remaining'])
+    $('#usage_' + keyHash).html(usage.toFixed(2))
+    $('#peak_' + keyHash).html(hashkey['peak'])
+    $('#last_updated_' + keyHash).html(lastUpdated)
+    $('#expires_' + keyHash).html(expires)
+}
+
 function parseResult(result) {
     if (hidecols !== 0) {
         hidecols.sort(function (a, b) { return b - a })      /* sort high to low */
     }
-    if (groupByWorker) {
+    if (groupByWorker && showWorkersTable) {
         $.each(result.main_workers, processMainWorker)
     }
-    $.each(result.workers, processWorker)
+    if (showWorkersTable) {
+        $.each(result.workers, processWorker)
+    }
+    if (showHashTable) {
+        $.each(result.hashkeys, processHashKeys)
+    }
 }
-
-
 /*
  * Tables
  */
+function createHashTable(mainKeyHash) {
+    var hashtable = `
+    <div class="status_table" id="hashtable_${mainKeyHash}">
+     <div class="status_row header">
+     <div class="status_cell">
+       Hash Keys
+      </div>
+      <div class="status_cell">
+        Maximum RPM
+      </div>
+      <div class="status_cell">
+        RPM Left
+      </div>
+      <div class="status_cell">
+        Usage
+        </div>
+      <div class="status_cell">
+        Peak
+        </div>
+       <div class="status_cell">
+         Expires At
+       </div>
+       <div class="status_cell">
+         Last Modified
+       </div>
+     </div>
+   </div>`
+
+    hashtable = $(hashtable)
+    $('#status_container').prepend(hashtable)
+    $(hashtable).find('.status_row.header .status_cell').click(sortHashTable)
+}
+
+function sortHashTable() {
+    var hashtable = $(this).parents('.status_table').first()
+    var comparator = compareHashTable($(this).index())
+    var hashrow = hashtable.find('.status_row:gt(0)').toArray()
+    // Sort the array.
+    hashrow.sort(comparator)
+    this.asc = !this.asc
+    if (!this.asc) {
+        hashrow = hashrow.reverse()
+    }
+    for (var i = 0; i < hashrow.length; i++) {
+        hashtable.append(hashrow[i])
+    }
+}
+
+function getHashtableValue(hashrow, index) {
+    return $(hashrow).children('.status_cell').eq(index).html()
+}
+
 function addTable(hash) {
     var columns = `
          <div class="status_cell">
@@ -145,8 +260,7 @@ function addTable(hash) {
      <div class="status_table" id="table_${hash}">
        <div class="status_row header">` + columns + `
        </div>
-     </div>
-   `
+     </div>`
 
     table = $(table)
     table.appendTo('#status_container')
@@ -154,8 +268,11 @@ function addTable(hash) {
 }
 
 function tableSort() {
-    var table = $(this).parents('.status_table').eq(0)
-    var rows = table.find('.status_row:gt(0)').toArray().sort(compare($(this).index()))
+    var table = $(this).parents('.status_table').first()
+    var comparator = compare($(this).index())
+    var rows = table.find('.status_row:gt(0)').toArray()
+    // Sort the array.
+    rows.sort(comparator)
     this.asc = !this.asc
     if (!this.asc) {
         rows = rows.reverse()
@@ -182,6 +299,7 @@ function hideColumns(message, colsToHide, delimiter) {
     }
     return msgs.join(delimiter)
 }
+
 /*
  * Helpers
  */
@@ -193,9 +311,16 @@ function compare(index) {
     }
 }
 
+function compareHashTable(index) {
+    return function (a, b) {
+        var valA = getHashtableValue(a, index)
+        var valB = getHashtableValue(b, index)
+        return $.isNumeric(valA) && $.isNumeric(valB) ? valA - valB : valA.localeCompare(valB)
+    }
+}
+
 function updateStatus() {
     lastRawUpdateTime = new Date()
-
     loadRawData().done(function (result) {
         // Parse result on success.
         parseResult(result)
@@ -291,9 +416,19 @@ $(document).ready(function () {
 
         $('#status_container .status_table').remove()
         $('#status_container .worker').remove()
+    })
 
-        if (statusPagePassword) {
-            updateStatus()
-        }
+    $('#hashkey-switch').change(function () {
+        showHashTable = this.checked
+
+        $('#status_container .status_table').remove()
+        $('#status_container .worker').remove()
+    })
+
+    $('#showworker-switch').change(function () {
+        showWorkersTable = this.checked
+
+        $('#status_container .status_table').remove()
+        $('#status_container .worker').remove()
     })
 })
