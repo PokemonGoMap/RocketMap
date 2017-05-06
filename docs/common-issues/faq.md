@@ -48,9 +48,9 @@ There is a list [here](http://rocketmap.readthedocs.io/en/develop/first-run/comm
 
 It is a lot simplier to use a [config file](http://rocketmap.readthedocs.io/en/develop/first-run/configuration-files.html)
 
-### Can I scan for free or do I need to pay for a hash key?
+### Can I scan for free or do I need to pay for a hashing  key?
 
-Using a [hash key](https://hashing.pogodev.org/) uses the latest api and reduces captchas or removes them almost completely using a level 2 account or above. [More Informatiion about Hashing Keys!](https://rocketmap.readthedocs.io/en/develop/first-run/hashing.html) To protect your accounts, scanning without a hashing key is no longer supported in RM. 
+Using a [hashing  key](https://hashing.pogodev.org/) uses the latest api and reduces captchas or removes them almost completely using a level 2 account or above. [More Informatiion about Hashing Keys!](https://rocketmap.readthedocs.io/en/develop/first-run/hashing.html) To protect your accounts, scanning without a hashing key is no longer supported in RM. 
 
 ### Is there anything I can do to lower captchas?
 
