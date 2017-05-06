@@ -26,28 +26,30 @@ You can get a more detailed view of how many Hashing key calls are being used by
 | `average` | The average requests made per minute. |
 | `expiration` | When this hashing key is set to expire. |
 
-## Where do I enter my hashing key?
+##Common Questions
+
+### Where do I enter my hashing key?
 Use `-hk YourHashKeyHere` / `--hash-key YourHashKeyHere`.  
 If you use a configuration file, add the line `hash-key: YourHashKeyHere` to that file.
 
-## What if I have more than one hashing key?
+### What if I have more than one hashing key?
 Specify `-hk YourHashKeyHere -hk YourSecondHashKeyHere ...`.  
 If you use a configuration file, use `hash-key: [YourHashKeyHere, YourSecondHashKeyHere, ...]` in the file.
 
-## If you have multiple keys, how does RM decide which one to use? 
+### If you have multiple keys, how does RM decide which one to use? 
 RM will load balance the keys until a key is full. For example, if you had a 150 rpm key and 500 rpm key, both would be used equally until the 150 rpm key is full then only the 500 rpm key would be utilized. 
 
-## What does `HashingQuotaExceededException('429: Request limited, error: ',)` mean?
+### What does `HashingQuotaExceededException('429: Request limited, error: ',)` mean?
 Any variant of this means you've exceeded the Requests Per Minute that your key allows. Currently, this is not being tracked accurately by Bossland, therefore, you will get more hashing requests than what you are paying for. 
 
-## How about `Hashing server is unreachable, it might be offline.`
+### How about `Hashing server is unreachable, it might be offline.`
 Hashing server is temporarily unavailable (possibly offline). This could be due to maintenance or server failure. Please checkout discord for more information is you start getting this error. 
 
-## And this one? `Invalid or expired hashing key: %s. + api._hash_server_token`
+### And this one? `Invalid or expired hashing key: %s. + api._hash_server_token`
 Either your key is expired, the hashing servers are having issues, or you have mistyped your key. 
 
-## This one? `TempHashingBanException('Your IP was temporarily banned for sending too many requests with invalid keys',)`
+### This one? `TempHashingBanException('Your IP was temporarily banned for sending too many requests with invalid keys',)`
 You are using invalid keys, or... you guessed it, the hashing servers are having issues.
 
-## Is there a free trial key I could use?
+### Is there a free trial key I could use?
 Yes, @seb#0609 is willing to provide you with a free key for a 48 hour period. Please DM him for more information! [click here for our discord server](https://discord.gg/rocketmap)
