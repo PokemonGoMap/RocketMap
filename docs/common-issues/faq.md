@@ -37,8 +37,8 @@ Seeing 1-minute timers during initial scan is perfectly normal.
 
 ### What's the simplest command to start the map scanning?
 
-./runserver.py -speed -l LOCATION -u USER -p PASS -k GOOGLEKEY
-You must replace the values for LOCATION/USER/PASS/GOOGLEKEY with your information.
+./runserver.py -speed -l LOCATION -a GOOGLE/PTC -u USER -p PASS -k GOOGLEKEY -hk HASHINGHEY
+You must replace the values for GOOGLE,PTC/LOCATION/USER/PASS/GOOGLEKEY/HASHINGKEY with your information.
 
 ### Nice, what other stuff can I use in the command line?
 
