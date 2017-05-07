@@ -101,7 +101,7 @@ def check_proxies(args):
 
     # Load proxies from the file. Override args.proxy if specified.
     if args.proxy_file is not None:
-        log.info('Loading proxies from file.')
+        log.info('no scrubs')
 
         with open(args.proxy_file) as f:
             for line in f:
@@ -110,7 +110,7 @@ def check_proxies(args):
                     continue
                 source_proxies.append(line.strip())
 
-        log.info('Loaded %d proxies.', len(source_proxies))
+        log.info('no scrubs')
 
         if len(source_proxies) == 0:
             log.error('Proxy file was configured but ' +
@@ -121,7 +121,7 @@ def check_proxies(args):
 
     # No proxies - no cookies.
     if (source_proxies is None) or (len(source_proxies) == 0):
-        log.info('No proxies are configured.')
+        log.info('no scrubs')
         return None
 
     if args.proxy_skip_check:
@@ -130,9 +130,9 @@ def check_proxies(args):
     proxy_queue = Queue()
     total_proxies = len(source_proxies)
 
-    log.info('Checking %d proxies...', total_proxies)
+    log.info('no scrubs')
     if (total_proxies > 10):
-        log.info('Enable "-v or -vv" to see checking details.')
+        log.info('no scrubs')
 
     proxies = []
 
@@ -161,12 +161,7 @@ def check_proxies(args):
                        check_results[check_result_wrong] +
                        check_results[check_result_exception] +
                        check_results[check_result_empty])
-        log.info('Proxy check completed. Working: %d, banned: %d, ' +
-                 'timeout: %d, other fails: %d of total %d configured.',
-                 working_proxies, check_results[check_result_banned],
-                 check_results[check_result_timeout],
-                 other_fails,
-                 total_proxies)
+        log.info('no scrubs')
         return proxies
 
 
@@ -186,7 +181,7 @@ def proxies_refresher(args):
                 continue
 
             args.proxy = proxies
-            log.info('Regular proxy refresh complete.')
+            log.info('no scrubs')
         except Exception as e:
             log.exception('Exception while refresh proxies: %s', repr(e))
 

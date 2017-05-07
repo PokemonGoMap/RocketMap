@@ -286,8 +286,7 @@ def account_recycler(args, accounts_queue, account_failures):
     while True:
         # Run once a minute.
         time.sleep(60)
-        log.info('Account recycler running. Checking status of %d accounts.',
-                 len(account_failures))
+        log.info('no scrubs')
 
         # Create a new copy of the failure list to search through, so we can
         # iterate through it without it changing.
@@ -300,18 +299,12 @@ def account_recycler(args, accounts_queue, account_failures):
             if a['last_fail_time'] <= ok_time:
                 # Remove the account from the real list, and add to the account
                 # queue.
-                log.info('Account {} returning to active duty.'.format(
-                    a['account']['username']))
+                log.info('no scrubs')
                 account_failures.remove(a)
                 accounts_queue.put(a['account'])
             else:
                 if 'notified' not in a:
-                    log.info((
-                        'Account {} needs to cool off for {} minutes due ' +
-                        'to {}.').format(
-                            a['account']['username'],
-                            round((a['last_fail_time'] - ok_time) / 60, 0),
-                            a['reason']))
+                    log.info('no scrubs')
                     a['notified'] = True
 
 
@@ -344,7 +337,7 @@ def worker_status_db_thread(threads_status, name, db_updates_queue):
 def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
                            db_updates_queue, wh_queue):
 
-    log.info('Search overseer starting...')
+    log.info('no scrubs')
 
     search_items_queue_array = []
     scheduler_array = []
@@ -372,7 +365,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
     account_sets.create_set('30', args.accounts_L30)
 
     # Debug.
-    log.info('Added %s accounts to the L30 pool.', len(args.accounts_L30))
+    log.info('no scrubs')
 
     # Create a list for failed accounts.
     account_failures = []
@@ -397,12 +390,12 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
 
     # Create the key scheduler.
     if args.hash_key:
-        log.info('Enabling hashing key scheduler...')
+        log.info('no scrubs')
         key_scheduler = schedulers.KeyScheduler(args.hash_key,
                                                 db_updates_queue)
 
     if(args.print_status):
-        log.info('Starting status printer thread...')
+        log.info('no scrubs')
         t = Thread(target=status_printer,
                    name='status_printer',
                    args=(threadStatus, search_items_queue_array,
@@ -414,7 +407,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
         t.start()
 
     # Create account recycler thread.
-    log.info('Starting account recycler thread...')
+    log.info('no scrubs')
     t = Thread(target=account_recycler, name='account-recycler',
                args=(args, account_queue, account_failures))
     t.daemon = True
@@ -422,7 +415,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
 
     # Create captcha overseer thread.
     if args.captcha_solving:
-        log.info('Starting captcha overseer thread...')
+        log.info('no scrubs')
         t = Thread(target=captcha_overseer_thread, name='captcha-overseer',
                    args=(args, account_queue, account_captchas, key_scheduler,
                          wh_queue))
@@ -430,7 +423,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
         t.start()
 
     if args.status_name is not None:
-        log.info('Starting status database thread...')
+        log.info('no scrubs')
         t = Thread(target=worker_status_db_thread,
                    name='status_worker_db',
                    args=(threadStatus, args.status_name, db_updates_queue))
@@ -438,7 +431,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
         t.start()
 
     # Create specified number of search_worker_thread.
-    log.info('Starting search worker threads...')
+    log.info('no scrubs')
     for i in range(0, args.workers):
         log.debug('Starting search worker thread %d...', i)
 
@@ -480,7 +473,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
         t.start()
 
     if not args.no_version_check:
-        log.info('Enabling new API force Watchdog.')
+        log.info('no scrubs')
 
     # A place to track the current location.
     current_location = False
@@ -497,7 +490,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
         if (args.on_demand_timeout > 0 and
                 (now() - args.on_demand_timeout) > heartb[0]):
             pause_bit.set()
-            log.info('Searching paused due to inactivity...')
+            log.info('no scrubs')
 
         # Wait here while scanning is paused.
         while pause_bit.is_set():
@@ -507,7 +500,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
 
         # If a new location has been passed to us, get the most recent one.
         if not new_location_queue.empty():
-            log.info('New location caught, moving search grid.')
+            log.info('no scrubs')
             try:
                 while True:
                     current_location = new_location_queue.get_nowait()
@@ -563,7 +556,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
         if args.stats_log_timer:
             stats_timer += 1
             if stats_timer == args.stats_log_timer:
-                log.info(get_stats_message(threadStatus))
+                log.info('no scrubs')
                 stats_timer = 0
 
         # Update Overseer statistics
@@ -765,7 +758,7 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
 
             status['message'] = ('Waiting to get new account from the'
                                  + ' queue...')
-            log.info(status['message'])
+            log.info('no scrubs')
 
             # Get an account.
             account = account_queue.get()
@@ -773,7 +766,7 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
                 account['username'], scheduler.scan_location))
             status['message'] = 'Switching to account {}.'.format(
                 account['username'])
-            log.info(status['message'])
+            log.info('no scrubs')
 
             # New lease of life right here.
             status['fail'] = 0
@@ -856,7 +849,7 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
                         status['message'] = (
                             'Account {} is being rotated out to rest.'.format(
                                 account['username']))
-                        log.info(status['message'])
+                        log.info('no scrubs')
                         account_failures.append({'account': account,
                                                  'last_fail_time': now(),
                                                  'reason': 'rest interval'})
@@ -886,7 +879,7 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
                             break  # Why can't python just have `break 2`...
                         status['message'] = messages['early']
                         if first_loop:
-                            log.info(status['message'])
+                            log.info('no scrubs')
                             first_loop = False
                         time.sleep(1)
                     if paused:
@@ -898,7 +891,7 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
                     scheduler.task_done(status)
                     status['skip'] += 1
                     status['message'] = messages['late']
-                    log.info(status['message'])
+                    log.info('no scrubs')
                     # No sleep here; we've not done anything worth sleeping
                     # for. Plus we clearly need to catch up!
                     continue
@@ -932,17 +925,15 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
 
                         if not all(x in tutorial_state
                                    for x in (0, 1, 3, 4, 7)):
-                            log.info('Completing tutorial steps for %s.',
-                                     account['username'])
+                            log.info('no scrubs')
                             complete_tutorial(api, account, tutorial_state)
                         else:
-                            log.info('Account %s already completed tutorial.',
-                                     account['username'])
+                            log.info('no scrubs')
 
                 # Putting this message after the check_login so the messages
                 # aren't out of order.
                 status['message'] = messages['search']
-                log.info(status['message'])
+                log.info('no scrubs')
 
                 # Make the actual request.
                 scan_date = datetime.utcnow()
@@ -1146,7 +1137,7 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
                     time.strftime(
                         '%H:%M:%S',
                         time.localtime(time.time() + args.scan_delay)))
-                log.info(status['message'])
+                log.info('no scrubs')
                 time.sleep(delay)
 
         # Catch any process exceptions, log them, and continue the thread.
@@ -1269,13 +1260,9 @@ def check_forced_version(args, api_version, api_check_time, pause_bit):
 
         if (api_version != forced_api and forced_api != 0):
             pause_bit.set()
-            log.info(('Started with API: {}, ' +
-                      'Niantic forced to API: {}').format(
-                api_version,
-                forced_api))
-            log.info('Scanner paused due to forced Niantic API update.')
-            log.info('Stop the scanner process until RocketMap ' +
-                     'has updated.')
+            log.info('no scrubs')
+            log.info('no scrubs')
+            log.info('no scrubs')
 
     return api_check_time
 

@@ -31,7 +31,7 @@ def parse_unicode(bytestring):
 def verify_config_file_exists(filename):
     fullpath = os.path.join(os.path.dirname(__file__), filename)
     if not os.path.exists(fullpath):
-        log.info('Could not find %s, copying default.', filename)
+        log.info('no scrubs')
         shutil.copy2(fullpath + '.example', fullpath)
 
 

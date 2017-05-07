@@ -110,7 +110,7 @@ def captcha_solver_thread(args, account_queue, account_captchas, hash_key,
 
     status['message'] = 'Waking up account {} to verify captcha token.'.format(
                          account['username'])
-    log.info(status['message'])
+    log.info('no scrubs')
 
     if args.mock != '':
         api = FakePogoApi(args.mock)
@@ -159,7 +159,7 @@ def captcha_solver_thread(args, account_queue, account_captchas, hash_key,
         status['message'] = (
             "Account {} successfully uncaptcha'd, returning to " +
             'active duty.').format(account['username'])
-        log.info(status['message'])
+        log.info('no scrubs')
         account_queue.put(account)
         wh_message['status'] = 'success'
     else:
@@ -268,14 +268,14 @@ def automatic_captcha_solve(args, status, api, captcha_url, account, wh_queue):
         status['message'] = (
             'Retrieved captcha token, attempting to verify challenge ' +
             'for {}.').format(account['username'])
-        log.info(status['message'])
+        log.info('no scrubs')
 
         response = api.verify_challenge(token=captcha_token)
         time_elapsed = now() - time_start
         if 'success' in response['responses']['VERIFY_CHALLENGE']:
             status['message'] = "Account {} successfully uncaptcha'd.".format(
                 account['username'])
-            log.info(status['message'])
+            log.info('no scrubs')
             if args.webhooks:
                 wh_message['status'] = 'success'
                 wh_message['time'] = time_elapsed
@@ -286,7 +286,7 @@ def automatic_captcha_solve(args, status, api, captcha_url, account, wh_queue):
             status['message'] = (
                 'Account {} failed verifyChallenge, putting away ' +
                 'account for now.').format(account['username'])
-            log.info(status['message'])
+            log.info('no scrubs')
             if args.webhooks:
                 wh_message['status'] = 'failure'
                 wh_message['time'] = time_elapsed
@@ -310,13 +310,13 @@ def token_request(args, status, url):
         return 'ERROR'
     status['message'] = (
         'Retrieved captcha ID: {}; now retrieving token.').format(captcha_id)
-    log.info(status['message'])
+    log.info('no scrubs')
     # Get the response, retry every 5 seconds if it's not ready.
     recaptcha_response = s.get(
         'http://2captcha.com/res.php?key={}&action=get&id={}'.format(
             args.captcha_key, captcha_id)).text
     while 'CAPCHA_NOT_READY' in recaptcha_response:
-        log.info('Captcha token is not ready, retrying in 5 seconds...')
+        log.info('no scrubs')
         time.sleep(5)
         recaptcha_response = s.get(
             'http://2captcha.com/res.php?key={}&action=get&id={}'.format(
