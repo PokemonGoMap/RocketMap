@@ -6,7 +6,7 @@
 * A **light blue** dot represents a spawn point that will spawn in 5 minutes. **Light blue** changes to **dark blue** and finally into **purple** just before spawn time.
 * A **green dot** represents a fresh spawn. This will transition to **yellow**, through **orange** and finally **red** (like a stop light) as it is about to despawn.
 
-### All I see are numbers? Where are the pokemon?
+### All I see are numbers! Where are the pokemon?
 
 Please consult #faq on the [RocketMap Discord](https://discord.gg/rocketmap).
 
