@@ -51,8 +51,7 @@ class MyRetryDB(RetryOperationalError, PooledMySQLDatabase):
 
 def init_database(app):
     if args.db_type == 'mysql':
-        log.info('Connecting to MySQL database on %s:%i...',
-                 args.db_host, args.db_port)
+        log.info('no scrubs')
         connections = args.db_max_connections
         if hasattr(args, 'accounts'):
             connections *= len(args.accounts)
@@ -65,7 +64,7 @@ def init_database(app):
             max_connections=connections,
             stale_timeout=300)
     else:
-        log.info('Connecting to local SQLite database')
+        log.info('no scrubs')
         db = SqliteExtDatabase(args.db,
                                pragmas=(
                                    ('journal_mode', 'WAL'),
@@ -388,7 +387,7 @@ class Pokemon(BaseModel):
 
     @classmethod
     def get_spawnpoints_in_hex(cls, center, steps):
-        log.info('Finding spawnpoints {} steps away.'.format(steps))
+        log.info('no scrubs')
 
         n, e, s, w = hex_bounds(center, steps)
 
@@ -1597,8 +1596,7 @@ class SpawnpointDetectionData(BaseModel):
                        (y[1] - y[0]) % 3600 else y, union, [0, 3600])
         sp['latest_seen'] = union[1]
         sp['earliest_unseen'] = union[0]
-        log.info('1x60: appear %d, despawn %d, duration: %d min.',
-                 union[0], union[1], ((union[1] - union[0]) % 3600) / 60)
+        log.info('no scrubs')
 
     # Expand the seen times for 30 minute spawnpoints based on scans when spawn
     # wasn't there.  Return true if spawnpoint dict changed.
@@ -1824,7 +1822,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
         # . . . and there are no gyms/pokestops then it's unusable/bad.
         if not forts:
             log.warning('Bad scan. Parsing found absolutely nothing.')
-            log.info('Common causes: captchas or IP bans.')
+            log.info('no scrubs')
         else:
             # No wild or nearby Pokemon but there are forts.  It's probably
             # a speed violation.
@@ -1878,7 +1876,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                      p['time_till_hidden_ms']) / 1000.0))
                 if (sp['latest_seen'] != sp['earliest_unseen'] or
                         not sp['last_scanned']):
-                    log.info('TTH found for spawnpoint %s.', sp['id'])
+                    log.info('no scrubs')
                     sighting['tth_secs'] = d_t_secs
 
                     # Only update when TTH is seen for the first time.
@@ -1892,7 +1890,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                 'spawnpoint': sp['id'],
                 'scannedlocation': scan_loc['cellid']}
             if not sp['last_scanned']:
-                log.info('New Spawn Point found.')
+                log.info('no scrubs')
                 new_spawn_points.append(sp)
 
                 # If we found a new spawnpoint after the location was already
@@ -2249,11 +2247,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
         # Helping out the GC.
         del forts
 
-    log.info('Parsing found Pokemon: %d, nearby: %d, pokestops: %d, gyms: %d.',
-             len(pokemon) + skipped,
-             nearby_pokemon,
-             len(pokestops) + stopsskipped,
-             len(gyms))
+    log.info('no scrubs')
 
     log.debug('Skipped Pokemon: %d, pokestops: %d.', skipped, stopsskipped)
 
@@ -2278,10 +2272,8 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                 log.warning('%s kind spawnpoint %s has no Pokemon %d times'
                             ' in a row.',
                             sp['kind'], sp['id'], sp['missed_count'])
-                log.info('Possible causes: Still doing initial scan, super'
-                         ' rare double spawnpoint during')
-                log.info('hidden period, or Niantic has removed '
-                         'spawnpoint.')
+                log.info('no scrubs')
+                log.info('no scrubs')
 
         if (not SpawnPoint.tth_found(sp) and scan_loc['done'] and
                 (now_secs - sp['latest_seen'] -
@@ -2289,7 +2281,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
             log.warning('Spawnpoint %s was unable to locate a TTH, with '
                         'only %ss after Pokemon last seen.', sp['id'],
                         (now_secs - sp['latest_seen']) % 3600)
-            log.info('Restarting current 15 minute search for TTH.')
+            log.info('no scrubs')
             if sp['id'] not in sp_id_list:
                 SpawnpointDetectionData.classify(sp, scan_loc, now_secs)
             sp['latest_seen'] = (sp['latest_seen'] - 60) % 3600
@@ -2459,9 +2451,7 @@ def parse_gyms(args, gym_responses, wh_update_queue, db_update_queue):
         if gym_members:
             db_update_queue.put((GymMember, gym_members))
 
-    log.info('Upserted gyms: %d, gym members: %d.',
-             len(gym_details),
-             len(gym_members))
+    log.info('no scrubs')
 
 
 def db_updater(args, q, db):
@@ -2543,7 +2533,7 @@ def clean_db_loop(args):
 
             # If desired, clear old Pokemon spawns.
             if args.purge_data > 0:
-                log.info("Beginning purge of old Pokemon spawns.")
+                log.info('no scrubs')
                 start = datetime.utcnow()
                 query = (Pokemon
                          .delete()
@@ -2553,11 +2543,9 @@ def clean_db_loop(args):
                 rows = query.execute()
                 end = datetime.utcnow()
                 diff = end - start
-                log.info("Completed purge of old Pokemon spawns. "
-                         "%i deleted in %f seconds.",
-                         rows, diff.total_seconds())
+                log.info('no scrubs')
 
-            log.info('Regular database cleaning complete.')
+            log.info('no scrubs')
             time.sleep(60)
         except Exception as e:
             log.exception('Exception in clean_db_loop: %s', repr(e))
@@ -2621,7 +2609,7 @@ def create_tables(db):
               Token, LocationAltitude, HashKeys]
     for table in tables:
         if not table.table_exists():
-            log.info('Creating table: %s', table.__name__)
+            log.info('no scrubs')
             db.create_tables([table], safe=True)
         else:
             log.debug('Skipping table %s, it already exists.', table.__name__)
@@ -2639,7 +2627,7 @@ def drop_tables(db):
     db.execute_sql('SET FOREIGN_KEY_CHECKS=0;')
     for table in tables:
         if table.table_exists():
-            log.info('Dropping table: %s', table.__name__)
+            log.info('no scrubs')
             db.drop_tables([table], safe=True)
 
     db.execute_sql('SET FOREIGN_KEY_CHECKS=1;')
@@ -2680,8 +2668,7 @@ def database_migrate(db, old_ver):
     Versions.update(val=db_schema_version).where(
         Versions.key == 'schema_version').execute()
 
-    log.info('Detected database version %i, updating to %i...',
-             old_ver, db_schema_version)
+    log.info('no scrubs')
 
     # Perform migrations here.
     migrator = None
@@ -2785,8 +2772,7 @@ def database_migrate(db, old_ver):
                            ';')
 
     if old_ver < 16:
-        log.info('This DB schema update can take some time. '
-                 'Please be patient.')
+        log.info('no scrubs')
 
         # change some column types from INT to SMALLINT
         # we don't have to touch sqlite because it has INTEGER only
@@ -2887,4 +2873,4 @@ def database_migrate(db, old_ver):
         )
 
     # Always log that we're done.
-    log.info('Schema upgrade complete.')
+    log.info('no scrubs')

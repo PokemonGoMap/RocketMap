@@ -193,17 +193,16 @@ def main():
             log.error('Unable to retrieve altitude from Google APIs' +
                       'setting to 0')
 
-    log.info('Parsed location is: %.4f/%.4f/%.4f (lat/lng/alt)',
-             position[0], position[1], position[2])
+    log.info('no scrubs')
 
     if args.no_pokemon:
-        log.info('Parsing of Pokemon disabled.')
+        log.info('no scrubs')
     if args.no_pokestops:
-        log.info('Parsing of Pokestops disabled.')
+        log.info('no scrubs')
     if args.no_gyms:
-        log.info('Parsing of Gyms disabled.')
+        log.info('no scrubs')
     if args.encounter:
-        log.info('Encountering pokemon enabled.')
+        log.info('no scrubs')
 
     config['LOCALE'] = args.locale
     config['CHINA'] = args.china
@@ -216,14 +215,14 @@ def main():
 
     db = init_database(app)
     if args.clear_db:
-        log.info('Clearing database')
+        log.info('no scrubs')
         if args.db_type == 'mysql':
             drop_tables(db)
         elif os.path.isfile(args.db):
             os.remove(args.db)
     create_tables(db)
     if args.clear_db:
-        log.info("Drop and recreate is complete. Now remove -cd and restart.")
+        log.info('no scrubs')
         sys.exit()
 
     app.set_current_location(position)
@@ -276,7 +275,7 @@ def main():
 
         # Abort if we don't have a hash key set
         if not args.hash_key:
-            log.critical('Hash key is required for scanning. Exiting.')
+            log.critical('no scrubs')
             sys.exit()
 
         # Processing proxies if set (load from file, check and overwrite old
@@ -290,7 +289,7 @@ def main():
             t.daemon = True
             t.start()
         else:
-            log.info('Periodical proxies refresh disabled.')
+            log.info('no scrubs')
 
         # Gather the Pokemon!
 
@@ -300,11 +299,11 @@ def main():
                 args.spawnpoint_scanning != 'nofile' and
                 args.dump_spawnpoints):
             with open(args.spawnpoint_scanning, 'w+') as file:
-                log.info('Saving spawn points to %s', args.spawnpoint_scanning)
+                log.info('no scrubs')
                 spawns = Pokemon.get_spawnpoints_in_hex(
                     position, args.step_limit)
                 file.write(json.dumps(spawns))
-                log.info('Finished exporting spawn points')
+                log.info('no scrubs')
 
         argset = (args, new_location_queue, pause_bit,
                   heartbeat, db_updates_queue, wh_updates_queue)
@@ -341,7 +340,7 @@ def main():
             ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
             ssl_context.load_cert_chain(
                 args.ssl_certificate, args.ssl_privatekey)
-            log.info('Web server in SSL mode.')
+            log.info('no scrubs')
         if args.verbose or args.very_verbose:
             app.run(threaded=True, use_reloader=False, debug=True,
                     host=args.host, port=args.port, ssl_context=ssl_context)

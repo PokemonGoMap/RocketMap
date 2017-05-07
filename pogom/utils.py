@@ -26,6 +26,7 @@ def parse_unicode(bytestring):
     return decoded_string
 
 
+
 def memoize(function):
     memo = {}
 

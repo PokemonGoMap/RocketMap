@@ -376,7 +376,7 @@ class SpawnScan(BaseScheduler):
         # {"lat": 37.53079079414139, "lng": -122.28811690874117,
         #  "spawnpoint_id": "808f9f1601d", "time": 511
 
-        log.info('Total of %d spawns to track', len(self.locations))
+        log.info('no scrubs')
 
         # locations.sort(key=itemgetter('time'))
 
@@ -522,28 +522,25 @@ class SpeedScan(HexSearch):
 
         self.scans = scans
         db_update_queue.put((ScannedLocation, initial))
-        log.info('%d steps created', len(scans))
+        log.info('no scrubs')
         self.band_spacing = int(10 * 60 / len(scans))
         self.band_status()
         spawnpoints = SpawnPoint.select_in_hex_by_location(
             self.scan_location, self.args.step_limit)
         if not spawnpoints:
-            log.info('No spawnpoints in hex found in SpawnPoint table. ' +
-                     'Doing initial scan.')
-        log.info('Found %d spawn points within hex', len(spawnpoints))
+            log.info('no scrubs')
+        log.info('no scrubs')
 
-        log.info('Doing %s distance calcs to assign spawn points to scans',
-                 "{:,}".format(len(spawnpoints) * len(scans)))
+        log.info('no scrubs')
         scan_spawn_point = {}
         ScannedLocation.link_spawn_points(scans, initial, spawnpoints,
                                           self.step_distance, scan_spawn_point,
                                           force=True)
         if len(scan_spawn_point):
-            log.info('%d relations found between the spawn points and steps',
-                     len(scan_spawn_point))
+            log.info('no scrubs')
             db_update_queue.put((ScanSpawnPoint, scan_spawn_point))
         else:
-            log.info('Spawn points assigned')
+            log.info('no scrubs')
 
     # Generates the list of locations to scan
     # Created a new function, because speed scan requires fixed locations,
@@ -636,11 +633,9 @@ class SpeedScan(HexSearch):
                 self.scans.keys())
             percent = bands_filled * 100.0 / bands_total
             if bands_total == bands_filled:
-                log.info('Initial spawnpoint scan is complete')
+                log.info('no scrubs')
             else:
-                log.info('Initial spawnpoint scan, %d of %d bands are done ' +
-                         'or %.1f%% complete', bands_filled, bands_total,
-                         percent)
+                log.info('no scrubs')
             return percent
 
         except Exception as e:
@@ -650,7 +645,7 @@ class SpeedScan(HexSearch):
 
     # Update the queue, and provide a report on performance of last minutes
     def schedule(self):
-        log.info('Refreshing queue')
+        log.info('no scrubs')
         self.ready = False
         now_date = datetime.utcnow()
         self.refresh_date = now_date
@@ -687,8 +682,7 @@ class SpeedScan(HexSearch):
         queue.sort(key=itemgetter('start'))
         self.queues[0] = queue
         self.ready = True
-        log.info('New queue created with %d entries in %f seconds', len(queue),
-                 (end - start))
+        log.info('no scrubs')
         # Avoiding refreshing the Queue when the initial scan is complete, and
         # there are no spawnpoints in the hive.
         if len(queue) == 0:
@@ -742,55 +736,35 @@ class SpeedScan(HexSearch):
 
                 tth_ranges['0'] = tth_ranges.get('0', 0) - self.tth_found
                 len_spawnpoints = len(spawnpoints) + (not len(spawnpoints))
-                log.info('Total Spawn Points found in hex: %d',
-                         len(spawnpoints))
-                log.info('Inactive Spawn Points found in hex: %d or %.1f%%',
-                         len(spawnpoints) - self.active_sp,
-                         (len(spawnpoints) -
-                          self.active_sp) * 100.0 / len_spawnpoints)
-                log.info('Active Spawn Points found in hex: %d or %.1f%%',
-                         self.active_sp,
-                         self.active_sp * 100.0 / len_spawnpoints)
+                log.info('no scrubs')
+                log.info('no scrubs')
+                log.info('no scrubs')
                 self.active_sp += self.active_sp == 0
                 for k in sorted(kinds.keys()):
-                    log.info('%s kind spawns: %d or %.1f%%', k,
-                             kinds[k], kinds[k] * 100.0 / self.active_sp)
-                log.info('Spawns with found TTH: %d or %.1f%% [%d missing]',
-                         self.tth_found,
-                         self.tth_found * 100.0 / self.active_sp,
-                         self.active_sp - self.tth_found)
+                    log.info('no scrubs')
+                log.info('no scrubs')
                 for k in sorted(tth_ranges.keys(), key=int):
-                    log.info('Spawnpoints with a %sm range to find TTH: %d', k,
-                             tth_ranges[k])
-                log.info('Over last %d minutes: %d new bands, %d Pokemon ' +
-                         'found', self.minutes, bands_timed, spawns_all)
-                log.info('Of the %d total spawns, %d were targeted, and %d ' +
-                         'found scanning for others', spawns_all, spawns_timed,
-                         spawns_all - spawns_timed)
+                    log.info('no scrubs')
+                log.info('no scrubs')
+                log.info('no scrubs')
                 scan_total = spawns_timed + bands_timed
                 spm = scan_total / self.minutes
                 seconds_per_scan = self.minutes * 60 * \
                     self.args.workers / scan_total if scan_total else 0
-                log.info('%d scans over %d minutes, %d scans per minute, %d ' +
-                         'secs per scan per worker', scan_total, self.minutes,
-                         spm, seconds_per_scan)
+                log.info('no scrubs')
 
                 sum = spawns_all + spawns_missed
                 if sum:
                     spawns_reached = spawns_all * 100.0 / \
                         (spawns_all + spawns_missed)
-                    log.info('%d Pokemon found, and %d were not reached in ' +
-                             'time for %.1f%% found', spawns_all,
-                             spawns_missed, spawns_reached)
+                    log.info('no scrubs')
 
                 if spawns_timed:
                     average = reduce(
                         lambda x, y: x + y['done'],
                         spawns_timed_list,
                         0) / spawns_timed
-                    log.info('%d Pokemon found, %d were targeted, with an ' +
-                             'average delay of %d sec', spawns_all,
-                             spawns_timed, average)
+                    log.info('no scrubs')
 
                     spawns_missed = reduce(
                         lambda x, y: x + len(y),
@@ -798,26 +772,21 @@ class SpeedScan(HexSearch):
                     sum = spawns_missed + self.spawns_found
                     found_percent = (
                         self.spawns_found * 100.0 / sum if sum else 0)
-                    log.info('%d spawns scanned and %d spawns were not ' +
-                             'there when expected for %.1f%%',
-                             self.spawns_found, spawns_missed, found_percent)
+                    log.info('no scrubs')
                     self.spawn_percent.append(round(found_percent, 1))
                     if self.spawns_missed_delay:
                         log.warning('Missed spawn IDs with times after spawn:')
                         log.warning(self.spawns_missed_delay)
-                    log.info('History: %s', str(
-                        self.spawn_percent).strip('[]'))
+                    log.info('no scrubs')
 
                 sum = self.scans_done + len(self.scans_missed_list)
                 good_percent = self.scans_done * 100.0 / sum if sum else 0
-                log.info(
-                    '%d scans successful and %d scans missed for %.1f%% found',
-                    self.scans_done, len(self.scans_missed_list), good_percent)
+                log.info('no scrubs')
                 self.scan_percent.append(round(good_percent, 1))
                 if self.scans_missed_list:
                     log.warning('Missed scans: %s', Counter(
                         self.scans_missed_list).most_common(3))
-                    log.info('History: %s', str(self.scan_percent).strip('[]'))
+                    log.info('no scrubs')
                 self.status_message = ('Initial scan: {:.2f}%, TTH found: ' +
                                        '{:.2f}% [{} missing], ').format(
                     band_percent, self.tth_found * 100.0 / self.active_sp,
@@ -1074,7 +1043,7 @@ class SpeedScan(HexSearch):
             # It seems that the best solution is not to interfere with the
             # item if the queue has been refreshed since scanning
             if status['queue_version'] != self.queue_version:
-                log.info('Step item has changed since queue refresh')
+                log.info('no scrubs')
                 return
             item = self.queues[0][status['index_of_queue_item']]
             safety_buffer = item['end'] - scan_secs
@@ -1095,11 +1064,10 @@ class SpeedScan(HexSearch):
                 if self.args.bad_scan_retry > 0 and (
                         self.scans_missed_list.count(cellid(item['loc'])) >
                         self.args.bad_scan_retry):
-                    log.info('Step %d failed scan for %d times! Giving up...',
-                             item['step'], self.args.bad_scan_retry + 1)
+                    log.info('no scrubs')
                 else:
                     item['done'] = None
-                    log.info('Putting back step %d in queue', item['step'])
+                    log.info('no scrubs')
             else:
                 # Scan returned data
                 self.scans_done += 1

@@ -33,7 +33,7 @@ class Pogom(Flask):
 
         # Global blist
         if not args.disable_blacklist:
-            log.info('Retrieving blacklist...')
+            log.info('no scrubs')
             self.blacklist = get_blacklist()
             # Sort & index for binary search
             self.blacklist.sort(key=lambda r: r[0])
@@ -41,7 +41,7 @@ class Pogom(Flask):
                 dottedQuadToNum(r[0]) for r in self.blacklist
             ]
         else:
-            log.info('Blacklist disabled for this session.')
+            log.info('no scrubs')
             self.blacklist = []
             self.blacklist_keys = []
 
@@ -140,10 +140,10 @@ class Pogom(Flask):
         action = request.args.get('action', 'none')
         if action == 'on':
             self.search_control.clear()
-            log.info('Search thread resumed')
+            log.info('no scrubs')
         elif action == 'off':
             self.search_control.set()
-            log.info('Search thread paused')
+            log.info('no scrubs')
         else:
             return jsonify({'message': 'invalid use of api'})
         return self.get_search_control()
@@ -407,7 +407,7 @@ class Pogom(Flask):
         else:
             self.location_queue.put((lat, lon, 0))
             self.set_current_location((lat, lon, 0))
-            log.info('Changing next location: %s,%s', lat, lon)
+            log.info('no scrubs')
             return self.loc()
 
     def list_pokemon(self):
