@@ -26,6 +26,8 @@ import random
 import time
 import copy
 import requests
+import schedulers
+import terminalsize
 
 from datetime import datetime
 from threading import Thread, Lock
@@ -35,27 +37,20 @@ from collections import deque
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 
-from pgoapi import PGoApi
 from pgoapi.utilities import f2i
 from pgoapi import utilities as util
-from pgoapi.hash_server import HashServer
-
-from .models import parse_map, GymDetails, parse_gyms, MainWorker, WorkerStatus
-from .fakePogoApi import FakePogoApi
-from .utils import now, generate_device_info, clear_dict_response
+from pgoapi.hash_server import (HashServer, BadHashRequestException,
+                                HashingOfflineException)
+from .models import (parse_map, GymDetails, parse_gyms, MainWorker,
+                     WorkerStatus, HashKeys)
+from .utils import now, clear_dict_response
 from .transform import get_new_coords, jitter_location
-from .account import check_login, get_tutorial_state, complete_tutorial
+from .account import (setup_api, check_login, get_tutorial_state,
+                      complete_tutorial, AccountSet)
 from .captcha import captcha_overseer_thread, handle_captcha
-
 from .proxy import get_new_proxy
 
-import schedulers
-import terminalsize
-
 log = logging.getLogger(__name__)
-
-TIMESTAMP = ('\000\000\000\000\000\000\000\000\000\000\000' +
-             '\000\000\000\000\000\000\000\000\000\000')
 
 loginDelayLock = Lock()
 
@@ -351,6 +346,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
     search_items_queue_array = []
     scheduler_array = []
     account_queue = Queue()
+    account_sets = AccountSet(args.hlvl_kph)
     threadStatus = {}
     key_scheduler = None
     api_version = '0.61.0'
@@ -365,6 +361,15 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
     '''
     for i, account in enumerate(args.accounts):
         account_queue.put(account)
+
+    '''
+    Create sets of special case accounts.
+    Currently limited to L30+ IV/CP scanning.
+    '''
+    account_sets.create_set('30', args.accounts_L30)
+
+    # Debug.
+    log.info('Added %s accounts to the L30 pool.', len(args.accounts_L30))
 
     # Create a list for failed accounts.
     account_failures = []
@@ -390,7 +395,8 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
     # Create the key scheduler.
     if args.hash_key:
         log.info('Enabling hashing key scheduler...')
-        key_scheduler = schedulers.KeyScheduler(args.hash_key)
+        key_scheduler = schedulers.KeyScheduler(args.hash_key,
+                                                db_updates_queue)
 
     if(args.print_status):
         log.info('Starting status printer thread...')
@@ -463,7 +469,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
 
         t = Thread(target=search_worker_thread,
                    name='search-worker-{}'.format(i),
-                   args=(args, account_queue, account_failures,
+                   args=(args, account_queue, account_sets, account_failures,
                          account_captchas, search_items_queue, pause_bit,
                          threadStatus[workerId], db_updates_queue,
                          wh_queue, scheduler, key_scheduler))
@@ -729,7 +735,7 @@ def generate_hive_locations(current_location, step_distance,
     return results
 
 
-def search_worker_thread(args, account_queue, account_failures,
+def search_worker_thread(args, account_queue, account_sets, account_failures,
                          account_captchas, search_items_queue, pause_bit,
                          status, dbq, whq, scheduler, key_scheduler):
 
@@ -741,7 +747,7 @@ def search_worker_thread(args, account_queue, account_failures,
     # This reinitializes the API and grabs a new account from the queue.
     while True:
         try:
-            # Force storing of previous worker info to keep consistency
+            # Force storing of previous worker info to keep consistency.
             if 'starttime' in status:
                 dbq.put((WorkerStatus, {0: WorkerStatus.db_format(status)}))
 
@@ -750,12 +756,12 @@ def search_worker_thread(args, account_queue, account_failures,
             # Track per loop.
             first_login = True
 
-            # Make sure the scheduler is done for valid locations
+            # Make sure the scheduler is done for valid locations.
             while not scheduler.ready:
                 time.sleep(1)
 
-            status['message'] = ('Waiting to get new account from the ' +
-                                 'queue...')
+            status['message'] = ('Waiting to get new account from the'
+                                 + ' queue...')
             log.info(status['message'])
 
             # Get an account.
@@ -783,32 +789,7 @@ def search_worker_thread(args, account_queue, account_failures,
             # for stat purposes.
             consecutive_noitems = 0
 
-            # Create the API instance this will use.
-            if args.mock != '':
-                api = FakePogoApi(args.mock)
-            else:
-                device_info = generate_device_info()
-                api = PGoApi(device_info=device_info)
-
-            # New account - new proxy.
-            if args.proxy:
-                # If proxy is not assigned yet or if proxy-rotation is defined
-                # - query for new proxy.
-                if ((not status['proxy_url']) or
-                        ((args.proxy_rotation is not None) and
-                         (args.proxy_rotation != 'none'))):
-
-                    proxy_num, status['proxy_url'] = get_new_proxy(args)
-                    if args.proxy_display.upper() != 'FULL':
-                        status['proxy_display'] = proxy_num
-                    else:
-                        status['proxy_display'] = status['proxy_url']
-
-            if status['proxy_url']:
-                log.debug('Using proxy %s', status['proxy_url'])
-                api.set_proxy({
-                    'http': status['proxy_url'],
-                    'https': status['proxy_url']})
+            api = setup_api(args, status)
 
             # The forever loop for the searches.
             while True:
@@ -853,7 +834,7 @@ def search_worker_thread(args, account_queue, account_failures,
                 # If used proxy disappears from "live list" after background
                 # checking - switch account but do not freeze it (it's not an
                 # account failure).
-                if (args.proxy) and (not status['proxy_url'] in args.proxy):
+                if args.proxy and status['proxy_url'] not in args.proxy:
                     status['message'] = (
                         'Account {} proxy {} is not in a live list any ' +
                         'more. Switching accounts...').format(
@@ -999,7 +980,8 @@ def search_worker_thread(args, account_queue, account_failures,
                         break
 
                     parsed = parse_map(args, response_dict, step_location,
-                                       dbq, whq, api, scan_date, account)
+                                       dbq, whq, key_scheduler, api, status,
+                                       scan_date, account, account_sets)
                     del response_dict
                     scheduler.task_done(status, parsed)
                     if parsed['count'] > 0:
@@ -1112,19 +1094,46 @@ def search_worker_thread(args, account_queue, account_failures,
                                        whq, dbq)
                             del gym_responses
 
+                # Update hashing key stats in the database based on the values
+                # reported back by the hashing server.
                 if args.hash_key:
-                    key_instance = key_scheduler.keys[key_scheduler.current()]
+                    key = HashServer.status.get('token', None)
+                    key_instance = key_scheduler.keys[key]
                     key_instance['remaining'] = HashServer.status.get(
                         'remaining', 0)
 
-                    if key_instance['maximum'] == 0:
-                        key_instance['maximum'] = HashServer.status.get(
-                            'maximum', 0)
+                    key_instance['maximum'] = (
+                        HashServer.status.get('maximum', 0))
 
-                    peak = key_instance['maximum'] - key_instance['remaining']
+                    usage = (
+                        key_instance['maximum'] -
+                        key_instance['remaining'])
 
-                    if key_instance['peak'] < peak:
-                        key_instance['peak'] = peak
+                    if key_instance['peak'] < usage:
+                        key_instance['peak'] = usage
+
+                    if key_instance['expires'] is None:
+                        expires = HashServer.status.get(
+                            'expiration', None)
+
+                        if expires is not None:
+                            expires = datetime.utcfromtimestamp(expires)
+                            key_instance['expires'] = expires
+
+                    key_instance['last_updated'] = datetime.utcnow()
+
+                    log.debug('Hash key %s has %s/%s RPM left.', key,
+                              key_instance['remaining'],
+                              key_instance['maximum'])
+
+                    # Prepare hashing keys to be sent to the db. But only
+                    # sent latest updates of the 'peak' value per key.
+                    hashkeys = {}
+                    hashkeys[key] = key_instance
+                    hashkeys[key]['key'] = key
+                    hashkeys[key]['peak'] = max(key_instance['peak'],
+                                                HashKeys.getStoredPeak(key))
+                    dbq.put((HashKeys, hashkeys))
 
                 # Delay the desired amount after "scan" completion.
                 delay = scheduler.delay(status['last_scan_date'])
@@ -1183,6 +1192,11 @@ def map_request(api, position, no_jitter=False):
         response = clear_dict_response(response, True)
         return response
 
+    except HashingOfflineException as e:
+        log.warning('Hashing server is unreachable, it might be offline.')
+    except BadHashRequestException as e:
+        log.warning('Invalid or expired hashing key: %s.',
+                    api._hash_server_token)
     except Exception as e:
         log.warning('Exception while downloading map: %s', repr(e))
         return False
