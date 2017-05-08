@@ -856,7 +856,7 @@
         "dps": 39.39
     },
     "108": {
-        "name": "Psychic",
+        "name": "Psychic (Move)",
         "type": "Psychic",
         "damage": 100,
         "duration": 2800,
