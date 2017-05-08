@@ -1785,7 +1785,6 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
     sightings = {}
     new_spawn_points = []
     sp_id_list = []
-    captcha_url = ''
 
     # Consolidate the individual lists in each cell into two lists of Pokemon
     # and a list of forts.
@@ -2158,7 +2157,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                      datetime(1970, 1, 1)).total_seconds())) for f in query]
 
         # Complete tutorial with a Pokestop spin
-        if args.complete_tutorial and not (len(captcha_url) > 1):
+        if args.complete_tutorial:
             if config['parse_pokestops']:
                 tutorial_pokestop_spin(
                     api, level, forts, step_location, account)
