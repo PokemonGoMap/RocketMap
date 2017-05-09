@@ -25,16 +25,16 @@ The default configuration file is *config/config.ini* underneath the project hom
 
 ## Example config file
 
-  <pre>
-  -- contents of file myconfig.seattle --
+```
   username: [ randomjoe, bob ]
   password: [ password1, password2 ]
   location: seattle, wa
   step-limit: 5
   gmaps-key: MyGmapsKeyGoesHereSomeLongString
+  hash-kay: MyHashingKeyGoesHere
   print-status: "status"
-  -- end of file --
-  </pre>
+  speed-scan: True
+```
 
   Running this config file as:
 
@@ -52,5 +52,6 @@ The default configuration file is *config/config.ini* underneath the project hom
    
 ### Using `-ns` and `-os`
 
-If RocketMap is not scanning enough areas, you can add additional areas by starting a 2nd RocketMap instance with the flag `-ns`. This starts the searchers without starting another webserver. You can run as many instances with `-ns` as your server can keep up with. ***HOWEVER:*** If all your instances are running `-ns` you will also want to start an instance with `-os`. This will start only the webserver. This becomes useful if you begin to seperate your RM instances across several copmuters all linked to the same database.  
+If RocketMap is not scanning enough areas, you can add additional areas by starting a 2nd RocketMap instance with the flag `-ns`. This starts the searchers without starting another webserver. You can run as many instances with `-ns` as your server can keep up with. ***HOWEVER:*** If all your instances are running `-ns` you will also want to start an instance with `-os`. This will start only the webserver. This becomes useful if you begin to seperate your RM instances across several copmuters all linked to the same database. 
+
 
