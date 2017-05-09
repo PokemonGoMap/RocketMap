@@ -10,6 +10,10 @@
 
 You are missing the sprite files. Please consult #faq on the [RocketMap Discord](https://discord.gg/rocketmap).
 
+### Lures are 6 hours right now! Why is it saying they have already expired?
+
+You need to add `-ldur 360` to change the lure assumption to 6 hours (360 minutes.) 
+
 ### Can I sign in with Google?
 
 Yes you can! Pass the flag `-a google` (replacing `-a ptc`) to use Google authentication.
@@ -77,9 +81,17 @@ You need [MySQL](http://rocketmap.readthedocs.io/en/develop/extras/mysql.html) i
 
 No, the best course of action is to delete it all and start again, this time don't edit files unless you know what you are doing.
 
+### I used a PR and now everything is messed up! HELP ME!
+
+No, removed everything and start from scratch. A Pull Request is merged when it meets the standards of the project. 
+
 ### “It’s acting like the location flag is missing.”
 
 -l, never forget.
+
+### I overridden watchdog and now all my accounts are flagged/banned. 
+
+Good Job! we recommend making new accounts. [Current Tools are Here!](https://rocketmap.readthedocs.io/en/develop/extras/Community-Tools.html)
 
 ### I'm getting this error...
 
