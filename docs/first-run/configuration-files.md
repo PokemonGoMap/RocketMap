@@ -17,16 +17,20 @@ The default configuration file is *config/config.ini* underneath the project hom
 
     keyname: [ value1, value2, ...]
     e.g.   username: [ randomjoe, bonnieclyde ]
+	
+	*for usernames and passwords, the first username must correspond to the first password, and so on *
 
   For command line arguments that take no parameters:
 
     keyname: True
     e.g.   fixed-location: True
+	
 
 ## Example config file
 
 ```
-  username: [ randomjoe, bob ]
+  auth-service: ptc
+  username: [ username1, username2 ]
   password: [ password1, password2 ]
   location: seattle, wa
   step-limit: 5
