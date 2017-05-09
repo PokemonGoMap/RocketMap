@@ -1,5 +1,9 @@
 ﻿# Common Questions and Answers
 
+### Should I use this as a way to make money?
+
+No, it is gross to charge people for maps when the information should be provided by Niantic! We do not endorse paid maps, which is why this platform is opensource. 
+
 ### What do the spawn point colors mean?
 
 * A **grey** dot represents a spawn point that is more than 5 minutes from spawning.
@@ -91,7 +95,7 @@ No, removed everything and start from scratch. A Pull Request is merged when it 
 
 ### I overridden watchdog and now all my accounts are flagged/banned. 
 
-Good Job! we recommend making new accounts. [Current Tools are Here!](https://rocketmap.readthedocs.io/en/develop/extras/Community-Tools.html)
+Good Job! We recommend making new accounts. [Current Tools are Here!](https://rocketmap.readthedocs.io/en/develop/extras/Community-Tools.html)
 
 ### I'm getting this error...
 
