@@ -471,13 +471,14 @@ class Pokemon(BaseModel):
                      .where()
                      .dicts())
         else:
-            query = (Pokemon.select(
-                    Pokemon.spawnpoint_id, Pokemon.latitude, Pokemon.longitude)
-                .where(
-                    (Pokemon.latitude >= swLat) &
-                    (Pokemon.longitude >= swLng) &
-                    (Pokemon.latitude <= neLat) &
-                    (Pokemon.longitude <= neLng))
+            query = (Pokemon
+                     .select(Pokemon.spawnpoint_id,
+                             Pokemon.latitude, Pokemon.longitude)
+                     .where(
+                            (Pokemon.latitude >= swLat) &
+                            (Pokemon.longitude >= swLng) &
+                            (Pokemon.latitude <= neLat) &
+                            (Pokemon.longitude <= neLng))
                      .group_by(Pokemon.spawnpoint_id)
                      .order_by(Pokemon.spawnpoint_id)
                      .dicts())

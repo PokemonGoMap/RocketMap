@@ -196,8 +196,7 @@ function spHistory(data) { // eslint-disable-line no-unused-vars
                             $('div[id=nestlist]').prepend('<div class="stats-label-container"><center><h4 style="margin-bottom: 0em;background-Color: #439a43;" title="Click to expand" id="label' + id.pokemon_id + 'expand"> <i class="pokemon-sprite n' + id.pokemon_id + '"></i><span id=' + id.pokemon_id + 'count>Spawned frequently at ' + spcount + ' location</span></h4><h6 style="margin-bottom: 0em;background-Color: #44bf44;" id="label' + id.pokemon_id + 'show"><span>Show where on map</span></h6></center></div><ul class="statsHolder " id="ul' + id.pokemon_id + '" style="display:none; margin: auto; max-width: 240px; list-style: none"></ul>') &
                                 $('ul[id=ul' + id.pokemon_id + ']').append('<li style="display:block; list-style: none; height: 36px; margin-bottom: 5px;"><span style="color:black;font-weight: bold;font-size:15px;"> ' + id.count + ' Times at  <i class="fa fa-paw" /> ' + spID + '</span></li>')
                             $('#label' + id.pokemon_id + 'expand').on('click', function () { $('#ul' + id.pokemon_id).toggle() })
-                        }
-                        else {
+                        } else {
                             $('ul[id=ul' + id.pokemon_id + ']').append('<li style="display:block; list-style: none; height: 36px; margin-bottom: 5px;"><span style="color:black;font-weight: bold;font-size:15px;"> ' + id.count + ' Times at  <i class="fa fa-paw" /> ' + spID + '</span></li>')
                             pointcountlist.push(id.pokemon_id)
                             var spcount2 = pointcountlist.filter(function (value) { return value === id.pokemon_id }).length
