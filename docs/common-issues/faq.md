@@ -26,10 +26,6 @@ More information can be found here : [Speed Scheduler](http://rocketmap.readthed
 
 Speed Scheduler combines both and is more efficient. Also, Spawnpoint Scanning is dead. 
 
-### Should I swap back to spawn point scanning after the speed-scheduler has done its initial scan?
-
-No, it will automatically scan spawnpoints.
-
 ### All pokemon disappear after only 1 minute, the map is broken!
 
 One of Niantic's updates removed spawn timers from Pokémon (until there's little time left until they despawn). SpeedScan does an initial scan to determine all spawn points and their timers and automatically transitions into spawn scanning once it found them all.
