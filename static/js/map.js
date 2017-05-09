@@ -113,6 +113,36 @@ function removePokemonMarker(encounterId) { // eslint-disable-line no-unused-var
     mapData.pokemons[encounterId].hidden = true
 }
 
+function pointHistory() { // eslint-disable-line no-unused-vars
+    $('div[id=nestlist]').empty()
+    document.getElementById('spawn2-ldg-label').innerHTML = 'Retrieving data'
+    var bounds = map.getBounds()
+    var swPoint = bounds.getSouthWest()
+    var nePoint = bounds.getNorthEast()
+    var swLat = swPoint.lat()
+    var swLng = swPoint.lng()
+    var neLat = nePoint.lat()
+    var neLng = nePoint.lng()
+
+    $.ajax({
+        url: 'pointhistory',
+        dataType: 'json',
+        data: {
+            'swLat': swLat,
+            'swLng': swLng,
+            'neLat': neLat,
+            'neLng': neLng
+        },
+        async: true,
+        success: function (data) {
+            spHistory(data)
+        },
+        error: function (jqXHR, status, error) {
+            console.log('Error loading stats: ' + error)
+        }
+    })
+}
+
 function initMap() { // eslint-disable-line no-unused-vars
     map = new google.maps.Map(document.getElementById('map'), {
         center: {
@@ -633,10 +663,29 @@ function formatSpawnTime(seconds) {
     return ('0' + Math.floor(((seconds + 3600) % 3600) / 60)).substr(-2) + ':' + ('0' + seconds % 60).substr(-2)
 }
 
+function addnestmarker(latilongi, spID, pokename) { // eslint-disable-line no-unused-vars
+    var marker = new google.maps.Marker({
+        position: latilongi,
+        title: spID,
+        draggable: false,
+        map: map,
+        id: spID,
+        icon: {
+            url: 'static/marker_icons/grass1.png',
+            scaledSize: new google.maps.Size(48, 48)
+        }
+    })
+    marker.infoWindow = new google.maps.InfoWindow({
+        content: '<div><b>' + pokename + '</b></div>',
+        disableAutoPan: true
+    })
+    addListeners(marker)
+}
+
 function spawnpointLabel(item) {
     var str = `
         <div>
-            <b>Spawn Point</b>
+            <i class="fa fa-paw" /> <b> Spawn Point </b></i>
         </div>
         <div>
             Every hour from ${formatSpawnTime(item.time)} to ${formatSpawnTime(item.time + 900)}
@@ -648,6 +697,11 @@ function spawnpointLabel(item) {
                 May appear as early as ${formatSpawnTime(item.time - 1800)}
             </div>`
     }
+
+    str += `
+      <div>
+      <a href="javascript:getStats('${item.spawnpoint_id}')">Spawn history</a>&nbsp;&nbsp;
+    </div>`
     return str
 }
 

@@ -1,6 +1,6 @@
 /* Stats */
 
-  #stats {
+  #stats, #spawn, #spawn2 {
     @include vendor('transform', 'translateX(25em)');
     @include vendor('transition', ('transform #{_duration(stats)} ease', 'box-shadow #{_duration(stats)} ease', 'visibility #{_duration(stats)}'));
     -webkit-overflow-scrolling: touch;

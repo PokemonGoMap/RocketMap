@@ -63,10 +63,29 @@ class Pogom(Flask):
         self.route("/inject.js", methods=['GET'])(self.render_inject_js)
         self.route("/submit_token", methods=['POST'])(self.submit_token)
         self.route("/get_stats", methods=['GET'])(self.get_account_stats)
+        self.route("/spawn_history", methods=['GET'])(self.spawn_history)
+        self.route("/pointhistory", methods=['GET'])(self.pointhistory)
         self.route("/robots.txt", methods=['GET'])(self.render_robots_txt)
 
     def render_robots_txt(self):
         return render_template('robots.txt')
+
+    def spawn_history(self):
+        d = {}
+        spawnpoint_id = request.args.get('spawnpoint_id')
+        d['spawn_history'] = Pokemon.get_spawn_history(spawnpoint_id)
+
+        return jsonify(d)
+
+    def pointhistory(self):
+        d = {}
+        swLat = request.args.get('swLat')
+        swLng = request.args.get('swLng')
+        neLat = request.args.get('neLat')
+        neLng = request.args.get('neLng')
+        d['points'] = Pokemon.get_pointhistory(swLat, swLng, neLat, neLng)
+
+        return jsonify(d)
 
     def get_bookmarklet(self):
         args = get_args()

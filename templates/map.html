@@ -47,6 +47,7 @@
         <h1><a href="./">RocketMap<i class="fa fa-rocket fa-fw"></i></a></h1>
         <a href="#stats" id="statsToggle" class="statsNav" style="float: right;"><span class="label">Stats</span></a>
         <a href="status" target="_blank" style="float: right;"><span class="label">Status</span></a>
+        <a href="#spawn2" id="spawnToggle" class="spawnNav" style="float: right;"><span class="label">Spawn</span></a>
       </header>
       <!-- NAV -->
       <nav id="nav">
@@ -409,6 +410,39 @@
           <div id="pokestopList" style="color: black;"></div>
         </div>
       </nav>
+       <nav id="spawn">
+	    <div class="switch-container">
+          <div class="switch-container">
+            <center><h1 id="spawn-ldg-label"></h1></center>
+          </div>
+		  <div class="stats-label-container">
+            <center><h1 id="stats-nest-label"></h1></center>
+          </div>
+            <div id="spawnList" style="color: black;">
+			 <ul class="statsHolder " name="spawnpointnest" style="max-width: 240px; list-style: none"></ul>
+		    </div>
+		  <div class="stats-label-container">
+            <center><h1 id="stats-spawn-label"></h1></center>
+          </div>
+            <div id="spawnList" style="color: black;">
+			 <ul class="statsHolder " name="spawnpointrest" style="max-width: 240px; list-style: none"></ul>
+          </div>
+ 		</div>
+	  </nav>
+	    <nav id="spawn2">
+		<div class="switch-container">
+          <div class="switch-container">
+            <center><h1 id="spawn2-ldg-label">Retrieving data</h1></center>
+          </div>
+		  <div class="stats-label-container">
+            <center><h1 id="stats-nest-label"></h1></center>
+          </div>
+            <div id="nestlist" style="color: black;">
+			 <ul class="statsHolder " name="spawn2pointnest" style="max-width: 240px; list-style: none"></ul>
+		  </div>
+ 		</div>
+	    </nav>
+	    
       <nav id="gym-details">
         <center><h1>Loading...</h1></center>
       </nav>

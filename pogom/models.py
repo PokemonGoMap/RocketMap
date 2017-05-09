@@ -442,6 +442,48 @@ class Pokemon(BaseModel):
 
         return filtered
 
+    @classmethod
+    def get_spawn_history(cls, spawnpoint_id):
+        lastday = datetime.utcnow() - timedelta(hours=24)
+        query = (Pokemon.select(
+                fn.Count(Pokemon.pokemon_id).alias('count'),
+                Pokemon.pokemon_id)
+            .where(
+                (Pokemon.spawnpoint_id == spawnpoint_id) &
+                (Pokemon.disappear_time > lastday))
+            .group_by(Pokemon.pokemon_id)
+            .order_by(-SQL('count'))
+            .dicts())
+
+        spawn_history = []
+        for p in query:
+            p['pokemon_name'] = get_pokemon_name(p['pokemon_id'])
+            p['pokemon_rarity'] = get_pokemon_rarity(p['pokemon_id'])
+            spawn_history.append(p)
+
+        return spawn_history
+
+    @classmethod
+    def get_pointhistory(cls, swLat, swLng, neLat, neLng):
+        if swLat is None or swLng is None or neLat is None or neLng is None:
+            query = (Pokemon
+                     .select()
+                     .where()
+                     .dicts())
+        else:
+            query = (Pokemon.select(
+                    Pokemon.spawnpoint_id, Pokemon.latitude, Pokemon.longitude)
+                .where(
+                    (Pokemon.latitude >= swLat) &
+                    (Pokemon.longitude >= swLng) &
+                    (Pokemon.latitude <= neLat) &
+                    (Pokemon.longitude <= neLng))
+                     .group_by(Pokemon.spawnpoint_id)
+                     .order_by(Pokemon.spawnpoint_id)
+                     .dicts())
+
+        return list(query)
+
 
 class Pokestop(BaseModel):
     pokestop_id = Utf8mb4CharField(primary_key=True, max_length=50)
