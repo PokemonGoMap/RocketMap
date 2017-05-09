@@ -117,6 +117,11 @@ KeyError: 'map_cells'
 
 The account is banned or hasn't completed the tutorial.
 
+```
+InternalError(1054, u"unknown column 'cp' in 'field list'")  or similar
+```
+
+Only one instance can run when the database is being modified or upgraded. Run ***ONE*** instance of RM with the `-cd` flag to wipe your database, then run ***ONE*** instance of RM to set your database back up. 
 
 ### I have more questions!
 

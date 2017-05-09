@@ -1,7 +1,7 @@
 # Hashing Keys
 
 ## What are hashing keys for?
-Hashing keys allow your client program (in this case RocketMap) to access the latest API using the Bossland Hashing service. Accessing Niantic's servers without using a hashing key is using an older API that is easier for Niantic to flag and ban. RocketMap does not support scanning without a hashing key at this time.
+Hashing keys allow your client program (in this case RocketMap) to access the latest API using the Bossland Hashing service. It is no longer possible to access the API without a hahing key. 
 
 ## Where do I get a hashing key?
 [Check out this FAQ](https://talk.pogodev.org/d/55-api-hashing-service-f-a-q)
@@ -49,7 +49,7 @@ Hashing server is temporarily unavailable (possibly offline). This could be due 
 Either your key is expired, the hashing servers are having issues, or you have mistyped your key. 
 
 ### This one? `TempHashingBanException('Your IP was temporarily banned for sending too many requests with invalid keys',)`
-You are using invalid keys, or... you guessed it, the hashing servers are having issues.
+You are using invalid keys, or... you guessed it, the hashing servers are having issues. This ban will last for 3 minutes. 
 
 ### Is there a free trial key I could use?
-Yes, @seb#0609 is willing to provide you with a free key for a 48 hour period. Please DM him for more information! [click here for our discord server](https://discord.gg/rocketmap)
+Yes, @seb#0609 is willing to provide you with a free key for a 48 hour period. Please message him directly for more information! Information will not be provide by anyone other than Seb. [click here for our discord server](https://discord.gg/rocketmap)
