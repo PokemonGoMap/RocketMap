@@ -8,7 +8,7 @@
 
 ### All I see are numbers! Where are the pokemon?
 
-Please consult #faq on the [RocketMap Discord](https://discord.gg/rocketmap).
+You are missing the sprite files. Please consult #faq on the [RocketMap Discord](https://discord.gg/rocketmap).
 
 ### Can I sign in with Google?
 
