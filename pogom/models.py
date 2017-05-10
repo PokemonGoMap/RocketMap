@@ -466,10 +466,7 @@ class Pokemon(BaseModel):
     @classmethod
     def get_pointhistory(cls, swLat, swLng, neLat, neLng):
         if swLat is None or swLng is None or neLat is None or neLng is None:
-            query = (Pokemon
-                     .select()
-                     .where()
-                     .dicts())
+            query = []
         else:
             query = (Pokemon
                      .select(Pokemon.spawnpoint_id,
