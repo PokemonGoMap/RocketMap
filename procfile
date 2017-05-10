@@ -1,0 +1,1 @@
+worker: python ./runserver.py -k 'AIzaSyAsz_D3HmqT_tVwb5dOF_rZs0Gj6Ir_2G0' -H '0.0.0.0' -P 5000 -l 'Tervuursestraat 38 Leuven' -u test -p test
