@@ -459,8 +459,6 @@ def get_args():
         # CSV file should have lines like "ptc,username,password",
         # "username,password" or "username".
         if args.accountcsv is not None:
-            # Giving num_fields something it would usually not get.
-            num_fields = -1
             csv_input = []
             csv_input.append('')
             csv_input.append('<username>')
