@@ -32,7 +32,7 @@ python runserver.py -a ptc -u [username] -p [password] -l "Location or lat/lon" 
 
 ## RocketMap Public Webhook
 
-RM is collecting data for an up comming project. If you would like to donate your data, please fill out [this form](https://goo.gl/forms/ZCx6mQNngr0bAvRY2) and add `-wh [your webhook URL here] ` to your command line. 
+RM is collecting data for an upcoming project. If you would like to donate your data, please fill out [this form](https://goo.gl/forms/ZCx6mQNngr0bAvRY2) and add `-wh [your webhook URL here]` to your command line. 
 
 ## PokeAlarm
 
