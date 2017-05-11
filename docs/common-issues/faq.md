@@ -87,7 +87,7 @@ No, the best course of action is to delete it all and start again, this time don
 
 ### I used a PR and now everything is messed up! HELP ME!
 
-No, removed everything and start from scratch. A Pull Request is merged when it meets the standards of the project. 
+No, remove everything and start from scratch. A Pull Request is merged when it meets the standards of the project. 
 
 ### “It’s acting like the location flag is missing.”
 
