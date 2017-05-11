@@ -2166,7 +2166,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                     if args.webhooks and args.webhook_updates_only:
                         wh_update_queue.put(('pokestop', {
                             'pokestop_id': b64encode(str(f['id'])),
-                            'enabled': f['enabled'],
+                            'enabled': f.get('enabled', 0),
                             'latitude': f['latitude'],
                             'longitude': f['longitude'],
                             'last_modified_time': f[
@@ -2190,7 +2190,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
 
                     wh_update_queue.put(('pokestop', {
                         'pokestop_id': b64encode(str(f['id'])),
-                        'enabled': f['enabled'],
+                        'enabled': f.get('enabled', 0),
                         'latitude': f['latitude'],
                         'longitude': f['longitude'],
                         'last_modified_time': f['last_modified_timestamp_ms'],
