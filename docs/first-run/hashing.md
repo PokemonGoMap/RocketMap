@@ -14,7 +14,7 @@ We still don't know.  Get a key, turn on your map and see if it works.
 
 If you are getting rate limited then either get more keys, or lower your calls (disabling/reducing encounters, disabling gym details, and decreasing step size are a few ways to reduce calls)
 
-You can get a more detailed view of how many Hashing key calls are being used by enabling the status view `-ps` / `--print-status` and typing `h` followed by the enter key *OR* go to `<YourMapUrl>/status` and enter the password you defined. The status of each of your workers and hashing keys will be displayed and continually update. [More information about the status page](https://rocketmap.readthedocs.io/en/develop/extras/status-page.html)  
+You can get a more detailed view of how many Hashing key calls are being used by enabling the status view `-ps` / `--print-status` and typing `h` followed by the enter key *OR* go to `<YourMapUrl>/status` and enter the password you defined. The status of each of your workers and hashing keys will be displayed and continually updated. [More information about the status page](https://rocketmap.readthedocs.io/en/develop/extras/status-page.html)  
 
 ### Understanding the stats
 
