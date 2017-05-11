@@ -1,7 +1,7 @@
 # Hashing Keys
 
 ## What are hashing keys for?
-Hashing keys allow your client program (in this case RocketMap) to access the latest API using the Bossland Hashing service. It is no longer possible to access the API without a hahing key. 
+Hashing keys allow your client program (in this case RocketMap) to access the latest API using the Bossland Hashing service. It is no longer possible to access the API without a hashing key. 
 
 ## Where do I get a hashing key?
 [Check out this FAQ](https://talk.pogodev.org/d/55-api-hashing-service-f-a-q)
