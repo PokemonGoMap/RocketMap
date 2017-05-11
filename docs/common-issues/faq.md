@@ -30,9 +30,9 @@ SpeedScan (`-speed`) is the most used scheduler: it's the only scheduler that cu
 
 More information can be found here : [Speed Scheduler](http://rocketmap.readthedocs.io/en/develop/scanning-method/Speed-Scheduler.html)
 
-### But I was happy using the default Hex or Spawnpoint scanning...
+### But I was happy using the default Hex or -ss...
 
-Speed Scheduler combines both and is more efficient. Also, Spawnpoint Scanning is dead. 
+Speed Scheduler combines both and is more efficient, -ss is not being actively maintained and doesn't work unless you already have spawnpoints and timers exported.
 
 ### All pokemon disappear after only 1 minute, the map is broken!
 
