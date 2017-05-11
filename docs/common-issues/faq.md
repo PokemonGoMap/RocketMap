@@ -135,6 +135,24 @@ InternalError(1054, u"unknown column 'cp' in 'field list'") or similar
 
 Only one instance can run when the database is being modified or upgraded. Run ***ONE*** instance of RM with `-cd` to wipe your database, then run ***ONE*** instance of RM (without `-cd`) to setup your database. 
 
+```
+ValueError: Exceeded maximum connections.
+```
+
+Try raising --db-max_connections, default is 5.
+
+```
+OperationalError(1040, u'Too many connections')
+```
+
+You need to raise the maximum connections allowed on your MySQL server configuration, this is typically by setting `max_connections` in my.cnf or my.ini. Please use Google to find where this file is located on your specific operating system.
+
+```
+OperationalError: too many SQL variables
+```
+
+Due to SQLite supporting only a small amount of variables in a single query, you will need to use MySQL as you are above said limit. This is typically due to the adding of more workers/area to your map. 
+
 ### I have more questions!
 
 Please read the [Wiki](http://rocketmap.readthedocs.io/en/develop/first-run/configuration-files.html) for information and then join us on the [RocketMap Discord](https://discord.gg/rocketmap). Before asking questions in #help on Discord, make sure you've read #announcements and #faq.
