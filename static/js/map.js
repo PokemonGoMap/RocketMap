@@ -363,6 +363,7 @@ function initSidebar() {
     $('#spawnpoints-switch').prop('checked', Store.get('showSpawnpoints'))
     $('#ranges-switch').prop('checked', Store.get('showRanges'))
     $('#sound-switch').prop('checked', Store.get('playSound'))
+    $('#pokemoncries').toggle(Store.get('playSound'))
     $('#cries-switch').prop('checked', Store.get('playCries'))
     var searchBox = new google.maps.places.Autocomplete(document.getElementById('next-location'))
     $('#next-location').css('background-color', $('#geoloc-switch').prop('checked') ? '#e0e0e0' : '#ffffff')
@@ -2374,6 +2375,12 @@ $(function () {
 
     $('#sound-switch').change(function () {
         Store.set('playSound', this.checked)
+        var criesWrapper = $('#pokemoncries')
+        if (this.checked) {
+            criesWrapper.show()
+        } else {
+            criesWrapper.hide()
+        }
     })
 
     $('#cries-switch').change(function () {
