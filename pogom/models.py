@@ -2194,13 +2194,13 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                         'latitude': f.get('latitude', 0),
                         'longitude': f.get('longitude', 0),
                         'last_modified_time': f.get(
-							'last_modified_timestamp_ms', 0),
+                            'last_modified_timestamp_ms', 0),
                         'lure_expiration': l_e,
                         'active_fort_modifier': active_fort_modifier
                     }))
 
                 if ((f.get('id', 0), int(
-						f.get('last_modified_timestamp_ms', 0) / 1000.0))
+                        f.get('last_modified_timestamp_ms', 0) / 1000.0))
                         in encountered_pokestops):
                     # If pokestop has been encountered before and hasn't
                     # changed don't process it.
