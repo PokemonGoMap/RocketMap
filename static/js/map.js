@@ -768,16 +768,16 @@ function customizePokemonMarker(marker, item, skipNotification) {
             if (Store.get('playSound') && !Store.get('playCries')) {
                 audio.play()
             } else if (Store.get('playSound') && Store.get('playCries')) {
-                var audiocry = new Audio('static/sounds/cries/' + item['pokemon_id'] + '.wav')
-                audiocry.play().catch(function (err) {
+                var audioCry = new Audio('static/sounds/cries/' + item['pokemon_id'] + '.wav')
+                audioCry.play().catch(function (err) {
                     if (err) {
-                        console.log('sound for this pokemon is missing, using ding instead')
-                        var audio = new Audio('static/sounds/ding.mp3')
+                        console.log('Sound for Pokémon ' + item['pokemon_id'] + ' is missing, using generic sound instead')
                         audio.play()
                     }
                 })
             }
-            sendNotification(getNotifyText(item).fav_title, getNotifyText(item).fav_text, 'static/icons/' + item['pokemon_id'] + '.png', item['latitude'], item['longitude'])
+            var notifyText = getNotifyText(item)
+            sendNotification(notifyText.fav_title, notifyText.fav_text, 'static/icons/' + item['pokemon_id'] + '.png', item['latitude'], item['longitude'])
         }
         if (marker.animationDisabled !== true) {
             marker.setAnimation(google.maps.Animation.BOUNCE)
@@ -791,15 +791,14 @@ function customizePokemonMarker(marker, item, skipNotification) {
                 if (Store.get('playSound') && !Store.get('playCries')) {
                     audio.play()
                 } else if (Store.get('playSound') && Store.get('playCries')) {
-                    var audiocryiv = new Audio('static/sounds/cries/' + item['pokemon_id'] + '.wav')
-                    audiocryiv.play().catch(function (err) {
+                    audioCry.play().catch(function (err) {
                         if (err) {
-                            console.log('sound for this pokemon is missing, using ding instead')
+                            console.log('Sound for Pokémon ' + item['pokemon_id'] + ' is missing, using generic sound instead'))
                             audio.play()
                         }
                     })
                 }
-                sendNotification(getNotifyText(item).fav_title, getNotifyText(item).fav_text, 'static/icons/' + item['pokemon_id'] + '.png', item['latitude'], item['longitude'])
+                sendNotification(notifyText.fav_title, notifyText.fav_text, 'static/icons/' + item['pokemon_id'] + '.png', item['latitude'], item['longitude'])
             }
             if (marker.animationDisabled !== true) {
                 marker.setAnimation(google.maps.Animation.BOUNCE)
