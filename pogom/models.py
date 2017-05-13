@@ -2193,12 +2193,14 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                         'enabled': f.get('enabled', 0),
                         'latitude': f.get('latitude', 0),
                         'longitude': f.get('longitude', 0),
-                        'last_modified_time': f.get('last_modified_timestamp_ms', 0),
+                        'last_modified_time': f.get(
+							'last_modified_timestamp_ms', 0),
                         'lure_expiration': l_e,
                         'active_fort_modifier': active_fort_modifier
                     }))
 
-                if ((f.get('id', 0), int(f.get('last_modified_timestamp_ms', 0) / 1000.0))
+                if ((f.get('id', 0), int(
+						f.get('last_modified_timestamp_ms', 0) / 1000.0))
                         in encountered_pokestops):
                     # If pokestop has been encountered before and hasn't
                     # changed don't process it.
@@ -2228,13 +2230,13 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                         'team_id': f.get('owned_by_team', 0),
                         'guard_pokemon_id': f.get('guard_pokemon_id', 0),
                         'gym_points': f.get('gym_points', 0),
-                        'enabled': f.get('enabled', 0 ),
+                        'enabled': f.get('enabled', 0),
                         'latitude': f.get('latitude', 0),
                         'longitude': f.get('longitude', 0),
                         'last_modified': f.get('last_modified_timestamp_ms', 0)
                     }))
 
-                gyms[f.get('id',0)] = {
+                gyms[f.get('id', 0)] = {
                     'gym_id': f.get('id', 0),
                     'team_id': f.get('owned_by_team', 0),
                     'guard_pokemon_id': f.get('guard_pokemon_id', 0),
