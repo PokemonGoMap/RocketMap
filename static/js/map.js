@@ -793,7 +793,7 @@ function customizePokemonMarker(marker, item, skipNotification) {
                 } else if (Store.get('playSound') && Store.get('playCries')) {
                     audioCry.play().catch(function (err) {
                         if (err) {
-                            console.log('Sound for Pokémon ' + item['pokemon_id'] + ' is missing, using generic sound instead'))
+                            console.log('Sound for Pokémon ' + item['pokemon_id'] + ' is missing, using generic sound instead')
                             audio.play()
                         }
                     })
