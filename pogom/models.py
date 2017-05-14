@@ -245,7 +245,7 @@ class Pokemon(LatLongModel):
     @cached(cache)
     def get_seen(timediff):
         if timediff:
-            timediff = datetime.utcnow() - timediff
+            timediff = datetime.utcnow() - timedelta(hours=timediff)
         pokemon_count_query = (Pokemon
                                .select(Pokemon.pokemon_id,
                                        fn.COUNT(Pokemon.pokemon_id).alias(
@@ -270,7 +270,23 @@ class Pokemon(LatLongModel):
                  .where(Pokemon.disappear_time ==
                         pokemon_count_query.c.lastappeared)
                  .dicts()
+                 .sql()
                  )
+
+        # Hack to tell SQL to use index. Significantly speeds up query times
+        use_index = ''
+        query_sub = None
+        if args.db_type == 'mysql':
+            use_index = 'AS t3 USE INDEX (pokemon_disappear_time)'
+            query_sub = query[1]
+        else:
+            use_index = 'AS t3 INDEXED BY pokemon_disappear_time'
+            query_sub = query[1][0]
+
+        query = Pokemon.raw(query[0]
+                            .replace('AS t3',
+                                     use_index),
+                            query_sub).dicts()
 
         # Performance:  disable the garbage collector prior to creating a
         # (potentially) large dict with append().
@@ -296,7 +312,7 @@ class Pokemon(LatLongModel):
         :return: list of Pokemon appearances over a selected period
         '''
         if timediff:
-            timediff = datetime.utcnow() - timediff
+            timediff = datetime.utcnow() - timedelta(hours=timediff)
         query = (Pokemon
                  .select(Pokemon.latitude, Pokemon.longitude,
                          Pokemon.pokemon_id,
@@ -315,6 +331,7 @@ class Pokemon(LatLongModel):
     @staticmethod
     def get_appearances_times_by_spawnpoint(pokemon_id, spawnpoint_id,
                                             timediff):
+
         '''
         :param pokemon_id: id of Pokemon that we need appearances times for.
         :param spawnpoint_id: spawnpoint id we need appearances times for.
@@ -322,7 +339,7 @@ class Pokemon(LatLongModel):
         :return: list of time appearances over a selected period.
         '''
         if timediff:
-            timediff = datetime.utcnow() - timediff
+            timediff = datetime.utcnow() - timedelta(hours=timediff)
         query = (Pokemon
                  .select(Pokemon.disappear_time)
                  .where((Pokemon.pokemon_id == pokemon_id) &
