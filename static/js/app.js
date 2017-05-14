@@ -181,11 +181,13 @@
         $stats.appendChild($statsClose)
     }
 
-    $gymSidebarClose = document.createElement('a')
-    $gymSidebarClose.href = '#'
-    $gymSidebarClose.className = 'close'
-    $gymSidebarClose.tabIndex = 0
-    $gymSidebar.appendChild($gymSidebarClose)
+    if ($gymSidebar) {
+        $gymSidebarClose = document.createElement('a')
+        $gymSidebarClose.href = '#'
+        $gymSidebarClose.className = 'close'
+        $gymSidebarClose.tabIndex = 0
+        $gymSidebar.appendChild($gymSidebarClose)
+    }
 
     // Event: Hide on ESC.
     window.addEventListener('keydown', function (event) {
