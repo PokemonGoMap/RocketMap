@@ -2,7 +2,7 @@
 
 ### Should I use this as a way to make money?
 
-No, it is gross to charge people for maps when the information should be provided by Niantic! We do not endorse paid maps, which is why this platform is opensource. 
+No, it is gross to charge people for maps when the information should be provided by Niantic! We do not endorse paid maps, which is why this platform is opensource.
 
 ### What do the spawn point colors mean?
 
@@ -16,7 +16,7 @@ You are missing the sprite files. Please consult #faq on the [RocketMap Discord]
 
 ### Lures are 6 hours right now! Why is it saying they have already expired?
 
-You need to add `-ldur 360` to change the lure assumption to 6 hours (360 minutes.) 
+You need to add `-ldur 360` to change the lure assumption to 6 hours (360 minutes.)
 
 ### Can I sign in with Google?
 
@@ -54,7 +54,7 @@ It is a lot simplier to use a [config file](http://rocketmap.readthedocs.io/en/d
 
 ### Can I scan for free or do I need to pay for a hashing key?
 
-Using a [hashing  key](https://hashing.pogodev.org/) is mandatory at this point. The API will not function without an active hashing key from Bossland. [More Informatiion about Hashing Keys](https://rocketmap.readthedocs.io/en/develop/first-run/hashing.html) 
+Using a [hashing  key](https://hashing.pogodev.org/) is mandatory at this point. The API will not function without an active hashing key from Bossland. [More Informatiion about Hashing Keys](https://rocketmap.readthedocs.io/en/develop/first-run/hashing.html)
 
 ### Is there anything I can do to lower captchas?
 
@@ -67,7 +67,7 @@ For a rough guide you can use the formulas at the bottom of this page.
 
 ### example.py isn't working right!
 
-Seb deleted it, it was the only good thing left in our lives. Seb has murdered us all. 
+Seb deleted it, it was the only good thing left in our lives. Seb has murdered us all.
 
 ### I have problems with my database because......
 
@@ -87,13 +87,13 @@ No, the best course of action is to delete it all and start again, this time don
 
 ### I used a PR and now everything is messed up! HELP ME!
 
-No, remove everything and start from scratch. A Pull Request is merged when it meets the standards of the project. 
+No, remove everything and start from scratch. A Pull Request is merged when it meets the standards of the project.
 
 ### “It’s acting like the location flag is missing.”
 
 -l, never forget.
 
-### I overridden watchdog and now all my accounts are flagged/banned. 
+### I overridden watchdog and now all my accounts are flagged/banned.
 
 Good Job! We recommend making new accounts. [Current Tools are Here!](https://rocketmap.readthedocs.io/en/develop/extras/Community-Tools.html)
 
@@ -133,7 +133,7 @@ The account is banned or hasn't completed the tutorial.
 InternalError(1054, u"unknown column 'cp' in 'field list'") or similar
 ```
 
-Only one instance can run when the database is being modified or upgraded. Run ***ONE*** instance of RM with `-cd` to wipe your database, then run ***ONE*** instance of RM (without `-cd`) to setup your database. 
+Only one instance can run when the database is being modified or upgraded. Run ***ONE*** instance of RM with `-cd` to wipe your database, then run ***ONE*** instance of RM (without `-cd`) to setup your database.
 
 ```
 ValueError: Exceeded maximum connections.
@@ -151,11 +151,11 @@ You need to raise the maximum connections allowed on your MySQL server configura
 OperationalError: too many SQL variables
 ```
 
-Due to SQLite supporting only a small amount of variables in a single query, you will need to use MySQL as you are above said limit. This is typically due to the adding of more workers/area to your map. 
+Due to SQLite supporting only a small amount of variables in a single query, you will need to use MySQL as you are above said limit. This is typically due to the adding of more workers/area to your map.
 
 ## I have more questions!
 
-Please read the [Wiki](http://rocketmap.readthedocs.io/en/develop/first-run/configuration-files.html) for information and then join us on the [RocketMap Discord](https://discord.gg/rocketmap). Before asking questions in #help on Discord, make sure you've read #announcements and #faq.
+Please read all wiki pages relating to the specific function you are questioning. If it does not answer your question, join us on the [RocketMap Discord](https://discord.gg/rocketmap). Before asking questions in #help on Discord, make sure you've read #announcements and #faq.
 
 ## Formulas?
 
