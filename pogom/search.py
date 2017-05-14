@@ -1268,12 +1268,12 @@ def check_forced_version(args, api_version, api_check_time, pause_bit):
         try:
             if StrictVersion(api_version) < StrictVersion(forced_api):
                 pause_bit.set()
-                log.info(('Started with API: {}, ' +
+                log.warning(('Started with API: {}, ' +
                           'Niantic forced to API: {}').format(
                     api_version,
                     forced_api))
-                log.info('Scanner paused due to forced Niantic API update.')
-                log.info('Stop the scanner process until RocketMap ' +
+                log.warning('Scanner paused due to forced Niantic API update.')
+                log.warning('Stop the scanner process until RocketMap ' +
                          'has updated.')
         except ValueError as e:
             # unknown version format. Stop scanning as well.
