@@ -1265,8 +1265,7 @@ def check_forced_version(args, api_version, api_check_time, pause_bit):
         api_check_time = int(time.time()) + args.version_check_interval
         forced_api = get_api_version(args)
 
-        if (StrictVersion(api_version) < StrictVersion(forced_api)
-                and forced_api != 0):
+        if StrictVersion(api_version) < StrictVersion(forced_api):
             pause_bit.set()
             log.info(('Started with API: {}, ' +
                       'Niantic forced to API: {}').format(
@@ -1301,7 +1300,7 @@ def get_api_version(args):
             proxies=proxies,
             verify=False)
         return r.text[2:] if (r.status_code == requests.codes.ok and
-                              r.text[2:].count('.') == 2) else 0
+                              r.text[2:].count('.') == 2) else '0.0'
     except Exception as e:
         log.warning('error on API check: %s', repr(e))
-        return 0
+        return '0.0'
