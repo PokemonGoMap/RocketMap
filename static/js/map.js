@@ -792,6 +792,7 @@ function customizePokemonMarker(marker, item, skipNotification) {
     if (item['individual_attack'] != null) {
         var perfection = getIv(item['individual_attack'], item['individual_defense'], item['individual_stamina'])
         if (notifiedMinPerfection > 0 && perfection >= notifiedMinPerfection) {
+            if (!skipNotification) {
                 playPokemonSound(item['pokemon_id'])
                 sendNotification(notifyText.fav_title, notifyText.fav_text, 'static/icons/' + item['pokemon_id'] + '.png', item['latitude'], item['longitude'])
             }
