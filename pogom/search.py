@@ -1265,15 +1265,22 @@ def check_forced_version(args, api_version, api_check_time, pause_bit):
         api_check_time = int(time.time()) + args.version_check_interval
         forced_api = get_api_version(args)
 
-        if StrictVersion(api_version) < StrictVersion(forced_api):
-            pause_bit.set()
-            log.info(('Started with API: {}, ' +
-                      'Niantic forced to API: {}').format(
-                api_version,
-                forced_api))
-            log.info('Scanner paused due to forced Niantic API update.')
-            log.info('Stop the scanner process until RocketMap ' +
-                     'has updated.')
+        try:
+            if StrictVersion(api_version) < StrictVersion(forced_api):
+                pause_bit.set()
+                log.info(('Started with API: {}, ' +
+                          'Niantic forced to API: {}').format(
+                    api_version,
+                    forced_api))
+                log.info('Scanner paused due to forced Niantic API update.')
+                log.info('Stop the scanner process until RocketMap ' +
+                         'has updated.')
+        except ValueError as e:
+            log.warning(
+                'API check returned invalid version number: %s',
+                forced_api)
+        except Exception as e:
+            log.warning('Unknown error on API version comparison: %s', repr(e))
 
     return api_check_time
 
@@ -1299,8 +1306,8 @@ def get_api_version(args):
             'https://pgorelease.nianticlabs.com/plfe/version',
             proxies=proxies,
             verify=False)
-        return r.text[2:] if (r.status_code == requests.codes.ok and
-                              r.text[2:].count('.') == 2) else '0.0'
+        return r.text[2:] if r.status_code == requests.codes.ok else '0.0'
     except Exception as e:
         log.warning('error on API check: %s', repr(e))
+        # do not stop scanning because check failed.
         return '0.0'
