@@ -749,7 +749,22 @@ function getNotifyText(item) {
     }
 }
 
+function playPokemonSound(pokemonID) {
+    var audioCry = new Audio('static/sounds/cries/' + pokemonID + '.wav')
+    if (Store.get('playSound') && !Store.get('playCries')) {
+        audio.play()
+    } else if (Store.get('playSound') && Store.get('playCries')) {
+        audioCry.play().catch(function (err) {
+            if (err) {
+                console.log('Sound for Pokémon ' + pokemonID + ' is missing, using generic sound instead.')
+                audio.play()
+            }
+        })
+    }
+}
+
 function customizePokemonMarker(marker, item, skipNotification) {
+    var notifyText = getNotifyText(item)
     marker.addListener('click', function () {
         this.setAnimation(null)
         this.animationDisabled = true
@@ -766,18 +781,7 @@ function customizePokemonMarker(marker, item, skipNotification) {
 
     if (notifiedPokemon.indexOf(item['pokemon_id']) > -1 || notifiedRarity.indexOf(item['pokemon_rarity']) > -1) {
         if (!skipNotification) {
-            if (Store.get('playSound') && !Store.get('playCries')) {
-                audio.play()
-            } else if (Store.get('playSound') && Store.get('playCries')) {
-                var audioCry = new Audio('static/sounds/cries/' + item['pokemon_id'] + '.wav')
-                audioCry.play().catch(function (err) {
-                    if (err) {
-                        console.log('Sound for Pokémon ' + item['pokemon_id'] + ' is missing, using generic sound instead')
-                        audio.play()
-                    }
-                })
-            }
-            var notifyText = getNotifyText(item)
+            playPokemonSound(item['pokemon_id'])
             sendNotification(notifyText.fav_title, notifyText.fav_text, 'static/icons/' + item['pokemon_id'] + '.png', item['latitude'], item['longitude'])
         }
         if (marker.animationDisabled !== true) {
@@ -788,17 +792,7 @@ function customizePokemonMarker(marker, item, skipNotification) {
     if (item['individual_attack'] != null) {
         var perfection = getIv(item['individual_attack'], item['individual_defense'], item['individual_stamina'])
         if (notifiedMinPerfection > 0 && perfection >= notifiedMinPerfection) {
-            if (!skipNotification) {
-                if (Store.get('playSound') && !Store.get('playCries')) {
-                    audio.play()
-                } else if (Store.get('playSound') && Store.get('playCries')) {
-                    audioCry.play().catch(function (err) {
-                        if (err) {
-                            console.log('Sound for Pokémon ' + item['pokemon_id'] + ' is missing, using generic sound instead')
-                            audio.play()
-                        }
-                    })
-                }
+                playPokemonSound(item['pokemon_id'])
                 sendNotification(notifyText.fav_title, notifyText.fav_text, 'static/icons/' + item['pokemon_id'] + '.png', item['latitude'], item['longitude'])
             }
             if (marker.animationDisabled !== true) {
