@@ -2370,11 +2370,14 @@ $(function () {
 
     $('#sound-switch').change(function () {
         Store.set('playSound', this.checked)
+        var options = {
+            'duration': 500
+        }
         var criesWrapper = $('#pokemoncries')
         if (this.checked) {
-            criesWrapper.show()
+            criesWrapper.show(options)
         } else {
-            criesWrapper.hide()
+            criesWrapper.hide(options)
         }
     })
 
