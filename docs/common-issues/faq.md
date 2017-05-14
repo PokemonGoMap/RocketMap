@@ -153,7 +153,7 @@ OperationalError: too many SQL variables
 
 Due to SQLite supporting only a small amount of variables in a single query, you will need to use MySQL as you are above said limit. This is typically due to the adding of more workers/area to your map. 
 
-### I have more questions!
+## I have more questions!
 
 Please read the [Wiki](http://rocketmap.readthedocs.io/en/develop/first-run/configuration-files.html) for information and then join us on the [RocketMap Discord](https://discord.gg/rocketmap). Before asking questions in #help on Discord, make sure you've read #announcements and #faq.
 

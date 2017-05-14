@@ -51,5 +51,5 @@ Either your key is expired, the hashing servers are having issues, or you have m
 ### This one? `TempHashingBanException('Your IP was temporarily banned for sending too many requests with invalid keys',)`
 You are using invalid keys, or... you guessed it, the hashing servers are having issues. This ban will last for 3 minutes. 
 
-### Is there a free trial key I could use?
-Yes, @seb#0609 is willing to provide you with a free key for a 48 hour period. Please message him directly for more information! Information will not be provide by anyone other than Seb. [click here for our discord server](https://discord.gg/rocketmap)
+### I have more qestions!
+Check out the [Common Questions and Answers Page](https://rocketmap.readthedocs.io/en/develop/common-issues/faq.html) and then join us on the [RocketMap Discord](https://discord.gg/rocketmap) Before asking questions in #help on Discord, make sure you’ve read #announcements and #faq.
