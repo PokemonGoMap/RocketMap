@@ -1299,6 +1299,7 @@ def get_api_version(args):
             proxies=proxies,
             verify=False,
             timeout=10)
+
         return r.text[2:] if (r.status_code == requests.codes.ok and
                               r.text[2:].count('.') == 2) else 0
     except Exception as e:
