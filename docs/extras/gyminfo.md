@@ -25,7 +25,7 @@ python runserver.py -gi
 Or update your config.ini:
 
 ```
-gym-info	            # enables detailed gym info collection (default false)
+gym-info			# enables detailed gym info collection (default false)
 ```
 
 ## Displaying the gym details sidebar in the front-end
