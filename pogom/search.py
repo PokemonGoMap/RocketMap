@@ -1304,7 +1304,7 @@ def get_api_version(args):
         s = requests.Session()
         s.mount('https://',
                 HTTPAdapter(max_retries=Retry(total=3,
-                                              backoff_factor=0.1,
+                                              backoff_factor=0.4,
                                               status_forcelist=[500, 502,
                                                                 503, 504])))
         r = s.get(
