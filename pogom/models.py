@@ -111,6 +111,7 @@ class Pokemon(BaseModel):
     height = FloatField(null=True)
     gender = SmallIntegerField(null=True)
     form = SmallIntegerField(null=True)
+    cp_multiplier = CharField(max_length=25, null=True)
     last_modified = DateTimeField(
         null=True, index=True, default=datetime.utcnow)
 
@@ -2069,7 +2070,8 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                 'height': None,
                 'weight': None,
                 'gender': None,
-                'form': None
+                'form': None,
+                'cp_multiplier': None
             }
 
             if (encounter_result is not None and 'wild_pokemon'
@@ -2103,7 +2105,9 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                     'move_2': pokemon_info['move_2'],
                     'height': pokemon_info['height_m'],
                     'weight': pokemon_info['weight_kg'],
-                    'gender': pokemon_info['pokemon_display']['gender']
+                    'gender': pokemon_info['pokemon_display']['gender'],
+                    'cp': pokemon_info['cp'],
+                    'cp_multiplier': str(pokemon_info['cp_multiplier'])
                 })
 
                 # Only add CP if we're level 30+.
@@ -2873,7 +2877,7 @@ def database_migrate(db, old_ver):
             migrate(
                 migrator.add_index('pokestop', ('last_updated',), False)
             )
-
+        
     if old_ver < 17:
         migrate(
             migrator.add_column('pokemon', 'form',
@@ -2883,7 +2887,9 @@ def database_migrate(db, old_ver):
     if old_ver < 18:
         migrate(
             migrator.add_column('pokemon', 'cp',
-                                SmallIntegerField(null=True))
+                                SmallIntegerField(null=True)),
+            migrator.add_column('pokemon', 'cp_multiplier',
+                                CharField(null=True, max_length=25, default=0))
         )
 
     # Always log that we're done.

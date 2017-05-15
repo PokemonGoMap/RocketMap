@@ -70,6 +70,14 @@ var genderType = ['♂', '♀', '⚲']
 var unownForm = ['unset', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '!', '?']
 
 
+var LevelCP = ['0.0939999967813','0.166397869587','0.215732470155','0.255720049143','0.290249884129',
+'0.321087598801','0.349212676287','0.375235587358','0.399567276239','0.422500014305',
+'0.443107545376','0.462798386812','0.481684952974','0.499858438969','0.517393946648',
+'0.534354329109','0.550792694092','0.566754519939','0.582278907299','0.597400009632',
+'0.612157285213','0.62656712532','0.640652954578','0.654435634613','0.667934000492',
+'0.68116492033','0.694143652916','0.706884205341','0.719399094582','0.731700003147']
+
+
 /*
   text place holders:
   <pkm> - pokemon name
@@ -396,6 +404,7 @@ function openMapDirections(lat, lng) { // eslint-disable-line no-unused-vars
     window.open(url, '_blank')
 }
 
+
 // Converts timestamp to readable String
 function getDateStr(t) {
     var dateStr = 'Unknown'
@@ -426,28 +435,28 @@ function pokemonLabel(item) {
     var gender = item['gender']
     var form = item['form']
     var cp = item['cp']
+    var cpmultiplier = item['cp_multiplier']
 
     $.each(types, function (index, type) {
         typesDisplay += getTypeSpan(type)
     })
 
     var details = ''
+    var cpText = ''
+    if (cp != null) {
+        var cpText = `| CP: <b>${cp}</b>`
+    }
+    var cpLevel = ''
+    if (cpmultiplier != null) {
+        var cpLevel = `| LVL: <b>${LevelCP.indexOf(cpmultiplier)+1}</b>`
+    }
     if (atk !== null && def !== null && sta !== null) {
         var iv = getIv(atk, def, sta)
         details = `
             <div>
-                IV: ${iv.toFixed(1)}% (${atk}/${def}/${sta})
+                IV: ${iv.toFixed(1)}% (${atk}/${def}/${sta}) ${cpText} ${cpLevel}
             </div>
             `
-
-        if (cp !== null) {
-            details += `
-            <div>
-                CP: ${cp}
-            </div>
-            `
-        }
-
         details += `
             <div>
                 Moves: ${pMove1} / ${pMove2}
