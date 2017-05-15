@@ -1947,7 +1947,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                     hlvl_account = account
                     hlvl_api = api
                 else:
-                    # Get account to use for IV or CP scanning.
+                    # Get account to use for IV and CP scanning.
                     hlvl_account = account_sets.next('30', scan_location)
 
                 # If we don't have an API object yet, it means we didn't re-use
