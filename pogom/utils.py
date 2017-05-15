@@ -172,16 +172,12 @@ def get_args():
                                     'webhooks. Specified as Pokemon ID.'))
     webhook_list.add_argument('-wwhtf', '--webhook-whitelist-file',
                               default='', help='File containing a list of '
-                                               'Pokemon to send to '
-                                               'webhooks. Pokemon are '
-                                               ' specified by their name, '
-                                               ' one on each line.')
+                                               'Pokemon IDs to be sent to '
+                                               'webhooks.')
     webhook_list.add_argument('-wblkf', '--webhook-blacklist-file',
                               default='', help='File containing a list of '
-                                               'Pokemon NOT to send to'
-                                               'webhooks. Pokemon are '
-                                               ' specified by their name, '
-                                               ' one on each line.')
+                                               'Pokemon IDs NOT to be sent to'
+                                               'webhooks.')
     parser.add_argument('-ld', '--login-delay',
                         help='Time delay between each login attempt.',
                         type=float, default=6)
@@ -690,6 +686,20 @@ def get_args():
                   ": Error: no accounts specified. Use -a, -u, and -p or " +
                   "--accountcsv to add accounts.")
             sys.exit(1)
+
+        if args.webhook_whitelist_file:
+            with open(args.webhook_whitelist_file) as f:
+                args.webhook_whitelist = frozenset(
+                    [int(p_id.strip()) for p_id in f])
+        elif args.webhook_blacklist_file:
+            with open(args.webhook_blacklist_file) as f:
+                args.webhook_blacklist = frozenset(
+                    [int(p_id.strip()) for p_id in f])
+        else:
+            args.webhook_blacklist = frozenset(
+                [int(i) for i in args.webhook_blacklist])
+            args.webhook_whitelist = frozenset(
+                [int(i) for i in args.webhook_whitelist])
 
         # Decide which scanning mode to use.
         if args.spawnpoint_scanning:

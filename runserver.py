@@ -18,7 +18,7 @@ from flask_cache_bust import init_cache_busting
 
 from pogom import config
 from pogom.app import Pogom
-from pogom.utils import get_args, now, extract_sprites, get_pokemon_id
+from pogom.utils import get_args, now, extract_sprites
 from pogom.altitude import get_gmaps_altitude
 
 from pogom.search import search_overseer_thread
@@ -327,20 +327,6 @@ def main():
     app.set_search_control(pause_bit)
     app.set_heartbeat_control(heartbeat)
     app.set_location_queue(new_location_queue)
-
-    if args.webhook_whitelist_file:
-        with open(args.webhook_whitelist_file) as f:
-            args.webhook_whitelist = frozenset(
-                [get_pokemon_id(name) for name in f.read().splitlines()])
-    elif args.webhook_blacklist_file:
-        with open(args.webhook_blacklist_file) as f:
-            args.webhook_blacklist = frozenset(
-                [get_pokemon_id(name) for name in f.read().splitlines()])
-    else:
-        args.webhook_blacklist = frozenset(
-            [int(i) for i in args.webhook_blacklist])
-        args.webhook_whitelist = frozenset(
-            [int(i) for i in args.webhook_whitelist])
 
     if args.no_server:
         # This loop allows for ctrl-c interupts to work since flask won't be
