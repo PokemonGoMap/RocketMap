@@ -25,6 +25,7 @@ from cachetools import TTLCache
 from cachetools import cached
 from timeit import default_timer
 
+from pogom.pgscout import pgscout_encounter
 from . import config
 from .utils import (get_pokemon_name, get_pokemon_rarity, get_pokemon_types,
                     get_args, cellid, in_radius, date_secs, clock_between,
@@ -42,7 +43,7 @@ args = get_args()
 flaskDb = FlaskDB()
 cache = TTLCache(maxsize=100, ttl=60 * 5)
 
-db_schema_version = 18
+db_schema_version = 19
 
 
 class MyRetryDB(RetryOperationalError, PooledMySQLDatabase):
@@ -111,6 +112,12 @@ class Pokemon(BaseModel):
     height = FloatField(null=True)
     gender = SmallIntegerField(null=True)
     form = SmallIntegerField(null=True)
+    level = SmallIntegerField(null=True)
+    catch_prob_1 = DoubleField(null=True)
+    catch_prob_2 = DoubleField(null=True)
+    catch_prob_3 = DoubleField(null=True)
+    rating_attack = CharField(null=True, max_length=1)
+    rating_defense = CharField(null=True, max_length=1)
     last_modified = DateTimeField(
         null=True, index=True, default=datetime.utcnow)
 
@@ -1757,6 +1764,32 @@ def hex_bounds(center, steps=None, radius=None):
     return (n, e, s, w)
 
 
+def perform_pgscout(p):
+    pokemon_id = p['pokemon_data']['pokemon_id']
+    pokemon_name = get_pokemon_name(pokemon_id)
+    log.info("PGScouting a {} at {}, {}.".format(pokemon_name, p['latitude'],
+                                                 p['longitude']))
+
+    # Prepare Pokemon object
+    pkm = Pokemon()
+    pkm.pokemon_id = pokemon_id
+    pkm.encounter_id = b64encode(str(p['encounter_id']))
+    pkm.spawnpoint_id = p['spawn_point_id']
+    pkm.latitude = p['latitude']
+    pkm.longitude = p['longitude']
+    scout_result = pgscout_encounter(pkm)
+    if scout_result['success']:
+        log.info(
+            "Successfully PGScouted a {:.1f}% lvl {} {} with {} CP (scout "
+            "level {}).".format(
+                scout_result['iv_percent'], scout_result['level'],
+                pokemon_name, scout_result['cp'], scout_result['scout_level']))
+    else:
+        log.warning("Failed PGScouting {}: {}".format(pokemon_name,
+                                                      scout_result['error']))
+    return scout_result
+
+
 # todo: this probably shouldn't _really_ be in "models" anymore, but w/e.
 def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
               key_scheduler, api, status, now_date, account, account_sets):
@@ -1931,8 +1964,13 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
             # Scan for IVs/CP and moves.
             pokemon_id = p['pokemon_data']['pokemon_id']
             encounter_result = None
+            scout_result = None
 
-            if args.encounter and (pokemon_id in args.enc_whitelist):
+            if args.encounter and (
+                    pokemon_id in args.enc_whitelist) and level < 30 and \
+                    args.pgscout_url:
+                    scout_result = perform_pgscout(p)
+            elif args.encounter and (pokemon_id in args.enc_whitelist):
                 time.sleep(args.encounter_delay)
 
                 hlvl_account = None
@@ -2069,7 +2107,13 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                 'height': None,
                 'weight': None,
                 'gender': None,
-                'form': None
+                'form': None,
+                'level': None,
+                'catch_prob_1': None,
+                'catch_prob_2': None,
+                'catch_prob_3': None,
+                'rating_attack': None,
+                'rating_defense': None
             }
 
             if (encounter_result is not None and 'wild_pokemon'
@@ -2114,6 +2158,26 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                 if pokemon_info['pokemon_id'] == 201:
                     pokemon[p['encounter_id']]['form'] = pokemon_info[
                         'pokemon_display'].get('form', None)
+
+            # Updating Pokemon data from PGScout result
+            if scout_result is not None:
+                pokemon[p['encounter_id']].update({
+                    'individual_attack': scout_result['iv_attack'],
+                    'individual_defense': scout_result['iv_defense'],
+                    'individual_stamina': scout_result['iv_stamina'],
+                    'move_1': scout_result['move_1'],
+                    'move_2': scout_result['move_2'],
+                    'height': scout_result['height'],
+                    'weight': scout_result['weight'],
+                    'gender': scout_result['gender'],
+                    'cp': scout_result['cp'],
+                    'level': scout_result['level'],
+                    'catch_prob_1': scout_result['catch_prob_1'],
+                    'catch_prob_2': scout_result['catch_prob_2'],
+                    'catch_prob_3': scout_result['catch_prob_3'],
+                    'rating_attack': scout_result['rating_attack'],
+                    'rating_defense': scout_result['rating_defense'],
+                })
 
             if args.webhooks:
                 pokemon_id = p['pokemon_data']['pokemon_id']
@@ -2884,6 +2948,22 @@ def database_migrate(db, old_ver):
         migrate(
             migrator.add_column('pokemon', 'cp',
                                 SmallIntegerField(null=True))
+        )
+
+    if old_ver < 19:
+        migrate(
+            migrator.add_column('pokemon', 'level',
+                                SmallIntegerField(null=True)),
+            migrator.add_column('pokemon', 'catch_prob_1',
+                                DoubleField(null=True)),
+            migrator.add_column('pokemon', 'catch_prob_2',
+                                DoubleField(null=True)),
+            migrator.add_column('pokemon', 'catch_prob_3',
+                                DoubleField(null=True)),
+            migrator.add_column('pokemon', 'rating_attack',
+                                CharField(null=True, max_length=1)),
+            migrator.add_column('pokemon', 'rating_defense',
+                                CharField(null=True, max_length=1))
         )
 
     # Always log that we're done.

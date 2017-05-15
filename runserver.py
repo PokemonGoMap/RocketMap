@@ -242,6 +242,7 @@ def main():
 
     # DB Updates
     db_updates_queue = Queue()
+    app.set_db_updates_queue(db_updates_queue)
 
     # Thread(s) to process database updates.
     for i in range(args.db_threads):
