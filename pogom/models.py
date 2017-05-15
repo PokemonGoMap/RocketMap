@@ -1925,13 +1925,12 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
             disappear_time = now_date + \
                 timedelta(seconds=seconds_until_despawn)
 
-            printPokemon(p['pokemon_data']['pokemon_id'], p[
-                         'latitude'], p['longitude'], disappear_time)
+            pokemon_id = p['pokemon_data']['pokemon_id']
+            printPokemon(pokemon_id, p['latitude'], p['longitude'],
+                         disappear_time)
 
             # Scan for IVs/CP and moves.
-            pokemon_id = p['pokemon_data']['pokemon_id']
             encounter_result = None
-
             if args.encounter and (pokemon_id in args.enc_whitelist):
                 time.sleep(args.encounter_delay)
 
