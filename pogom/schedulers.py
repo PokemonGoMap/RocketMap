@@ -60,8 +60,8 @@ from queue import Empty
 from operator import itemgetter
 from datetime import datetime, timedelta
 from .transform import get_new_coords
-from .models import (hex_bounds, Pokemon, SpawnPoint, ScannedLocation,
-                     ScanSpawnPoint, HashKeys)
+from .models import (hex_bounds, Pokemon, Pokestop, Gym, SpawnPoint,
+                     ScannedLocation, ScanSpawnPoint, HashKeys)
 from .utils import now, cur_sec, cellid, equi_rect_distance
 from .altitude import get_altitude
 
@@ -326,6 +326,58 @@ class HexSearchSpawnpoint(HexSearch):
         locations = [
             coords for coords in locations
             if self._any_spawnpoints_in_range(coords[1], spawnpoints)]
+        return locations
+
+
+# Fort Only Hex Search works like Hex Search, but skips locations that
+# have no known forts.
+class HexSearchFort(HexSearch):
+
+    def _any_forts_in_range(self, coords, forts):
+        return any(
+            geopy.distance.distance(coords, x).meters <= 450
+            for x in forts)
+
+    # Extend the generate_locations function to remove locations with no forts.
+    def _generate_locations(self):
+
+        fort_locations = {}
+        # Attempt to load forts from file.
+        if self.args.fort_scanning != 'nofile':
+            log.debug('Loading forts from json file @ %s',
+                      self.args.fort_scanning)
+            try:
+                with open(self.args.fort_scanning) as file:
+                    fort_locations = json.load(file)
+            except ValueError as e:
+                log.error('JSON error: %s; will fallback to database', repr(e))
+            except IOError as e:
+                log.error(
+                    'Error opening json file: %s; will fallback to database',
+                    repr(e))
+        else:  # Load all forts in step limit from DB
+            if not self.args.no_pokestops:
+                fort_locations = Pokestop.get_stops_in_hex(
+                                    self.scan_location,
+                                    self.step_limit)
+            if not self.args.no_gyms:
+                fort_locations = fort_locations + (Gym.get_gyms_in_hex(
+                                    self.scan_location,
+                                    self.step_limit))
+
+        forts = set((d['lat'], d['lng']) for d in fort_locations)
+
+        if len(forts) == 0:
+            log.warning('No forts found in the specified area!  (Did ' +
+                        'you forget to run a normal scan in this area first?)')
+
+        # Call the original _generate_locations.
+        locations = super(HexSearchFort, self)._generate_locations()
+
+        # Remove items with no fort in range.
+        locations = [
+            coords for coords in locations
+            if self._any_forts_in_range(coords[1], forts)]
         return locations
 
 
@@ -1137,6 +1189,7 @@ class SchedulerFactory():
     __schedule_classes = {
         "hexsearch": HexSearch,
         "hexsearchspawnpoint": HexSearchSpawnpoint,
+        "hexsearchfort": HexSearchFort,
         "spawnscan": SpawnScan,
         "speedscan": SpeedScan,
     }

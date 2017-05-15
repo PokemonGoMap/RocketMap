@@ -278,8 +278,16 @@ def get_args():
                         action='store_true', default=False)
     parser.add_argument('-ss', '--spawnpoint-scanning',
                         help=('Use spawnpoint scanning (instead of hex ' +
-                              'grid). Scans in a circle based on step_limit ' +
-                              'when on DB.'),
+                              'grid or speed scan). Scans in a circle based ' +
+                              'on step_limit when on DB.'),
+                        nargs='?', const='nofile', default=False)
+    parser.add_argument('-fs', '--fort-scanning',
+                        help=('Use fort scanning (instead of hex ' +
+                              'grid or speed scan). Scans in a circle based ' +
+                              'on step_limit and skips cells without ' +
+                              'forts, which are retrieved from DB or file ' +
+                              'if added as argument. Best used with -np to ' +
+                              'increase cell size.'),
                         nargs='?', const='nofile', default=False)
     parser.add_argument('-speed', '--speed-scan',
                         help=('Use speed scanning to identify spawn points ' +
@@ -299,7 +307,15 @@ def get_args():
                               'duration.'), type=int, default=30)
     parser.add_argument('--dump-spawnpoints',
                         help=('Dump the spawnpoints from the db to json ' +
-                              '(only for use with -ss).'),
+                              '(only for use with -ss and file).'),
+                        action='store_true', default=False)
+    parser.add_argument('--dump-gyms',
+                        help=('Dump the gyms from the db to json ' +
+                              '(only for use with -fs and file).'),
+                        action='store_true', default=False)
+    parser.add_argument('--dump-pokestops',
+                        help=('Dump the pokestops from the db to json ' +
+                              '(only for use with -fs and file).'),
                         action='store_true', default=False)
     parser.add_argument('-pd', '--purge-data',
                         help=('Clear Pokemon from database this many hours ' +
@@ -709,6 +725,8 @@ def get_args():
             args.scheduler = 'SpawnScan'
         elif args.skip_empty:
             args.scheduler = 'HexSearchSpawnpoint'
+        elif args.fort_scanning:
+            args.scheduler = 'HexSearchFort'
         elif args.speed_scan:
             args.scheduler = 'SpeedScan'
         else:

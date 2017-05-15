@@ -42,7 +42,7 @@ args = get_args()
 flaskDb = FlaskDB()
 cache = TTLCache(maxsize=100, ttl=60 * 5)
 
-db_schema_version = 18
+db_schema_version = 19
 
 
 class MyRetryDB(RetryOperationalError, PooledMySQLDatabase):
@@ -419,8 +419,8 @@ class Pokemon(BaseModel):
         filtered = []
 
         for idx, sp in enumerate(s):
-            if geopy.distance.distance(
-                    center, (sp['lat'], sp['lng'])).meters <= step_distance:
+            if (geopy.distance.distance(
+                    center, (sp['lat'], sp['lng'])).meters <= step_distance):
                 filtered.append(s[idx])
 
         # At this point, 'time' is DISAPPEARANCE time, we're going to morph it
@@ -529,6 +529,42 @@ class Pokestop(BaseModel):
         gc.enable()
 
         return pokestops
+
+    @classmethod
+    def get_stops_in_hex(cls, center, steps):
+        log.info('Finding pokestops {} steps away.'.format(steps))
+
+        n, e, s, w = hex_bounds(center, steps)
+
+        query = (Pokestop
+                 .select(Pokestop.latitude.alias('lat'),
+                         Pokestop.longitude.alias('lng'),
+                         Pokestop.pokestop_id
+                         ))
+        query = (query.where((Pokestop.latitude <= n) &
+                             (Pokestop.latitude >= s) &
+                             (Pokestop.longitude >= w) &
+                             (Pokestop.longitude <= e)
+                             ))
+        # Sqlite doesn't support distinct on columns.
+        if args.db_type == 'mysql':
+            query = query.distinct(Pokestop.pokestop_id)
+        else:
+            query = query.group_by(Pokestop.pokestop_id)
+
+        s = list(query.dicts())
+
+        step_distance = ((steps - 1) * 779.4231) + 450
+        filtered = []
+
+        for pokestop in s:
+            if (geopy.distance.distance(
+                    center,
+                    (pokestop['lat'], pokestop['lng'])).meters <=
+                    step_distance):
+                filtered.append(pokestop)
+
+        return filtered
 
 
 class Gym(BaseModel):
@@ -699,6 +735,40 @@ class Gym(BaseModel):
 
         return result
 
+    @classmethod
+    def get_gyms_in_hex(cls, center, steps):
+        log.info('Finding gyms {} steps away.'.format(steps))
+
+        n, e, s, w = hex_bounds(center, steps)
+
+        query = (Gym
+                 .select(Gym.latitude.alias('lat'),
+                         Gym.longitude.alias('lng'),
+                         Gym.gym_id
+                         ))
+        query = (query.where((Gym.latitude <= n) &
+                             (Gym.latitude >= s) &
+                             (Gym.longitude >= w) &
+                             (Gym.longitude <= e)
+                             ))
+        # Sqlite doesn't support distinct on columns.
+        if args.db_type == 'mysql':
+            query = query.distinct(Gym.gym_id)
+        else:
+            query = query.group_by(Gym.gym_id)
+
+        s = list(query.dicts())
+
+        step_distance = ((steps - 1) * 779.4231) + 450
+        filtered = []
+
+        for gym in s:
+            if (geopy.distance.distance(
+                    center, (gym['lat'], gym['lng'])).meters <= step_distance):
+                filtered.append(gym)
+
+        return filtered
+
 
 class LocationAltitude(BaseModel):
     cellid = CharField(primary_key=True, max_length=50)
@@ -776,6 +846,9 @@ class ScannedLocation(BaseModel):
     # is 0.4 minutes in minsec.
     width = SmallIntegerField(default=0)
 
+    radius_default = 450 if args.no_pokemon else 70
+    radius = SmallIntegerField(default=radius_default)
+
     class Meta:
         indexes = ((('latitude', 'longitude'), False),)
         constraints = [Check('band1 >= -1'), Check('band1 < 3600'),
@@ -843,7 +916,8 @@ class ScannedLocation(BaseModel):
                 'band5': -1,
                 'width': 0,
                 'midpoint': 0,
-                'last_modified': None}
+                'last_modified': None,
+                'radius': 450 if args.no_pokemon else 70}
 
     # Used to update bands.
     @staticmethod
@@ -1749,7 +1823,12 @@ class HashKeys(BaseModel):
 def hex_bounds(center, steps=None, radius=None):
     # Make a box that is (70m * step_limit * 2) + 70m away from the
     # center point.  Rationale is that you need to travel.
-    sp_dist = 0.07 * (2 * steps + 1) if steps else radius
+    if args.no_pokemon:
+        step_diameter = 0.45
+    else:
+        step_diameter = 0.07
+
+    sp_dist = step_diameter * (2 * steps + 1) if steps else radius
     n = get_new_coords(center, sp_dist, 0)[0]
     e = get_new_coords(center, sp_dist, 90)[1]
     s = get_new_coords(center, sp_dist, 180)[0]
@@ -1830,8 +1909,26 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
             # a speed violation.
             log.warning('No nearby or wild Pokemon but there are visible gyms '
                         'or pokestops. Possible speed violation.')
+            if not (config['parse_pokestops'] or config['parse_gyms']):
+                # If we're not going to parse the forts, then we'll just
+                # exit here.
+                abandon_loc = True
+
+        if abandon_loc:
+            scan_loc = ScannedLocation.get_by_loc(step_location)
+            scan_loc['radius'] = 450 if args.no_pokemon else 70
+            ScannedLocation.update_band(scan_loc)
+            db_update_queue.put((ScannedLocation, {0: scan_loc}))
+
+            return {
+                'count': 0,
+                'gyms': gyms,
+                'spawn_points': spawn_points,
+                'bad_scan': True
+            }
 
     scan_loc = ScannedLocation.get_by_loc(step_location)
+    scan_loc['radius'] = 450 if args.no_pokemon else 70
     done_already = scan_loc['done']
     ScannedLocation.update_band(scan_loc, now_date)
     just_completed = not done_already and scan_loc['done']
@@ -2884,6 +2981,12 @@ def database_migrate(db, old_ver):
         migrate(
             migrator.add_column('pokemon', 'cp',
                                 SmallIntegerField(null=True))
+        )
+
+    if old_ver < 19:
+        migrate(
+            migrator.add_column(
+                'scannedlocation', 'radius', SmallIntegerField(default=70))
         )
 
     # Always log that we're done.
