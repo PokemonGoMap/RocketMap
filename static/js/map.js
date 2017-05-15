@@ -750,16 +750,20 @@ function getNotifyText(item) {
 }
 
 function playPokemonSound(pokemonID) {
-    var audioCry = new Audio('static/sounds/cries/' + pokemonID + '.wav')
-    if (Store.get('playSound') && !Store.get('playCries')) {
-        audio.play()
-    } else if (Store.get('playSound') && Store.get('playCries')) {
-        audioCry.play().catch(function (err) {
-            if (err) {
-                console.log('Sound for Pokémon ' + pokemonID + ' is missing, using generic sound instead.')
-                audio.play()
-            }
-        })
+    if (!Store.get('playSound')) {
+        return
+    } else {
+        if (!Store.get('playCries')) {
+            audio.play()
+        } else if (Store.get('playCries')) {
+            var audioCry = new Audio('static/sounds/cries/' + pokemonID + '.wav')
+            audioCry.play().catch(function (err) {
+                if (err) {
+                    console.log('Sound for Pokémon ' + pokemonID + ' is missing, using generic sound instead.')
+                    audio.play()
+                }
+            })
+        }
     }
 }
 
