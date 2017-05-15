@@ -755,7 +755,7 @@ function playPokemonSound(pokemonID) {
     } else {
         if (!Store.get('playCries')) {
             audio.play()
-        } else if (Store.get('playCries')) {
+        } else {
             var audioCry = new Audio('static/sounds/cries/' + pokemonID + '.wav')
             audioCry.play().catch(function (err) {
                 if (err) {
