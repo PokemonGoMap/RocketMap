@@ -71,6 +71,8 @@
                 </label>
               </div>
             </div>
+
+              {% if show.gym_info %}
             <div class="form-control switch-container" id="gym-sidebar-wrapper" style="display:none">
               <h3>Use Gym Sidebar</h3>
               <div class="onoffswitch">
@@ -81,6 +83,7 @@
                 </label>
               </div>
             </div>
+              {% endif %}
             <div id="gyms-filter-wrapper" style="display:none">
               <div class="form-control switch-container" id="team-gyms-only-wrapper">
                 <h3>Team</h3>
