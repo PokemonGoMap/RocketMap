@@ -28,7 +28,6 @@ import copy
 import requests
 import schedulers
 import terminalsize
-import threading
 
 from datetime import datetime
 from threading import Thread, Lock
@@ -491,6 +490,9 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
 
     # The real work starts here but will halt on pause_bit.set().
     while True:
+        if args.hash_key is not None:
+            for key in args.hash_key:
+                upsertKeys(key, key_scheduler.keys[key], db_updates_queue)
 
         if (args.on_demand_timeout > 0 and
                 (now() - args.on_demand_timeout) > heartb[0]):
@@ -1127,11 +1129,6 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
                               key_instance['remaining'],
                               key_instance['maximum'])
 
-                    # Delay hashing key db update to prevent deadlocks.
-                    t = threading.Timer(20.0, upsertKeys, [key, key_instance,
-                                                           dbq])
-                    t.start()
-
                 # Delay the desired amount after "scan" completion.
                 delay = scheduler.delay(status['last_scan_date'])
 
@@ -1159,7 +1156,7 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
             time.sleep(args.scan_delay)
 
 
-def upsertKeys(key, key_instance, dbq):
+def upsertKeys(key, key_instance, db_updates_queue):
     # Prepare hashing keys to be sent to the db. But only
     # sent latest updates of the 'peak' value per key.
         hashkeys = {}
@@ -1167,7 +1164,7 @@ def upsertKeys(key, key_instance, dbq):
         hashkeys[key]['key'] = key
         hashkeys[key]['peak'] = max(key_instance['peak'],
                                     HashKeys.getStoredPeak(key))
-        dbq.put((HashKeys, hashkeys))
+        db_updates_queue.put((HashKeys, hashkeys))
 
 
 def map_request(api, position, no_jitter=False):
