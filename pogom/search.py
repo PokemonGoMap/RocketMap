@@ -36,6 +36,7 @@ from sets import Set
 from collections import deque
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
+from distutils.version import StrictVersion
 
 from pgoapi.utilities import f2i
 from pgoapi import utilities as util
@@ -349,7 +350,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
     account_sets = AccountSet(args.hlvl_kph)
     threadStatus = {}
     key_scheduler = None
-    api_version = '0.61.0'
+    api_version = '0.63.1'
     api_check_time = 0
 
     '''
@@ -1264,7 +1265,8 @@ def check_forced_version(args, api_version, api_check_time, pause_bit):
         api_check_time = int(time.time()) + args.version_check_interval
         forced_api = get_api_version(args)
 
-        if (api_version != forced_api and forced_api != 0):
+        if (StrictVersion(api_version) < StrictVersion(forced_api)
+                and forced_api != 0):
             pause_bit.set()
             log.info(('Started with API: {}, ' +
                       'Niantic forced to API: {}').format(
