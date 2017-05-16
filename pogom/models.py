@@ -10,11 +10,10 @@ import gc
 import time
 import geopy
 import math
-from peewee import InsertQuery, \
-    Check, CompositeKey, ForeignKeyField, \
-    SmallIntegerField, IntegerField, CharField, DoubleField, BooleanField, \
-    DateTimeField, fn, DeleteQuery, FloatField, SQL, TextField, JOIN, \
-    OperationalError
+from peewee import (InsertQuery, Check, CompositeKey, ForeignKeyField,
+                    SmallIntegerField, IntegerField, CharField, DoubleField,
+                    BooleanField, DateTimeField, fn, DeleteQuery, FloatField,
+                    SQL, TextField, JOIN, OperationalError)
 from playhouse.flask_utils import FlaskDB
 from playhouse.pool import PooledMySQLDatabase
 from playhouse.shortcuts import RetryOperationalError, case
@@ -27,12 +26,13 @@ from cachetools import cached
 from timeit import default_timer
 
 from . import config
-from .utils import get_pokemon_name, get_pokemon_rarity, get_pokemon_types, \
-    get_args, cellid, in_radius, date_secs, clock_between, secs_between, \
-    get_move_name, get_move_damage, get_move_energy, get_move_type, \
-    clear_dict_response
+from .utils import (get_pokemon_name, get_pokemon_rarity, get_pokemon_types,
+                    get_args, cellid, in_radius, date_secs, clock_between,
+                    get_move_name, get_move_damage, get_move_energy,
+                    get_move_type, clear_dict_response)
 from .transform import transform_from_wgs_to_gcj, get_new_coords
 from .customLog import printPokemon
+
 from .account import (tutorial_pokestop_spin, get_player_level, check_login,
                       setup_api, encounter_pokemon_request)
 
@@ -532,10 +532,6 @@ class Pokestop(BaseModel):
 
 
 class Gym(BaseModel):
-    UNCONTESTED = 0
-    TEAM_MYSTIC = 1
-    TEAM_VALOR = 2
-    TEAM_INSTINCT = 3
 
     gym_id = CharField(primary_key=True, max_length=50)
     team_id = SmallIntegerField()
@@ -973,22 +969,6 @@ class ScannedLocation(BaseModel):
 
         return ret
 
-    @staticmethod
-    def visible_forts(step_location):
-        distance = 0.45
-        n, e, s, w = hex_bounds(step_location, radius=distance * 1000)
-        for g in Gym.get_gyms(s, w, n, e).values():
-            if in_radius((g['latitude'], g['longitude']), step_location,
-                         distance):
-                return True
-
-        for g in Pokestop.get_stops(s, w, n, e):
-            if in_radius((g['latitude'], g['longitude']), step_location,
-                         distance):
-                return True
-
-        return False
-
     # Return list of dicts for upcoming valid band times.
     @classmethod
     def get_times(cls, scan, now_date, scanned_locations):
@@ -1110,10 +1090,6 @@ class MainWorker(BaseModel):
     accounts_working = IntegerField()
     accounts_captcha = IntegerField()
     accounts_failed = IntegerField()
-
-    @staticmethod
-    def get_total_captchas():
-        return MainWorker.select(fn.SUM(MainWorker.accounts_captcha)).scalar()
 
     @staticmethod
     def get_account_stats():
@@ -1359,13 +1335,6 @@ class SpawnPoint(BaseModel):
         last_scanned = sp_by_id[sp['id']]['last_scanned']
         if ((now_date - last_scanned).total_seconds() > now_secs - start):
             l.append(ScannedLocation._q_init(scan, start, end, kind, sp['id']))
-
-    # Given seconds after the hour and a spawnpoint dict, return which quartile
-    # of the spawnpoint the secs falls in.
-    @staticmethod
-    def get_quartile(secs, sp):
-        return int(((secs - sp['earliest_unseen'] + 15 * 60 + 3600 - 1) %
-                    3600) / 15 / 60)
 
     @classmethod
     def select_in_hex_by_cellids(cls, cellids, location_change_date):
@@ -1649,24 +1618,6 @@ class SpawnpointDetectionData(BaseModel):
 
         return True
 
-    # Expand a 30 minute spawn with a new seen point based on which endpoint it
-    #  is closer to.  Return true if sp changed.
-    @classmethod
-    def clock_extend(cls, sp, new_secs):
-        # Check if this is a new earliest time.
-        if clock_between(sp['earliest_seen'], new_secs, sp['latest_seen']):
-            return False
-
-        # Extend earliest or latest seen depending on which is closer to the
-        # new point.
-        if (secs_between(new_secs, sp['earliest_seen']) <
-                secs_between(new_secs, sp['latest_seen'])):
-            sp['earliest_seen'] = new_secs
-        else:
-            sp['latest_seen'] = new_secs
-
-        return True
-
 
 class Versions(flaskDb.Model):
     key = CharField()
@@ -1751,6 +1702,48 @@ class Token(flaskDb.Model):
             log.error('Failed captcha token transactional query: {}'.format(e))
 
         return tokens
+
+
+class HashKeys(BaseModel):
+    key = CharField(primary_key=True, max_length=20)
+    maximum = SmallIntegerField(default=0)
+    remaining = SmallIntegerField(default=0)
+    peak = SmallIntegerField(default=0)
+    expires = DateTimeField(null=True)
+    last_updated = DateTimeField(default=datetime.utcnow)
+
+    @staticmethod
+    def get_by_key(key):
+        query = (HashKeys
+                 .select()
+                 .where(HashKeys.key == key)
+                 .dicts())
+
+        return query[0] if query else {
+            'maximum': 0,
+            'remaining': 0,
+            'peak': 0,
+            'expires': None,
+            'last_updated': None
+        }
+
+    @staticmethod
+    def get_obfuscated_keys():
+        # Obfuscate hashing keys before we sent them to the front-end.
+        hashkeys = HashKeys.get_all()
+        for i, s in enumerate(hashkeys):
+            hashkeys[i]['key'] = s['key'][:-9] + '*'*9
+        return hashkeys
+
+    @staticmethod
+    # Retrieve the last stored 'peak' value for each hashing key.
+    def getStoredPeak(key):
+            result = HashKeys.select(HashKeys.peak).where(HashKeys.key == key)
+            if result:
+                # only one row can be returned
+                return result[0].peak
+            else:
+                return 0
 
 
 def hex_bounds(center, steps=None, radius=None):
@@ -2541,6 +2534,13 @@ def clean_db_loop(args):
                              (datetime.utcnow() - timedelta(minutes=2)))))
             query.execute()
 
+            # Remove expired HashKeys
+            query = (HashKeys
+                     .delete()
+                     .where(HashKeys.expires <
+                            (datetime.now() - timedelta(days=1))))
+            query.execute()
+
             # If desired, clear old Pokemon spawns.
             if args.purge_data > 0:
                 log.info("Beginning purge of old Pokemon spawns.")
@@ -2618,7 +2618,7 @@ def create_tables(db):
     tables = [Pokemon, Pokestop, Gym, ScannedLocation, GymDetails,
               GymMember, GymPokemon, Trainer, MainWorker, WorkerStatus,
               SpawnPoint, ScanSpawnPoint, SpawnpointDetectionData,
-              Token, LocationAltitude]
+              Token, LocationAltitude, HashKeys]
     for table in tables:
         if not table.table_exists():
             log.info('Creating table: %s', table.__name__)
@@ -2634,7 +2634,7 @@ def drop_tables(db):
               GymDetails, GymMember, GymPokemon, Trainer, MainWorker,
               WorkerStatus, SpawnPoint, ScanSpawnPoint,
               SpawnpointDetectionData, LocationAltitude,
-              Token]
+              Token, HashKeys]
     db.connect()
     db.execute_sql('SET FOREIGN_KEY_CHECKS=0;')
     for table in tables:
