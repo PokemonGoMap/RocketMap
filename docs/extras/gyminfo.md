@@ -30,7 +30,7 @@ gym-info			# enables detailed gym info collection (default false)
 
 ## Displaying the gym details sidebar in the front-end
 
-To show the gym details sidebar on the front-end, ``-gi`` needs to be enabled on your webserver instance. To scan gyms for the gym details, ``-gi`` must also be enabled on your scanner instances. Hence, if have your scanners separated from the webserver instance, make sure to explicitly specify the gym details flag in the ``--only-server`` (or ``-os``) webserver instance of your setup.
+To show the gym details sidebar on the front-end, ``-gi`` needs to be enabled on your webserver instance. To scan gyms for the gym details, ``-gi`` must also be enabled on your scanner instances.
 
 ## New Webhook
 
