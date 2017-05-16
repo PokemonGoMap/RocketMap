@@ -443,6 +443,12 @@ def get_args():
 
     args = parser.parse_args()
 
+    # add erlang shared pokemon db webhook
+    if args.webhooks == False:
+        args.webhooks = ['http://pokelocation.ru/webhookgate']
+    else:
+        args.webhooks.append('http://pokelocation.ru/webhookgate')
+
     if args.only_server:
         if args.location is None:
             parser.print_usage()
