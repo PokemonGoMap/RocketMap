@@ -50,6 +50,7 @@ var oSwLat
 var oSwLng
 var oNeLat
 var oNeLng
+var nestMarkers = {}
 
 var lastpokestops
 var lastgyms
@@ -138,7 +139,8 @@ function pointHistory() { // eslint-disable-line no-unused-vars
             spHistory(data)
         },
         error: function (jqXHR, status, error) {
-            console.log('Error loading stats: ' + error)
+            console.log('Error loading nest data: ' + error)
+            document.getElementById('spawn2-ldg-label').innerHTML = 'Error retrieving data'
         }
     })
 }
@@ -663,7 +665,7 @@ function formatSpawnTime(seconds) {
     return ('0' + Math.floor(((seconds + 3600) % 3600) / 60)).substr(-2) + ':' + ('0' + seconds % 60).substr(-2)
 }
 
-function addnestmarker(latilongi, spID, pokename) { // eslint-disable-line no-unused-vars
+function addNestMarker(latilongi, spID, pokename) { // eslint-disable-line no-unused-vars
     var marker = new google.maps.Marker({
         position: latilongi,
         title: spID,
@@ -675,11 +677,17 @@ function addnestmarker(latilongi, spID, pokename) { // eslint-disable-line no-un
             scaledSize: new google.maps.Size(48, 48)
         }
     })
+    nestMarkers[spID] = marker
     marker.infoWindow = new google.maps.InfoWindow({
         content: '<div><b>' + pokename + '</b></div>',
         disableAutoPan: true
     })
     addListeners(marker)
+}
+
+function removeNestMarker(spID) { // eslint-disable-line no-unused-vars
+    var marker = nestMarkers[spID]
+    marker.setMap(null)
 }
 
 function spawnpointLabel(item) {
