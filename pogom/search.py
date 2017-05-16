@@ -1296,13 +1296,14 @@ def check_forced_version(args, api_version, api_check_time, pause_bit,
         except ValueError as e:
             # Unknown version format. Pause scanning as well.
             pause_bit.set()
-            log.warning('Niantic forced unknown API version format: %s',
+            log.warning('Niantic forced unknown API version format: %s.',
                         forced_api)
             log.warning('Scanner paused due to unknown API version format.')
         except Exception as e:
             # Something else happened. Pause scanning as well.
             pause_bit.set()
-            log.warning('Unknown error on API version comparison: %s', repr(e))
+            log.warning('Unknown error on API version comparison: %s.',
+                        repr(e))
             log.warning('Scanner paused due to unknown API check error.')
 
     return api_check_time
@@ -1315,7 +1316,7 @@ def get_api_version(args):
         args: Command line arguments
 
     Returns:
-        API version string. None if request failed.
+        API version string. False if request failed.
     """
     proxies = {}
 
@@ -1330,14 +1331,14 @@ def get_api_version(args):
         s = requests.Session()
         s.mount('https://',
                 HTTPAdapter(max_retries=Retry(total=3,
-                                              backoff_factor=0.4,
+                                              backoff_factor=0.5,
                                               status_forcelist=[500, 502,
                                                                 503, 504])))
         r = s.get(
             'https://pgorelease.nianticlabs.com/plfe/version',
             proxies=proxies,
             verify=False)
-        return r.text[2:] if r.status_code == requests.codes.ok else None
+        return r.text[2:] if r.status_code == requests.codes.ok else False
     except Exception as e:
         log.warning('error on API check: %s', repr(e))
-        return None
+        return False
