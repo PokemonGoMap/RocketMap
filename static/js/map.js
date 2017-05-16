@@ -366,8 +366,10 @@ function initSidebar() {
     var searchBox = new google.maps.places.Autocomplete(document.getElementById('next-location'))
     $('#next-location').css('background-color', $('#geoloc-switch').prop('checked') ? '#e0e0e0' : '#ffffff')
 
-    updateSearchStatus()
-    setInterval(updateSearchStatus, 5000)
+    if ($('#search-switch').length) {
+        updateSearchStatus()
+        setInterval(updateSearchStatus, 5000)
+    }
 
     searchBox.addListener('place_changed', function () {
         var place = searchBox.getPlace()
@@ -452,12 +454,17 @@ function pokemonLabel(item) {
             </div>
             `
     }
-    if (gender !== null && weight !== null && height !== null) {
+    if (gender !== null) {
         details += `
             <div>
-                Gender: ${genderType[gender - 1]} | Weight: ${weight.toFixed(2)}kg | Height: ${height.toFixed(2)}m
-            </div>
+                Gender: ${genderType[gender - 1]}
             `
+        if (weight !== null && height !== null) {
+            details += `| Weight: ${weight.toFixed(2)}kg | Height: ${height.toFixed(2)}m`
+        }
+        details += `
+                </div>
+                `
     }
     var contentstring = `
         <div>
