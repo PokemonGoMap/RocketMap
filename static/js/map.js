@@ -672,6 +672,7 @@ function addNestMarker(latilongi, spID, pokename) { // eslint-disable-line no-un
         draggable: false,
         map: map,
         id: spID,
+        animation: google.maps.Animation.DROP,
         icon: {
             url: 'static/marker_icons/grass1.png',
             scaledSize: new google.maps.Size(48, 48)
