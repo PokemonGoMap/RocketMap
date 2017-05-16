@@ -493,7 +493,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
     while True:
 
         odt_triggered = (args.on_demand_timeout > 0 and
-                        (now() - args.on_demand_timeout) > heartb[0])
+                         (now() - args.on_demand_timeout) > heartb[0])
         if odt_triggered:
             pause_bit.set()
             log.info('Searching paused due to inactivity...')
@@ -1269,7 +1269,7 @@ def check_forced_version(args, api_version, api_check_time, pause_bit,
         forced_api = get_api_version(args)
 
         if not forced_api:
-            # Couldn't retrieve API version. Stop scanning.
+            # Couldn't retrieve API version. Pause scanning.
             pause_bit.set()
             log.warning('Forced API check got no or invalid response. ' +
                         'Possible bad proxy.')
@@ -1279,15 +1279,13 @@ def check_forced_version(args, api_version, api_check_time, pause_bit,
         # Got a response let's compare version numbers.
         try:
             if StrictVersion(api_version) < StrictVersion(forced_api):
-                # Installed API version is lower. Stop scanning.
+                # Installed API version is lower. Pause scanning.
                 pause_bit.set()
                 log.warning('Started with API: %s, ' +
                             'Niantic forced to API: %s',
                             api_version,
                             forced_api)
                 log.warning('Scanner paused due to forced Niantic API update.')
-                log.warning('Stop the scanner process until RocketMap ' +
-                            'has updated.')
             else:
                 # API check was successful and
                 # installed API version is newer or equal forced API.
@@ -1296,15 +1294,13 @@ def check_forced_version(args, api_version, api_check_time, pause_bit,
                     pause_bit.clear()
 
         except ValueError as e:
-            # Unknown version format. Stop scanning as well.
+            # Unknown version format. Pause scanning as well.
             pause_bit.set()
             log.warning('Niantic forced unknown API version format: %s',
                         forced_api)
             log.warning('Scanner paused due to unknown API version format.')
-            log.warning('Stop the scanner process until RocketMap ' +
-                        'has updated.')
         except Exception as e:
-            # Something else happened. Stop scanning as well.
+            # Something else happened. Pause scanning as well.
             pause_bit.set()
             log.warning('Unknown error on API version comparison: %s', repr(e))
             log.warning('Scanner paused due to unknown API check error.')
