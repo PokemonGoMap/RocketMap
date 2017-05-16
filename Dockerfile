@@ -27,6 +27,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends build-essential
 
 COPY package.json Gruntfile.js /usr/src/app/
 COPY static /usr/src/app/static
+COPY .eslintignore .eslintrc.json /usr/src/app/
 
 RUN apt-get update && apt-get install -y --no-install-recommends build-essential curl \
  && curl -sL https://deb.nodesource.com/setup_6.x | bash - \
