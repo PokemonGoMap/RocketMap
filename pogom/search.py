@@ -1298,7 +1298,7 @@ def get_api_version(args):
             'https://pgorelease.nianticlabs.com/plfe/version',
             proxies=proxies,
             verify=False,
-            timeout=10)
+            timeout=5)
 
         return r.text[2:] if (r.status_code == requests.codes.ok and
                               r.text[2:].count('.') == 2) else 0
