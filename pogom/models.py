@@ -29,7 +29,7 @@ from . import config
 from .utils import (get_pokemon_name, get_pokemon_rarity, get_pokemon_types,
                     get_args, cellid, in_radius, date_secs, clock_between,
                     get_move_name, get_move_damage, get_move_energy,
-                    get_move_type, clear_dict_response)
+                    get_move_type, clear_dict_response, calc_pokemon_level)
 from .transform import transform_from_wgs_to_gcj, get_new_coords
 from .customLog import printPokemon
 
@@ -42,7 +42,7 @@ args = get_args()
 flaskDb = FlaskDB()
 cache = TTLCache(maxsize=100, ttl=60 * 5)
 
-db_schema_version = 18
+db_schema_version = 19
 
 
 class MyRetryDB(RetryOperationalError, PooledMySQLDatabase):
@@ -107,6 +107,7 @@ class Pokemon(BaseModel):
     move_1 = SmallIntegerField(null=True)
     move_2 = SmallIntegerField(null=True)
     cp = SmallIntegerField(null=True)
+    cp_multiplier = FloatField(null=True)
     weight = FloatField(null=True)
     height = FloatField(null=True)
     gender = SmallIntegerField(null=True)
@@ -1925,13 +1926,12 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
             disappear_time = now_date + \
                 timedelta(seconds=seconds_until_despawn)
 
-            printPokemon(p['pokemon_data']['pokemon_id'], p[
-                         'latitude'], p['longitude'], disappear_time)
+            pokemon_id = p['pokemon_data']['pokemon_id']
+            printPokemon(pokemon_id, p['latitude'], p['longitude'],
+                         disappear_time)
 
             # Scan for IVs/CP and moves.
-            pokemon_id = p['pokemon_data']['pokemon_id']
             encounter_result = None
-
             if args.encounter and (pokemon_id in args.enc_whitelist):
                 time.sleep(args.encounter_delay)
 
@@ -1947,9 +1947,8 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                     hlvl_account = account
                     hlvl_api = api
                 else:
-                    # Get account to use for IV or CP scanning.
-                    if pokemon_id in args.enc_whitelist:
-                        hlvl_account = account_sets.next('30', scan_location)
+                    # Get account to use for IV and CP scanning.
+                    hlvl_account = account_sets.next('30', scan_location)
 
                 # If we don't have an API object yet, it means we didn't re-use
                 # an old one, so we're using AccountSet.
@@ -2056,7 +2055,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
             pokemon[p['encounter_id']] = {
                 'encounter_id': b64encode(str(p['encounter_id'])),
                 'spawnpoint_id': p['spawn_point_id'],
-                'pokemon_id': p['pokemon_data']['pokemon_id'],
+                'pokemon_id': pokemon_id,
                 'latitude': p['latitude'],
                 'longitude': p['longitude'],
                 'disappear_time': disappear_time,
@@ -2066,11 +2065,17 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                 'move_1': None,
                 'move_2': None,
                 'cp': None,
+                'cp_multiplier': None,
                 'height': None,
                 'weight': None,
-                'gender': None,
+                'gender': p['pokemon_data']['pokemon_display']['gender'],
                 'form': None
             }
+
+            # Check for Unown's alphabetic character.
+            if pokemon_id == 201:
+                pokemon[p['encounter_id']]['form'] = p['pokemon_data'][
+                    'pokemon_display'].get('form', None)
 
             if (encounter_result is not None and 'wild_pokemon'
                     in encounter_result['responses']['ENCOUNTER']):
@@ -2102,21 +2107,17 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                     'move_1': pokemon_info['move_1'],
                     'move_2': pokemon_info['move_2'],
                     'height': pokemon_info['height_m'],
-                    'weight': pokemon_info['weight_kg'],
-                    'gender': pokemon_info['pokemon_display']['gender']
+                    'weight': pokemon_info['weight_kg']
                 })
 
                 # Only add CP if we're level 30+.
                 if encounter_level >= 30:
                     pokemon[p['encounter_id']]['cp'] = cp
-
-                # Check for Unown's alphabetic character.
-                if pokemon_info['pokemon_id'] == 201:
-                    pokemon[p['encounter_id']]['form'] = pokemon_info[
-                        'pokemon_display'].get('form', None)
+                    pokemon[p['encounter_id']][
+                        'cp_multiplier'] = pokemon_info.get(
+                        'cp_multiplier', None)
 
             if args.webhooks:
-                pokemon_id = p['pokemon_data']['pokemon_id']
                 if (pokemon_id in args.webhook_whitelist or
                     (not args.webhook_whitelist and pokemon_id
                      not in args.webhook_blacklist)):
@@ -2132,6 +2133,11 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                         'spawn_end': start_end[1],
                         'player_level': encounter_level
                     })
+                    if wh_poke['cp_multiplier'] is not None:
+                        wh_poke.update({
+                            'pokemon_level': calc_pokemon_level(
+                                wh_poke['cp_multiplier'])
+                        })
                     wh_update_queue.put(('pokemon', wh_poke))
 
     if forts and (config['parse_pokestops'] or config['parse_gyms']):
@@ -2884,6 +2890,12 @@ def database_migrate(db, old_ver):
         migrate(
             migrator.add_column('pokemon', 'cp',
                                 SmallIntegerField(null=True))
+        )
+
+    if old_ver < 19:
+        migrate(
+            migrator.add_column('pokemon', 'cp_multiplier',
+                                FloatField(null=True))
         )
 
     # Always log that we're done.
