@@ -502,6 +502,12 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
         while pause_bit.is_set():
             for i in range(0, len(scheduler_array)):
                 scheduler_array[i].scanning_paused()
+            # API Watchdog - Continue to check API version.
+            if not args.no_version_check:
+                api_check_time = check_forced_version(args, api_version,
+                                                      api_check_time,
+                                                      pause_bit,
+                                                      odt_triggered)
             time.sleep(1)
 
         # If a new location has been passed to us, get the most recent one.
@@ -1265,6 +1271,7 @@ def stat_delta(current_status, last_status, stat_name):
 def check_forced_version(args, api_version, api_check_time, pause_bit,
                          odt_triggered):
     if int(time.time()) > api_check_time:
+        log.debug("Checking forced API version")
         api_check_time = int(time.time()) + args.version_check_interval
         forced_api = get_api_version(args)
 
@@ -1291,6 +1298,7 @@ def check_forced_version(args, api_version, api_check_time, pause_bit,
                 # installed API version is newer or equal forced API.
                 # Continue scanning if on_demand_timout isn't triggered.
                 if not odt_triggered:
+                    log.debug("API check was successful. Continue scanning.")
                     pause_bit.clear()
 
         except ValueError as e:
