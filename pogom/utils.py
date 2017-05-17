@@ -7,8 +7,6 @@ import os
 import math
 import json
 import logging
-import shutil
-import pprint
 import random
 import time
 import socket
@@ -26,13 +24,6 @@ log = logging.getLogger(__name__)
 def parse_unicode(bytestring):
     decoded_string = bytestring.decode(sys.getfilesystemencoding())
     return decoded_string
-
-
-def verify_config_file_exists(filename):
-    fullpath = os.path.join(os.path.dirname(__file__), filename)
-    if not os.path.exists(fullpath):
-        log.info('Could not find %s, copying default.', filename)
-        shutil.copy2(fullpath + '.example', fullpath)
 
 
 def memoize(function):
@@ -61,7 +52,7 @@ def get_args():
         default_config_files=defaultconfigfiles,
         auto_env_var_prefix='POGOMAP_')
     parser.add_argument('-cf', '--config',
-                        is_config_file=True, help='Configuration file')
+                        is_config_file=True, help='Set configuration file')
     parser.add_argument('-a', '--auth-service', type=str.lower,
                         action='append', default=[],
                         help=('Auth Services, either one for all accounts ' +
@@ -86,10 +77,15 @@ def get_args():
     parser.add_argument('-ac', '--accountcsv',
                         help=('Load accounts from CSV file containing ' +
                               '"auth_service,username,passwd" lines.'))
+    parser.add_argument('-hlvl', '--high-lvl-accounts',
+                        help=('Load high level accounts from CSV file '
+                              + ' containing '
+                              + '"auth_service,username,passwd"'
+                              + ' lines.'))
     parser.add_argument('-bh', '--beehive',
                         help=('Use beehive configuration for multiple ' +
                               'accounts, one account per hex.  Make sure ' +
-                              'to keep -st under 5, and -w under the total' +
+                              'to keep -st under 5, and -w under the total ' +
                               'amount of accounts available.'),
                         action='store_true', default=False)
     parser.add_argument('-wph', '--workers-per-hive',
@@ -115,6 +111,9 @@ def get_args():
     parser.add_argument('-nj', '--no-jitter',
                         help=("Don't apply random -9m to +9m jitter to " +
                               "location."),
+                        action='store_true', default=False)
+    parser.add_argument('-al', '--access-logs',
+                        help=("Write web logs to access.log."),
                         action='store_true', default=False)
     parser.add_argument('-st', '--step-limit', help='Steps.', type=int,
                         default=12)
@@ -152,23 +151,33 @@ def get_args():
                         help=('Time delay between encounter pokemon ' +
                               'in scan threads.'),
                         type=float, default=1)
-    encounter_list = parser.add_mutually_exclusive_group()
-    encounter_list.add_argument('-ewht', '--encounter-whitelist',
-                                action='append', default=[],
-                                help=('List of Pokemon to encounter for ' +
-                                      'more stats.'))
-    encounter_list.add_argument('-eblk', '--encounter-blacklist',
-                                action='append', default=[],
-                                help=('List of Pokemon to NOT encounter for ' +
-                                      'more stats.'))
-    encounter_list.add_argument('-ewhtf', '--encounter-whitelist-file',
-                                default='', help='File containing a list of '
-                                                 'Pokemon to encounter for'
-                                                 ' more stats.')
-    encounter_list.add_argument('-eblkf', '--encounter-blacklist-file',
-                                default='', help='File containing a list of '
-                                                 'Pokemon to NOT encounter for'
-                                                 ' more stats.')
+    parser.add_argument('-encwf', '--enc-whitelist-file',
+                        default='', help='File containing a list of '
+                        'Pokemon IDs to encounter for'
+                        ' IV/CP scanning.')
+    parser.add_argument('-nostore', '--no-api-store',
+                        help=("Don't store the API objects used by the high"
+                              + ' level accounts in memory. This will increase'
+                              + ' the number of logins per account, but '
+                              + ' decreases memory usage.'),
+                        action='store_true', default=False)
+    webhook_list = parser.add_mutually_exclusive_group()
+    webhook_list.add_argument('-wwht', '--webhook-whitelist',
+                              action='append', default=[],
+                              help=('List of Pokemon to send to '
+                                    'webhooks. Specified as Pokemon ID.'))
+    webhook_list.add_argument('-wblk', '--webhook-blacklist',
+                              action='append', default=[],
+                              help=('List of Pokemon NOT to send to '
+                                    'webhooks. Specified as Pokemon ID.'))
+    webhook_list.add_argument('-wwhtf', '--webhook-whitelist-file',
+                              default='', help='File containing a list of '
+                                               'Pokemon IDs to be sent to '
+                                               'webhooks.')
+    webhook_list.add_argument('-wblkf', '--webhook-blacklist-file',
+                              default='', help='File containing a list of '
+                                               'Pokemon IDs NOT to be sent to'
+                                               'webhooks.')
     parser.add_argument('-ld', '--login-delay',
                         help='Time delay between each login attempt.',
                         type=float, default=6)
@@ -226,13 +235,15 @@ def get_args():
                         help=('Server-Only Mode. Starts only the Webserver ' +
                               'without the searcher.'),
                         action='store_true', default=False)
-    parser.add_argument('-nsc', '--no-search-control',
-                        help='Disables search control.',
-                        action='store_false', dest='search_control',
+    parser.add_argument('-sc', '--search-control',
+                        help='Enables search control.',
+                        action='store_true', dest='search_control',
+                        default=False)
+    parser.add_argument('-nfl', '--no-fixed-location',
+                        help='Disables a fixed map location and shows the ' +
+                        'search bar for use in shared maps.',
+                        action='store_false', dest='fixed_location',
                         default=True)
-    parser.add_argument('-fl', '--fixed-location',
-                        help='Hides the search bar for use in shared maps.',
-                        action='store_true', default=False)
     parser.add_argument('-k', '--gmaps-key',
                         help='Google Maps Javascript API Key.',
                         required=True)
@@ -274,6 +285,10 @@ def get_args():
                         help=('Set a maximum speed in km/hour for scanner ' +
                               'movement.'),
                         type=int, default=35)
+    parser.add_argument('-hkph', '--hlvl-kph',
+                        help=('Set a maximum speed in km/hour for scanner ' +
+                              'movement, for high-level (L30) accounts.'),
+                        type=int, default=25)
     parser.add_argument('-ldur', '--lure-duration',
                         help=('Change duration for lures set on pokestops. ' +
                               'This is useful for events that extend lure ' +
@@ -359,7 +374,7 @@ def get_args():
                         type=float, default=0.25)
     parser.add_argument('-whlfu', '--wh-lfu-size',
                         help='Webhook LFU cache max size.', type=int,
-                        default=1000)
+                        default=2500)
     parser.add_argument('-whsu', '--webhook-scheduler-updates',
                         help=('Send webhook updates with scheduler status ' +
                               '(use with -wh).'),
@@ -406,6 +421,11 @@ def get_args():
     parser.add_argument('--disable-blacklist',
                         help=('Disable the global anti-scraper IP blacklist.'),
                         action='store_true', default=False)
+    parser.add_argument('-tp', '--trusted-proxies', default=[],
+                        action='append',
+                        help=('Enables the use of X-FORWARDED-FOR headers ' +
+                              'to identify the IP of clients connecting ' +
+                              'through these trusted proxies.'))
     verbosity = parser.add_mutually_exclusive_group()
     verbosity.add_argument('-v', '--verbose',
                            help=('Show debug messages from RocketMap ' +
@@ -608,6 +628,47 @@ def get_args():
                                   'password': args.password[i],
                                   'auth_service': args.auth_service[i]})
 
+        # Prepare the L30 accounts for the account sets.
+        args.accounts_L30 = []
+
+        if args.high_lvl_accounts:
+            # Context processor.
+            with open(args.high_lvl_accounts, 'r') as accs:
+                for line in accs:
+                    # Make sure it's not an empty line.
+                    if not line.strip():
+                        continue
+
+                    line = line.split(',')
+
+                    # We need "service, user, pass".
+                    if len(line) < 3:
+                        raise Exception('L30 account is missing a'
+                                        + ' field. Each line requires: '
+                                        + '"service,user,pass".')
+
+                    # Let's remove trailing whitespace.
+                    service = line[0].strip()
+                    username = line[1].strip()
+                    password = line[2].strip()
+
+                    hlvl_account = {
+                        'auth_service': service,
+                        'username': username,
+                        'password': password,
+                        'captcha': False
+                    }
+
+                    args.accounts_L30.append(hlvl_account)
+
+        # Prepare the IV/CP scanning filters.
+        args.enc_whitelist = []
+
+        # IV/CP scanning.
+        if args.enc_whitelist_file:
+            with open(args.enc_whitelist_file) as f:
+                args.enc_whitelist = frozenset([int(l.strip()) for l in f])
+
         # Make max workers equal number of accounts if unspecified, and disable
         # account switching.
         if args.workers is None:
@@ -626,19 +687,19 @@ def get_args():
                   "--accountcsv to add accounts.")
             sys.exit(1)
 
-        if args.encounter_whitelist_file:
-            with open(args.encounter_whitelist_file) as f:
-                args.encounter_whitelist = [get_pokemon_id(name) for name in
-                                            f.read().splitlines()]
-        elif args.encounter_blacklist_file:
-            with open(args.encounter_blacklist_file) as f:
-                args.encounter_blacklist = [get_pokemon_id(name) for name in
-                                            f.read().splitlines()]
+        if args.webhook_whitelist_file:
+            with open(args.webhook_whitelist_file) as f:
+                args.webhook_whitelist = frozenset(
+                    [int(p_id.strip()) for p_id in f])
+        elif args.webhook_blacklist_file:
+            with open(args.webhook_blacklist_file) as f:
+                args.webhook_blacklist = frozenset(
+                    [int(p_id.strip()) for p_id in f])
         else:
-            args.encounter_blacklist = [int(i) for i in
-                                        args.encounter_blacklist]
-            args.encounter_whitelist = [int(i) for i in
-                                        args.encounter_whitelist]
+            args.webhook_blacklist = frozenset(
+                [int(i) for i in args.webhook_blacklist])
+            args.webhook_whitelist = frozenset(
+                [int(i) for i in args.webhook_whitelist])
 
         # Decide which scanning mode to use.
         if args.spawnpoint_scanning:
@@ -677,11 +738,6 @@ def date_secs(d):
 def clock_between(start, test, end):
     return ((start <= test <= end and start < end) or
             (not (end <= test <= start) and start > end))
-
-
-# Return amount of seconds between two times on the clock.
-def secs_between(time1, time2):
-    return min((time1 - time2) % 3600, (time2 - time1) % 3600)
 
 
 # Return the s2sphere cellid token from a location.
@@ -797,24 +853,6 @@ def get_move_type(move_id):
     return {"type": i8ln(move_type), "type_en": move_type}
 
 
-class Timer():
-
-    def __init__(self, name):
-        self.times = [(name, time.time(), 0)]
-
-    def add(self, step):
-        t = time.time()
-        self.times.append((step, t, round((t - self.times[-1][1]) * 1000)))
-
-    def checkpoint(self, step):
-        t = time.time()
-        self.times.append(('total @ ' + step, t, t - self.times[0][1]))
-
-    def output(self):
-        self.checkpoint('end')
-        pprint.pprint(self.times)
-
-
 def dottedQuadToNum(ip):
     return struct.unpack("!L", socket.inet_aton(ip))[0]
 
@@ -822,7 +860,7 @@ def dottedQuadToNum(ip):
 def get_blacklist():
     try:
         url = 'https://blist.devkat.org/blacklist.json'
-        blacklist = requests.get(url).json()
+        blacklist = requests.get(url, timeout=5).json()
         log.debug('Entries in blacklist: %s.', len(blacklist))
         return blacklist
     except (requests.exceptions.RequestException, IndexError, KeyError):
@@ -877,8 +915,42 @@ def generate_device_info():
     return device_info
 
 
-def extract_sprites():
-    log.debug("Extracting sprites...")
-    zip = zipfile('static01.zip', 'r')
-    zip.extractall('static')
+def extract_sprites(root_path):
+    zip_path = os.path.join(
+           root_path,
+           'static01.zip')
+    extract_path = os.path.join(
+           root_path,
+           'static')
+    log.debug('Extracting sprites from "%s" to "%s"', zip_path, extract_path)
+    zip = zipfile.ZipFile(zip_path, 'r')
+    zip.extractall(extract_path)
     zip.close()
+
+
+def clear_dict_response(response, keep_inventory=False):
+    if 'platform_returns' in response:
+        del response['platform_returns']
+    if 'responses' not in response:
+        return response
+    if 'GET_INVENTORY' in response['responses'] and not keep_inventory:
+        del response['responses']['GET_INVENTORY']
+    if 'GET_HATCHED_EGGS' in response['responses']:
+        del response['responses']['GET_HATCHED_EGGS']
+    if 'CHECK_AWARDED_BADGES' in response['responses']:
+        del response['responses']['CHECK_AWARDED_BADGES']
+    if 'DOWNLOAD_SETTINGS' in response['responses']:
+        del response['responses']['DOWNLOAD_SETTINGS']
+    if 'GET_BUDDY_WALKED' in response['responses']:
+        del response['responses']['GET_BUDDY_WALKED']
+    return response
+
+
+def calc_pokemon_level(cp_multiplier):
+    if cp_multiplier < 0.734:
+        pokemon_level = (58.35178527 * cp_multiplier * cp_multiplier -
+                         2.838007664 * cp_multiplier + 0.8539209906)
+    else:
+        pokemon_level = 171.0112688 * cp_multiplier - 95.20425243
+    pokemon_level = int((round(pokemon_level) * 2) / 2)
+    return pokemon_level

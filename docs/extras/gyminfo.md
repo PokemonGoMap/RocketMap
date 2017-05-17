@@ -1,4 +1,4 @@
-# Detailed Gym Information
+# Detailed Gym Data
 ![Sample Image](../_static/img/gyminfo.png)
 
 To collect all of the available information about gyms, you can enable gym info parsing.
@@ -25,8 +25,12 @@ python runserver.py -gi
 Or update your config.ini:
 
 ```
-gym-info:true            # enables detailed gym info collection (default false)
+gym-info			# enables detailed gym info collection (default false)
 ```
+
+## Displaying the gym details sidebar in the front-end
+
+To show the gym details sidebar on the front-end, ``-gi`` needs to be enabled on your webserver instance. To scan gyms for the gym details, ``-gi`` must also be enabled on your scanner instances.
 
 ## New Webhook
 
