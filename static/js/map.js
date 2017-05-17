@@ -903,11 +903,17 @@ function playPokemonSound(pokemonID) {
     if (!Store.get('playCries')) {
         audio.play()
     } else {
-        var audioCry = new Audio('static/sounds/cries/' + pokemonID + '.wav')
+        var audioCry = new Audio('static/sounds/cries/' + pokemonID + '.mp3')
         audioCry.play().catch(function (err) {
             if (err) {
-                console.log('Sound for Pokémon ' + pokemonID + ' is missing, using generic sound instead.')
-                audio.play()
+                console.log('MP3 Sound for Pokémon ' + pokemonID + ' is missing, checking for Wav.')
+                var audioCryWav = new Audio('static/sounds/cries/' + pokemonID + '.wav')
+                audioCryWav.play().catch(function (err) {
+                    if (err) {
+                        console.log('Sound for Pokémon ' + pokemonID + ' is missing, using generic sound instead.')
+                        audio.play()
+                    }
+                })
             }
         })
     }
