@@ -47,7 +47,7 @@ function processSeen(seen) {
                             </a>
                         </td>
                         <td class="status_cell">
-                            ${pokemonItem.count}
+                            ${pokemonItem.count.toLocaleString()}
                         </td>
                         <td class="status_cell">
                             ${(pokemonItem.count / seen.total * 100).toFixed(4)}
