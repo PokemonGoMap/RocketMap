@@ -237,10 +237,12 @@ class Pokemon(BaseModel):
         if timediff:
             timediff = datetime.utcnow() - timedelta(hours=timediff)
 
-        # Note: pokemon_id+0 forces SQL to ignore the pokemon_id index and should
-        # use the disappear_time index and (should) improve performance
+        # Note: pokemon_id+0 forces SQL to ignore the pokemon_id index
+        # and should use the disappear_time index and hopefully
+        # improve performance
         pokemon_count_query = (Pokemon
-                               .select((Pokemon.pokemon_id+0).alias('pokemon_id'),
+                               .select((Pokemon.pokemon_id+0).alias(
+                                           'pokemon_id'),
                                        fn.COUNT((Pokemon.pokemon_id+0)).alias(
                                            'count'),
                                        fn.MAX(Pokemon.disappear_time).alias(
