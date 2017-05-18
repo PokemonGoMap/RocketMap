@@ -246,15 +246,18 @@ class Pokemon(LatLongModel):
     def get_seen(timediff):
         if timediff:
             timediff = datetime.utcnow() - timedelta(hours=timediff)
+
+        # Note: pokemon_id+0 forces SQL to ignore the pokemon_id index and should
+        # use the disappear_time index and (should) improve performance
         pokemon_count_query = (Pokemon
-                               .select(Pokemon.pokemon_id,
-                                       fn.COUNT(Pokemon.pokemon_id).alias(
+                               .select((Pokemon.pokemon_id+0).alias('pokemon_id'),
+                                       fn.COUNT((Pokemon.pokemon_id+0)).alias(
                                            'count'),
                                        fn.MAX(Pokemon.disappear_time).alias(
                                            'lastappeared')
                                        )
                                .where(Pokemon.disappear_time > timediff)
-                               .group_by(Pokemon.pokemon_id)
+                               .group_by((Pokemon.pokemon_id+0))
                                .alias('counttable')
                                )
         query = (Pokemon
@@ -270,23 +273,7 @@ class Pokemon(LatLongModel):
                  .where(Pokemon.disappear_time ==
                         pokemon_count_query.c.lastappeared)
                  .dicts()
-                 .sql()
                  )
-
-        # Hack to tell SQL to use index. Significantly speeds up query times
-        use_index = ''
-        query_sub = None
-        if args.db_type == 'mysql':
-            use_index = 'AS t3 USE INDEX (pokemon_disappear_time)'
-            query_sub = query[1]
-        else:
-            use_index = 'AS t3 INDEXED BY pokemon_disappear_time'
-            query_sub = query[1][0]
-
-        query = Pokemon.raw(query[0]
-                            .replace('AS t3',
-                                     use_index),
-                            query_sub).dicts()
 
         # Performance:  disable the garbage collector prior to creating a
         # (potentially) large dict with append().
