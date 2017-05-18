@@ -352,7 +352,6 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
     key_scheduler = None
     api_version = '0.61.0'
     api_check_time = 0
-    key = HashServer.status.get('token', None)
     hashkeys_last_upsert = timeit.default_timer()
     hashkeys_upsert_min_delay = 5.0
 
@@ -494,12 +493,11 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
 
     # The real work starts here but will halt on pause_bit.set().
     while True:
-        start = timeit.default_timer()
         if (args.hash_key is not None and
-                (start - hashkeys_last_upsert) > hashkeys_upsert_min_delay):
-                    for key in args.hash_key:
-                        upsertKey(
-                            key, key_scheduler.keys[key], db_updates_queue)
+                (hashkeys_last_upsert + hashkeys_upsert_min_delay)
+                <= timeit.default_timer()):
+            upsertKeys(args.hash_key, key_scheduler, db_updates_queue)
+            hashkeys_last_upsert = timeit.default_timer()
 
         if (args.on_demand_timeout > 0 and
                 (now() - args.on_demand_timeout) > heartb[0]):
@@ -1163,14 +1161,16 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
             time.sleep(args.scan_delay)
 
 
-def upsertKey(key, key_instance, db_updates_queue):
+def upsertKeys(keys, key_scheduler, db_updates_queue):
     # Prepare hashing keys to be sent to the db. But only
     # sent latest updates of the 'peak' value per key.
     hashkeys = {}
-    hashkeys[key] = key_instance
-    hashkeys[key]['key'] = key
-    hashkeys[key]['peak'] = max(key_instance['peak'],
-                                HashKeys.getStoredPeak(key))
+    for key in keys:
+        key_instance = key_scheduler.keys[key]
+        hashkeys[key] = key_instance
+        hashkeys[key]['key'] = key
+        hashkeys[key]['peak'] = max(key_instance['peak'],
+                                    HashKeys.getStoredPeak(key))
     db_updates_queue.put((HashKeys, hashkeys))
 
 
