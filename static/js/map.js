@@ -119,7 +119,7 @@ function initMap() { // eslint-disable-line no-unused-vars
             lat: centerLat,
             lng: centerLng
         },
-        zoom: Store.get('zoomLevel'),
+        zoom: centerZoom,
         fullscreenControl: true,
         streetViewControl: false,
         mapTypeControl: false,
