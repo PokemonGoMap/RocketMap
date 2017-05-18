@@ -39,7 +39,7 @@ function processSeen(seen) {
                             <i class="pokemon-sprite n${pokemonItem.pokemon_id}"</i>
                         </td>
                         <td class="status_cell">
-                            ${pokemonItem.pokemon_id}                        
+                            ${pokemonItem.pokemon_id}
                         </td>
                         <td class="status_cell">
                             <a href="http://www.pokemon.com/us/pokedex/${pokemonItem.pokemon_id}" target="_blank" title="View in Pokedex">
