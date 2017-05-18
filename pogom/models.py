@@ -2114,7 +2114,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                     'individual_defense': individual_defense,
                     'individual_stamina': individual_stamina,
                     'cp': cp,
-                    'cp_multiplier'] = pokemon_info.get('cp_multiplier', None)
+                    'cp_multiplier': pokemon_info.get('cp_multiplier', None),
                     'move_1': pokemon_info.get('move_1', None),
                     'move_2': pokemon_info.get('move_2', None),
                     'height': pokemon_info.get('height_m', None),
