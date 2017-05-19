@@ -27,11 +27,15 @@
 
     <link rel="stylesheet" href="{{ url_for('static', filename='dist/css/app.min.css').lstrip('/') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='dist/css/status.min.css').lstrip('/') }}">
+    <!-- Custom CSS code-->
+      {% if show.custom_css %}
+    <link rel="stylesheet" type="text/css" href="static/css/custom.css">
+      {% endif %}
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/skel/3.0.1/skel.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.0/jquery-ui.min.js"></script>
 </head>
-<body>
+<body class="statusPage">
 <!-- Header -->
 <header id="header">
     <a href="#nav"><span class="label">Options</span></a>

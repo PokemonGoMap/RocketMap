@@ -12,8 +12,9 @@
 #nav.visible {padding: 10px;}
 #nav {width: 250px;}
 
-/* Options menu on/off switch style example: */
+/* Options menu form-control/switch-container, on/off switch style example: */
 
+.form-control input[type=text] {font-size: 11px !important;}
 .onoffswitch-label, .onoffswitch-label:before {border-color: #256db6 !important;}
 #nav .onoffswitch-checkbox:checked+.onoffswitch-label {border-color: #256db6; background-color: #ffde4e;}
 .select2-container {font-size: 11px;}
