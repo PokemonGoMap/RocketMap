@@ -231,25 +231,20 @@ class Pokemon(BaseModel):
 
         return pokemon
 
-    @staticmethod
+    @classmethod
     @cached(cache)
-    def get_seen(timediff):
+    def get_seen(cls, timediff):
         if timediff:
-            timediff = datetime.utcnow() - timedelta(hours=timediff)
-
-        # Note: pokemon_id+0 forces SQL to ignore the pokemon_id index
-        # and should use the disappear_time index and hopefully
-        # improve performance
+            timediff = datetime.utcnow() - timediff
         pokemon_count_query = (Pokemon
-                               .select((Pokemon.pokemon_id+0).alias(
-                                           'pokemon_id'),
-                                       fn.COUNT((Pokemon.pokemon_id+0)).alias(
+                               .select(Pokemon.pokemon_id,
+                                       fn.COUNT(Pokemon.pokemon_id).alias(
                                            'count'),
                                        fn.MAX(Pokemon.disappear_time).alias(
                                            'lastappeared')
                                        )
                                .where(Pokemon.disappear_time > timediff)
-                               .group_by((Pokemon.pokemon_id+0))
+                               .group_by(Pokemon.pokemon_id)
                                .alias('counttable')
                                )
         query = (Pokemon
@@ -283,15 +278,15 @@ class Pokemon(BaseModel):
 
         return {'pokemon': pokemon, 'total': total}
 
-    @staticmethod
-    def get_appearances(pokemon_id, timediff):
+    @classmethod
+    def get_appearances(cls, pokemon_id, timediff):
         '''
         :param pokemon_id: id of Pokemon that we need appearances for
         :param timediff: limiting period of the selection
         :return: list of Pokemon appearances over a selected period
         '''
         if timediff:
-            timediff = datetime.utcnow() - timedelta(hours=timediff)
+            timediff = datetime.utcnow() - timediff
         query = (Pokemon
                  .select(Pokemon.latitude, Pokemon.longitude,
                          Pokemon.pokemon_id,
@@ -307,8 +302,8 @@ class Pokemon(BaseModel):
 
         return list(query)
 
-    @staticmethod
-    def get_appearances_times_by_spawnpoint(pokemon_id,
+    @classmethod
+    def get_appearances_times_by_spawnpoint(cls, pokemon_id,
                                             spawnpoint_id, timediff):
         '''
         :param pokemon_id: id of Pokemon that we need appearances times for.
@@ -317,7 +312,7 @@ class Pokemon(BaseModel):
         :return: list of time appearances over a selected period.
         '''
         if timediff:
-            timediff = datetime.utcnow() - timedelta(hours=timediff)
+            timediff = datetime.utcnow() - timediff
         query = (Pokemon
                  .select(Pokemon.disappear_time)
                  .where((Pokemon.pokemon_id == pokemon_id) &
