@@ -28,6 +28,7 @@ import copy
 import requests
 import schedulers
 import terminalsize
+import timeit
 
 from datetime import datetime
 from threading import Thread, Lock
@@ -352,6 +353,8 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
     key_scheduler = None
     api_version = '0.63.1'
     api_check_time = 0
+    hashkeys_last_upsert = timeit.default_timer()
+    hashkeys_upsert_min_delay = 5.0
 
     '''
     Create a queue of accounts for workers to pull from. When a worker has
@@ -491,6 +494,11 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
 
     # The real work starts here but will halt on pause_bit.set().
     while True:
+        if (args.hash_key is not None and
+                (hashkeys_last_upsert + hashkeys_upsert_min_delay)
+                <= timeit.default_timer()):
+            upsertKeys(args.hash_key, key_scheduler, db_updates_queue)
+            hashkeys_last_upsert = timeit.default_timer()
 
         odt_triggered = (args.on_demand_timeout > 0 and
                          (now() - args.on_demand_timeout) > heartb[0])
@@ -502,6 +510,11 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
         while pause_bit.is_set():
             for i in range(0, len(scheduler_array)):
                 scheduler_array[i].scanning_paused()
+            # API Watchdog - Continue to check API version.
+            if not args.no_version_check and not odt_triggered:
+                api_check_time = check_forced_version(args, api_version,
+                                                      api_check_time,
+                                                      pause_bit)
             time.sleep(1)
 
         # If a new location has been passed to us, get the most recent one.
@@ -575,10 +588,9 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
                              scheduler_array[0])
 
         # API Watchdog - Check if Niantic forces a new API.
-        if not args.no_version_check:
+        if not args.no_version_check and not odt_triggered:
             api_check_time = check_forced_version(args, api_version,
-                                                  api_check_time, pause_bit,
-                                                  odt_triggered)
+                                                  api_check_time, pause_bit)
 
         # Now we just give a little pause here.
         time.sleep(1)
@@ -1129,15 +1141,6 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
                               key_instance['remaining'],
                               key_instance['maximum'])
 
-                    # Prepare hashing keys to be sent to the db. But only
-                    # sent latest updates of the 'peak' value per key.
-                    hashkeys = {}
-                    hashkeys[key] = key_instance
-                    hashkeys[key]['key'] = key
-                    hashkeys[key]['peak'] = max(key_instance['peak'],
-                                                HashKeys.getStoredPeak(key))
-                    dbq.put((HashKeys, hashkeys))
-
                 # Delay the desired amount after "scan" completion.
                 delay = scheduler.delay(status['last_scan_date'])
 
@@ -1163,6 +1166,19 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
                                      'last_fail_time': now(),
                                      'reason': 'exception'})
             time.sleep(args.scan_delay)
+
+
+def upsertKeys(keys, key_scheduler, db_updates_queue):
+    # Prepare hashing keys to be sent to the db. But only
+    # sent latest updates of the 'peak' value per key.
+    hashkeys = {}
+    for key in keys:
+        key_instance = key_scheduler.keys[key]
+        hashkeys[key] = key_instance
+        hashkeys[key]['key'] = key
+        hashkeys[key]['peak'] = max(key_instance['peak'],
+                                    HashKeys.getStoredPeak(key))
+    db_updates_queue.put((HashKeys, hashkeys))
 
 
 def map_request(api, position, no_jitter=False):
@@ -1262,9 +1278,9 @@ def stat_delta(current_status, last_status, stat_name):
     return current_status.get(stat_name, 0) - last_status.get(stat_name, 0)
 
 
-def check_forced_version(args, api_version, api_check_time, pause_bit,
-                         odt_triggered):
+def check_forced_version(args, api_version, api_check_time, pause_bit):
     if int(time.time()) > api_check_time:
+        log.debug("Checking forced API version.")
         api_check_time = int(time.time()) + args.version_check_interval
         forced_api = get_api_version(args)
 
@@ -1289,9 +1305,9 @@ def check_forced_version(args, api_version, api_check_time, pause_bit,
             else:
                 # API check was successful and
                 # installed API version is newer or equal forced API.
-                # Continue scanning if on_demand_timout isn't triggered.
-                if not odt_triggered:
-                    pause_bit.clear()
+                # Continue scanning.
+                log.debug("API check was successful. Continue scanning.")
+                pause_bit.clear()
 
         except ValueError as e:
             # Unknown version format. Pause scanning as well.
