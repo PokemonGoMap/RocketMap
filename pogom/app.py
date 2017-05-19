@@ -572,7 +572,7 @@ class Pogom(Flask):
             abort(404)
 
         return render_template('status.html',
-                                show=visibility_flags)
+                               show=visibility_flags)
 
     def post_status(self):
         args = get_args()
