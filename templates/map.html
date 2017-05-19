@@ -429,8 +429,8 @@
             if (!results[2]) return '';
             return decodeURIComponent(results[2].replace(/\+/g, " "));
         }
-      var centerLat = {{lat}};
-      var centerLng = {{lng}};
+      var centerLat = {{lat}} || getParameterByName('lat');
+      var centerLng = {{lng}} || getParameterByName('lon');
       var centerZoom = getParameterByName('zoom');
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
