@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
+from gevent import monkey; monkey.patch_all() # noqa
 import os
 import sys
 import logging
