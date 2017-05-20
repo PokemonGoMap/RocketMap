@@ -713,7 +713,7 @@ def get_args():
         if args.ignorelist_file:
             with open(args.ignorelist_file) as f:
                 args.ignorelist = frozenset([int(l.strip()) for l in f])
-                
+
         # Decide which scanning mode to use.
         if args.spawnpoint_scanning:
             args.scheduler = 'SpawnScan'
