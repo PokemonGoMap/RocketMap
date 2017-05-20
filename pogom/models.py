@@ -1944,7 +1944,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
             # but we don't want to insert it, or send it to webhooks
             if args.ignorelist_file and (pokemon_id in args.ignorelist):
                 log.debug("Ignoring Pokemon id: %i", pokemon_id)
-                filtered+=1
+                filtered += 1
                 continue
 
             printPokemon(pokemon_id, p['latitude'], p['longitude'],
