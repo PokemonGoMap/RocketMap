@@ -1,7 +1,7 @@
 {
   "1": {
     "name": "Bulbasaur",
-    "rarity": "Uncommon",
+    "rarity": "Common",
     "types": [
       {
         "type": "Grass",
@@ -16,7 +16,7 @@
   },
   "2": {
     "name": "Ivysaur",
-    "rarity": "Rare",
+    "rarity": "Special",
     "types": [
       {
         "type": "Grass",
@@ -31,7 +31,7 @@
   },
   "3": {
     "name": "Venusaur",
-    "rarity": "Very Rare",
+    "rarity": "Epic",
     "types": [
       {
         "type": "Grass",
@@ -46,7 +46,7 @@
   },
   "4": {
     "name": "Charmander",
-    "rarity": "Rare",
+    "rarity": "Common",
     "types": [
       {
         "type": "Fire",
@@ -57,7 +57,7 @@
   },
   "5": {
     "name": "Charmeleon",
-    "rarity": "Very Rare",
+    "rarity": "Special",
     "types": [
       {
         "type": "Fire",
@@ -68,7 +68,7 @@
   },
   "6": {
     "name": "Charizard",
-    "rarity": "Very Rare",
+    "rarity": "Epic",
     "types": [
       {
         "type": "Fire",
@@ -83,7 +83,7 @@
   },
   "7": {
     "name": "Squirtle",
-    "rarity": "Uncommon",
+    "rarity": "Common",
     "types": [
       {
         "type": "Water",
@@ -94,7 +94,7 @@
   },
   "8": {
     "name": "Wartortle",
-    "rarity": "Rare",
+    "rarity": "Special",
     "types": [
       {
         "type": "Water",
@@ -105,7 +105,7 @@
   },
   "9": {
     "name": "Blastoise",
-    "rarity": "Very Rare",
+    "rarity": "Epic",
     "types": [
       {
         "type": "Water",
@@ -116,7 +116,7 @@
   },
   "10": {
     "name": "Caterpie",
-    "rarity": "Uncommon",
+    "rarity": "Very Common",
     "types": [
       {
         "type": "Bug",
@@ -127,7 +127,7 @@
   },
   "11": {
     "name": "Metapod",
-    "rarity": "Rare",
+    "rarity": "Common",
     "types": [
       {
         "type": "Bug",
@@ -138,7 +138,7 @@
   },
   "12": {
     "name": "Butterfree",
-    "rarity": "Very Rare",
+    "rarity": "Uncommon",
     "types": [
       {
         "type": "Bug",
@@ -153,7 +153,7 @@
   },
   "13": {
     "name": "Weedle",
-    "rarity": "Common",
+    "rarity": "Very Common",
     "types": [
       {
         "type": "Bug",
@@ -168,7 +168,7 @@
   },
   "14": {
     "name": "Kakuna",
-    "rarity": "Rare",
+    "rarity": "Common",
     "types": [
       {
         "type": "Bug",
@@ -198,7 +198,7 @@
   },
   "16": {
     "name": "Pidgey",
-    "rarity": "Common",
+    "rarity": "Very Common",
     "types": [
       {
         "type": "Normal",
@@ -213,7 +213,7 @@
   },
   "17": {
     "name": "Pidgeotto",
-    "rarity": "Uncommon",
+    "rarity": "Common",
     "types": [
       {
         "type": "Normal",
@@ -243,7 +243,7 @@
   },
   "19": {
     "name": "Rattata",
-    "rarity": "Common",
+    "rarity": "Very Common",
     "types": [
       {
         "type": "Normal",
@@ -254,7 +254,7 @@
   },
   "20": {
     "name": "Raticate",
-    "rarity": "Rare",
+    "rarity": "Common",
     "types": [
       {
         "type": "Normal",
@@ -265,7 +265,7 @@
   },
   "21": {
     "name": "Spearow",
-    "rarity": "Uncommon",
+    "rarity": "Common",
     "types": [
       {
         "type": "Normal",
@@ -280,7 +280,7 @@
   },
   "22": {
     "name": "Fearow",
-    "rarity": "Rare",
+    "rarity": "Uncommon",
     "types": [
       {
         "type": "Normal",
@@ -295,7 +295,7 @@
   },
   "23": {
     "name": "Ekans",
-    "rarity": "Uncommon",
+    "rarity": "Very Common",
     "types": [
       {
         "type": "Poison",
@@ -306,7 +306,7 @@
   },
   "24": {
     "name": "Arbok",
-    "rarity": "Very Rare",
+    "rarity": "Common",
     "types": [
       {
         "type": "Poison",
@@ -317,7 +317,7 @@
   },
   "25": {
     "name": "Pikachu",
-    "rarity": "Uncommon",
+    "rarity": "Common",
     "types": [
       {
         "type": "Electric",
@@ -328,7 +328,7 @@
   },
   "26": {
     "name": "Raichu",
-    "rarity": "Ultra Rare",
+    "rarity": "Very Rare",
     "types": [
       {
         "type": "Electric",
@@ -339,7 +339,7 @@
   },
   "27": {
     "name": "Sandshrew",
-    "rarity": "Rare",
+    "rarity": "Very Common",
     "types": [
       {
         "type": "Ground",
@@ -350,7 +350,7 @@
   },
   "28": {
     "name": "Sandslash",
-    "rarity": "Ultra Rare",
+    "rarity": "Uncommon",
     "types": [
       {
         "type": "Ground",
@@ -361,7 +361,7 @@
   },
   "29": {
     "name": "Nidoran♀",
-    "rarity": "Uncommon",
+    "rarity": "Very Common",
     "types": [
       {
         "type": "Poison",
@@ -372,7 +372,7 @@
   },
   "30": {
     "name": "Nidorina",
-    "rarity": "Very Rare",
+    "rarity": "Uncommon",
     "types": [
       {
         "type": "Poison",
@@ -398,7 +398,7 @@
   },
   "32": {
     "name": "Nidoran♂",
-    "rarity": "Uncommon",
+    "rarity": "Very Common",
     "types": [
       {
         "type": "Poison",
@@ -409,7 +409,7 @@
   },
   "33": {
     "name": "Nidorino",
-    "rarity": "Very Rare",
+    "rarity": "Uncommon",
     "types": [
       {
         "type": "Poison",
@@ -435,7 +435,7 @@
   },
   "35": {
     "name": "Clefairy",
-    "rarity": "Uncommon",
+    "rarity": "Common",
     "types": [
       {
         "type": "Fairy",
@@ -446,7 +446,7 @@
   },
   "36": {
     "name": "Clefable",
-    "rarity": "Very Rare",
+    "rarity": "Epic",
     "types": [
       {
         "type": "Fairy",
@@ -457,7 +457,7 @@
   },
   "37": {
     "name": "Vulpix",
-    "rarity": "Rare",
+    "rarity": "Common",
     "types": [
       {
         "type": "Fire",
@@ -468,7 +468,7 @@
   },
   "38": {
     "name": "Ninetales",
-    "rarity": "Ultra Rare",
+    "rarity": "Uncommon",
     "types": [
       {
         "type": "Fire",
@@ -479,7 +479,7 @@
   },
   "39": {
     "name": "Jigglypuff",
-    "rarity": "Rare",
+    "rarity": "Common",
     "types": [
       {
         "type": "Normal",
@@ -494,7 +494,7 @@
   },
   "40": {
     "name": "Wigglytuff",
-    "rarity": "Ultra Rare",
+    "rarity": "Uncommon",
     "types": [
       {
         "type": "Normal",
@@ -509,7 +509,7 @@
   },
   "41": {
     "name": "Zubat",
-    "rarity": "Common",
+    "rarity": "Very Common",
     "types": [
       {
         "type": "Poison",
@@ -524,7 +524,7 @@
   },
   "42": {
     "name": "Golbat",
-    "rarity": "Rare",
+    "rarity": "Common",
     "types": [
       {
         "type": "Poison",
@@ -539,7 +539,7 @@
   },
   "43": {
     "name": "Oddish",
-    "rarity": "Uncommon",
+    "rarity": "Very Common",
     "types": [
       {
         "type": "Grass",
@@ -554,7 +554,7 @@
   },
   "44": {
     "name": "Gloom",
-    "rarity": "Very Rare",
+    "rarity": "Uncommon",
     "types": [
       {
         "type": "Grass",
@@ -569,7 +569,7 @@
   },
   "45": {
     "name": "Vileplume",
-    "rarity": "Ultra Rare",
+    "rarity": "Very Rare",
     "types": [
       {
         "type": "Grass",
@@ -584,7 +584,7 @@
   },
   "46": {
     "name": "Paras",
-    "rarity": "Uncommon",
+    "rarity": "Very Common",
     "types": [
       {
         "type": "Bug",
@@ -599,7 +599,7 @@
   },
   "47": {
     "name": "Parasect",
-    "rarity": "Rare",
+    "rarity": "Uncommon",
     "types": [
       {
         "type": "Bug",
@@ -614,7 +614,7 @@
   },
   "48": {
     "name": "Venonat",
-    "rarity": "Uncommon",
+    "rarity": "Very Common",
     "types": [
       {
         "type": "Bug",
@@ -629,7 +629,7 @@
   },
   "49": {
     "name": "Venomoth",
-    "rarity": "Rare",
+    "rarity": "Very Rare",
     "types": [
       {
         "type": "Bug",
@@ -644,7 +644,7 @@
   },
   "50": {
     "name": "Diglett",
-    "rarity": "Rare",
+    "rarity": "Common",
     "types": [
       {
         "type": "Ground",
@@ -655,7 +655,7 @@
   },
   "51": {
     "name": "Dugtrio",
-    "rarity": "Ultra Rare",
+    "rarity": "Uncommon",
     "types": [
       {
         "type": "Ground",
@@ -666,7 +666,7 @@
   },
   "52": {
     "name": "Meowth",
-    "rarity": "Rare",
+    "rarity": "Very Common",
     "types": [
       {
         "type": "Normal",
@@ -677,7 +677,7 @@
   },
   "53": {
     "name": "Persian",
-    "rarity": "Very Rare",
+    "rarity": "Common",
     "types": [
       {
         "type": "Normal",
@@ -688,7 +688,7 @@
   },
   "54": {
     "name": "Psyduck",
-    "rarity": "Rare",
+    "rarity": "Common",
     "types": [
       {
         "type": "Water",
@@ -699,7 +699,7 @@
   },
   "55": {
     "name": "Golduck",
-    "rarity": "Very Rare",
+    "rarity": "Uncommon",
     "types": [
       {
         "type": "Water",
@@ -710,7 +710,7 @@
   },
   "56": {
     "name": "Mankey",
-    "rarity": "Rare",
+    "rarity": "Very Common",
     "types": [
       {
         "type": "Fighting",
@@ -732,7 +732,7 @@
   },
   "58": {
     "name": "Growlithe",
-    "rarity": "Uncommon",
+    "rarity": "Common",
     "types": [
       {
         "type": "Fire",
@@ -743,7 +743,7 @@
   },
   "59": {
     "name": "Arcanine",
-    "rarity": "Very Rare",
+    "rarity": "Rare",
     "types": [
       {
         "type": "Fire",
@@ -754,7 +754,7 @@
   },
   "60": {
     "name": "Poliwag",
-    "rarity": "Uncommon",
+    "rarity": "Very Common",
     "types": [
       {
         "type": "Water",
@@ -765,7 +765,7 @@
   },
   "61": {
     "name": "Poliwhirl",
-    "rarity": "Rare",
+    "rarity": "Uncommon",
     "types": [
       {
         "type": "Water",
@@ -776,7 +776,7 @@
   },
   "62": {
     "name": "Poliwrath",
-    "rarity": "Ultra Rare",
+    "rarity": "Very Rare",
     "types": [
       {
         "type": "Water",
@@ -787,7 +787,7 @@
   },
   "63": {
     "name": "Abra",
-    "rarity": "Rare",
+    "rarity": "Common",
     "types": [
       {
         "type": "Psychic",
@@ -798,7 +798,7 @@
   },
   "64": {
     "name": "Kadabra",
-    "rarity": "Very Rare",
+    "rarity": "Uncommon",
     "types": [
       {
         "type": "Psychic",
@@ -809,7 +809,7 @@
   },
   "65": {
     "name": "Alakazam",
-    "rarity": "Ultra Rare",
+    "rarity": "Very Rare",
     "types": [
       {
         "type": "Psychic",
@@ -820,7 +820,7 @@
   },
   "66": {
     "name": "Machop",
-    "rarity": "Rare",
+    "rarity": "Very Common",
     "types": [
       {
         "type": "Fighting",
@@ -831,7 +831,7 @@
   },
   "67": {
     "name": "Machoke",
-    "rarity": "Very Rare",
+    "rarity": "Common",
     "types": [
       {
         "type": "Fighting",
@@ -842,7 +842,7 @@
   },
   "68": {
     "name": "Machamp",
-    "rarity": "Ultra Rare",
+    "rarity": "Uncommon",
     "types": [
       {
         "type": "Fighting",
@@ -853,7 +853,7 @@
   },
   "69": {
     "name": "Bellsprout",
-    "rarity": "Uncommon",
+    "rarity": "Very Common",
     "types": [
       {
         "type": "Grass",
@@ -883,7 +883,7 @@
   },
   "71": {
     "name": "Victreebel",
-    "rarity": "Ultra Rare",
+    "rarity": "Very Rare",
     "types": [
       {
         "type": "Grass",
@@ -898,7 +898,7 @@
   },
   "72": {
     "name": "Tentacool",
-    "rarity": "Rare",
+    "rarity": "Common",
     "types": [
       {
         "type": "Water",
@@ -913,7 +913,7 @@
   },
   "73": {
     "name": "Tentacruel",
-    "rarity": "Very Rare",
+    "rarity": "Uncommon",
     "types": [
       {
         "type": "Water",
@@ -928,7 +928,7 @@
   },
   "74": {
     "name": "Geodude",
-    "rarity": "Rare",
+    "rarity": "Very Common",
     "types": [
       {
         "type": "Rock",
@@ -943,7 +943,7 @@
   },
   "75": {
     "name": "Graveler",
-    "rarity": "Very Rare",
+    "rarity": "Common",
     "types": [
       {
         "type": "Rock",
@@ -958,7 +958,7 @@
   },
   "76": {
     "name": "Golem",
-    "rarity": "Ultra Rare",
+    "rarity": "Uncommon",
     "types": [
       {
         "type": "Rock",
@@ -973,7 +973,7 @@
   },
   "77": {
     "name": "Ponyta",
-    "rarity": "Rare",
+    "rarity": "Common",
     "types": [
       {
         "type": "Fire",
@@ -984,7 +984,7 @@
   },
   "78": {
     "name": "Rapidash",
-    "rarity": "Very Rare",
+    "rarity": "Rare",
     "types": [
       {
         "type": "Fire",
@@ -995,7 +995,7 @@
   },
   "79": {
     "name": "Slowpoke",
-    "rarity": "Rare",
+    "rarity": "Very Common",
     "types": [
       {
         "type": "Water",
@@ -1010,7 +1010,7 @@
   },
   "80": {
     "name": "Slowbro",
-    "rarity": "Very Rare",
+    "rarity": "Rare",
     "types": [
       {
         "type": "Water",
@@ -1025,7 +1025,7 @@
   },
   "81": {
     "name": "Magnemite",
-    "rarity": "Rare",
+    "rarity": "Very Common",
     "types": [
       {
         "type": "Electric",
@@ -1040,7 +1040,7 @@
   },
   "82": {
     "name": "Magneton",
-    "rarity": "Ultra Rare",
+    "rarity": "Common",
     "types": [
       {
         "type": "Electric",
@@ -1055,7 +1055,7 @@
   },
   "83": {
     "name": "Farfetch'd",
-    "rarity": "Ultra Rare",
+    "rarity": "Rare",
     "types": [
       {
         "type": "Normal",
@@ -1070,7 +1070,7 @@
   },
   "84": {
     "name": "Doduo",
-    "rarity": "Uncommon",
+    "rarity": "Common",
     "types": [
       {
         "type": "Normal",
@@ -1085,7 +1085,7 @@
   },
   "85": {
     "name": "Dodrio",
-    "rarity": "Very Rare",
+    "rarity": "Uncommon",
     "types": [
       {
         "type": "Normal",
@@ -1100,7 +1100,7 @@
   },
   "86": {
     "name": "Seel",
-    "rarity": "Rare",
+    "rarity": "Common",
     "types": [
       {
         "type": "Water",
@@ -1111,7 +1111,7 @@
   },
   "87": {
     "name": "Dewgong",
-    "rarity": "Ultra Rare",
+    "rarity": "Very Rare",
     "types": [
       {
         "type": "Water",
@@ -1126,7 +1126,7 @@
   },
   "88": {
     "name": "Grimer",
-    "rarity": "Very Rare",
+    "rarity": "Common",
     "types": [
       {
         "type": "Poison",
@@ -1137,7 +1137,7 @@
   },
   "89": {
     "name": "Muk",
-    "rarity": "Ultra Rare",
+    "rarity": "Rare",
     "types": [
       {
         "type": "Poison",
@@ -1148,7 +1148,7 @@
   },
   "90": {
     "name": "Shellder",
-    "rarity": "Rare",
+    "rarity": "Common",
     "types": [
       {
         "type": "Water",
@@ -1159,7 +1159,7 @@
   },
   "91": {
     "name": "Cloyster",
-    "rarity": "Ultra Rare",
+    "rarity": "Uncommon",
     "types": [
       {
         "type": "Water",
@@ -1174,7 +1174,7 @@
   },
   "92": {
     "name": "Gastly",
-    "rarity": "Uncommon",
+    "rarity": "Very Common",
     "types": [
       {
         "type": "Ghost",
@@ -1189,7 +1189,7 @@
   },
   "93": {
     "name": "Haunter",
-    "rarity": "Rare",
+    "rarity": "Common",
     "types": [
       {
         "type": "Ghost",
@@ -1204,7 +1204,7 @@
   },
   "94": {
     "name": "Gengar",
-    "rarity": "Ultra Rare",
+    "rarity": "Very Rare",
     "types": [
       {
         "type": "Ghost",
@@ -1234,7 +1234,7 @@
   },
   "96": {
     "name": "Drowzee",
-    "rarity": "Uncommon",
+    "rarity": "Common",
     "types": [
       {
         "type": "Psychic",
@@ -1245,7 +1245,7 @@
   },
   "97": {
     "name": "Hypno",
-    "rarity": "Rare",
+    "rarity": "Uncommon",
     "types": [
       {
         "type": "Psychic",
@@ -1256,7 +1256,7 @@
   },
   "98": {
     "name": "Krabby",
-    "rarity": "Uncommon",
+    "rarity": "Very Common",
     "types": [
       {
         "type": "Water",
@@ -1267,7 +1267,7 @@
   },
   "99": {
     "name": "Kingler",
-    "rarity": "Very Rare",
+    "rarity": "Rare",
     "types": [
       {
         "type": "Water",
@@ -1278,7 +1278,7 @@
   },
   "100": {
     "name": "Voltorb",
-    "rarity": "Rare",
+    "rarity": "Very Common",
     "types": [
       {
         "type": "Electric",
@@ -1289,7 +1289,7 @@
   },
   "101": {
     "name": "Electrode",
-    "rarity": "Ultra Rare",
+    "rarity": "Common",
     "types": [
       {
         "type": "Electric",
@@ -1300,7 +1300,7 @@
   },
   "102": {
     "name": "Exeggcute",
-    "rarity": "Rare",
+    "rarity": "Common",
     "types": [
       {
         "type": "Grass",
@@ -1315,7 +1315,7 @@
   },
   "103": {
     "name": "Exeggutor",
-    "rarity": "Very Rare",
+    "rarity": "Rare",
     "types": [
       {
         "type": "Grass",
@@ -1330,7 +1330,7 @@
   },
   "104": {
     "name": "Cubone",
-    "rarity": "Rare",
+    "rarity": "Common",
     "types": [
       {
         "type": "Ground",
@@ -1352,7 +1352,7 @@
   },
   "106": {
     "name": "Hitmonlee",
-    "rarity": "Very Rare",
+    "rarity": "Common",
     "types": [
       {
         "type": "Fighting",
@@ -1363,7 +1363,7 @@
   },
   "107": {
     "name": "Hitmonchan",
-    "rarity": "Rare",
+    "rarity": "Uncommon",
     "types": [
       {
         "type": "Fighting",
@@ -1374,7 +1374,7 @@
   },
   "108": {
     "name": "Lickitung",
-    "rarity": "Rare",
+    "rarity": "Uncommon",
     "types": [
       {
         "type": "Normal",
@@ -1385,7 +1385,7 @@
   },
   "109": {
     "name": "Koffing",
-    "rarity": "Rare",
+    "rarity": "Common",
     "types": [
       {
         "type": "Poison",
@@ -1396,7 +1396,7 @@
   },
   "110": {
     "name": "Weezing",
-    "rarity": "Very Rare",
+    "rarity": "Uncommon",
     "types": [
       {
         "type": "Poison",
@@ -1407,7 +1407,7 @@
   },
   "111": {
     "name": "Rhyhorn",
-    "rarity": "Rare",
+    "rarity": "Common",
     "types": [
       {
         "type": "Ground",
@@ -1422,7 +1422,7 @@
   },
   "112": {
     "name": "Rhydon",
-    "rarity": "Very Rare",
+    "rarity": "Rare",
     "types": [
       {
         "type": "Ground",
@@ -1437,7 +1437,7 @@
   },
   "113": {
     "name": "Chansey",
-    "rarity": "Very Rare",
+    "rarity": "Uncommon",
     "types": [
       {
         "type": "Normal",
@@ -1459,7 +1459,7 @@
   },
   "115": {
     "name": "Kangaskhan",
-    "rarity": "Ultra Rare",
+    "rarity": "Very Rare",
     "types": [
       {
         "type": "Normal",
@@ -1470,7 +1470,7 @@
   },
   "116": {
     "name": "Horsea",
-    "rarity": "Rare",
+    "rarity": "Common",
     "types": [
       {
         "type": "Water",
@@ -1481,7 +1481,7 @@
   },
   "117": {
     "name": "Seadra",
-    "rarity": "Very Rare",
+    "rarity": "Uncommon",
     "types": [
       {
         "type": "Water",
@@ -1492,7 +1492,7 @@
   },
   "118": {
     "name": "Goldeen",
-    "rarity": "Rare",
+    "rarity": "Very Common",
     "types": [
       {
         "type": "Water",
@@ -1503,7 +1503,7 @@
   },
   "119": {
     "name": "Seaking",
-    "rarity": "Very Rare",
+    "rarity": "Uncommon",
     "types": [
       {
         "type": "Water",
@@ -1514,7 +1514,7 @@
   },
   "120": {
     "name": "Staryu",
-    "rarity": "Uncommon",
+    "rarity": "Common",
     "types": [
       {
         "type": "Water",
@@ -1525,7 +1525,7 @@
   },
   "121": {
     "name": "Starmie",
-    "rarity": "Very Rare",
+    "rarity": "Uncommon",
     "types": [
       {
         "type": "Water",
@@ -1540,7 +1540,7 @@
   },
   "122": {
     "name": "Mr. Mime",
-    "rarity": "Very Rare",
+    "rarity": "Rare",
     "types": [
       {
         "type": "Psychic",
@@ -1555,7 +1555,7 @@
   },
   "123": {
     "name": "Scyther",
-    "rarity": "Rare",
+    "rarity": "Uncommon",
     "types": [
       {
         "type": "Bug",
@@ -1570,7 +1570,7 @@
   },
   "124": {
     "name": "Jynx",
-    "rarity": "Rare",
+    "rarity": "Common",
     "types": [
       {
         "type": "Ice",
@@ -1585,7 +1585,7 @@
   },
   "125": {
     "name": "Electabuzz",
-    "rarity": "Rare",
+    "rarity": "Very Rare",
     "types": [
       {
         "type": "Electric",
@@ -1607,7 +1607,7 @@
   },
   "127": {
     "name": "Pinsir",
-    "rarity": "Uncommon",
+    "rarity": "Rare",
     "types": [
       {
         "type": "Bug",
@@ -1618,7 +1618,7 @@
   },
   "128": {
     "name": "Tauros",
-    "rarity": "Rare",
+    "rarity": "Epic",
     "types": [
       {
         "type": "Normal",
@@ -1629,7 +1629,7 @@
   },
   "129": {
     "name": "Magikarp",
-    "rarity": "Uncommon",
+    "rarity": "Very Common",
     "types": [
       {
         "type": "Water",
@@ -1640,7 +1640,7 @@
   },
   "130": {
     "name": "Gyarados",
-    "rarity": "Ultra Rare",
+    "rarity": "Very Rare",
     "types": [
       {
         "type": "Water",
@@ -1670,7 +1670,7 @@
   },
   "132": {
     "name": "Ditto",
-    "rarity": "Ultra Rare",
+    "rarity": "Legendary",
     "types": [
       {
         "type": "Normal",
@@ -1681,7 +1681,7 @@
   },
   "133": {
     "name": "Eevee",
-    "rarity": "Common",
+    "rarity": "Very Common",
     "types": [
       {
         "type": "Normal",
@@ -1703,7 +1703,7 @@
   },
   "135": {
     "name": "Jolteon",
-    "rarity": "Very Rare",
+    "rarity": "Rare",
     "types": [
       {
         "type": "Electric",
@@ -1714,7 +1714,7 @@
   },
   "136": {
     "name": "Flareon",
-    "rarity": "Ultra Rare",
+    "rarity": "Rare",
     "types": [
       {
         "type": "Fire",
@@ -1725,7 +1725,7 @@
   },
   "137": {
     "name": "Porygon",
-    "rarity": "Very Rare",
+    "rarity": "Special",
     "types": [
       {
         "type": "Normal",
@@ -1736,7 +1736,7 @@
   },
   "138": {
     "name": "Omanyte",
-    "rarity": "Rare",
+    "rarity": "Special",
     "types": [
       {
         "type": "Rock",
@@ -1751,7 +1751,7 @@
   },
   "139": {
     "name": "Omastar",
-    "rarity": "Ultra Rare",
+    "rarity": "Epic",
     "types": [
       {
         "type": "Rock",
@@ -1766,7 +1766,7 @@
   },
   "140": {
     "name": "Kabuto",
-    "rarity": "Rare",
+    "rarity": "Uncommon",
     "types": [
       {
         "type": "Rock",
@@ -1781,7 +1781,7 @@
   },
   "141": {
     "name": "Kabutops",
-    "rarity": "Ultra Rare",
+    "rarity": "Very Rare",
     "types": [
       {
         "type": "Rock",
@@ -1796,7 +1796,7 @@
   },
   "142": {
     "name": "Aerodactyl",
-    "rarity": "Very Rare",
+    "rarity": "Special",
     "types": [
       {
         "type": "Rock",
@@ -1822,7 +1822,7 @@
   },
   "144": {
     "name": "Articuno",
-    "rarity": "Ultra Rare",
+    "rarity": "Legendary",
     "types": [
       {
         "type": "Ice",
@@ -1837,7 +1837,7 @@
   },
   "145": {
     "name": "Zapdos",
-    "rarity": "Ultra Rare",
+    "rarity": "Legendary",
     "types": [
       {
         "type": "Electric",
@@ -1852,7 +1852,7 @@
   },
   "146": {
     "name": "Moltres",
-    "rarity": "Ultra Rare",
+    "rarity": "Legendary",
     "types": [
       {
         "type": "Fire",
@@ -1889,7 +1889,7 @@
   },
   "149": {
     "name": "Dragonite",
-    "rarity": "Very Rare",
+    "rarity": "Epic",
     "types": [
       {
         "type": "Dragon",
@@ -1904,7 +1904,7 @@
   },
   "150": {
     "name": "Mewtwo",
-    "rarity": "Ultra Rare",
+    "rarity": "Legendary",
     "types": [
       {
         "type": "Psychic",
@@ -1915,7 +1915,7 @@
   },
   "151": {
     "name": "Mew",
-    "rarity": "Ultra Rare",
+    "rarity": "Legendary",
     "types": [
       {
         "type": "Psychic",
@@ -1923,8 +1923,8 @@
       }
     ],
     "spawn_rate": "99999"
-  },
-  "152": {
+   },
+ "152": {
     "name": "Chikorita",
     "rarity": "Uncommon",
     "types": [
