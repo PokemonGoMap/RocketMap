@@ -72,6 +72,20 @@
         margin-left: 0.5em;
       }
 
+      &[href="status"] {
+        @include icon('\f059');
+        -webkit-tap-highlight-color: rgba(0,0,0,0);
+
+        &:before {
+          margin: 0 0.5em 0 0;
+        }
+      }
+
+      & + a[href="status"]:last-child {
+        padding-left: 1.25em;
+        margin-left: 0.5em;
+      }
+
       @include breakpoint(small) {
         padding: 0 0.5em;
 
