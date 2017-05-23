@@ -284,7 +284,6 @@ def update_player_level(account, api_response):
                                     ['player_stats']
                                     ['level'])
             break
-    print account['level']
     return account['level']
 
 
