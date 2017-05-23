@@ -13,6 +13,7 @@ from pgoapi.exceptions import AuthException
 from .fakePogoApi import FakePogoApi
 from .utils import in_radius, generate_device_info, equi_rect_distance
 from .proxy import get_new_proxy
+from .pgoclient import PGoClient
 
 log = logging.getLogger(__name__)
 
@@ -97,8 +98,11 @@ def check_login(args, account, api, position, proxy_url):
             account['username'], num_tries)
         raise TooManyLoginAttempts('Exceeded login attempts.')
 
+    client = PGoClient(api)
+    client.login_procedure(account)  # Pass account for updating account level.
+
     log.debug('Login for account %s successful.', account['username'])
-    time.sleep(20)
+    time.sleep(random.uniform(10, 20))
 
 
 # Check if all important tutorial steps have been completed.
@@ -245,19 +249,19 @@ def complete_tutorial(api, account, tutorial_state):
 # Complete tutorial with a level up by a Pokestop spin.
 # API argument needs to be a logged in API instance.
 # Called during fort parsing in models.py
-def tutorial_pokestop_spin(api, player_level, forts, step_location, account):
-    if player_level > 1:
+def tutorial_pokestop_spin(client, account, forts, step_location):
+    if account['level'] > 1:
         log.debug(
             'No need to spin a Pokestop. ' +
             'Account %s is already level %d.',
-            account['username'], player_level)
+            account['username'], account['level'])
     else:  # Account needs to spin a Pokestop for level 2.
         log.debug(
             'Spinning Pokestop for account %s.',
             account['username'])
         for fort in forts:
             if fort.get('type') == 1:
-                if spin_pokestop(api, fort, step_location):
+                if spin_pokestop(client, account, fort, step_location):
                     log.debug(
                         'Account %s successfully spun a Pokestop ' +
                         'after completed tutorial.',
@@ -267,30 +271,32 @@ def tutorial_pokestop_spin(api, player_level, forts, step_location, account):
     return False
 
 
-def get_player_level(map_dict):
-    inventory_items = map_dict['responses'].get(
-        'GET_INVENTORY', {}).get(
-        'inventory_delta', {}).get(
-        'inventory_items', [])
-    player_stats = [item['inventory_item_data']['player_stats']
-                    for item in inventory_items
-                    if 'player_stats' in item.get(
-                    'inventory_item_data', {})]
-    if len(player_stats) > 0:
-        player_level = player_stats[0].get('level', 1)
-        return player_level
+# Should be called with the response of an API request with get_inventory.
+def update_player_level(account, api_response):
+    inventory_items = (api_response['responses']
+                       .get('GET_INVENTORY', {})
+                       .get('inventory_delta', {})
+                       .get('inventory_items', []))
 
-    return 0
+    for item in inventory_items:
+        if 'player_stats' in item.get('inventory_item_data', {}):
+            account['level'] = (item['inventory_item_data']
+                                    ['player_stats']
+                                    ['level'])
+            break
+    print account['level']
+    return account['level']
 
 
-def spin_pokestop(api, fort, step_location):
+def spin_pokestop(client, account, fort, step_location):
     spinning_radius = 0.04
     if in_radius((fort['latitude'], fort['longitude']), step_location,
                  spinning_radius):
         log.debug('Attempt to spin Pokestop (ID %s)', fort['id'])
 
         time.sleep(random.uniform(0.8, 1.8))  # Do not let Niantic throttle
-        spin_response = spin_pokestop_request(api, fort, step_location)
+        spin_response = spin_pokestop_request(client, account, fort,
+                                              step_location)
         time.sleep(random.uniform(2, 4))  # Do not let Niantic throttle
 
         # Check for reCaptcha
@@ -320,48 +326,31 @@ def spin_pokestop(api, fort, step_location):
     return False
 
 
-def spin_pokestop_request(api, fort, step_location):
+def spin_pokestop_request(client, account, fort, step_location):
     try:
-        req = api.create_request()
-        spin_pokestop_response = req.fort_search(
-            fort_id=fort['id'],
-            fort_latitude=fort['latitude'],
-            fort_longitude=fort['longitude'],
-            player_latitude=step_location[0],
-            player_longitude=step_location[1])
-        req.check_challenge()
-        req.get_hatched_eggs()
-        req.get_inventory()
-        req.check_awarded_badges()
-        req.download_settings()
-        req.get_buddy_walked()
-        spin_pokestop_response = req.call()
-
-        return spin_pokestop_response
+        response = client.fort_search(fort_id=fort['id'],
+                                      fort_latitude=fort['latitude'],
+                                      fort_longitude=fort['longitude'],
+                                      player_latitude=step_location[0],
+                                      player_longitude=step_location[1])
+        update_player_level(account, response)
+        return response
 
     except Exception as e:
         log.error('Exception while spinning Pokestop: %s.', repr(e))
         return False
 
 
-def encounter_pokemon_request(api, encounter_id, spawnpoint_id, scan_location):
+def encounter_pokemon_request(client, account, encounter_id, spawnpoint_id,
+                              scan_location):
     try:
-        # Setup encounter request envelope.
-        req = api.create_request()
-        req.encounter(
-            encounter_id=encounter_id,
-            spawn_point_id=spawnpoint_id,
-            player_latitude=scan_location[0],
-            player_longitude=scan_location[1])
-        req.check_challenge()
-        req.get_hatched_eggs()
-        req.get_inventory()
-        req.check_awarded_badges()
-        req.download_settings()
-        req.get_buddy_walked()
-        encounter_result = req.call()
+        response = client.encounter(encounter_id=encounter_id,
+                                    spawn_point_id=spawnpoint_id,
+                                    player_latitude=scan_location[0],
+                                    player_longitude=scan_location[1])
 
-        return encounter_result
+        update_player_level(account, response)
+        return response
     except Exception as e:
         log.error('Exception while encountering Pokémon: %s.', repr(e))
         return False

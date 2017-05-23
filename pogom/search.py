@@ -48,9 +48,10 @@ from .models import (parse_map, GymDetails, parse_gyms, MainWorker,
 from .utils import now, clear_dict_response
 from .transform import get_new_coords, jitter_location
 from .account import (setup_api, check_login, get_tutorial_state,
-                      complete_tutorial, AccountSet)
+                      complete_tutorial, AccountSet, update_player_level)
 from .captcha import captcha_overseer_thread, handle_captcha
 from .proxy import get_new_proxy
+from .pgoclient import PGoClient
 
 log = logging.getLogger(__name__)
 
@@ -804,7 +805,7 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
             # for stat purposes.
             consecutive_noitems = 0
 
-            api = setup_api(args, status)
+            client = PGoClient(setup_api(args, status))
 
             # The forever loop for the searches.
             while True:
@@ -921,16 +922,16 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
                 # Let the api know where we intend to be for this loop.
                 # Doing this before check_login so it does not also have
                 # to be done when the auth token is refreshed.
-                api.set_position(*step_location)
+                client.get_api().set_position(*step_location)
 
                 if args.hash_key:
                     key = key_scheduler.next()
                     log.debug('Using key {} for this scan.'.format(key))
-                    api.activate_hash_server(key)
+                    client.get_api().activate_hash_server(key)
 
                 # Ok, let's get started -- check our login status.
                 status['message'] = 'Logging in...'
-                check_login(args, account, api, step_location,
+                check_login(args, account, client.get_api(), step_location,
                             status['proxy_url'])
 
                 # Only run this when it's the account's first login, after
@@ -940,13 +941,15 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
 
                     # Check tutorial completion.
                     if args.complete_tutorial:
-                        tutorial_state = get_tutorial_state(api, account)
+                        tutorial_state = get_tutorial_state(client.get_api(),
+                                                            account)
 
                         if not all(x in tutorial_state
                                    for x in (0, 1, 3, 4, 7)):
                             log.info('Completing tutorial steps for %s.',
                                      account['username'])
-                            complete_tutorial(api, account, tutorial_state)
+                            complete_tutorial(client.get_api(), account,
+                                              tutorial_state)
                         else:
                             log.info('Account %s already completed tutorial.',
                                      account['username'])
@@ -958,7 +961,8 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
 
                 # Make the actual request.
                 scan_date = datetime.utcnow()
-                response_dict = map_request(api, step_location, args.no_jitter)
+                response_dict = map_request(client, account, step_location,
+                                            args.no_jitter)
                 status['last_scan_date'] = datetime.utcnow()
 
                 # Record the time and the place that the worker made the
@@ -979,15 +983,16 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
                 # Got the response, check for captcha, parse it out, then send
                 # todo's to db/wh queues.
                 try:
-                    captcha = handle_captcha(args, status, api, account,
-                                             account_failures,
+                    captcha = handle_captcha(args, status, client.get_api(),
+                                             account, account_failures,
                                              account_captchas, whq,
                                              response_dict, step_location)
                     if captcha is not None and captcha:
                         # Make another request for the same location
                         # since the previous one was captcha'd.
                         scan_date = datetime.utcnow()
-                        response_dict = map_request(api, step_location,
+                        response_dict = map_request(client, account,
+                                                    step_location,
                                                     args.no_jitter)
                     elif captcha is not None:
                         account_queue.task_done()
@@ -995,7 +1000,7 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
                         break
 
                     parsed = parse_map(args, response_dict, step_location,
-                                       dbq, whq, key_scheduler, api, status,
+                                       dbq, whq, key_scheduler, client, status,
                                        scan_date, account, account_sets)
                     del response_dict
                     scheduler.task_done(status, parsed)
@@ -1078,7 +1083,8 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
                                     current_gym, len(gyms_to_update),
                                     step_location[0], step_location[1])
                             time.sleep(random.random() + 2)
-                            response = gym_request(api, step_location, gym)
+                            response = gym_request(client, account,
+                                                   step_location, gym)
 
                             # Make sure the gym was in range. (Sometimes the
                             # API gets cranky about gyms that are ALMOST 1km
@@ -1181,7 +1187,7 @@ def upsertKeys(keys, key_scheduler, db_updates_queue):
     db_updates_queue.put((HashKeys, hashkeys))
 
 
-def map_request(api, position, no_jitter=False):
+def map_request(client, account, position, no_jitter=False):
     # Create scan_location to send to the api based off of position, because
     # tuples aren't mutable.
     if no_jitter:
@@ -1196,52 +1202,37 @@ def map_request(api, position, no_jitter=False):
     try:
         cell_ids = util.get_cell_ids(scan_location[0], scan_location[1])
         timestamps = [0, ] * len(cell_ids)
-        req = api.create_request()
-        req.get_map_objects(latitude=f2i(scan_location[0]),
-                            longitude=f2i(scan_location[1]),
-                            since_timestamp_ms=timestamps,
-                            cell_id=cell_ids)
-        req.check_challenge()
-        req.get_hatched_eggs()
-        req.get_inventory()
-        req.check_awarded_badges()
-        req.download_settings()
-        req.get_buddy_walked()
-        response = req.call()
+        response = client.get_map_objects(latitude=f2i(scan_location[0]),
+                                          longitude=f2i(scan_location[1]),
+                                          since_timestamp_ms=timestamps,
+                                          cell_id=cell_ids)
         response = clear_dict_response(response, True)
+        update_player_level(account, response)
         return response
 
     except HashingOfflineException as e:
         log.warning('Hashing server is unreachable, it might be offline.')
     except BadHashRequestException as e:
         log.warning('Invalid or expired hashing key: %s.',
-                    api._hash_server_token)
+                    client.get_api()._hash_server_token)
     except Exception as e:
         log.warning('Exception while downloading map: %s', repr(e))
         return False
 
 
-def gym_request(api, position, gym):
+def gym_request(client, account, position, gym):
     try:
         log.debug('Getting details for gym @ %f/%f (%fkm away)',
                   gym['latitude'], gym['longitude'],
                   calc_distance(position, [gym['latitude'], gym['longitude']]))
-        req = api.create_request()
-        req.get_gym_details(gym_id=gym['gym_id'],
-                            player_latitude=f2i(position[0]),
-                            player_longitude=f2i(position[1]),
-                            gym_latitude=gym['latitude'],
-                            gym_longitude=gym['longitude'])
-        req.check_challenge()
-        req.get_hatched_eggs()
-        req.get_inventory()
-        req.check_awarded_badges()
-        req.download_settings()
-        req.get_buddy_walked()
-        x = req.call()
-        x = clear_dict_response(x)
-        # Print pretty(x).
-        return x
+        response = client.get_gym_details(gym_id=gym['gym_id'],
+                                          player_latitude=f2i(position[0]),
+                                          player_longitude=f2i(position[1]),
+                                          gym_latitude=gym['latitude'],
+                                          gym_longitude=gym['longitude'])
+        response = clear_dict_response(response)
+        update_player_level(account, response)
+        return response
 
     except Exception as e:
         log.warning('Exception while downloading gym details: %s', repr(e))
