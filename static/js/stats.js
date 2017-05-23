@@ -146,6 +146,16 @@ function countMarkers(map) { // eslint-disable-line no-unused-vars
     }
 }
 
+function migrationTime() { // eslint-disable-line no-unused-vars
+    var migrationDate = moment.utc('2017-05-18T00:00:00Z')
+    var now = moment.utc()
+    while (migrationDate < now) migrationDate = migrationDate.add(14, 'days')
+    var days = migrationDate.diff(now, 'days')
+    var hours = migrationDate.diff(now, 'hours') - (days * 24)
+    var minutes = migrationDate.diff(now, 'minutes') - (days * 24 * 60) - (hours * 60)
+    document.getElementById('nest-migration').innerHTML = 'Next nest migration in <br>' + days + ' Days ' + hours + ' hours ' + minutes + ' minutes '
+}
+
 function getStats(spawnpointId) { // eslint-disable-line no-unused-vars
     $('ul[name=spawnpointnest]').empty()
     $('ul[name=spawnpointrest]').empty()

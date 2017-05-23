@@ -234,6 +234,7 @@
                 if ($('#stats').hasClass('visible')) {
                     $stats.classList.toggle('visible')
                 }
+                migrationTime()
                 pointHistory()
             }
         })

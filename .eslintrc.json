@@ -37,6 +37,7 @@
     "setupPokemonMarker": true,
     "pointHistory":true,
     "spHistory":true,
+    "migrationTime":true,
     "addNestMarker":true,
     "removeNestMarker":true,
     "isTouchDevice": true,
