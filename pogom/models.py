@@ -1978,7 +1978,9 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                     # re-use an old API object if it's stored and we're
                     # using an account from the AccountSet.
                     if not args.no_api_store and using_accountset:
-                        hlvl_client = PGoClient(hlvl_account.get('api', None))
+                        hlvl_api = hlvl_account.get('api', None)
+                        if hlvl_api:  # Only initialize if it exists
+                            hlvl_client = PGoClient(hlvl_api)
 
                     # Make new API for this account if we're not using an
                     # API that's already logged in.
@@ -2000,7 +2002,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                         hlvl_account['api'] = hlvl_client.get_api()
 
                     # Set location.
-                    hlvl_client.get_api().set_position(*scan_location)
+                    hlvl_client.set_position(scan_location)
 
                     # Log in.
                     check_login(args, hlvl_account, hlvl_client.get_api(),

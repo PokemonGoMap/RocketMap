@@ -922,12 +922,12 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
                 # Let the api know where we intend to be for this loop.
                 # Doing this before check_login so it does not also have
                 # to be done when the auth token is refreshed.
-                client.get_api().set_position(*step_location)
+                client.set_position(step_location)
 
                 if args.hash_key:
                     key = key_scheduler.next()
                     log.debug('Using key {} for this scan.'.format(key))
-                    client.get_api().activate_hash_server(key)
+                    client.activate_hash_server(key)
 
                 # Ok, let's get started -- check our login status.
                 status['message'] = 'Logging in...'

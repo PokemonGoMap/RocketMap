@@ -26,6 +26,12 @@ class PGoClient:
         self.api = api
         self.reset_timestamp()  # New API, reset timestamp.
 
+    def set_position(self, position):
+        self.api.set_position(*position)
+
+    def activate_hash_server(self, key):
+        self.api.activate_hash_server(key)
+
     # Returns the new_timestamp_ms for the previous API call.
     def get_last_timestamp(self):
         return self.timestamp
@@ -98,15 +104,13 @@ class PGoClient:
     # ------------------------
     # Standard call method for most API requests.
     # Adjust 'sequence' or 'download_settings' argument to opt out or in.
-    def call(self, request, sequence=True, get_hatched_eggs=True,
-             download_settings=False, get_buddy_walked=True):
+    def call(self, request, sequence=True, download_settings=False):
         if sequence:
             request.check_challenge()
             request.get_hatched_eggs()
             request.get_inventory(last_timestamp_ms=self.timestamp)
             request.check_awarded_badges()
-            # Only called during login.
-            if download_settings:
+            if download_settings:  # Only called during login procedure
                 request.download_settings()
 
             request.get_buddy_walked()
