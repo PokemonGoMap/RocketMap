@@ -69,6 +69,14 @@ class PGoClient:
         request.level_up_rewards(level=level)
         return self.call(request, download_settings=login)
 
+    # Registers a background device. Used as login on iOS (our API) with
+    # an 'apple_watch'
+    def register_background_device(self, device_type):
+        request = self.api.create_request()
+        request.register_background_device(device_type=device_type)
+        time.sleep(random.uniform(.09, .11))
+        return self.call(request)
+
     # Request for retrieving map objects from the API.
     def get_map_objects(self, latitude, longitude, since_timestamp_ms,
                         cell_id):
@@ -77,6 +85,17 @@ class PGoClient:
                                 longitude=longitude,
                                 since_timestamp_ms=since_timestamp_ms,
                                 cell_id=cell_id)
+        return self.call(request)
+
+    # Request for getting gym details for a previously scanned fort
+    def get_gym_details(self, gym_id, player_latitude, player_longitude,
+                        gym_latitude, gym_longitude):
+        request = self.api.create_request()
+        request.get_gym_details(gym_id=gym_id,
+                                player_latitude=player_latitude,
+                                player_longitude=player_longitude,
+                                gym_latitude=gym_latitude,
+                                gym_longitude=gym_longitude)
         return self.call(request)
 
     # Request for encountering pokemon to retrieve additional information
@@ -183,4 +202,14 @@ class PGoClient:
         except Exception as e:
             log.error('Login for account %s failed. ' +
                       'Exception in getting the level-up rewards: %s',
+                      account['username'], repr(e))
+
+        time.sleep(random.uniform(.45, .7))
+        try:  # 4 - Register a apple watch as background device
+            response = self.register_background_device(
+                device_type='apple_watch')
+            update_player_level(account, response)
+        except Exception as e:
+            log.error('Login for account %s failed. ' +
+                      'Exception in registering background device: %s',
                       account['username'], repr(e))
