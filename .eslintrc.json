@@ -33,6 +33,7 @@
     "centerLng": true,
     "pageLoaded": true,
     "countMarkers": true,
+    "getStats": true,
     "skel": true,
     "setupPokemonMarker": true,
 

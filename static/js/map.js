@@ -91,7 +91,6 @@ var notifyText = 'disappears at <dist> (<udist>)'
 //
 // Functions
 //
-
 function excludePokemon(id) { // eslint-disable-line no-unused-vars
     $selectExclude.val(
         $selectExclude.val().concat(id)
@@ -648,6 +647,11 @@ function spawnpointLabel(item) {
                 May appear as early as ${formatSpawnTime(item.time - 1800)}
             </div>`
     }
+
+    str += `
+      <div>
+      <a href="javascript:getStats('${item.spawnpoint_id}')">Show 24 hour history</a>&nbsp;&nbsp;
+    </div>`
     return str
 }
 
