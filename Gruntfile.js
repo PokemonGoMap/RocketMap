@@ -5,7 +5,17 @@ module.exports = function(grunt) {
 
   grunt.initConfig({
     pkg: grunt.file.readJSON('package.json'),
-
+	shell: {
+		options: {
+		    stderr: false
+		},
+		target: {
+			command: [
+			         'cp static/js/map.common.js static/js/map.common-custom.js',
+		             './map_default.py'
+			].join('&&')
+	   }
+	},
     sass: {
       dist: {
         files: {
@@ -28,7 +38,7 @@ module.exports = function(grunt) {
         files: {
           'static/dist/js/app.built.js': 'static/js/app.js',
           'static/dist/js/map.built.js': 'static/js/map.js',
-          'static/dist/js/map.common.built.js': 'static/js/map.common.js',
+          'static/dist/js/map.common.built.js': 'static/js/map.common-custom.js',
           'static/dist/js/mobile.built.js': 'static/js/mobile.js',
           'static/dist/js/stats.built.js': 'static/js/stats.js',
           'static/dist/js/statistics.built.js': 'static/js/statistics.js',
@@ -120,9 +130,7 @@ module.exports = function(grunt) {
   grunt.registerTask('css-build', ['newer:sass', 'newer:cssmin']);
   grunt.registerTask('js-lint', ['newer:eslint']);
   grunt.registerTask('json', ['newer:minjson']);
-
-  grunt.registerTask('build', ['clean', 'js-build', 'css-build', 'json']);
+  grunt.registerTask('build', ['clean', 'shell', 'js-build', 'css-build', 'json']);
   grunt.registerTask('lint', ['js-lint']);
   grunt.registerTask('default', ['build', 'watch']);
-
 };

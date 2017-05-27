@@ -1,0 +1,64 @@
+##### IMPORTANT ######
+##
+## Any time anything in this file is changed, you must run 'npm install'
+## (or 'grunt build' if installed) to update the files correctly.
+##
+#####################
+
+### The variable names match those in map.common.js exactly.
+### This aids in ease of manipulating the file
+
+# options include: roadmap, satellite, hybrid, nolabels_style,
+#   dark_style, style_light2, style_pgo, dark_style_nl, style_pgo_day,
+#   style_pgo_night, style_pgo_dynamic
+# default is roadmap
+map_style: roadmap
+
+# Pokemon to exclude from the realtime map
+# This is a comma seperated list.
+# Example: remember_select_exclude: [3,5,9,11]
+# Default is []
+remember_select_exclude: [] 
+
+# Pokemon to 'bounce' on the realtime map.
+# Also comma seperated list
+# Example: remember_select_notify: [3,67,98]
+# Default is []
+remember_select_notify: []
+
+# Map notify based on rarity.
+# Options include: Common, Uncommon, Rare, Very Rare, Ultra Rare
+# Keep the format like the example, or you will cause grunt build issues
+# Example: remember_select_rarity_notify: ['Ultra Rare','Very Rare']
+remember_select_rarity_notify: []
+
+# Notify on the map the % of perfection.
+# You need to have encounter enabled
+# Example: remember_text_perfection_notify: 90
+# Leave blank to reset to default
+remember_text_perfection_notify: 
+
+# This dings the browser
+# default is false
+# playSounds: true
+playSound: false
+
+# show these markers on the map, or don't
+
+# Show Pokestops on the map
+showPokestops: true
+
+# Show Pokemon on the map
+showPokemon: true
+
+# Show gyms on the map
+showGyms: false
+
+# This is 'start map at me'
+startAtUserLocation: false
+
+# maximum zoom level of the realtime map.
+# Example: zoomLevel: 17
+# Setting to blank will break things, either remove it or leave it as
+# default
+zoomLevel: 16
