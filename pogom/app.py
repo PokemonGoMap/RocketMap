@@ -22,7 +22,6 @@ from .utils import now, dottedQuadToNum, get_blacklist
 log = logging.getLogger(__name__)
 compress = Compress()
 
-
 class Pogom(Flask):
 
     def __init__(self, import_name, **kwargs):
@@ -173,9 +172,6 @@ class Pogom(Flask):
 
         map_lat = self.current_location[0]
         map_lng = self.current_location[1]
-        if request.args:
-            map_lat = request.args.get('lat') or self.current_location[0]
-            map_lng = request.args.get('lon') or self.current_location[1]
 
         return render_template('map.html',
                                lat=map_lat,
