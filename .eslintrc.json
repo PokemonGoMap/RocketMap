@@ -31,7 +31,6 @@
     "Store": true,
     "centerLat": true,
     "centerLng": true,
-    "centerZoom": true,
     "pageLoaded": true,
     "countMarkers": true,
     "skel": true,
