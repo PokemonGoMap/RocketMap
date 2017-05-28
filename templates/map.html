@@ -44,14 +44,14 @@
       <!-- Header -->
       <header id="header">
         <a href="#nav"><span class="label">Options</span></a>
-        <h1><a href="./">RocketMap &nbsp;<i class="fa fa-rocket" aria-hidden="true"></i></a></h1>
+        <h1><a href="./">RocketMap<i class="fa fa-rocket fa-fw"></i></a></h1>
         <a href="#stats" id="statsToggle" class="statsNav" style="float: right;"><span class="label">Stats</span></a>
         <a href="status" target="_blank" style="float: right;"><span class="label">Status</span></a>
       </header>
       <!-- NAV -->
       <nav id="nav">
         <div id="nav-accordion">
-          <h3>Marker Settings &emsp;<i class="fa fa-map-marker" aria-hidden="true"></i></h3>
+          <h3><i class="fa fa-map-marker fa-fw"></i>Marker Settings</h3>
           <div>
               {% if show.pokemons %}
             <div class="form-control switch-container">
@@ -213,7 +213,7 @@
               {% endif %}
           </div>
 
-          <h3>Location &amp; Search Settings &emsp;<i class="fa fa-location-arrow" aria-hidden="true"></i></h3>
+          <h3><i class="fa fa-location-arrow fa-fw"></i>Location &amp; Search Settings</h3>
 
           <div>
               {% if show.fixed_display %}
@@ -291,7 +291,7 @@
           </div>
 
             {% if show.pokemons %}
-          <h3>Notification Settings &emsp;<i class="fa fa-bullhorn" aria-hidden="true"></i></h3>
+          <h3><i class="fa fa-bullhorn fa-fw"></i>Notification Settings</h3>
           <div>
             <div class="form-control">
               <label for="notify-pokemon">
@@ -340,7 +340,7 @@
               </div>
           </div>
             {% endif %}
-          <h3>Style Settings &emsp;<i class="fa fa-map-o" aria-hidden="true"></i></h3>
+          <h3><i class="fa fa-map-o fa-fw"></i>Style Settings</h3>
           <div>
             <div class="form-control switch-container">
               <h3>Map Style</h3>
@@ -374,7 +374,7 @@
           </div>
         </div>
       <div style="margin-top:10px;">
-        <center><button class="settings" onclick="confirm('Are you sure you want to reset settings to default values?') ? (localStorage.clear(), window.location.reload()) : false" style="padding:0px 10px 0px 10px;"><i class="fa fa-refresh" aria-hidden="true"></i>&nbsp; Reset Settings</button></center>
+        <center><button class="settings" onclick="confirm('Are you sure you want to reset settings to default values?') ? (localStorage.clear(), window.location.reload()) : false" style="padding:0px 10px 0px 10px;"><i class="fa fa-refresh fa-fw"></i>Reset Settings</button></center>
       </div>
       </nav>
       <nav id="stats">
