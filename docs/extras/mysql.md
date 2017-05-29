@@ -141,7 +141,7 @@ You need to tell RocketMap where the database is!
    ```
    CREATE DATABASE rocketmapdb;
    CREATE USER 'rocketmapuser'@'localhost' IDENTIFIED BY 'password';
-   GRANT ALL PRIVILEGES ON rocketmapdb *.* TO 'rocketmapuser'@'localhost';
+   GRANT ALL PRIVILEGES ON rocketmapdb.* TO 'rocketmapuser'@'localhost';
    ```
 
 4. Quit the MySQL command line tool `quit`
