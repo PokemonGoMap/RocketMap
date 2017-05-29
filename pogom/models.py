@@ -1941,7 +1941,8 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
 
             # Check to see if pokemon is in blacklist
             if pokemon_id in args.db_blacklist:
-                log.debug('Pokemon id {} has been filtered and will not be entered in db.'.format(pokemon_id))
+                log.debug('Pokemon id {} has been filtered '
+                          'and will not be entered in db.'.format(pokemon_id))
                 skipped += 1
                 continue
 

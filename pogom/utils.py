@@ -672,7 +672,6 @@ def get_args():
             with open(args.enc_whitelist_file) as f:
                 args.enc_whitelist = frozenset([int(l.strip()) for l in f])
 
-
         # db blacklist
         args.enc_blacklist = []
         if args.db_blacklist_file:
