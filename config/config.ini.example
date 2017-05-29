@@ -79,6 +79,7 @@
 #gym-info                       # Enables detailed gym info collection. (default=False)
 #complete-tutorial              # Complete ToS and tutorial steps on accounts if they haven't already.
 #on-demand_timeout:             # Pause searching while web UI is inactive for this timeout (in seconds). (default=0)
+#db-blacklist-file:		# Specify location of file to blacklist pokemon from being entered in db. One pokmeon id per line
 
 
 # Account rotation

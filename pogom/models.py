@@ -1939,6 +1939,13 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
             printPokemon(pokemon_id, p['latitude'], p['longitude'],
                          disappear_time)
 
+            # Check to see if pokemon is in
+            print('pokemon_id: {}, {}'.format(pokemon_id,args.db_blacklist))
+            if pokemon_id in args.db_blacklist:
+                log.debug('Pokemon id {} has been filtered and will not be entered in db.'.format(pokemon_id))
+                skipped += 1
+                continue
+
             # Scan for IVs/CP and moves.
             encounter_result = None
             if args.encounter and (pokemon_id in args.enc_whitelist):
