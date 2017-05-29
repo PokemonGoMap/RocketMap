@@ -31,7 +31,7 @@
     "Store": true,
     "centerLat": true,
     "centerLng": true,
-	"showConfig": true,	
+    "showConfig": true,	
     "pageLoaded": true,
     "countMarkers": true,
     "skel": true,
