@@ -954,7 +954,7 @@ function setupScannedMarker(item) {
         strokeWeight: 1,
         strokeOpacity: 0.5
     })
-    
+
     return marker
 }
 
