@@ -8,6 +8,8 @@ FROM python:2.7
 # Default port the webserver runs on
 EXPOSE 5000
 
+RUN INSTALL MAPPPP???
+
 # Working directory for the application
 WORKDIR /usr/src/app
 
