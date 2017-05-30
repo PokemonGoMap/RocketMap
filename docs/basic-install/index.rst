@@ -62,6 +62,7 @@ Windows:
 .. code-block:: bash
 
   pip install -r requirements.txt
+  pip install --upgrade git+https://github.com/maddhatter/Flask-CacheBust.git@38d940cc4f18b5fcb5687746294e0360640a107e#egg=flask_cachebust
 
 Linux/OSX:
 
