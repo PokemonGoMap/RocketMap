@@ -10,11 +10,10 @@ import gc
 import time
 import geopy
 import math
-from peewee import InsertQuery, \
-    Check, CompositeKey, ForeignKeyField, \
-    SmallIntegerField, IntegerField, CharField, DoubleField, BooleanField, \
-    DateTimeField, fn, DeleteQuery, FloatField, SQL, TextField, JOIN, \
-    OperationalError
+from peewee import (InsertQuery, Check, CompositeKey, ForeignKeyField,
+                    SmallIntegerField, IntegerField, CharField, DoubleField,
+                    BooleanField, DateTimeField, fn, DeleteQuery, FloatField,
+                    SQL, TextField, JOIN, OperationalError)
 from playhouse.flask_utils import FlaskDB
 from playhouse.pool import PooledMySQLDatabase
 from playhouse.shortcuts import RetryOperationalError, case
@@ -27,10 +26,10 @@ from cachetools import cached
 from timeit import default_timer
 
 from . import config
-from .utils import get_pokemon_name, get_pokemon_rarity, get_pokemon_types, \
-    get_args, cellid, in_radius, date_secs, clock_between, secs_between, \
-    get_move_name, get_move_damage, get_move_energy, get_move_type, \
-    clear_dict_response
+from .utils import (get_pokemon_name, get_pokemon_rarity, get_pokemon_types,
+                    get_args, cellid, in_radius, date_secs, clock_between,
+                    get_move_name, get_move_damage, get_move_energy,
+                    get_move_type, clear_dict_response, calc_pokemon_level)
 from .transform import transform_from_wgs_to_gcj, get_new_coords
 from .customLog import printPokemon
 
@@ -43,11 +42,18 @@ args = get_args()
 flaskDb = FlaskDB()
 cache = TTLCache(maxsize=100, ttl=60 * 5)
 
-db_schema_version = 18
+db_schema_version = 19
 
 
 class MyRetryDB(RetryOperationalError, PooledMySQLDatabase):
     pass
+
+
+# Reduction of CharField to fit max length inside 767 bytes for utf8mb4 charset
+class Utf8mb4CharField(CharField):
+    def __init__(self, max_length=191, *args, **kwargs):
+        self.max_length = max_length
+        super(CharField, self).__init__(*args, **kwargs)
 
 
 def init_database(app):
@@ -64,7 +70,8 @@ def init_database(app):
             host=args.db_host,
             port=args.db_port,
             max_connections=connections,
-            stale_timeout=300)
+            stale_timeout=300,
+            charset='utf8mb4')
     else:
         log.info('Connecting to local SQLite database')
         db = SqliteExtDatabase(args.db,
@@ -96,8 +103,8 @@ class BaseModel(flaskDb.Model):
 class Pokemon(BaseModel):
     # We are base64 encoding the ids delivered by the api
     # because they are too big for sqlite to handle.
-    encounter_id = CharField(primary_key=True, max_length=50)
-    spawnpoint_id = CharField(index=True)
+    encounter_id = Utf8mb4CharField(primary_key=True, max_length=50)
+    spawnpoint_id = Utf8mb4CharField(index=True)
     pokemon_id = SmallIntegerField(index=True)
     latitude = DoubleField()
     longitude = DoubleField()
@@ -108,6 +115,7 @@ class Pokemon(BaseModel):
     move_1 = SmallIntegerField(null=True)
     move_2 = SmallIntegerField(null=True)
     cp = SmallIntegerField(null=True)
+    cp_multiplier = FloatField(null=True)
     weight = FloatField(null=True)
     height = FloatField(null=True)
     gender = SmallIntegerField(null=True)
@@ -436,13 +444,14 @@ class Pokemon(BaseModel):
 
 
 class Pokestop(BaseModel):
-    pokestop_id = CharField(primary_key=True, max_length=50)
+    pokestop_id = Utf8mb4CharField(primary_key=True, max_length=50)
     enabled = BooleanField()
     latitude = DoubleField()
     longitude = DoubleField()
     last_modified = DateTimeField(index=True)
     lure_expiration = DateTimeField(null=True, index=True)
-    active_fort_modifier = CharField(max_length=50, null=True, index=True)
+    active_fort_modifier = Utf8mb4CharField(max_length=50,
+                                            null=True, index=True)
     last_updated = DateTimeField(
         null=True, index=True, default=datetime.utcnow)
 
@@ -533,12 +542,8 @@ class Pokestop(BaseModel):
 
 
 class Gym(BaseModel):
-    UNCONTESTED = 0
-    TEAM_MYSTIC = 1
-    TEAM_VALOR = 2
-    TEAM_INSTINCT = 3
 
-    gym_id = CharField(primary_key=True, max_length=50)
+    gym_id = Utf8mb4CharField(primary_key=True, max_length=50)
     team_id = SmallIntegerField()
     guard_pokemon_id = SmallIntegerField()
     gym_points = IntegerField()
@@ -706,7 +711,7 @@ class Gym(BaseModel):
 
 
 class LocationAltitude(BaseModel):
-    cellid = CharField(primary_key=True, max_length=50)
+    cellid = Utf8mb4CharField(primary_key=True, max_length=50)
     latitude = DoubleField()
     longitude = DoubleField()
     last_modified = DateTimeField(index=True, default=datetime.utcnow,
@@ -751,7 +756,7 @@ class LocationAltitude(BaseModel):
 
 
 class ScannedLocation(BaseModel):
-    cellid = CharField(primary_key=True, max_length=50)
+    cellid = Utf8mb4CharField(primary_key=True, max_length=50)
     latitude = DoubleField()
     longitude = DoubleField()
     last_modified = DateTimeField(
@@ -974,22 +979,6 @@ class ScannedLocation(BaseModel):
 
         return ret
 
-    @staticmethod
-    def visible_forts(step_location):
-        distance = 0.45
-        n, e, s, w = hex_bounds(step_location, radius=distance * 1000)
-        for g in Gym.get_gyms(s, w, n, e).values():
-            if in_radius((g['latitude'], g['longitude']), step_location,
-                         distance):
-                return True
-
-        for g in Pokestop.get_stops(s, w, n, e):
-            if in_radius((g['latitude'], g['longitude']), step_location,
-                         distance):
-                return True
-
-        return False
-
     # Return list of dicts for upcoming valid band times.
     @classmethod
     def get_times(cls, scan, now_date, scanned_locations):
@@ -1104,17 +1093,13 @@ class ScannedLocation(BaseModel):
 
 
 class MainWorker(BaseModel):
-    worker_name = CharField(primary_key=True, max_length=50)
+    worker_name = Utf8mb4CharField(primary_key=True, max_length=50)
     message = TextField(null=True, default="")
-    method = CharField(max_length=50)
+    method = Utf8mb4CharField(max_length=50)
     last_modified = DateTimeField(index=True)
     accounts_working = IntegerField()
     accounts_captcha = IntegerField()
     accounts_failed = IntegerField()
-
-    @staticmethod
-    def get_total_captchas():
-        return MainWorker.select(fn.SUM(MainWorker.accounts_captcha)).scalar()
 
     @staticmethod
     def get_account_stats():
@@ -1133,15 +1118,15 @@ class MainWorker(BaseModel):
 
 
 class WorkerStatus(BaseModel):
-    username = CharField(primary_key=True, max_length=50)
-    worker_name = CharField(index=True, max_length=50)
+    username = Utf8mb4CharField(primary_key=True, max_length=50)
+    worker_name = Utf8mb4CharField(index=True, max_length=50)
     success = IntegerField()
     fail = IntegerField()
     no_items = IntegerField()
     skip = IntegerField()
     captcha = IntegerField()
     last_modified = DateTimeField(index=True)
-    message = CharField(max_length=255)
+    message = Utf8mb4CharField(max_length=191)
     last_scan_date = DateTimeField(index=True)
     latitude = DoubleField(null=True)
     longitude = DoubleField(null=True)
@@ -1212,13 +1197,13 @@ class WorkerStatus(BaseModel):
 
 
 class SpawnPoint(BaseModel):
-    id = CharField(primary_key=True, max_length=50)
+    id = Utf8mb4CharField(primary_key=True, max_length=50)
     latitude = DoubleField()
     longitude = DoubleField()
     last_scanned = DateTimeField(index=True)
     # kind gives the four quartiles of the spawn, as 's' for seen
     # or 'h' for hidden.  For example, a 30 minute spawn is 'hhss'.
-    kind = CharField(max_length=4, default='hhhs')
+    kind = Utf8mb4CharField(max_length=4, default='hhhs')
 
     # links shows whether a Pokemon encounter id changes between quartiles or
     # stays the same.  Both 1x45 and 1x60h3 have the kind of 'sssh', but the
@@ -1230,7 +1215,7 @@ class SpawnPoint(BaseModel):
     # Note index is shifted by a half. links[0] is the link between
     # kind[0] and kind[1] and so on. links[3] is the link between
     # kind[3] and kind[0]
-    links = CharField(max_length=4, default='????')
+    links = Utf8mb4CharField(max_length=4, default='????')
 
     # Count consecutive times spawn should have been seen, but wasn't.
     # If too high, will not be scheduled for review, and treated as inactive.
@@ -1361,13 +1346,6 @@ class SpawnPoint(BaseModel):
         if ((now_date - last_scanned).total_seconds() > now_secs - start):
             l.append(ScannedLocation._q_init(scan, start, end, kind, sp['id']))
 
-    # Given seconds after the hour and a spawnpoint dict, return which quartile
-    # of the spawnpoint the secs falls in.
-    @staticmethod
-    def get_quartile(secs, sp):
-        return int(((secs - sp['earliest_unseen'] + 15 * 60 + 3600 - 1) %
-                    3600) / 15 / 60)
-
     @classmethod
     def select_in_hex_by_cellids(cls, cellids, location_change_date):
         # Get all spawnpoints from the hive's cells
@@ -1453,11 +1431,11 @@ class ScanSpawnPoint(BaseModel):
 
 
 class SpawnpointDetectionData(BaseModel):
-    id = CharField(primary_key=True, max_length=54)
+    id = Utf8mb4CharField(primary_key=True, max_length=54)
     # Removed ForeignKeyField since it caused MySQL issues.
-    encounter_id = CharField(max_length=54)
+    encounter_id = Utf8mb4CharField(max_length=54)
     # Removed ForeignKeyField since it caused MySQL issues.
-    spawnpoint_id = CharField(max_length=54, index=True)
+    spawnpoint_id = Utf8mb4CharField(max_length=54, index=True)
     scan_time = DateTimeField()
     tth_secs = SmallIntegerField(null=True)
 
@@ -1650,27 +1628,9 @@ class SpawnpointDetectionData(BaseModel):
 
         return True
 
-    # Expand a 30 minute spawn with a new seen point based on which endpoint it
-    #  is closer to.  Return true if sp changed.
-    @classmethod
-    def clock_extend(cls, sp, new_secs):
-        # Check if this is a new earliest time.
-        if clock_between(sp['earliest_seen'], new_secs, sp['latest_seen']):
-            return False
-
-        # Extend earliest or latest seen depending on which is closer to the
-        # new point.
-        if (secs_between(new_secs, sp['earliest_seen']) <
-                secs_between(new_secs, sp['latest_seen'])):
-            sp['earliest_seen'] = new_secs
-        else:
-            sp['latest_seen'] = new_secs
-
-        return True
-
 
 class Versions(flaskDb.Model):
-    key = CharField()
+    key = Utf8mb4CharField()
     val = SmallIntegerField()
 
     class Meta:
@@ -1678,8 +1638,8 @@ class Versions(flaskDb.Model):
 
 
 class GymMember(BaseModel):
-    gym_id = CharField(index=True)
-    pokemon_uid = CharField(index=True)
+    gym_id = Utf8mb4CharField(index=True)
+    pokemon_uid = Utf8mb4CharField(index=True)
     last_scanned = DateTimeField(default=datetime.utcnow, index=True)
 
     class Meta:
@@ -1687,10 +1647,10 @@ class GymMember(BaseModel):
 
 
 class GymPokemon(BaseModel):
-    pokemon_uid = CharField(primary_key=True, max_length=50)
+    pokemon_uid = Utf8mb4CharField(primary_key=True, max_length=50)
     pokemon_id = SmallIntegerField()
     cp = SmallIntegerField()
-    trainer_name = CharField(index=True)
+    trainer_name = Utf8mb4CharField(index=True)
     num_upgrades = SmallIntegerField(null=True)
     move_1 = SmallIntegerField(null=True)
     move_2 = SmallIntegerField(null=True)
@@ -1707,17 +1667,17 @@ class GymPokemon(BaseModel):
 
 
 class Trainer(BaseModel):
-    name = CharField(primary_key=True, max_length=50)
+    name = Utf8mb4CharField(primary_key=True, max_length=50)
     team = SmallIntegerField()
     level = SmallIntegerField()
     last_seen = DateTimeField(default=datetime.utcnow)
 
 
 class GymDetails(BaseModel):
-    gym_id = CharField(primary_key=True, max_length=50)
-    name = CharField()
+    gym_id = Utf8mb4CharField(primary_key=True, max_length=50)
+    name = Utf8mb4CharField()
     description = TextField(null=True, default="")
-    url = CharField()
+    url = Utf8mb4CharField()
     last_scanned = DateTimeField(default=datetime.utcnow)
 
 
@@ -1755,7 +1715,7 @@ class Token(flaskDb.Model):
 
 
 class HashKeys(BaseModel):
-    key = CharField(primary_key=True, max_length=20)
+    key = Utf8mb4CharField(primary_key=True, max_length=20)
     maximum = SmallIntegerField(default=0)
     remaining = SmallIntegerField(default=0)
     peak = SmallIntegerField(default=0)
@@ -1975,13 +1935,12 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
             disappear_time = now_date + \
                 timedelta(seconds=seconds_until_despawn)
 
-            printPokemon(p['pokemon_data']['pokemon_id'], p[
-                         'latitude'], p['longitude'], disappear_time)
+            pokemon_id = p['pokemon_data']['pokemon_id']
+            printPokemon(pokemon_id, p['latitude'], p['longitude'],
+                         disappear_time)
 
             # Scan for IVs/CP and moves.
-            pokemon_id = p['pokemon_data']['pokemon_id']
             encounter_result = None
-
             if args.encounter and (pokemon_id in args.enc_whitelist):
                 time.sleep(args.encounter_delay)
 
@@ -1997,9 +1956,8 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                     hlvl_account = account
                     hlvl_api = api
                 else:
-                    # Get account to use for IV or CP scanning.
-                    if pokemon_id in args.enc_whitelist:
-                        hlvl_account = account_sets.next('30', scan_location)
+                    # Get account to use for IV and CP scanning.
+                    hlvl_account = account_sets.next('30', scan_location)
 
                 # If we don't have an API object yet, it means we didn't re-use
                 # an old one, so we're using AccountSet.
@@ -2106,7 +2064,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
             pokemon[p['encounter_id']] = {
                 'encounter_id': b64encode(str(p['encounter_id'])),
                 'spawnpoint_id': p['spawn_point_id'],
-                'pokemon_id': p['pokemon_data']['pokemon_id'],
+                'pokemon_id': pokemon_id,
                 'latitude': p['latitude'],
                 'longitude': p['longitude'],
                 'disappear_time': disappear_time,
@@ -2116,11 +2074,17 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                 'move_1': None,
                 'move_2': None,
                 'cp': None,
+                'cp_multiplier': None,
                 'height': None,
                 'weight': None,
-                'gender': None,
+                'gender': p['pokemon_data']['pokemon_display']['gender'],
                 'form': None
             }
+
+            # Check for Unown's alphabetic character.
+            if pokemon_id == 201:
+                pokemon[p['encounter_id']]['form'] = p['pokemon_data'][
+                    'pokemon_display'].get('form', None)
 
             if (encounter_result is not None and 'wild_pokemon'
                     in encounter_result['responses']['ENCOUNTER']):
@@ -2152,21 +2116,17 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                     'move_1': pokemon_info['move_1'],
                     'move_2': pokemon_info['move_2'],
                     'height': pokemon_info['height_m'],
-                    'weight': pokemon_info['weight_kg'],
-                    'gender': pokemon_info['pokemon_display']['gender']
+                    'weight': pokemon_info['weight_kg']
                 })
 
                 # Only add CP if we're level 30+.
                 if encounter_level >= 30:
                     pokemon[p['encounter_id']]['cp'] = cp
-
-                # Check for Unown's alphabetic character.
-                if pokemon_info['pokemon_id'] == 201:
-                    pokemon[p['encounter_id']]['form'] = pokemon_info[
-                        'pokemon_display'].get('form', None)
+                    pokemon[p['encounter_id']][
+                        'cp_multiplier'] = pokemon_info.get(
+                        'cp_multiplier', None)
 
             if args.webhooks:
-                pokemon_id = p['pokemon_data']['pokemon_id']
                 if (pokemon_id in args.webhook_whitelist or
                     (not args.webhook_whitelist and pokemon_id
                      not in args.webhook_blacklist)):
@@ -2182,6 +2142,11 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                         'spawn_end': start_end[1],
                         'player_level': encounter_level
                     })
+                    if wh_poke['cp_multiplier'] is not None:
+                        wh_poke.update({
+                            'pokemon_level': calc_pokemon_level(
+                                wh_poke['cp_multiplier'])
+                        })
                     wh_update_queue.put(('pokemon', wh_poke))
 
     if forts and (config['parse_pokestops'] or config['parse_gyms']):
@@ -2664,7 +2629,6 @@ def bulk_upsert(cls, data, db):
 
 def create_tables(db):
     db.connect()
-    verify_database_schema(db)
     tables = [Pokemon, Pokestop, Gym, ScannedLocation, GymDetails,
               GymMember, GymPokemon, Trainer, MainWorker, WorkerStatus,
               SpawnPoint, ScanSpawnPoint, SpawnpointDetectionData,
@@ -2675,7 +2639,6 @@ def create_tables(db):
             db.create_tables([table], safe=True)
         else:
             log.debug('Skipping table %s, it already exists.', table.__name__)
-
     db.close()
 
 
@@ -2696,7 +2659,40 @@ def drop_tables(db):
     db.close()
 
 
+def verify_table_encoding(db):
+    if args.db_type == 'mysql':
+        db.connect()
+
+        cmd_sql = '''
+            SELECT table_name FROM information_schema.tables WHERE
+            table_collation != "utf8mb4_unicode_ci" AND table_schema = "%s";
+            ''' % args.db_name
+        change_tables = db.execute_sql(cmd_sql)
+
+        cmd_sql = "SHOW tables;"
+        tables = db.execute_sql(cmd_sql)
+
+        if change_tables.rowcount > 0:
+            log.info('Changing collation and charset on %s tables.',
+                     change_tables.rowcount)
+
+            if change_tables.rowcount == tables.rowcount:
+                log.info('Changing whole database, this might a take while.')
+
+            with db.atomic():
+                db.execute_sql('SET FOREIGN_KEY_CHECKS=0;')
+                for table in change_tables:
+                    log.debug('Changing collation and charset on table %s.',
+                              table[0])
+                    cmd_sql = '''ALTER TABLE %s CONVERT TO CHARACTER SET utf8mb4
+                                COLLATE utf8mb4_unicode_ci;''' % str(table[0])
+                    db.execute_sql(cmd_sql)
+                db.execute_sql('SET FOREIGN_KEY_CHECKS=1;')
+        db.close()
+
+
 def verify_database_schema(db):
+    db.connect()
     if not Versions.table_exists():
         db.create_tables([Versions])
 
@@ -2723,6 +2719,7 @@ def verify_database_schema(db):
             log.error('Please upgrade your code base or drop all tables in '
                       'your database.')
             sys.exit(1)
+    db.close()
 
 
 def database_migrate(db, old_ver):
@@ -2742,12 +2739,13 @@ def database_migrate(db, old_ver):
 
     if old_ver < 2:
         migrate(migrator.add_column('pokestop', 'encounter_id',
-                                    CharField(max_length=50, null=True)))
+                                    Utf8mb4CharField(max_length=50,
+                                                     null=True)))
 
     if old_ver < 3:
         migrate(
             migrator.add_column('pokestop', 'active_fort_modifier',
-                                CharField(max_length=50, null=True)),
+                                Utf8mb4CharField(max_length=50, null=True)),
             migrator.drop_column('pokestop', 'encounter_id'),
             migrator.drop_column('pokestop', 'active_pokemon_id')
         )
@@ -2934,6 +2932,12 @@ def database_migrate(db, old_ver):
         migrate(
             migrator.add_column('pokemon', 'cp',
                                 SmallIntegerField(null=True))
+        )
+
+    if old_ver < 19:
+        migrate(
+            migrator.add_column('pokemon', 'cp_multiplier',
+                                FloatField(null=True))
         )
 
     # Always log that we're done.

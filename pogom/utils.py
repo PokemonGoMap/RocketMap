@@ -7,8 +7,6 @@ import os
 import math
 import json
 import logging
-import shutil
-import pprint
 import random
 import time
 import socket
@@ -26,13 +24,6 @@ log = logging.getLogger(__name__)
 def parse_unicode(bytestring):
     decoded_string = bytestring.decode(sys.getfilesystemencoding())
     return decoded_string
-
-
-def verify_config_file_exists(filename):
-    fullpath = os.path.join(os.path.dirname(__file__), filename)
-    if not os.path.exists(fullpath):
-        log.info('Could not find %s, copying default.', filename)
-        shutil.copy2(fullpath + '.example', fullpath)
 
 
 def memoize(function):
@@ -181,16 +172,12 @@ def get_args():
                                     'webhooks. Specified as Pokemon ID.'))
     webhook_list.add_argument('-wwhtf', '--webhook-whitelist-file',
                               default='', help='File containing a list of '
-                                               'Pokemon to send to '
-                                               'webhooks. Pokemon are '
-                                               ' specified by their name, '
-                                               ' one on each line.')
+                                               'Pokemon IDs to be sent to '
+                                               'webhooks.')
     webhook_list.add_argument('-wblkf', '--webhook-blacklist-file',
                               default='', help='File containing a list of '
-                                               'Pokemon NOT to send to'
-                                               'webhooks. Pokemon are '
-                                               ' specified by their name, '
-                                               ' one on each line.')
+                                               'Pokemon IDs NOT to be sent to'
+                                               'webhooks.')
     parser.add_argument('-ld', '--login-delay',
                         help='Time delay between each login attempt.',
                         type=float, default=6)
@@ -710,17 +697,18 @@ def get_args():
 
         if args.webhook_whitelist_file:
             with open(args.webhook_whitelist_file) as f:
-                args.webhook_whitelist = [get_pokemon_id(name) for name in
-                                          f.read().splitlines()]
+                args.webhook_whitelist = frozenset(
+                    [int(p_id.strip()) for p_id in f])
         elif args.webhook_blacklist_file:
             with open(args.webhook_blacklist_file) as f:
-                args.webhook_blacklist = [get_pokemon_id(name) for name in
-                                          f.read().splitlines()]
+                args.webhook_blacklist = frozenset(
+                    [int(p_id.strip()) for p_id in f])
         else:
-            args.webhook_blacklist = [int(i) for i in
-                                      args.webhook_blacklist]
-            args.webhook_whitelist = [int(i) for i in
-                                      args.webhook_whitelist]
+            args.webhook_blacklist = frozenset(
+                [int(i) for i in args.webhook_blacklist])
+            args.webhook_whitelist = frozenset(
+                [int(i) for i in args.webhook_whitelist])
+
         # Decide which scanning mode to use.
         if args.spawnpoint_scanning:
             args.scheduler = 'SpawnScan'
@@ -758,11 +746,6 @@ def date_secs(d):
 def clock_between(start, test, end):
     return ((start <= test <= end and start < end) or
             (not (end <= test <= start) and start > end))
-
-
-# Return amount of seconds between two times on the clock.
-def secs_between(time1, time2):
-    return min((time1 - time2) % 3600, (time2 - time1) % 3600)
 
 
 # Return the s2sphere cellid token from a location.
@@ -878,24 +861,6 @@ def get_move_type(move_id):
     return {"type": i8ln(move_type), "type_en": move_type}
 
 
-class Timer():
-
-    def __init__(self, name):
-        self.times = [(name, time.time(), 0)]
-
-    def add(self, step):
-        t = time.time()
-        self.times.append((step, t, round((t - self.times[-1][1]) * 1000)))
-
-    def checkpoint(self, step):
-        t = time.time()
-        self.times.append(('total @ ' + step, t, t - self.times[0][1]))
-
-    def output(self):
-        self.checkpoint('end')
-        pprint.pprint(self.times)
-
-
 def dottedQuadToNum(ip):
     return struct.unpack("!L", socket.inet_aton(ip))[0]
 
@@ -903,7 +868,7 @@ def dottedQuadToNum(ip):
 def get_blacklist():
     try:
         url = 'https://blist.devkat.org/blacklist.json'
-        blacklist = requests.get(url).json()
+        blacklist = requests.get(url, timeout=5).json()
         log.debug('Entries in blacklist: %s.', len(blacklist))
         return blacklist
     except (requests.exceptions.RequestException, IndexError, KeyError):
@@ -946,11 +911,11 @@ def generate_device_info():
     device_info['hardware_model'] = IPHONES[device_info['device_model_boot']]
     device_info['device_id'] = uuid4().hex
 
-    if device_info['hardware_model'] in ('iPhone9,1', 'iPhone9,2',
-                                         'iPhone9,3', 'iPhone9,4'):
+    if device_info['device_model_boot'] in ('iPhone9,1', 'iPhone9,2',
+                                            'iPhone9,3', 'iPhone9,4'):
         device_info['firmware_type'] = random.choice(ios10)
-    elif device_info['hardware_model'] in ('iPhone8,1', 'iPhone8,2',
-                                           'iPhone8,4'):
+    elif device_info['device_model_boot'] in ('iPhone8,1', 'iPhone8,2',
+                                              'iPhone8,4'):
         device_info['firmware_type'] = random.choice(ios9 + ios10)
     else:
         device_info['firmware_type'] = random.choice(ios8 + ios9 + ios10)
@@ -958,10 +923,16 @@ def generate_device_info():
     return device_info
 
 
-def extract_sprites():
-    log.debug("Extracting sprites...")
-    zip = zipfile.ZipFile('static01.zip', 'r')
-    zip.extractall('static')
+def extract_sprites(root_path):
+    zip_path = os.path.join(
+           root_path,
+           'static01.zip')
+    extract_path = os.path.join(
+           root_path,
+           'static')
+    log.debug('Extracting sprites from "%s" to "%s"', zip_path, extract_path)
+    zip = zipfile.ZipFile(zip_path, 'r')
+    zip.extractall(extract_path)
     zip.close()
 
 
@@ -981,3 +952,13 @@ def clear_dict_response(response, keep_inventory=False):
     if 'GET_BUDDY_WALKED' in response['responses']:
         del response['responses']['GET_BUDDY_WALKED']
     return response
+
+
+def calc_pokemon_level(cp_multiplier):
+    if cp_multiplier < 0.734:
+        pokemon_level = (58.35178527 * cp_multiplier * cp_multiplier -
+                         2.838007664 * cp_multiplier + 0.8539209906)
+    else:
+        pokemon_level = 171.0112688 * cp_multiplier - 95.20425243
+    pokemon_level = int((round(pokemon_level) * 2) / 2)
+    return pokemon_level

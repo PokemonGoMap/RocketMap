@@ -28,6 +28,7 @@ import copy
 import requests
 import schedulers
 import terminalsize
+import timeit
 
 from datetime import datetime
 from threading import Thread, Lock
@@ -36,6 +37,7 @@ from sets import Set
 from collections import deque
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
+from distutils.version import StrictVersion
 
 from pgoapi.utilities import f2i
 from pgoapi import utilities as util
@@ -51,9 +53,6 @@ from .captcha import captcha_overseer_thread, handle_captcha
 from .proxy import get_new_proxy
 
 log = logging.getLogger(__name__)
-
-TIMESTAMP = ('\000\000\000\000\000\000\000\000\000\000\000' +
-             '\000\000\000\000\000\000\000\000\000\000')
 
 loginDelayLock = Lock()
 
@@ -370,8 +369,10 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
     account_sets = AccountSet(args.hlvl_kph)
     threadStatus = {}
     key_scheduler = None
-    api_version = '0.61.0'
+    api_version = '0.63.1'
     api_check_time = 0
+    hashkeys_last_upsert = timeit.default_timer()
+    hashkeys_upsert_min_delay = 5.0
 
     '''
     Create a queue of accounts for workers to pull from. When a worker has
@@ -457,6 +458,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
 
     # Create specified number of search_worker_thread.
     log.info('Starting search worker threads...')
+    log.info('Configured scheduler is %s.', args.scheduler)
     for i in range(0, args.workers):
         log.debug('Starting search worker thread %d...', i)
 
@@ -511,9 +513,15 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
 
     # The real work starts here but will halt on pause_bit.set().
     while True:
+        if (args.hash_key is not None and
+                (hashkeys_last_upsert + hashkeys_upsert_min_delay)
+                <= timeit.default_timer()):
+            upsertKeys(args.hash_key, key_scheduler, db_updates_queue)
+            hashkeys_last_upsert = timeit.default_timer()
 
-        if (args.on_demand_timeout > 0 and
-                (now() - args.on_demand_timeout) > heartb[0]):
+        odt_triggered = (args.on_demand_timeout > 0 and
+                         (now() - args.on_demand_timeout) > heartb[0])
+        if odt_triggered:
             pause_bit.set()
             log.info('Searching paused due to inactivity...')
 
@@ -521,6 +529,11 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
         while pause_bit.is_set():
             for i in range(0, len(scheduler_array)):
                 scheduler_array[i].scanning_paused()
+            # API Watchdog - Continue to check API version.
+            if not args.no_version_check and not odt_triggered:
+                api_check_time = check_forced_version(args, api_version,
+                                                      api_check_time,
+                                                      pause_bit)
             time.sleep(1)
 
         # If a new location has been passed to us, get the most recent one.
@@ -594,7 +607,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
                              scheduler_array[0])
 
         # API Watchdog - Check if Niantic forces a new API.
-        if not args.no_version_check:
+        if not args.no_version_check and not odt_triggered:
             api_check_time = check_forced_version(args, api_version,
                                                   api_check_time, pause_bit)
 
@@ -1147,15 +1160,6 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
                               key_instance['remaining'],
                               key_instance['maximum'])
 
-                    # Prepare hashing keys to be sent to the db. But only
-                    # sent latest updates of the 'peak' value per key.
-                    hashkeys = {}
-                    hashkeys[key] = key_instance
-                    hashkeys[key]['key'] = key
-                    hashkeys[key]['peak'] = max(key_instance['peak'],
-                                                HashKeys.getStoredPeak(key))
-                    dbq.put((HashKeys, hashkeys))
-
                 # Delay the desired amount after "scan" completion.
                 delay = scheduler.delay(status['last_scan_date'])
 
@@ -1181,6 +1185,19 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
                                      'last_fail_time': now(),
                                      'reason': 'exception'})
             time.sleep(args.scan_delay)
+
+
+def upsertKeys(keys, key_scheduler, db_updates_queue):
+    # Prepare hashing keys to be sent to the db. But only
+    # sent latest updates of the 'peak' value per key.
+    hashkeys = {}
+    for key in keys:
+        key_instance = key_scheduler.keys[key]
+        hashkeys[key] = key_instance
+        hashkeys[key]['key'] = key
+        hashkeys[key]['peak'] = max(key_instance['peak'],
+                                    HashKeys.getStoredPeak(key))
+    db_updates_queue.put((HashKeys, hashkeys))
 
 
 def map_request(api, position, no_jitter=False):
@@ -1282,23 +1299,60 @@ def stat_delta(current_status, last_status, stat_name):
 
 def check_forced_version(args, api_version, api_check_time, pause_bit):
     if int(time.time()) > api_check_time:
+        log.debug("Checking forced API version.")
         api_check_time = int(time.time()) + args.version_check_interval
         forced_api = get_api_version(args)
 
-        if (api_version != forced_api and forced_api != 0):
+        if not forced_api:
+            # Couldn't retrieve API version. Pause scanning.
             pause_bit.set()
-            log.info(('Started with API: {}, ' +
-                      'Niantic forced to API: {}').format(
-                api_version,
-                forced_api))
-            log.info('Scanner paused due to forced Niantic API update.')
-            log.info('Stop the scanner process until RocketMap ' +
-                     'has updated.')
+            log.warning('Forced API check got no or invalid response. ' +
+                        'Possible bad proxy.')
+            log.warning('Scanner paused due to failed API check.')
+            return api_check_time
+
+        # Got a response let's compare version numbers.
+        try:
+            if StrictVersion(api_version) < StrictVersion(forced_api):
+                # Installed API version is lower. Pause scanning.
+                pause_bit.set()
+                log.warning('Started with API: %s, ' +
+                            'Niantic forced to API: %s',
+                            api_version,
+                            forced_api)
+                log.warning('Scanner paused due to forced Niantic API update.')
+            else:
+                # API check was successful and
+                # installed API version is newer or equal forced API.
+                # Continue scanning.
+                log.debug("API check was successful. Continue scanning.")
+                pause_bit.clear()
+
+        except ValueError as e:
+            # Unknown version format. Pause scanning as well.
+            pause_bit.set()
+            log.warning('Niantic forced unknown API version format: %s.',
+                        forced_api)
+            log.warning('Scanner paused due to unknown API version format.')
+        except Exception as e:
+            # Something else happened. Pause scanning as well.
+            pause_bit.set()
+            log.warning('Unknown error on API version comparison: %s.',
+                        repr(e))
+            log.warning('Scanner paused due to unknown API check error.')
 
     return api_check_time
 
 
 def get_api_version(args):
+    """Retrieve forced API version by Niantic
+
+    Args:
+        args: Command line arguments
+
+    Returns:
+        API version string. False if request failed.
+    """
     proxies = {}
 
     if args.proxy:
@@ -1312,15 +1366,16 @@ def get_api_version(args):
         s = requests.Session()
         s.mount('https://',
                 HTTPAdapter(max_retries=Retry(total=3,
-                                              backoff_factor=0.1,
+                                              backoff_factor=0.5,
                                               status_forcelist=[500, 502,
                                                                 503, 504])))
         r = s.get(
             'https://pgorelease.nianticlabs.com/plfe/version',
             proxies=proxies,
-            verify=False)
-        return r.text[2:] if (r.status_code == requests.codes.ok and
-                              r.text[2:].count('.') == 2) else 0
+            verify=False,
+            timeout=5)
+
+        return r.text[2:] if r.status_code == requests.codes.ok else False
     except Exception as e:
         log.warning('error on API check: %s', repr(e))
-        return 0
+        return False
