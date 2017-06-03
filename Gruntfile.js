@@ -67,6 +67,7 @@ module.exports = function(grunt) {
           'static/dist/locales/fr.min.json': 'static/locales/fr.json',
           'static/dist/locales/ja.min.json': 'static/locales/ja.json',
           'static/dist/locales/ko.min.json': 'static/locales/ko.json',
+          'static/dist/locales/nl.min.json': 'static/locates/nl.json',
           'static/dist/locales/pt_br.min.json': 'static/locales/pt_br.json',
           'static/dist/locales/ru.min.json': 'static/locales/ru.json',
           'static/dist/locales/zh_cn.min.json': 'static/locales/zh_cn.json',
