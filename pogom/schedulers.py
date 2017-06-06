@@ -581,6 +581,9 @@ class SpeedScan(HexSearch):
                 (step, (location[0], location[1], altitude), 0, 0))
         return generated_locations
 
+    def getscanned(self):
+        return self.scans_done + len(self.scans_missed_list)
+
     def get_overseer_message(self):
         n = 0
         ms = (datetime.utcnow() - self.refresh_date).total_seconds() + \
