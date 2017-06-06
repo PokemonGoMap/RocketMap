@@ -42,7 +42,7 @@ args = get_args()
 flaskDb = FlaskDB()
 cache = TTLCache(maxsize=100, ttl=60 * 5)
 
-db_schema_version = 19
+db_schema_version = 20
 
 
 class MyRetryDB(RetryOperationalError, PooledMySQLDatabase):
@@ -1115,6 +1115,62 @@ class MainWorker(BaseModel):
                     'failed': int(account_stats[2])}
 
         return dict
+
+
+class AccountDevice(BaseModel):
+    username = Utf8mb4CharField(primary_key=True, max_length=50)
+    firmware_type = Utf8mb4CharField(null=True)
+    device_model = Utf8mb4CharField(null=True)
+    firmware_brand = Utf8mb4CharField(null=True)
+    hardware_model = Utf8mb4CharField(null=True)
+    device_brand = Utf8mb4CharField(null=True)
+    hardware_manufacturer = Utf8mb4CharField(null=True)
+    device_model_boot = Utf8mb4CharField(null=True)
+    device_id = Utf8mb4CharField(null=True)
+
+    @staticmethod
+    def db_format(device_info, username):
+        account_device = {'username': username}
+        account_device.update(device_info)
+
+        return account_device
+
+    @staticmethod
+    def get_device_info(username):
+        query = (AccountDevice
+                 .select(AccountDevice.firmware_type,
+                         AccountDevice.device_model,
+                         AccountDevice.firmware_brand,
+                         AccountDevice.hardware_model,
+                         AccountDevice.device_brand,
+                         AccountDevice.hardware_manufacturer,
+                         AccountDevice.device_model_boot,
+                         AccountDevice.device_id)
+                 .where((AccountDevice.username == username))
+                 .dicts())
+
+        # Sometimes is appears peewee is slow to load, and this produces
+        # an exception.  Retry after a second to give peewee time to load.
+        while True:
+            try:
+                result = query[0] if len(query) else {
+                    'firmware_type': None,
+                    'device_model': None,
+                    'firmware_brand': None,
+                    'hardware_model': None,
+                    'device_brand': None,
+                    'hardware_manufacturer': None,
+                    'device_model_boot': None,
+                    'device_id': None
+                }
+                break
+            except Exception as e:
+                log.error('Exception in get_account_device under account {}.  '
+                          'Exception message: {}'.format(username, repr(e)))
+                traceback.print_exc(file=sys.stdout)
+                time.sleep(1)
+
+        return result, result['device_id']
 
 
 class WorkerStatus(BaseModel):
@@ -2632,7 +2688,7 @@ def create_tables(db):
     tables = [Pokemon, Pokestop, Gym, ScannedLocation, GymDetails,
               GymMember, GymPokemon, Trainer, MainWorker, WorkerStatus,
               SpawnPoint, ScanSpawnPoint, SpawnpointDetectionData,
-              Token, LocationAltitude, HashKeys]
+              Token, LocationAltitude, HashKeys, AccountDevice]
     for table in tables:
         if not table.table_exists():
             log.info('Creating table: %s', table.__name__)
@@ -2647,7 +2703,7 @@ def drop_tables(db):
               GymDetails, GymMember, GymPokemon, Trainer, MainWorker,
               WorkerStatus, SpawnPoint, ScanSpawnPoint,
               SpawnpointDetectionData, LocationAltitude,
-              Token, HashKeys]
+              Token, HashKeys, AccountDevice]
     db.connect()
     db.execute_sql('SET FOREIGN_KEY_CHECKS=0;')
     for table in tables:

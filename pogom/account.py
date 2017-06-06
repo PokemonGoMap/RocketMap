@@ -22,12 +22,13 @@ class TooManyLoginAttempts(Exception):
 
 
 # Create the API object that'll be used to scan.
-def setup_api(args, status):
+def setup_api(args, status, device_info):
     # Create the API instance this will use.
     if args.mock != '':
         api = FakePogoApi(args.mock)
     else:
-        device_info = generate_device_info()
+        if device_info.get('device_id', None) is None:
+            device_info.update(generate_device_info())
         api = PGoApi(device_info=device_info)
 
     # New account - new proxy.
@@ -50,7 +51,8 @@ def setup_api(args, status):
             'http': status['proxy_url'],
             'https': status['proxy_url']})
 
-    return api
+    # return api and device info
+    return api, device_info
 
 
 # Use API to check the login status, and retry the login if possible.
