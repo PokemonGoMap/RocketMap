@@ -155,6 +155,9 @@ def get_args():
                         default='', help='File containing a list of '
                         'Pokemon IDs to encounter for'
                         ' IV/CP scanning.')
+    parser.add_argument('-dbblf', '--db-blacklist-file',
+                        default='', help='File containing a list of '
+                                         'Pokemon IDs to not store in db')
     parser.add_argument('-nostore', '--no-api-store',
                         help=("Don't store the API objects used by the high"
                               + ' level accounts in memory. This will increase'
@@ -668,6 +671,12 @@ def get_args():
         if args.enc_whitelist_file:
             with open(args.enc_whitelist_file) as f:
                 args.enc_whitelist = frozenset([int(l.strip()) for l in f])
+
+        # db blacklist
+        args.enc_blacklist = []
+        if args.db_blacklist_file:
+            with open(args.db_blacklist_file) as f:
+                args.db_blacklist = frozenset([int(l.strip()) for l in f])
 
         # Make max workers equal number of accounts if unspecified, and disable
         # account switching.
