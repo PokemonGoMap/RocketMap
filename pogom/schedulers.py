@@ -64,6 +64,7 @@ from .models import (hex_bounds, Pokemon, SpawnPoint, ScannedLocation,
                      ScanSpawnPoint, HashKeys)
 from .utils import now, cur_sec, cellid, equi_rect_distance
 from .altitude import get_altitude
+from .geofence import geofence
 
 log = logging.getLogger(__name__)
 
@@ -270,6 +271,12 @@ class HexSearch(BaseScheduler):
                 results = results[-2:] + results[:-2]
             else:
                 results = results[-7:] + results[:-7]
+
+        if self.args.geofence_file is not None:
+            results = geofence(results, self.args.geofence_file)
+        if self.args.forbidden_area is not None:
+            results = geofence(results, self.args.forbidden_area,
+                               forbidden=True)
 
         # Add the required appear and disappear times.
         locationsZeroed = []
@@ -574,6 +581,11 @@ class SpeedScan(HexSearch):
                     loc = get_new_coords(star_loc, xdist * (j), 210 + 60 * i)
                     results.append((loc[0], loc[1], 0))
 
+        if self.args.geofence_file is not None:
+            results = geofence(results, self.args.geofence_file)
+        if self.args.forbidden_area is not None:
+            results = geofence(results, self.args.forbidden_area,
+                               forbidden=True)
         generated_locations = []
         for step, location in enumerate(results):
             altitude = get_altitude(self.args, location)
