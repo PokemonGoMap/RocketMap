@@ -28,6 +28,7 @@ import copy
 import requests
 import schedulers
 import terminalsize
+import timeit
 
 from datetime import datetime
 from threading import Thread, Lock
@@ -352,6 +353,8 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
     key_scheduler = None
     api_version = '0.63.1'
     api_check_time = 0
+    hashkeys_last_upsert = timeit.default_timer()
+    hashkeys_upsert_min_delay = 5.0
 
     '''
     Create a queue of accounts for workers to pull from. When a worker has
@@ -437,6 +440,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
 
     # Create specified number of search_worker_thread.
     log.info('Starting search worker threads...')
+    log.info('Configured scheduler is %s.', args.scheduler)
     for i in range(0, args.workers):
         log.debug('Starting search worker thread %d...', i)
 
@@ -470,8 +474,9 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
 
         t = Thread(target=search_worker_thread,
                    name='search-worker-{}'.format(i),
-                   args=(args, account_queue, account_sets, account_failures,
-                         account_captchas, search_items_queue, pause_bit,
+                   args=(args, api_version, account_queue, account_sets,
+                         account_failures, account_captchas,
+                         search_items_queue, pause_bit,
                          threadStatus[workerId], db_updates_queue,
                          wh_queue, scheduler, key_scheduler))
         t.daemon = True
@@ -491,6 +496,11 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
 
     # The real work starts here but will halt on pause_bit.set().
     while True:
+        if (args.hash_key is not None and
+                (hashkeys_last_upsert + hashkeys_upsert_min_delay)
+                <= timeit.default_timer()):
+            upsertKeys(args.hash_key, key_scheduler, db_updates_queue)
+            hashkeys_last_upsert = timeit.default_timer()
 
         odt_triggered = (args.on_demand_timeout > 0 and
                          (now() - args.on_demand_timeout) > heartb[0])
@@ -742,9 +752,10 @@ def generate_hive_locations(current_location, step_distance,
     return results
 
 
-def search_worker_thread(args, account_queue, account_sets, account_failures,
-                         account_captchas, search_items_queue, pause_bit,
-                         status, dbq, whq, scheduler, key_scheduler):
+def search_worker_thread(args, api_version, account_queue, account_sets,
+                         account_failures, account_captchas,
+                         search_items_queue, pause_bit, status, dbq, whq,
+                         scheduler, key_scheduler):
 
     log.debug('Search worker thread starting...')
 
@@ -1070,7 +1081,10 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
                                     current_gym, len(gyms_to_update),
                                     step_location[0], step_location[1])
                             time.sleep(random.random() + 2)
-                            response = gym_request(api, step_location, gym)
+                            response = gym_request(api,
+                                                   step_location,
+                                                   gym,
+                                                   api_version)
 
                             # Make sure the gym was in range. (Sometimes the
                             # API gets cranky about gyms that are ALMOST 1km
@@ -1133,15 +1147,6 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
                               key_instance['remaining'],
                               key_instance['maximum'])
 
-                    # Prepare hashing keys to be sent to the db. But only
-                    # sent latest updates of the 'peak' value per key.
-                    hashkeys = {}
-                    hashkeys[key] = key_instance
-                    hashkeys[key]['key'] = key
-                    hashkeys[key]['peak'] = max(key_instance['peak'],
-                                                HashKeys.getStoredPeak(key))
-                    dbq.put((HashKeys, hashkeys))
-
                 # Delay the desired amount after "scan" completion.
                 delay = scheduler.delay(status['last_scan_date'])
 
@@ -1167,6 +1172,19 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
                                      'last_fail_time': now(),
                                      'reason': 'exception'})
             time.sleep(args.scan_delay)
+
+
+def upsertKeys(keys, key_scheduler, db_updates_queue):
+    # Prepare hashing keys to be sent to the db. But only
+    # sent latest updates of the 'peak' value per key.
+    hashkeys = {}
+    for key in keys:
+        key_instance = key_scheduler.keys[key]
+        hashkeys[key] = key_instance
+        hashkeys[key]['key'] = key
+        hashkeys[key]['peak'] = max(key_instance['peak'],
+                                    HashKeys.getStoredPeak(key))
+    db_updates_queue.put((HashKeys, hashkeys))
 
 
 def map_request(api, position, no_jitter=False):
@@ -1209,9 +1227,9 @@ def map_request(api, position, no_jitter=False):
         return False
 
 
-def gym_request(api, position, gym):
+def gym_request(api, position, gym, api_version):
     try:
-        log.debug('Getting details for gym @ %f/%f (%fkm away)',
+        log.debug('Getting details for gym @ %f/%f (%fkm away).',
                   gym['latitude'], gym['longitude'],
                   calc_distance(position, [gym['latitude'], gym['longitude']]))
         req = api.create_request()
@@ -1219,7 +1237,8 @@ def gym_request(api, position, gym):
                             player_latitude=f2i(position[0]),
                             player_longitude=f2i(position[1]),
                             gym_latitude=gym['latitude'],
-                            gym_longitude=gym['longitude'])
+                            gym_longitude=gym['longitude'],
+                            client_version=api_version)
         req.check_challenge()
         req.get_hatched_eggs()
         req.get_inventory()
@@ -1232,7 +1251,7 @@ def gym_request(api, position, gym):
         return x
 
     except Exception as e:
-        log.warning('Exception while downloading gym details: %s', repr(e))
+        log.warning('Exception while downloading gym details: %s.', repr(e))
         return False
 
 
