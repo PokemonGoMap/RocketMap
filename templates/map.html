@@ -420,8 +420,18 @@
     <script src="{{ url_for('static', filename='dist/js/app.min.js').lstrip('/') }}"></script>
     <script src="{{ url_for('static', filename='js/vendor/classie.js').lstrip('/') }}"></script>
     <script>
-      var centerLat = {{lat}};
-      var centerLng = {{lng}}; 
+        function getParameterByName(name, url) {
+            if (!url) url = window.location.href;
+            name = name.replace(/[\[\]]/g, "\\$&");
+            var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+                results = regex.exec(url);
+            if (!results) return null;
+            if (!results[2]) return '';
+            return decodeURIComponent(results[2].replace(/\+/g, " "));
+        }
+      var centerLat = {{lat}} || getParameterByName('lat');
+      var centerLng = {{lng}} || getParameterByName('lon');
+      var centerZoom = getParameterByName('zoom');
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
     <script src="{{ url_for('static', filename='dist/js/map.common.min.js').lstrip('/') }}"></script>
