@@ -909,15 +909,48 @@ def search_worker_thread(args, api_version, account_queue, account_sets,
                         continue
 
                 # Too late?
-                if leaves and now() > (leaves - args.min_seconds_left):
+                extra_delay = 0
+                # Speed scan does it's own speed calculation as part of the
+                # scheduler so we don't want the worker to do it again.
+                if not args.speed_scan:
+                    extra_delay = check_speed_limit(args.kph,
+                                                    [status['latitude'],
+                                                     status['longitude']],
+                                                    step_location,
+                                                    status['last_scan_date'])
+                continue_time = time.time() + extra_delay
+                if leaves and continue_time > (leaves - args.min_seconds_left):
                     scheduler.task_done(status)
                     status['skip'] += 1
-                    status['message'] = messages['late']
-                    log.info(status['message'])
+                    if time.time() > (leaves - args.min_seconds_left):
+                        status['message'] = messages['late']
+                    else:
+                        status['message'] = (
+                            'Skipping {:6f},{:6f}; outside time and speed ' +
+                            'constraints.'
+                            .format(step_location[0], step_location[1]))
+                    log.warning(status['message'])
                     # No sleep here; we've not done anything worth sleeping
                     # for. Plus we clearly need to catch up!
                     continue
 
+                # Too fast?
+                if extra_delay > 0:
+                    status['message'] = (
+                        'Too fast for {:6f},{:6f}; waiting {}s...'
+                        .format(step_location[0], step_location[1],
+                                extra_delay))
+                    log.info(status['message'])
+                    continue_time = time.time() + extra_delay
+
+                    while time.time() < continue_time:
+                        time.sleep(1)
+                        remain = int(continue_time - time.time())
+                        if remain > 0:
+                            status['message'] = (
+                                'Too fast for {:6f},{:6f}; waiting {}s...'
+                                .format(step_location[0], step_location[1],
+                                        remain))
                 status['message'] = messages['search']
                 log.debug(status['message'])
 
@@ -1269,6 +1302,24 @@ def calc_distance(pos1, pos2):
     d = R * c
 
     return d
+
+
+def check_speed_limit(kph, previous_location, next_location, last_scan_date):
+    if kph > 0:
+        move_distance = calc_distance(previous_location, next_location)
+        time_elapsed = (datetime.utcnow() - last_scan_date).total_seconds()
+
+        if time_elapsed <= 0:
+            time_elapsed = 0.001
+
+        projected_speed = 3600.0 * move_distance / time_elapsed
+        log.debug('Move distance: %s k; time elapsed: %s s; Projected speed: '
+                  '%s kph', move_distance, time_elapsed, projected_speed)
+        if projected_speed > kph:
+            extra_delay = int(move_distance / kph * 3600.0 - time_elapsed) + 1
+            return extra_delay
+
+    return 0
 
 
 # Delay each thread start time so that logins occur after delay.
