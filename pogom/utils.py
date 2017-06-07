@@ -399,7 +399,8 @@ def get_args():
     parser.add_argument('-spp', '--status-page-password', default=None,
                         help='Set the status page password.')
     parser.add_argument('-hk', '--hash-key', default=None, action='append',
-                        help='Key for hash server')
+                        help='Key for hash server',
+                        required=True)
     parser.add_argument('-tut', '--complete-tutorial', action='store_true',
                         help=("Complete ToS and tutorial steps on accounts " +
                               "if they haven't already."),
