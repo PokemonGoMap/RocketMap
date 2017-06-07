@@ -347,6 +347,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
 
     search_items_queue_array = []
     scheduler_array = []
+    scheduler_status_array = []
     account_queue = Queue()
     account_sets = AccountSet(args.hlvl_kph)
     threadStatus = {}
@@ -452,6 +453,8 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
                 args.scheduler, [search_items_queue], threadStatus, args)
 
             scheduler_array.append(scheduler)
+            scheduler_status_array.append(3)
+
             search_items_queue_array.append(search_items_queue)
 
         # Set proxy for each worker, using round robin.
@@ -541,7 +544,8 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
         # If there are no search_items_queue either the loop has finished or
         # it's been cleared above.  Either way, time to fill it back up.
         for i in range(0, len(scheduler_array)):
-            if scheduler_array[i].time_to_refresh_queue():
+            valid = scheduler_status_array[i] > 0
+            if valid and scheduler_array[i].time_to_refresh_queue():
                 threadStatus['Overseer']['message'] = (
                     'Search queue {} empty, scheduling ' +
                     'more items to scan.').format(i)
@@ -549,6 +553,12 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
                     'Search queue %d empty, scheduling more items to scan.', i)
                 try:  # Can't have the scheduler die because of a DB deadlock.
                     scheduler_array[i].schedule()
+                    if scheduler_array[i].queues == [[]]:
+                        scheduler_status_array[i] -= 1
+                        log.warning("Scheduler didn't fetch items. Attempt " +
+                                    "number %d", 3-scheduler_status_array[i])
+                    else:
+                        scheduler_status_array[i] = 3
                 except Exception as e:
                     log.error(
                         'Schedule creation had an Exception: {}.'.format(
