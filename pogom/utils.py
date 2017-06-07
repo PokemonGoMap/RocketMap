@@ -455,33 +455,13 @@ def get_args():
         # CSV file should have lines like "ptc,username,password",
         # "username,password" or "username".
         if args.accountcsv is not None:
-            # Giving num_fields something it would usually not get.
-            num_fields = -1
+            csv_input = []
+            csv_input.append('')
+            csv_input.append('<username>')
+            csv_input.append('<username>,<password>')
+            csv_input.append('<ptc/google>,<username>,<password>')
             with open(args.accountcsv, 'r') as f:
                 for num, line in enumerate(f, 1):
-
-                    fields = []
-
-                    # First time around populate num_fields with current field
-                    # count.
-                    if num_fields < 0:
-                        num_fields = line.count(',') + 1
-
-                    csv_input = []
-                    csv_input.append('')
-                    csv_input.append('<username>')
-                    csv_input.append('<username>,<password>')
-                    csv_input.append('<ptc/google>,<username>,<password>')
-
-                    # If the number of fields is differend this is not a CSV.
-                    if num_fields != line.count(',') + 1:
-                        print(sys.argv[0] +
-                              ": Error parsing CSV file on line " + str(num) +
-                              ". Your file started with the following " +
-                              "input, '" + csv_input[num_fields] +
-                              "' but now you gave us '" +
-                              csv_input[line.count(',') + 1] + "'.")
-                        sys.exit(1)
 
                     field_error = ''
                     line = line.strip()
@@ -490,11 +470,13 @@ def get_args():
                     if len(line) == 0 or line.startswith('#'):
                         continue
 
-                    # If number of fields is more than 1 split the line into
-                    # fields and strip them.
-                    if num_fields > 1:
-                        fields = line.split(",")
-                        fields = map(str.strip, fields)
+                    if (line.lower().startswith('ptc,') or
+                            line.lower().startswith('google,')):
+                        fields = line.split(',', 2)
+                    else:
+                        fields = line.split(',', 1)
+                    fields = map(str.strip, fields)
+                    num_fields = len(fields)
 
                     # If the number of fields is one then assume this is
                     # "username". As requested.
@@ -542,12 +524,6 @@ def get_args():
                             args.password.append(fields[2])
                         else:
                             field_error = 'password'
-
-                    if num_fields > 3:
-                        print(('Too many fields in accounts file: max ' +
-                               'supported are 3 fields. ' +
-                               'Found {} fields').format(num_fields))
-                        sys.exit(1)
 
                     # If something is wrong display error.
                     if field_error != '':
@@ -639,7 +615,7 @@ def get_args():
                     if not line.strip():
                         continue
 
-                    line = line.split(',')
+                    line = line.split(',', 2)
 
                     # We need "service, user, pass".
                     if len(line) < 3:
