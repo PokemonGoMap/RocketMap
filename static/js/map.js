@@ -350,6 +350,8 @@ function initSidebar() {
     $('#max-level-gyms-filter-switch').val(Store.get('maxGymLevel'))
     $('#last-update-gyms-switch').val(Store.get('showLastUpdatedGymsOnly'))
     $('#pokemon-switch').prop('checked', Store.get('showPokemon'))
+    $('#pokemon-wrapper').toggle(Store.get('showPokemon'))
+    $('#pokemon-opacity-switch').prop('checked', Store.get('showPokemonOpacity'))
     $('#pokestops-switch').prop('checked', Store.get('showPokestops'))
     $('#lured-pokestops-only-switch').val(Store.get('showLuredPokestopsOnly'))
     $('#lured-pokestops-only-wrapper').toggle(Store.get('showPokestops'))
@@ -813,8 +815,14 @@ function customizePokemonMarker(marker, item, skipNotification) {
         }
     }
 
-    if (item['individual_attack'] != null) {
+
+    var minOpacity = Store.get('minPokemonOpacityPercentage') / 100.0
+    if (item['individual_attack'] != null && item['individual_defense'] != null && item['individual_stamina'] != null) {
         var perfection = getIv(item['individual_attack'], item['individual_defense'], item['individual_stamina'])
+        if (Store.get('showPokemonOpacity')) {
+            // Vary opacity between minOpacityPercentage from map.common.js for 0% IV and 100 % for 100% IV.
+            marker.setOpacity(minOpacity + (1 - minOpacity) * (perfection / 100.0))
+        }
         if (notifiedMinPerfection > 0 && perfection >= notifiedMinPerfection) {
             if (!skipNotification) {
                 playPokemonSound(item['pokemon_id'])
@@ -824,6 +832,8 @@ function customizePokemonMarker(marker, item, skipNotification) {
                 marker.setAnimation(google.maps.Animation.BOUNCE)
             }
         }
+    } else if (Store.get('showPokemonOpacity')) {
+        marker.setOpacity(minOpacity)  // Default opacity if toggle enabled
     }
 
     addListeners(marker)
@@ -2367,7 +2377,22 @@ $(function () {
         buildSwitchChangeListener(mapData, ['gyms'], 'showGyms').bind(this)()
     })
     $('#pokemon-switch').change(function () {
+        var options = {
+            'duration': 500
+        }
+        var wrapper = $('#pokemon-wrapper')
+        if (this.checked) {
+            lastpokemon = false
+            wrapper.show(options)
+        } else {
+            lastpokemon = false
+            wrapper.hide(options)
+        }
         buildSwitchChangeListener(mapData, ['pokemons'], 'showPokemon').bind(this)()
+    })
+    $('#pokemon-opacity-switch').change(function () {
+        Store.set('showPokemonOpacity', this.checked)
+        redrawPokemon(mapData.pokemons)
     })
     $('#scanned-switch').change(function () {
         buildSwitchChangeListener(mapData, ['scanned'], 'showScanned').bind(this)()
