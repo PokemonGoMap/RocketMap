@@ -1991,7 +1991,7 @@ function getParameterByName(name, url) {
 
 
 //
-// Page Ready Exection
+// Page Ready Execution
 //
 
 $(function () {
