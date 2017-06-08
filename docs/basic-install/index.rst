@@ -67,7 +67,7 @@ Linux/OSX:
 
 .. code-block:: bash
 
-  sudo -H pip install -r requirements.txt
+  sudo -H pip install -r requirements.txt --force-reinstall --user
 
 Building Front-End Assets
 ===========================
