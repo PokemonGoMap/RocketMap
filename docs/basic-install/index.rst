@@ -126,7 +126,7 @@ The most basic config you could use would look something like this:
 Let's run through this startup command to make sure you understand what flags are being set.
 
 * -ac accounts.csv
-Load accounts from CSV (Comma Seperated Values) file containing "auth_service,username,passwd" lines. `More Info <http://rocketmap.readthedocs.io/en/develop/first-run/multi-account.html>`_
+Load accounts from CSV (Comma Seperated Values) file containing "auth_service,username,password" lines. `More Info <http://rocketmap.readthedocs.io/en/develop/first-run/multi-account.html>`_
 
 * -tut
 Complete ToS and tutorial steps on accounts if they haven't already. `More Info <http://rocketmap.readthedocs.io/en/develop/first-run/tutorial.html>`_
