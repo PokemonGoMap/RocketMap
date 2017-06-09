@@ -1,5 +1,5 @@
 .gym-member {
-  
+
   display: inline-block;
   margin-left: 1px;
 
@@ -9,19 +9,20 @@
     text-align: center;
     vertical-align: middle;
     font-size: .85em;
+    margin-top: 5px;
 
     &.team-1 {
-      background-color: #4A8ACA;
+      background-color: rgba(0,134,255,1);
       color: #fff;
     }
 
     &.team-2 {
-      background-color: #F0443A;
+      background-color: rgba(255,26,26,1);
       color: #fff;
     }
 
     &.team-3 {
-      background-color: #FED928;
+      background-color: rgba(255,159,25,1);
       color: #000;
     }
   }
