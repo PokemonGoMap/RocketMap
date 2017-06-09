@@ -438,14 +438,13 @@ function pokemonLabel(item) {
 
     var contentstring = ''
 
-        if (id === 201 && form !== null && form > 0) {
-            contentstring += `
+    if (id === 201 && form !== null && form > 0) {
+        contentstring += `
             <div class='pokemon name'>
                 ${genderType[gender - 1]} ${name} (${unownForm[item['form']]}) <small>${typesDisplay}</small>
             </div>`
-        }
-        else
-            contentstring += `
+    } else {
+        contentstring += `
             <div class='pokemon name'>
                 ${genderType[gender - 1]} ${name} <small>${typesDisplay}</small>
             </div>`
@@ -456,8 +455,9 @@ function pokemonLabel(item) {
                 Weight: ${weight.toFixed(2)}kg | Height: ${height.toFixed(2)}m
             </div>`
         }
+    }
 
-            contentstring += `
+    contentstring += `
             <div class='pokemon id'>
                 View in Pokédex: <small><a href='http://pokemon.gameinfo.io/en/pokemon/${id}' target='_blank' title='View in Pokedex'>#${id}</a></small><span> ${rarityDisplay}</span>
             </div>
@@ -465,25 +465,25 @@ function pokemonLabel(item) {
                 <img style='display: block; margin-left: auto; margin-right: auto' width='80px' height='80px' src='static/sprites/${id}.png'>
             </div>`
 
-        if (cp !== null && cpMultiplier !== null) {
-            var pokemonLevel = getPokemonLevel(cpMultiplier)
+    if (cp !== null && cpMultiplier !== null) {
+        var pokemonLevel = getPokemonLevel(cpMultiplier)
 
         if (atk !== null && def !== null && sta !== null) {
             var iv = getIv(atk, def, sta)
         }
 
-            contentstring += `
+        contentstring += `
             <div class='pokemon encounter'>
                 CP: <b>${cp}</b> | IV: <b>${iv.toFixed(1)}%</b> (A${atk}/D${def}/S${sta})
             </div>`
 
-            contentstring += `
+        contentstring += `
             <div class='pokemon moveset'>
-                Moveset: <b>${pMove1}/${pMove2}</b>
+                Level: <b>${pokemonLevel}</b> | Moveset: <b>${pMove1}/${pMove2}</b>
             </div>`
-        }
+    }
 
-            contentstring += `
+    contentstring += `
             <div>
               <div class='pokemon-links'>
                   <span class='pokemon-links exclude'> <a href='javascript:excludePokemon(${id})'>Exclude</a>
@@ -560,7 +560,6 @@ function gymLabel(teamName, teamId, gymPoints, latitude, longitude, lastScanned 
                 </center>
             </div>`
     } else {
-        var gymLevel = getGymLevel(gymPoints)
         str = `
             <div>
                 <center>
@@ -634,7 +633,6 @@ function pokestopLabel(expireTime, latitude, longitude) {
                 </center>
             </div>`
     } else {
-
         str = `
             <div>
                 <center>
@@ -938,7 +936,7 @@ function setupPokestopMarker(item) {
         scaledSize: new google.maps.Size(32, 32),
         origin: new google.maps.Point(0, 0),
         anchor: new google.maps.Point(0, 32)
-      };
+    }
     var marker = new google.maps.Marker({
         position: {
             lat: item['latitude'],
