@@ -1,0 +1,63 @@
+  .pokemon {
+    color: rgb(93,109,126);
+    font-weight: 400;
+    text-align: center;
+
+    &.name {
+      font-size: 18px;
+      font-weight: 900;
+    }
+
+    &.measurement {
+      font-size: 12px;
+    }
+
+    &.id {
+      @include icon('\f02d');
+      font-size: 11px;
+      margin: 5px 0px 5px 0px;
+    }
+
+    &.encounter {
+      font-size: 14px;
+      margin-top: 5px;
+    }
+
+    &.moveset {
+      font-size: 16px;
+      margin: 5px 0px 5px 0px;
+    }
+
+      &-links {
+        margin: 10px 0px 10px;
+        font-weight: 400;
+        text-align: center;
+
+        &.exclude {
+          @include icon('\f056');
+        }
+
+        &.notify {
+          @include icon('\f06a');
+        }
+
+        &.remove {
+          @include icon('\f057');
+        }
+    }
+
+    &.disappear {
+      @include icon('\f017');
+      font-size: 14px;
+      font-weight: 900;
+      margin-bottom: 5px;
+    }
+
+    &.location {
+      @include icon('\f276');
+    }
+
+    &.directions {
+      @include icon('\f018');
+    }
+  }

@@ -1,0 +1,95 @@
+  .gym {
+    color: rgb(93,109,126);
+
+      &.name {
+        font-size: 16px;
+        font-weight: 900;
+        margin-bottom: 5px;
+        text-decoration: underline;
+      }
+
+      &.teamname {
+        font-size: 20px;
+        font-weight: 900;
+        margin-bottom: 5px;
+      }
+
+    &.stats {
+      font-size: 11px;
+      font-weight: 900;
+      margin: 5px 0px;
+
+        &.points {
+          @include icon('\f0ec');
+        }
+
+        &.level {
+          @include icon('\f0dc');
+        }
+
+        &.slots {
+          @include icon('\f007');
+        }
+      }
+
+    &.info {
+      font-weight: 400;
+
+      &.location {
+      @include icon('\f276');
+      }
+
+      &.directions {
+      @include icon('\f018');
+      }
+
+      &.last-modified {
+      @include icon('\f040');
+      }
+
+      &.last-scanned {
+      @include icon('\f002');
+      }
+    }
+  }
+
+  .prestige-bar {
+    border-radius: 20px;
+    height: 20px;
+    text-align: left;
+    width: 90%;
+    margin-top: 5px;
+
+      .prestige {
+        border-radius: 20px;
+        height: 100%;
+
+          &.team-1 {
+            background: linear-gradient(to right, rgba(0,134,255,1) 0%,rgba(0,170,255,1) 100%); /* W3C, IE10+, FF16+, Chrome26+, Opera12+, Safari7+ */
+          }
+
+          &.team-2 {
+            background: linear-gradient(to right, rgba(255,26,26,1) 0%,rgba(251,117,117,1) 100%); /* W3C, IE10+, FF16+, Chrome26+, Opera12+, Safari7+ */
+          }
+
+          &.team-3 {
+            background: linear-gradient(to right, rgba(255,159,25,1) 0%,rgba(255,190,8,1) 100%); /* W3C, IE10+, FF16+, Chrome26+, Opera12+, Safari7+ */
+          }
+        }
+
+      &.team-0 {
+        border: 3px solid gba(85,85,85,1);
+      }
+
+      &.team-1 {
+        border: 3px solid rgba(0,134,255,1);
+      }
+
+      &.team-2 {
+        border: 3px solid rgba(255,26,26,1);
+      }
+
+      &.team-3 {
+        border: 3px solid rgba(255,159,25,1);
+      }
+    }

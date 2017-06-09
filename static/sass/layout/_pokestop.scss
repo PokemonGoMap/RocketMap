@@ -1,0 +1,34 @@
+  .pokestop {
+    font-size: 16px;
+    font-weight: 900;
+    text-decoration: underline;
+    margin-bottom: 5px;
+
+    &.lure {
+      color: rgb(249,53,133);
+    }
+
+    &.nolure {
+      color: rgb(54,198,255);
+    }
+  }
+
+  .pokestop-info {
+    color: rgb(93,109,126);
+    font-weight: 400;
+
+    &.directions {
+      @include icon('\f018');
+    }
+
+    &.location {
+      @include icon('\f276');
+    }
+  }
+
+  .pokestop-expire {
+    @include icon('\f017');
+    color: rgb(249,53,133);
+    font-weight: 900;
+    margin-bottom: 5px;
+  }
