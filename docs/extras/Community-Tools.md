@@ -12,6 +12,7 @@ Also allows for verification if you own your own domain.
 This script allows you to verify accounts using a CORS proxy.
 
 **Note 1:** HTTPS is required for use with the gmail verification script. Self-signed certificates work, but remember to add them to your trusted certificates on your OS.
+
 **Note 2:** An update to the gmail verification script is planned to stay below the Google API limits (even if you refresh), retry on 503, automatically sleep when no proxies are available, and continue immediately when a proxy becomes available. For now, you'll have to refresh yourself.
 
 ## [PGM Multi Loc](https://voxx.github.io/pgm-multiloc/)
