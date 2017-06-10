@@ -146,7 +146,7 @@ Things to Know
  * Your accounts need to complete the tutorial before they will be any use to RocketMap! `Here <https://rocketmap.readthedocs.io/en/develop/first-run/tutorial.html>`_ is how do that with RM. 
  * You might experience your accounts encountering Captchas at some point. `Here <https://rocketmap.readthedocs.io/en/develop/first-run/captchas.html>`_ is how we handle those. 
  * Due to recent updates, you might experience a shaddow ban. `Here <https://rocketmap.readthedocs.io/en/develop/first-run/Blinding.html>`_ is what you need to know.
- * All of these flags can be set inside of a configuration file to avoid clutter in the command line. View `this page <http://rocketmap.readthedocs.io/en/develop/first-run/configuration-files.html>`_ to see how. 
+ * All of these flags can be set inside of a configuration file to avoid clutter in the command line. Go `here <http://rocketmap.readthedocs.io/en/develop/first-run/configuration-files.html>`_ to see how. 
  * A full list of all commands are available `here. <https://rocketmap.readthedocs.io/en/develop/first-run/commandline.html>`_ 
  * A few tools to help you along the way are located `here. <https://rocketmap.readthedocs.io/en/develop/extras/Community-Tools.html>`_
 
