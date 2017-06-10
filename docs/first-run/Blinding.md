@@ -1,6 +1,8 @@
 # Account Blinding 
 
-## As of May 21st 2017, Niantic has implemented a new kind of ban. This ban will hide rare pokemon and other features within the Pokemon Go app when using an account that is blind. 
+### As of May 21st 2017, Niantic has implemented a new kind of ban. This ban will hide rare pokemon and other features within the Pokemon Go app when using an account that is blind. 
+
+## What Do We Know?
 
 Accounts are automattically banned based on specific behaviors known to mappers and botters. While RocketMap is working on a full scale solution, this a guide of what we know. 
 
@@ -12,6 +14,8 @@ Accounts are automattically banned based on specific behaviors known to mappers 
 * All 3rd party apps/scanners are affected in the exact same manner. We've spent extra time to confirm this because some people were pretty convinced we were wrong, although it usually ended up being because they hadn't even realized their accounts were already blind.
 * **There is NO recommended way to test accounts for blindness.** The current 3rd party implementations are incorrect and could get your accounts flagged if they weren't already. This is a WIP and is being added to RM itself.
 
+## What Can I Do?
+
 Right now, here are 3 approaches for your configs to maximize the scan time per account. **Results depend on a lot of things, so test and experiment for yourself until you find what works best for you:**
 1. Burn through accounts: no sleep, no account rotation. For some whose accounts usually get flagged very early on, this will increase the scan time of the account.
 2. Use a basic constant rotation: e.g. asi 8h (8h of scanning) for ari 4h (4 hours of sleep).
@@ -19,7 +23,9 @@ Right now, here are 3 approaches for your configs to maximize the scan time per 
 
 The ideal will depend on your own results, we've found that all three approaches had positive effects for at least one testing setup. A person who needs #1 will be the direct opposite of someone running #3, but both are equally valid.
 
-### If your accounts are blinded and it starts disabling spawnpoints because it considers them "missed too often", you can run this query safely to re-enable those spawnpoints:
+### Spawnpoint Fix
+
+If your accounts are blinded and it starts disabling spawnpoints because it considers them "missed too often", you can run this query safely to re-enable those spawnpoints:
 ```sql
 UPDATE spawnpoint SET missed_count = 0;
 ```
