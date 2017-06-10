@@ -7,13 +7,10 @@ Place your custom CSS into 'custom.css' in the folder 'static/css'. *Examples ar
 ## CSS classes
 There are four different classes added to style individual map templates. 
 
-Use class .mapPage for styles in map.html.
-
-Use class .mobilePage for styles in mobile_list.html.
-
-Use class .statisticsPage for styles in statistics.html.
-
-Use class .statusPage for styles in status.html.
+* Use class .mapPage for styles in map.html.
+* Use class .mobilePage for styles in mobile_list.html.
+* Use class .statisticsPage for styles in statistics.html.
+* Use class .statusPage for styles in status.html.
 
 ### Examples
 Examples below are included in custom.css.example!

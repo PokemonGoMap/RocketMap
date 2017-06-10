@@ -35,19 +35,16 @@ HashingQuotaExceededException('429: Request limited, error: ',)
 ```
 Any variant of this means you've exceeded the Requests Per Minute that your key allows. Currently, this is not being tracked accurately by Bossland, therefore, you will get more hashing requests than what you are paying for.
 
-### And this? 
 ```
 Hashing server is unreachable, it might be offline.
 ```
 Hashing server is temporarily unavailable (possibly offline). This could be due to maintenance or server failure. Please checkout discord for more information is you start getting this error.
 
-### And this? 
 ```
 Invalid or expired hashing key: %s. + api._hash_server_token
 ```
 Either your key is expired, the hashing servers are having issues, or you have mistyped your key.
 
-### And this? 
 ```
 TempHashingBanException('Your IP was temporarily banned for sending too many requests with invalid keys',)
 ```

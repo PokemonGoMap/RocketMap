@@ -70,11 +70,11 @@ The POST request made by RocketMap will contain the following data for pokemon t
       "pokemon_id":187,
       "player_level":6,
       "individual_stamina":null,
-      "longitude":-4.325233518227877,
-      "spawn_start":25.55069872455855,
+      "longitude":0,
+      "spawn_start":0,
       "pokemon_level":null,
       "gender":null,
-      "latitude":****,
+      "latitude":0,
       "individual_attack":null
    },
    "type":"pokemon"

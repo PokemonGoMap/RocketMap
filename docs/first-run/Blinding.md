@@ -2,7 +2,7 @@
 
 ### As of May 21st 2017, Niantic has implemented a new kind of ban. This ban will hide rare pokemon and other features within the Pokemon Go app when using an account that is blind. 
 
-## What Do We Know?
+## What do we know?
 
 Accounts are automattically banned based on specific behaviors known to mappers and botters. While RocketMap is working on a full scale solution, this a guide of what we know. 
 
@@ -14,7 +14,7 @@ Accounts are automattically banned based on specific behaviors known to mappers 
 * All 3rd party apps/scanners are affected in the exact same manner. We've spent extra time to confirm this because some people were pretty convinced we were wrong, although it usually ended up being because they hadn't even realized their accounts were already blind.
 * **There is NO recommended way to test accounts for blindness.** The current 3rd party implementations are incorrect and could get your accounts flagged if they weren't already. This is a WIP and is being added to RM itself.
 
-## What Can I Do?
+## What can I do?
 
 Right now, here are 3 approaches for your configs to maximize the scan time per account. **Results depend on a lot of things, so test and experiment for yourself until you find what works best for you:**
 1. Burn through accounts: no sleep, no account rotation. For some whose accounts usually get flagged very early on, this will increase the scan time of the account.
