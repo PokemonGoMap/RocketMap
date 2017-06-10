@@ -23,6 +23,7 @@ Examples below are included in custom.css.example!
 .mapPage #nav h3 {font-size: 11px;}
 ```
 **Options menu form-control/switch-container, on/off switch style**
+
 ![Sample Image](../_static/img/menu.png)
 
 ```css
@@ -33,6 +34,7 @@ Examples below are included in custom.css.example!
 ```
 
 **Options menu Reset button style**
+
 ![Sample Image](../_static/img/reset.png)
 
 ```css
