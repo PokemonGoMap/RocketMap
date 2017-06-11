@@ -39,8 +39,8 @@
                     [-spp STATUS_PAGE_PASSWORD] [-hk HASH_KEY] [-tut] [-novc]
                     [-vci VERSION_CHECK_INTERVAL] [-el ENCRYPT_LIB]
                     [-odt ON_DEMAND_TIMEOUT] [--disable-blacklist]
-                    [-tp TRUSTED_PROXIES] [-v [filename.log] | -vv
-                    [filename.log]]
+                    [-tp TRUSTED_PROXIES] [-fss FAKE_SEARCH_SCRIPT]
+                    [-v [filename.log] | -vv [filename.log]]
 
     Args that start with '--' (eg. -a) can also be set in a config file.
     The recognized syntax for setting (key, value) pairs is based on the INI and
@@ -364,6 +364,10 @@
                         Enables the use of X-FORWARDED-FOR headers to identify
                         the IP of clients connecting through these trusted
                         proxies. [env var: POGOMAP_TRUSTED_PROXIES]
+    -fss FAKE_SEARCH_SCRIPT, --fake-search-script FAKE_SEARCH_SCRIPT
+                        Get pokemon from script instead. See
+                        "pogom\sample_fake_scripts" for more info [env var:
+                        POGOMAP_FAKE_SEARCH_SCRIPT]
     -v [filename.log], --verbose [filename.log]
                         Show debug messages from RocketMap and pgoapi.
                         Optionally specify file to log to. [env var:

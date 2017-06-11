@@ -21,6 +21,7 @@ from pogom.app import Pogom
 from pogom.utils import get_args, now, extract_sprites
 from pogom.altitude import get_gmaps_altitude
 
+from pogom.fakeSearcher import fake_search_thread
 from pogom.search import search_overseer_thread
 from pogom.models import (init_database, create_tables, drop_tables,
                           Pokemon, db_updater, clean_db_loop,
@@ -326,12 +327,18 @@ def main():
                 file.write(json.dumps(spawns))
                 log.info('Finished exporting spawn points')
 
-        argset = (args, new_location_queue, pause_bit,
-                  heartbeat, db_updates_queue, wh_updates_queue)
-
-        log.debug('Starting a %s search thread', args.scheduler)
-        search_thread = Thread(target=search_overseer_thread,
-                               name='search-overseer', args=argset)
+        fake_pokemon_mode = True
+        if fake_pokemon_mode:
+            log.info('** Starting a fake search **')
+            search_thread = Thread(target=fake_search_thread,
+                                   name='search-overseer',
+                                   args=(args, position, db_updates_queue,))
+        else:
+            argset = (args, new_location_queue, pause_bit,
+                      heartbeat, db_updates_queue, wh_updates_queue)
+            log.debug('Starting a %s search thread', args.scheduler)
+            search_thread = Thread(target=search_overseer_thread,
+                                   name='search-overseer', args=argset)
         search_thread.daemon = True
         search_thread.start()
 
