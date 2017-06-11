@@ -2005,7 +2005,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                     check_login(args, hlvl_account, hlvl_api, scan_location,
                                 status['proxy_url'])
 
-                    # Encounter Pokémon.
+                    # Make a Pokemon encounter request.
                     encounter_result = encounter_pokemon_request(
                         hlvl_api,
                         p['encounter_id'],
@@ -2014,7 +2014,6 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
 
                     # Handle errors.
                     if encounter_result:
-                        # Readability.
                         responses = encounter_result['responses']
 
                         # Check for captcha.
@@ -2043,29 +2042,30 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                         elif len(captcha_url) > 1 and automatic_captcha_solve(
                                 args, status, api, captcha_url, account,
                                 wh_update_queue):
-                            # Retry Encounter Pokémon request.
+                            # Retry Pokemon encounter request.
                             encounter_result = encounter_pokemon_request(
                                 hlvl_api,
                                 p['encounter_id'],
                                 p['spawn_point_id'],
                                 scan_location)
-                            status_code = responses['ENCOUNTER'].get(
-                                            'status', 0)
+                            responses = encounter_result['responses']
 
-                            if status_code == 8:
-                                # Flag account.
-                                hlvl_account['failed'] = True
-                                log.error('Account %s has failed a encounter.'
-                                          + ' Received Anti-Cheat response ('
-                                          + 'a "%s" status response).',
-                                          hlvl_account['username'],
-                                          status_code)
+                        status_code = responses['ENCOUNTER'].get(
+                                        'status', 0)
+                        if status_code == 8:
+                            # Flag account.
+                            hlvl_account['failed'] = True
+                            log.error('Account %s has failed a encounter.'
+                                      + ' Received Anti-Cheat response ('
+                                      + 'a "%s" status response).',
+                                      hlvl_account['username'],
+                                      status_code)
 
-                            if status_code != 1:
-                                log.error('Account %s has failed a encounter.'
-                                          + ' Got a "%s" status response.',
-                                          hlvl_account['username'],
-                                          status_code)
+                        if status_code != 1:
+                            log.error('Account %s has failed a encounter.'
+                                      + ' Got a "%s" status response.',
+                                      hlvl_account['username'],
+                                      status_code)
 
                         # Clear the response for memory management.
                         encounter_result = clear_dict_response(
