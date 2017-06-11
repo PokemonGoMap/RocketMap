@@ -1,4 +1,4 @@
-Contributing to this Wiki
+Awesome Wiki Page
 ##############################
 
 .. note:: This article is about contributing pages and edits to this wiki. For contributing to RocketMap itself see :doc:`development`.
