@@ -629,7 +629,9 @@ def get_args():
         for i, username in enumerate(args.username):
             args.accounts.append({'username': username,
                                   'password': args.password[i],
-                                  'auth_service': args.auth_service[i]})
+                                  'auth_service': args.auth_service[i],
+                                  'captcha': False,
+                                  'level': 0})
 
         # Prepare the L30 accounts for the account sets.
         args.accounts_L30 = []
@@ -659,7 +661,8 @@ def get_args():
                         'auth_service': service,
                         'username': username,
                         'password': password,
-                        'captcha': False
+                        'captcha': False,
+                        'level': 0  # We don't know, yet.
                     }
 
                     args.accounts_L30.append(hlvl_account)

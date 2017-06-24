@@ -33,8 +33,9 @@ from .utils import (get_pokemon_name, get_pokemon_rarity, get_pokemon_types,
 from .transform import transform_from_wgs_to_gcj, get_new_coords
 from .customLog import printPokemon
 
-from .account import (tutorial_pokestop_spin, get_player_level, check_login,
-                      setup_api, encounter_pokemon_request)
+from .account import (tutorial_pokestop_spin, check_login, setup_api,
+                      encounter_pokemon_request)
+from .pgoclient import PGoClient
 
 log = logging.getLogger(__name__)
 
@@ -1769,7 +1770,7 @@ def hex_bounds(center, steps=None, radius=None):
 
 # todo: this probably shouldn't _really_ be in "models" anymore, but w/e.
 def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
-              key_scheduler, api, status, now_date, account, account_sets):
+              key_scheduler, client, status, now_date, account, account_sets):
     pokemon = {}
     pokestops = {}
     gyms = {}
@@ -1791,7 +1792,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
     # and a list of forts.
     cells = map_dict['responses']['GET_MAP_OBJECTS']['map_cells']
     # Get the level for the pokestop spin, and to send to webhook.
-    level = get_player_level(map_dict)
+    level = account['level']
     # Use separate level indicator for our L30 encounters.
     encounter_level = level
 
@@ -1945,7 +1946,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                 time.sleep(args.encounter_delay)
 
                 hlvl_account = None
-                hlvl_api = None
+                hlvl_client = None
                 using_accountset = False
 
                 scan_location = [p['latitude'], p['longitude']]
@@ -1954,14 +1955,14 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                 # can just use the current account.
                 if level >= 30:
                     hlvl_account = account
-                    hlvl_api = api
+                    hlvl_client = client
                 else:
                     # Get account to use for IV and CP scanning.
                     hlvl_account = account_sets.next('30', scan_location)
 
                 # If we don't have an API object yet, it means we didn't re-use
                 # an old one, so we're using AccountSet.
-                using_accountset = not hlvl_api
+                using_accountset = not hlvl_client
 
                 # If we didn't get an account, we can't encounter.
                 if hlvl_account:
@@ -1978,11 +1979,13 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                     # using an account from the AccountSet.
                     if not args.no_api_store and using_accountset:
                         hlvl_api = hlvl_account.get('api', None)
+                        if hlvl_api:  # Only initialize if it exists
+                            hlvl_client = PGoClient(hlvl_api)
 
                     # Make new API for this account if we're not using an
                     # API that's already logged in.
-                    if not hlvl_api:
-                        hlvl_api = setup_api(args, status, account)
+                    if not hlvl_client:
+                        hlvl_client = PGoClient(setup_api(args, status))
 
                         # Hashing key.
                         # TODO: all of this should be handled properly... all
@@ -1992,22 +1995,23 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                             key = key_scheduler.next()
                             log.debug('Using hashing key %s for this'
                                       + ' encounter.', key)
-                            hlvl_api.activate_hash_server(key)
+                            hlvl_client.activate_hash_server(key)
 
                     # We have an API object now. If necessary, store it.
                     if using_accountset and not args.no_api_store:
-                        hlvl_account['api'] = hlvl_api
+                        hlvl_account['api'] = hlvl_client.get_api()
 
                     # Set location.
-                    hlvl_api.set_position(*scan_location)
+                    hlvl_client.set_position(scan_location)
 
                     # Log in.
-                    check_login(args, hlvl_account, hlvl_api, scan_location,
-                                status['proxy_url'])
+                    check_login(args, hlvl_account, hlvl_client.get_api(),
+                                scan_location, status['proxy_url'])
 
                     # Encounter Pokémon.
                     encounter_result = encounter_pokemon_request(
-                        hlvl_api,
+                        hlvl_client,
+                        hlvl_account,
                         p['encounter_id'],
                         p['spawn_point_id'],
                         scan_location)
@@ -2031,8 +2035,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                         else:
                             # Update level indicator before we clear the
                             # response.
-                            encounter_level = get_player_level(
-                                encounter_result)
+                            encounter_level = hlvl_account['level']
 
                             # User error?
                             if encounter_level < 30:
@@ -2165,7 +2168,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
         if args.complete_tutorial and not (len(captcha_url) > 1):
             if config['parse_pokestops']:
                 tutorial_pokestop_spin(
-                    api, level, forts, step_location, account)
+                    client, account, forts, step_location)
             else:
                 log.error(
                     'Pokestop can not be spun since parsing Pokestops is ' +
