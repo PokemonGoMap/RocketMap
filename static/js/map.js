@@ -609,7 +609,7 @@ str += `
                     <div>
                         Last Modified: ${lastModifiedStr}
                     </div>
-                    ${directionStr}
+                    ${directionsStr}
                 </center>
             </div>`
 
