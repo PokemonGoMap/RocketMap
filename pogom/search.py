@@ -1247,7 +1247,6 @@ def gym_request(api, account, position, gym, api_version):
         req.get_buddy_walked()
         req.get_inbox(is_history=True)
         response = req.call()
-
         parse_new_timestamp_ms(account, response)
         response = clear_dict_response(response)
         return response
