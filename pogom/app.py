@@ -3,6 +3,7 @@
 
 import calendar
 import logging
+import time
 
 from flask import Flask, abort, jsonify, render_template, request,\
     make_response
@@ -192,6 +193,13 @@ class Pogom(Flask):
         if args.on_demand_timeout > 0:
             self.search_control.clear()
         d = {}
+
+        # No, no, no.
+        now_long = int(time.time() * 1000)
+        jquery_cache = int(request.args.get('_', now_long))
+
+        if jquery_cache < now_long - 1000:
+            return jsonify({})
 
         # Request time of this request.
         d['timestamp'] = datetime.utcnow()
