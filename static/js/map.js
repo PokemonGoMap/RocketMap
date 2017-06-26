@@ -607,7 +607,7 @@ str += `
                         Last Scanned: ${lastScannedStr}
                     </div>
                     <div>
-                        Last Modified: ${LastModifiedStr}
+                        Last Modified: ${lastModifiedStr}
                     </div>
                     ${directionStr}
                 </center>
