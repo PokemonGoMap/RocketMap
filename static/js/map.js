@@ -855,7 +855,7 @@ function customizePokemonMarker(marker, item, skipNotification) {
 
 function setupGymMarker(item) {
     var marker
-    if (item['raid'] !== null && item['raid']['battle'] < Date.now() && item['raid']['end'] > Date.now() && item['raid']['pokemon_id']] !== null) {
+    if (item['raid'] !== null && item['raid']['battle'] < Date.now() && item['raid']['end'] > Date.now() && item['raid']['pokemon_id'] !== null) {
         marker = new google.maps.Marker({
             position: {
                 lat: item['latitude'],
