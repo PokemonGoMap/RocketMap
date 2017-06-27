@@ -615,7 +615,7 @@ class Gym(BaseModel):
                        .select(
                            GymMember.gym_id,
                            GymPokemon.cp.alias('pokemon_cp'),
-                           GymPokemon.cp.alias('pokemon_cp_now'),
+                           GymPokemon.cp_now.alias('pokemon_cp_now'),
                            GymPokemon.pokemon_id,
                            Trainer.name.alias('trainer_name'),
                            Trainer.level.alias('trainer_level'))
@@ -696,7 +696,7 @@ class Gym(BaseModel):
 
         pokemon = (GymMember
                    .select(GymPokemon.cp.alias('pokemon_cp'),
-                           GymPokemon.cp.alias('pokemon_cp_now'),
+                           GymPokemon.cp_now.alias('pokemon_cp_now'),
                            GymPokemon.pokemon_id,
                            GymPokemon.pokemon_uid,
                            GymPokemon.move_1,
