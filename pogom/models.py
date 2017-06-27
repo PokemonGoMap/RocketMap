@@ -542,11 +542,11 @@ class Pokestop(BaseModel):
 
 
 class Gym(BaseModel):
-
     gym_id = Utf8mb4CharField(primary_key=True, max_length=50)
+    description = TextField(null=True, default="")
     team_id = SmallIntegerField()
     guard_pokemon_id = SmallIntegerField()
-    gym_points = IntegerField()
+    slots_available = SmallIntegerField()
     enabled = BooleanField()
     latitude = DoubleField()
     longitude = DoubleField()
@@ -616,6 +616,7 @@ class Gym(BaseModel):
                        .select(
                            GymMember.gym_id,
                            GymPokemon.cp.alias('pokemon_cp'),
+                           GymPokemon.cp.alias('pokemon_cp_now'),
                            GymPokemon.pokemon_id,
                            Trainer.name.alias('trainer_name'),
                            Trainer.level.alias('trainer_level'))
@@ -626,7 +627,7 @@ class Gym(BaseModel):
                                           Trainer.name))
                        .where(GymMember.gym_id << gym_ids)
                        .where(GymMember.last_scanned > Gym.last_modified)
-                       .order_by(GymMember.gym_id, GymPokemon.cp)
+                       .order_by(GymMember.gym_id, GymPokemon.cp_now)
                        .distinct()
                        .dicts())
 
@@ -677,9 +678,9 @@ class Gym(BaseModel):
                   .select(Gym.gym_id,
                           Gym.team_id,
                           GymDetails.name,
-                          GymDetails.description,
+                          Gym.description,
                           Gym.guard_pokemon_id,
-                          Gym.gym_points,
+                          Gym.slots_available,
                           Gym.latitude,
                           Gym.longitude,
                           Gym.last_modified,
@@ -696,6 +697,7 @@ class Gym(BaseModel):
 
         pokemon = (GymMember
                    .select(GymPokemon.cp.alias('pokemon_cp'),
+                           GymPokemon.cp.alias('pokemon_cp_now'),
                            GymPokemon.pokemon_id,
                            GymPokemon.pokemon_uid,
                            GymPokemon.move_1,
@@ -711,7 +713,7 @@ class Gym(BaseModel):
                    .join(Trainer, on=(GymPokemon.trainer_name == Trainer.name))
                    .where(GymMember.gym_id == id)
                    .where(GymMember.last_scanned > Gym.last_modified)
-                   .order_by(GymPokemon.cp.desc())
+                   .order_by(GymPokemon.cp_now.desc())
                    .distinct()
                    .dicts())
 
@@ -1708,6 +1710,7 @@ class GymPokemon(BaseModel):
     pokemon_uid = Utf8mb4CharField(primary_key=True, max_length=50)
     pokemon_id = SmallIntegerField()
     cp = SmallIntegerField()
+    cp_now = SmallIntegerField()
     trainer_name = Utf8mb4CharField(index=True)
     num_upgrades = SmallIntegerField(null=True)
     move_1 = SmallIntegerField(null=True)
@@ -1734,7 +1737,6 @@ class Trainer(BaseModel):
 class GymDetails(BaseModel):
     gym_id = Utf8mb4CharField(primary_key=True, max_length=50)
     name = Utf8mb4CharField()
-    description = TextField(null=True, default="")
     url = Utf8mb4CharField()
     last_scanned = DateTimeField(default=datetime.utcnow)
 
@@ -2302,6 +2304,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                         'gym_id': b64encode(str(f['id'])),
                         'team_id': f.get('owned_by_team', 0),
                         'guard_pokemon_id': f.get('guard_pokemon_id', 0),
+                        'slots_available': f.get('slots_available', 0),
                         'gym_points': f.get('gym_points', 0),
                         'enabled': f.get('enabled', False),
                         'latitude': f['latitude'],
@@ -2319,6 +2322,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                     'team_id': f.get('owned_by_team', 0),
                     'guard_pokemon_id': f.get('guard_pokemon_id', 0),
                     'gym_points': f.get('gym_points', 0),
+                    'slots_available': f.get('slots_available', 0),
                     'enabled': f.get('enabled', False),
                     'latitude': f['latitude'],
                     'longitude': f['longitude'],
