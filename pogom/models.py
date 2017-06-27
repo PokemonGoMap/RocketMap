@@ -42,7 +42,7 @@ args = get_args()
 flaskDb = FlaskDB()
 cache = TTLCache(maxsize=100, ttl=60 * 5)
 
-db_schema_version = 19
+db_schema_version = 20
 
 
 class MyRetryDB(RetryOperationalError, PooledMySQLDatabase):
@@ -677,6 +677,7 @@ class Gym(BaseModel):
                   .select(Gym.gym_id,
                           Gym.team_id,
                           GymDetails.name,
+                          GymDetails.description,
                           Gym.guard_pokemon_id,
                           Gym.slots_available,
                           Gym.latitude,
@@ -1735,6 +1736,7 @@ class Trainer(BaseModel):
 class GymDetails(BaseModel):
     gym_id = Utf8mb4CharField(primary_key=True, max_length=50)
     name = Utf8mb4CharField()
+    description = TextField(null=True, default="")
     url = Utf8mb4CharField()
     last_scanned = DateTimeField(default=datetime.utcnow)
 
@@ -3078,10 +3080,9 @@ def database_migrate(db, old_ver):
 
     if old_ver < 20:
         migrate(
-            migrator.drop_column('gym', 'gym_points')
+            migrator.drop_column('gym', 'gym_points'),
             migrator.add_column('gym', 'slots_available',
-                    SmallIntegerField(null=True))
-            migrator.drop_column('gymdetails', 'description'),
+                    SmallIntegerField(null=True)),
             migrator.add_column('gympokemon', 'cp_now',
                                 SmallIntegerField(null=True))
         )
