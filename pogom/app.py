@@ -16,7 +16,7 @@ from collections import OrderedDict
 from bisect import bisect_left
 
 from . import config
-from .models import (Pokemon, Gym, Raid, Pokestop, ScannedLocation,
+from .models import (Pokemon, Gym, Pokestop, ScannedLocation,
                      MainWorker, WorkerStatus, Token, HashKeys)
 from .utils import now, dottedQuadToNum, get_blacklist
 log = logging.getLogger(__name__)

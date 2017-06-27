@@ -273,7 +273,7 @@ def get_args():
     parser.add_argument('-nr', '--no-raids',
                         help=('Disables Raids from the map (including ' +
                               'parsing them into local db).'),
-                              action='store_true', default=False)
+                        action='store_true', default=False)
     parser.add_argument('-nk', '--no-pokestops',
                         help=('Disables PokeStops from the map (including ' +
                               'parsing them into local db).'),
