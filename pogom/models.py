@@ -543,7 +543,6 @@ class Pokestop(BaseModel):
 
 class Gym(BaseModel):
     gym_id = Utf8mb4CharField(primary_key=True, max_length=50)
-    description = TextField(null=True, default="")
     team_id = SmallIntegerField()
     guard_pokemon_id = SmallIntegerField()
     slots_available = SmallIntegerField()
@@ -678,7 +677,6 @@ class Gym(BaseModel):
                   .select(Gym.gym_id,
                           Gym.team_id,
                           GymDetails.name,
-                          Gym.description,
                           Gym.guard_pokemon_id,
                           Gym.slots_available,
                           Gym.latitude,
@@ -3076,6 +3074,16 @@ def database_migrate(db, old_ver):
         migrate(
             migrator.add_column('pokemon', 'cp_multiplier',
                                 FloatField(null=True))
+        )
+
+    if old_ver < 20:
+        migrate(
+            migrator.drop_column('gym', 'gym_points')
+            migrator.add_column('gym', 'slots_available',
+                    SmallIntegerField(null=True))
+            migrator.drop_column('gymdetails', 'description'),
+            migrator.add_column('gympokemon', 'cp_now',
+                                SmallIntegerField(null=True))
         )
 
     # Always log that we're done.
