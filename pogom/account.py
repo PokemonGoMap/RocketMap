@@ -262,7 +262,19 @@ def check_login(args, account, api, position, proxy_url):
                       repr(e))
         raise LoginSequenceFail('Failed during login sequence.')
 
-    # TODO: # 7 - Make a request to get Shop items.
+    # Needs updated PGoApi to be used.
+    # log.info('Retrieving Store Items...')
+    # try:  # 7 - Make an empty request to retrieve store items.
+    #    request = api.create_request()
+    #    request.get_store_items()
+    #    response = request.call()
+    #    total_req += 1
+    #    time.sleep(random.uniform(.6, 1.1))
+    # except Exception as e:
+    #    log.exception('Login for account %s failed. Exception in ' +
+    #                  'retrieving Store Items: %s', account['username'],
+    #                  repr(e))
+    #    raise LoginSequenceFail('Failed during login sequence.')
 
     log.info('Check if Account has leveled up and collect rewards...')
     try:  # 8 - Check if there are level up rewards to claim.
@@ -282,7 +294,8 @@ def check_login(args, account, api, position, proxy_url):
 
     except Exception as e:
         log.exception('Login for account %s failed. Exception in ' +
-                      'level_up_rewards: %s', account['username'], repr(e))
+                      'Level up rewards request: %s', account['username'],
+                      repr(e))
         raise LoginSequenceFail('Failed during login sequence.')
 
     log.info('RPC Login Sequence for account %s with %s requests successful.',
