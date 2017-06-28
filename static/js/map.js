@@ -551,67 +551,67 @@ lastModified = null, name = null, members = [], gymId, raid) {
                         ${memberStr}
                     </div>
                     <br>`
-}
+    }
 
-if (raid !== null && raid['battle'] > Date.now()) {
-    var nextRaidStr = getDateStr(raid['battle'])
-    str += `
-                <div>
-                    Level: ${raid['level']}
-                </div>
-                <div>
-                    Raid Start: ${nextRaidStr}
-                </div>
-                <br>`
-} else if (raid !== null && raid['battle'] < Date.now() && raid['end'] > Date.now() && raid['pokemon_id'] !== null ) {
-         var raidEndsStr = getDateStr(raid['end'])
-         var types = raid['pokemon_types']
-         var typesDisplay = ''
-         var pMove1 = (moves[raid['move_1']] !== undefined) ? i8ln(moves[raid['move_1']]['name']) : 'gen/unknown'
-         var pMove2 = (moves[raid['move_2']] !== undefined) ? i8ln(moves[raid['move_2']]['name']) : 'gen/unknown'
-
-         $.each(types, function (index, type) {
-             typesDisplay += getTypeSpan(type)
-        })
-
+    if (raid !== null && raid['battle'] > Date.now()) {
+        var nextRaidStr = getDateStr(raid['battle'])
         str += `
                     <div>
                         Level: ${raid['level']}
                     </div>
                     <div>
-                        <b>${raid['pokemon_name']}</b>
-                        <span> - </span>
-                        <small>
-                            <a href='http://www.pokemon.com/us/pokedex/${raid['pokemon_id']}' target='_blank' title='View in Pokedex'>#${raid['pokemon_id']}</a>
-                        </small>
-                        <span> - </span>
-                        <small>${typesDisplay}</small>
-                    </div>
-                    <div>
-                        CP: ${raid['cp']}
-                    </div>
-                    <div>
-                        Moves: ${pMove1} / ${pMove2}
-                    </div>
-                    <div>
-                        Raid End: ${raidEndsStr}
+                        Raid Start: ${nextRaidStr}
                     </div>
                     <br>`
-}
+    } else if (raid !== null && raid['battle'] < Date.now() && raid['end'] > Date.now() && raid['pokemon_id'] !== null) {
+        var raidEndsStr = getDateStr(raid['end'])
+        var types = raid['pokemon_types']
+        var typesDisplay = ''
+        var pMove1 = (moves[raid['move_1']] !== undefined) ? i8ln(moves[raid['move_1']]['name']) : 'gen/unknown'
+        var pMove2 = (moves[raid['move_2']] !== undefined) ? i8ln(moves[raid['move_2']]['name']) : 'gen/unknown'
 
-str += `
-                    <div>
-                        Location: ${latitude.toFixed(6)}, ${longitude.toFixed(7)}
-                    </div>
-                    <div>
-                        Last Scanned: ${lastScannedStr}
-                    </div>
-                    <div>
-                        Last Modified: ${lastModifiedStr}
-                    </div>
-                    ${directionsStr}
-                </center>
-            </div>`
+        $.each(types, function (index, type) {
+            typesDisplay += getTypeSpan(type)
+        })
+
+        str += `
+                <div>
+                    Level: ${raid['level']}
+                </div>
+                <div>
+                    <b>${raid['pokemon_name']}</b>
+                    <span> - </span>
+                    <small>
+                        <a href='http://www.pokemon.com/us/pokedex/${raid['pokemon_id']}' target='_blank' title='View in Pokedex'>#${raid['pokemon_id']}</a>
+                    </small>
+                    <span> - </span>
+                    <small>${typesDisplay}</small>
+                </div>
+                <div>
+                    CP: ${raid['cp']}
+                </div>
+                <div>
+                    Moves: ${pMove1} / ${pMove2}
+                </div>
+                <div>
+                    Raid End: ${raidEndsStr}
+                </div>
+                <br>`
+    }
+
+    str += `
+                <div>
+                    Location: ${latitude.toFixed(6)}, ${longitude.toFixed(7)}
+                </div>
+                <div>
+                    Last Scanned: ${lastScannedStr}
+                </div>
+                <div>
+                    Last Modified: ${lastModifiedStr}
+                </div>
+                ${directionsStr}
+            </center>
+        </div>`
 
     return str
 }
@@ -863,8 +863,8 @@ function setupGymMarker(item) {
             },
             map: map,
             icon: {
-                url: 'static/raids/level_' + item['raid']['pokemon_id'] + '.png',
-                scaledSize: new google.maps.Size(48, 48)
+                url: 'static/icons/' + item['raid']['pokemon_id'] + '.png',
+                scaledSize: new google.maps.Size(96, 96)
             }
         })
     } else if (item['raid'] !== null && item['raid']['battle'] > Date.now()) {
