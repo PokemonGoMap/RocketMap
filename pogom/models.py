@@ -2151,14 +2151,14 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
 
     if forts and (config['parse_pokestops'] or config['parse_gyms']):
         if config['parse_pokestops']:
-            stop_ids = [f['id'] for f in forts if f.get('type') == 1]
+            stop_ids = [f.get('id', 0) for f in forts if f.get('type') == 1]
             if stop_ids:
                 query = (Pokestop
                          .select(Pokestop.pokestop_id, Pokestop.last_modified)
                          .where((Pokestop.pokestop_id << stop_ids))
                          .dicts())
-                encountered_pokestops = [(f['pokestop_id'], int(
-                    (f['last_modified'] -
+                encountered_pokestops = [(f.get('pokestop_id', 0), int(
+                    (f.get('last_modified', 0) -
                      datetime(1970, 1, 1)).total_seconds())) for f in query]
 
         # Complete tutorial with a Pokestop spin
@@ -2175,17 +2175,17 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
             if config['parse_pokestops'] and f.get('type') == 1:  # Pokestops.
                 if 'active_fort_modifier' in f:
                     lure_expiration = (datetime.utcfromtimestamp(
-                        f['last_modified_timestamp_ms'] / 1000.0) +
+                        f.get('last_modified_timestamp_ms', 0) / 1000.0) +
                         timedelta(minutes=args.lure_duration))
-                    active_fort_modifier = f['active_fort_modifier']
+                    active_fort_modifier = f.get('active_fort_modifier', 0)
                     if args.webhooks and args.webhook_updates_only:
                         wh_update_queue.put(('pokestop', {
-                            'pokestop_id': b64encode(str(f['id'])),
-                            'enabled': f['enabled'],
-                            'latitude': f['latitude'],
-                            'longitude': f['longitude'],
-                            'last_modified_time': f[
-                                'last_modified_timestamp_ms'],
+                            'pokestop_id': b64encode(str(f.get('id', 0))),
+                            'enabled': f.get('enabled', 0),
+                            'latitude': f.get('latitude', 0),
+                            'longitude': f.get('longitude', 0),
+                            'last_modified_time': f.get(
+                                'last_modified_timestamp_ms', 0),
                             'lure_expiration': calendar.timegm(
                                 lure_expiration.timetuple()),
                             'active_fort_modifier': active_fort_modifier
@@ -2204,29 +2204,31 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                         l_e = calendar.timegm(lure_expiration.timetuple())
 
                     wh_update_queue.put(('pokestop', {
-                        'pokestop_id': b64encode(str(f['id'])),
-                        'enabled': f['enabled'],
-                        'latitude': f['latitude'],
-                        'longitude': f['longitude'],
-                        'last_modified_time': f['last_modified_timestamp_ms'],
+                        'pokestop_id': b64encode(str(f.get('id', 0))),
+                        'enabled': f.get('enabled', 0),
+                        'latitude': f.get('latitude', 0),
+                        'longitude': f.get('longitude', 0),
+                        'last_modified_time': f.get(
+                            'last_modified_timestamp_ms', 0),
                         'lure_expiration': l_e,
                         'active_fort_modifier': active_fort_modifier
                     }))
 
-                if ((f['id'], int(f['last_modified_timestamp_ms'] / 1000.0))
+                if ((f.get('id', 0), int(
+                        f.get('last_modified_timestamp_ms', 0) / 1000.0))
                         in encountered_pokestops):
                     # If pokestop has been encountered before and hasn't
                     # changed don't process it.
                     stopsskipped += 1
                     continue
 
-                pokestops[f['id']] = {
-                    'pokestop_id': f['id'],
+                pokestops[f.get('id', 0)] = {
+                    'pokestop_id': f.get('id', 0),
                     'enabled': f.get('enabled', 0),
-                    'latitude': f['latitude'],
-                    'longitude': f['longitude'],
+                    'latitude': f.get('latitude', 0),
+                    'longitude': f.get('longitude', 0),
                     'last_modified': datetime.utcfromtimestamp(
-                        f['last_modified_timestamp_ms'] / 1000.0),
+                        f.get('last_modified_timestamp_ms', 0) / 1000.0),
                     'lure_expiration': lure_expiration,
                     'active_fort_modifier': active_fort_modifier
                 }
@@ -2239,26 +2241,26 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                     # the information pushed to webhooks.  Similar to above
                     # and previous commits.
                     wh_update_queue.put(('gym', {
-                        'gym_id': b64encode(str(f['id'])),
+                        'gym_id': b64encode(str(f.get('id', 0))),
                         'team_id': f.get('owned_by_team', 0),
                         'guard_pokemon_id': f.get('guard_pokemon_id', 0),
                         'gym_points': f.get('gym_points', 0),
-                        'enabled': f['enabled'],
-                        'latitude': f['latitude'],
-                        'longitude': f['longitude'],
-                        'last_modified': f['last_modified_timestamp_ms']
+                        'enabled': f.get('enabled', 0),
+                        'latitude': f.get('latitude', 0),
+                        'longitude': f.get('longitude', 0),
+                        'last_modified': f.get('last_modified_timestamp_ms', 0)
                     }))
 
-                gyms[f['id']] = {
-                    'gym_id': f['id'],
+                gyms[f.get('id', 0)] = {
+                    'gym_id': f.get('id', 0),
                     'team_id': f.get('owned_by_team', 0),
                     'guard_pokemon_id': f.get('guard_pokemon_id', 0),
                     'gym_points': f.get('gym_points', 0),
-                    'enabled': f['enabled'],
-                    'latitude': f['latitude'],
-                    'longitude': f['longitude'],
+                    'enabled': f.get('enabled', 0),
+                    'latitude': f.get('latitude', 0),
+                    'longitude': f.get('longitude', 0),
                     'last_modified': datetime.utcfromtimestamp(
-                        f['last_modified_timestamp_ms'] / 1000.0),
+                        f.get('last_modified_timestamp_ms', 0) / 1000.0),
                 }
 
         # Helping out the GC.
