@@ -864,8 +864,9 @@ function setupGymMarker(item) {
             map: map,
             icon: {
                 url: 'static/icons/' + item['raid']['pokemon_id'] + '.png',
-                scaledSize: new google.maps.Size(96, 96)
-            }
+                scaledSize: new google.maps.Size(72, 72)
+            },
+            zIndex: 500
         })
     } else if (item['raid'] !== null && item['raid']['battle'] > Date.now()) {
         marker = new google.maps.Marker({
@@ -942,7 +943,8 @@ function updateGymMarker(item, marker) {
             url: 'static/icons/' + item['raid']['pokemon_id'] + '.png',
             scaledSize: new google.maps.Size(48, 48)
         })
-    } else if (item['raid'] !== null && item['raid']['battle'] > Date.now()) {
+        marker.setZIndex(500)
+    } else if (item['raid'] !== null && item['raid']['end'] > Date.now()) {
         marker.setIcon({
             url: 'static/raids/level_' + item['raid']['level'] + '.png',
             scaledSize: new google.maps.Size(48, 48)
@@ -952,6 +954,7 @@ function updateGymMarker(item, marker) {
             url: 'static/forts/' + Store.get('gymMarkerStyle') + '/' + gymTypes[item['team_id']] + '.png',
             scaledSize: new google.maps.Size(48, 48)
         })
+        marker.setZIndex(1)
     }
     marker.infoWindow.setContent(gymLabel(gymTypes[item['team_id']], item['team_id'], item['gym_points'], item['latitude'], item['longitude'], item['last_scanned'], item['last_modified'], item['name'], item['pokemon'], item['gym_id'], item['raid']))
     return marker
@@ -1871,6 +1874,28 @@ function showGymDetails(id) { // eslint-disable-line no-unused-vars
                 </div>
             </center>
         `
+        if (result.raid && result.raid.end > Date.now()) {
+            var raid = result.raid
+            var raidStartStr = getTimeStr(raid['start'])
+            var raidEndsStr = getTimeStr(raid['end'])
+            var levelStr = '★'.repeat(raid['level'])
+            headerHtml += `
+                    <center>
+                        <div>
+                            Raid: ${levelStr}
+                        </div>
+                        <div>
+                            <div style="margin-bottom: 10px">Time: <b>${raidStartStr}</b> - <b>${raidEndsStr}</b></div>
+                        </div>`
+            if (raid['pokemon_id'] !== null) {
+                var types = raid['pokemon_types']
+                var typesDisplay = ''
+                var pMove1 = (moves[raid['move_1']] !== undefined) ? i8ln(moves[raid['move_1']]['name']) : 'gen/unknown'
+                var pMove2 = (moves[raid['move_2']] !== undefined) ? i8ln(moves[raid['move_2']]['name']) : 'gen/unknown'
+
+                $.each(types, function (index, type) {
+                    typesDisplay += getTypeSpan(type)
+                })
 
         if (result.pokemon.length) {
             $.each(result.pokemon, function (i, pokemon) {

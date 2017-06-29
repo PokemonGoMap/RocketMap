@@ -733,14 +733,16 @@ class Gym(BaseModel):
 
             result['pokemon'].append(p)
 
-        try:
-            raid = (Raid.select().where(Raid.gym_id == id).dicts().get())
+        raids = (Raid.select().where(Raid.gym_id == id).dicts())
+
+        # Really it should always be only one.
+        if len(raids) > 0:
+            raid = raids[0]
             if raid['pokemon_id']:
                 raid['pokemon_name'] = get_pokemon_name(raid['pokemon_id'])
                 raid['pokemon_types'] = get_pokemon_types(raid['pokemon_id'])
             result['raid'] = raid
-        except Raid.DoesNotExist:
-            pass
+
         return result
 
 
