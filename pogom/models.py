@@ -650,8 +650,8 @@ class Gym(BaseModel):
                      .select(
                          Raid.gym_id,
                          Raid.level,
-                         Raid.battle,
-                         Raid.end,
+                         Raid.raid_start,
+                         Raid.raid_end,
                          Raid.pokemon_id,
                          Raid.cp,
                          Raid.move_1,
@@ -740,8 +740,8 @@ class Raid(BaseModel):
     gym_id = Utf8mb4CharField(primary_key=True, max_length=50)
     level = IntegerField(index=True)
     spawn = DateTimeField(index=True)
-    battle = DateTimeField(index=True)
-    end = DateTimeField(index=True)
+    raid_start = DateTimeField(index=True)
+    raid_end = DateTimeField(index=True)
     pokemon_id = SmallIntegerField(null=True)
     cp = IntegerField(null=True)
     move_1 = SmallIntegerField(null=True)
@@ -2297,6 +2297,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
 
             # Currently, there are only stops and gyms.
             elif config['parse_gyms'] and f.get('type') is None:
+                b64_gym_id = b64encode(str(f['id']))
                 # Send gyms to webhooks.
                 if args.webhooks and not args.webhook_updates_only:
                     # Explicitly set 'webhook_data', in case we want to change
@@ -2305,7 +2306,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                     gym_display = f.get('gym_display', {})
                     wh_update_queue.put(('gym', {
                         'gym_id':
-                            b64encode(str(f['id'])),
+                            b64_gym_id,
                         'team_id':
                             f.get('owned_by_team', 0),
                         'guard_pokemon_id':
@@ -2352,48 +2353,43 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                             f['last_modified_timestamp_ms'] / 1000.0),
                 }
 
-            # Only stops and gyms right now.
-            if config['parse_raids'] and f.get('type') is None:
-                raid_info = f.get('raid_info', {})
-                if raid_info:
-                    raids[f['id']] = {
-                        'gym_id': f['id'],
-                        'level': raid_info['raid_level'],
-                        'spawn': datetime.utcfromtimestamp(
-                            raid_info['raid_spawn_ms'] / 1000.0),
-                        'battle': datetime.utcfromtimestamp(
-                            raid_info['raid_battle_ms'] / 1000.0),
-                        'end': datetime.utcfromtimestamp(
-                            raid_info['raid_end_ms'] / 1000.0),
-                        'pokemon_id': None,
-                        'cp': None,
-                        'move_1': None,
-                        'move_2': None
-                    }
-
-                    raid_pokemon = raid_info.get('raid_pokemon', {})
-                    if raid_pokemon:
-                        raids[f['id']].update({
-                            'pokemon_id': raid_pokemon['pokemon_id'],
-                            'cp': raid_pokemon['cp'],
-                            'move_1': raid_pokemon['move_1'],
-                            'move_2': raid_pokemon['move_2']
-                        })
-
-                    if args.webhooks and not args.webhook_updates_only:
-                        wh_update_queue.put(('raid', {
-                            'gym_id': b64encode(str(raids[f['id']]['gym_id'])),
-                            'latitude': f['latitude'],
-                            'longitude': f['longitude'],
+                # Only stops and gyms right now.
+                if config['parse_raids'] and f.get('type') is None:
+                    raid_info = f.get('raid_info', {})
+                    if raid_info:
+                        raids[f['id']] = {
+                            'gym_id': f['id'],
                             'level': raid_info['raid_level'],
-                            'spawn': raid_info['raid_spawn_ms'],
-                            'battle': raid_info['raid_battle_ms'],
-                            'end': raid_info['raid_end_ms'],
-                            'pokemon_id': raid_info.get('pokemon_id', 0),
-                            'cp': raid_info.get('pokemon_id', 0),
-                            'move_1': raid_info.get('pokemon_id', 0),
-                            'move_2': raid_info.get('pokemon_id', 0)
-                        }))
+                            'spawn': datetime.utcfromtimestamp(
+                                raid_info['raid_spawn_ms'] / 1000.0),
+                            'raid_start': datetime.utcfromtimestamp(
+                                raid_info['raid_battle_ms'] / 1000.0),
+                            'raid_end': datetime.utcfromtimestamp(
+                                raid_info['raid_end_ms'] / 1000.0),
+                            'pokemon_id': None,
+                            'cp': None,
+                            'move_1': None,
+                            'move_2': None
+                        }
+
+                        raid_pokemon = raid_info.get('raid_pokemon', {})
+                        if raid_pokemon:
+                            raids[f['id']].update({
+                                'pokemon_id': raid_pokemon['pokemon_id'],
+                                'cp': raid_pokemon['cp'],
+                                'move_1': raid_pokemon['move_1'],
+                                'move_2': raid_pokemon['move_2']
+                            })
+
+                        if args.webhooks:
+                            wh_raid = raids[f['id']].clone()
+                            wh_raid.update({
+                                'gym_id': b64_gym_id,
+                                'spawn': raid_info['raid_spawn_ms'],
+                                'raid_start': raid_info['raid_battle_ms'],
+                                'raid_end': raid_info['raid_end_ms']
+                            })
+                            wh_update_queue.put('raid', wh_raid)
 
         # Helping out the GC.
         del forts
