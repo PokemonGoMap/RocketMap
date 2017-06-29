@@ -733,6 +733,14 @@ class Gym(BaseModel):
 
             result['pokemon'].append(p)
 
+        try:
+            raid = (Raid.select().where(Raid.gym_id == id).dicts().get())
+            if raid['pokemon_id']:
+                raid['pokemon_name'] = get_pokemon_name(raid['pokemon_id'])
+                raid['pokemon_types'] = get_pokemon_types(raid['pokemon_id'])
+            result['raid'] = raid
+        except Raid.DoesNotExist:
+            pass
         return result
 
 
@@ -2354,7 +2362,6 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                             f['last_modified_timestamp_ms'] / 1000.0),
                 }
 
-                # Only stops and gyms right now.
                 if config['parse_raids'] and f.get('type') is None:
                     raid_info = f.get('raid_info', {})
                     if raid_info:
