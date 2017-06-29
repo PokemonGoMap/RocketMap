@@ -2298,12 +2298,13 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
             # Currently, there are only stops and gyms.
             elif config['parse_gyms'] and f.get('type') is None:
                 b64_gym_id = b64encode(str(f['id']))
+                gym_display = f.get('gym_display', {})
+
                 # Send gyms to webhooks.
                 if args.webhooks and not args.webhook_updates_only:
                     # Explicitly set 'webhook_data', in case we want to change
                     # the information pushed to webhooks.  Similar to above
                     # and previous commits.
-                    gym_display = f.get('gym_display', {})
                     wh_update_queue.put(('gym', {
                         'gym_id':
                             b64_gym_id,
@@ -2339,9 +2340,9 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                     'gym_points':
                         f.get('gym_points', 0),
                     'slots_available':
-                        f['gym_display'].get('slots_available', 0),
+                        gym_display.get('slots_available', 0),
                     'total_cp':
-                        f['gym_display'].get('total_gym_cp', 0),
+                        gym_display.get('total_gym_cp', 0),
                     'enabled':
                         f['enabled'],
                     'latitude':

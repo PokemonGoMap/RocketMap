@@ -61,7 +61,8 @@ def wh_updater(args, queue, key_caches):
         'pokestop': 'pokestop_id',
         'pokemon': 'encounter_id',
         'gym': 'gym_id',
-        'gym_details': 'id'
+        'gym_details': 'id',
+        'raid': 'gym_id'
     }
 
     # Instantiate WH LFU caches for all cached types. We separate the caches
@@ -190,9 +191,11 @@ def __get_key_fields(whtype):
                     'individual_stamina', 'individual_defense',
                     'individual_attack', 'form', 'cp', 'pokemon_level'],
         'gym': ['team_id', 'guard_pokemon_id', 'gym_points', 'enabled',
-                'latitude', 'longitude', 'total_gym_cp',
+                'latitude', 'longitude', 'total_cp',
                 'lowest_pokemon_motivation', 'occupied_seconds'],
-        'gym_details': ['latitude', 'longitude', 'team', 'pokemon']
+        'gym_details': ['latitude', 'longitude', 'team', 'pokemon'],
+        'raid': ['spawn', 'start', 'end', 'pokemon_id', 'latitude',
+                 'longitude']
     }
 
     return key_fields.get(whtype, [])
