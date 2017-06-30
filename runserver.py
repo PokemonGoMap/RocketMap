@@ -307,7 +307,7 @@ def main():
         args.player_locale = gmaps_reverse_geolocate(
             args.gmaps_key,
             args.locale,
-            args.location)
+            position[1] + ', ' + position[2])
 
         # Gather the Pokemon!
 
