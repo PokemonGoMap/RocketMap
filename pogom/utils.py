@@ -969,8 +969,8 @@ def gmaps_reverse_geolocate(gmaps_key, locale, location):
     }
 
     try:
-        location = geolocator.reverse(location)
-        country_code = location[-1].raw['address_components'][-1]['short_name']
+        reverse = geolocator.reverse(location)
+        country_code = reverse[-1].raw['address_components'][-1]['short_name']
 
         try:
             timezone = geolocator.timezone(location)
@@ -981,9 +981,9 @@ def gmaps_reverse_geolocate(gmaps_key, locale, location):
         except Exception as e:
             log.exception('Exception on Google Timezone API. '
                           + 'Please check that you have Google Timezone API'
-                          + 'enabled for your API key '
-                          + '(https://developers.google.com/maps/documentation'
-                          + '/timezone/intro): %s.', e)
+                          + ' enabled for your API key'
+                          + ' (https://developers.google.com/maps/'
+                          + 'documentation/timezone/intro): %s.', e)
     except Exception as e:
         log.exception('Exception while obtaining player locale: %s.'
                       + ' Using default locale.', e)
