@@ -60,11 +60,10 @@ def setup_api(args, status, account):
 
 # Use API to check the login status, and retry the login if possible.
 def check_login(args, account, api, position, proxy_url):
-    total_req = 0
-    app_version = int(args.api_version.replace('.', '0'))
     # Logged in? Enough time left? Cool!
     if api._auth_provider and api._auth_provider._ticket_expire:
         remaining_time = api._auth_provider._ticket_expire / 1000 - time.time()
+
         if remaining_time > 60:
             log.debug(
                 'Credentials remain valid for another %f seconds.',
@@ -73,6 +72,7 @@ def check_login(args, account, api, position, proxy_url):
 
     # Try to login. Repeat a few times, but don't get stuck here.
     num_tries = 0
+
     # One initial try + login_retries.
     while num_tries < (args.login_retries + 1):
         try:
@@ -87,6 +87,7 @@ def check_login(args, account, api, position, proxy_url):
                     provider=account['auth_service'],
                     username=account['username'],
                     password=account['password'])
+            # Success!
             break
         except AuthException:
             num_tries += 1
@@ -105,37 +106,62 @@ def check_login(args, account, api, position, proxy_url):
 
     time.sleep(random.uniform(2, 4))
 
-    log.info('Starting RPC Login Sequence...')
-    try:  # 1 - Make an empty request to mimick real app behavior.
+    # Simulate login sequence.
+    rpc_login_sequence(args, api, account)
+
+
+# Simulate real app via login sequence.
+def rpc_login_sequence(args, api, account):
+    total_req = 0
+    app_version = int(args.api_version.replace('.', '0'))
+
+    # 1 - Make an empty request to mimick real app behavior.
+    log.debug('Starting RPC login sequence...')
+
+    try:
         request = api.create_request()
         request.call()
+
         total_req += 1
         time.sleep(random.uniform(.43, .97))
     except Exception as e:
-        log.exception('Login for account %s failed.' +
-                      ' Exception in call request: %s', account['username'],
-                      repr(e))
-        raise LoginSequenceFail('Failed during login sequence.')
+        log.exception('Login for account %s failed.'
+                      + ' Exception in call request: %s.',
+                      account['username'],
+                      e)
+        raise LoginSequenceFail('Failed during empty request in login'
+                                + ' sequence for account %s.',
+                                account['username'])
 
-    log.info('Trying to fetch Player...')
-    try:  # 2 - Get Player request.
+    # 2 - Get player information.
+    log.debug('Fetching player information...')
+
+    try:
         req = api.create_request()
+        # TODO: Replace with PR 2057's reverse geolocate.
         req.get_player(
             player_locale={
                 'country': 'US',
                 'language': 'en',
                 'timezone': 'America/Denver'})
         req.call()
+
         total_req += 1
         time.sleep(random.uniform(.53, 1.1))
     except Exception as e:
         log.exception('Login for account %s failed. Exception in ' +
-                      'Get Player request: %s', account['username'], repr(e))
-        raise LoginSequenceFail('Failed during login sequence.')
+                      'player request: %s.',
+                      account['username'],
+                      e)
+        raise LoginSequenceFail('Failed while retrieving player information in'
+                                + ' login sequence for account %s.',
+                                account['username'])
 
-    log.info('Trying to download Remote Config Version...')
-    try:  # 3 - Download Remote Config Version request.
-        old_config = account.get('remote_config', {})
+    # 3 - Get remote config version.
+    log.debug('Downloading remote config version...')
+    old_config = account.get('remote_config', {})
+
+    try:
         request = api.create_request()
         request.download_remote_config_version(platform=1,
                                                app_version=app_version)
@@ -145,104 +171,125 @@ def check_login(args, account, api, position, proxy_url):
         request.check_awarded_badges()
         request.download_settings()
         response = request.call()
-        total_req += 1
+
         parse_download_settings(account, response)
         parse_new_timestamp_ms(account, response)
+
+        total_req += 1
         time.sleep(random.uniform(.53, 1.1))
     except Exception as e:
-        log.exception('Error while downloading remote config: %s.', repr(e))
-        raise LoginSequenceFail('Failed during login sequence.')
+        log.exception('Error while downloading remote config: %s.', e)
+        raise LoginSequenceFail('Failed while getting remote config version in'
+                                + ' login sequence for account %s.',
+                                account['username'])
 
-    log.info('Trying to get Asset Diggest...')
-    # 4 - Get Asset Digest request.
+    # 4 - Get asset digest.
+    log.debug('Fetching asset digest...')
     config = account.get('remote_config', {})
+
     if config.get('asset_time', 0) > old_config.get('asset_time', 0):
         i = random.randint(0, 3)
         req_count = 0
         result = 2
         page_offset = 0
         page_timestamp = 0
-        time.sleep(random.uniform(.7, 1.2))
-        while result == 2:
-            try:
-                request = api.create_request()
-                request.get_asset_digest(
-                    platform=1,
-                    app_version=app_version,
-                    paginate=True,
-                    page_offset=page_offset,
-                    page_timestamp=page_timestamp)
-                request.check_challenge()
-                request.get_hatched_eggs()
-                request.get_inventory(last_timestamp_ms=account[
-                    'last_timestamp_ms'])
-                request.check_awarded_badges()
-                request.download_settings(hash=account[
-                    'remote_config']['hash'])
-                response = request.call()
-                parse_new_timestamp_ms(account, response)
-                req_count += 1
-                total_req += 1
-                if i > 2:
-                    time.sleep(random.uniform(1.4, 1.6))
-                    i = 0
-                else:
-                    i += 1
-                    time.sleep(random.uniform(.3, .5))
-                get_asset_digest = response['responses']['GET_ASSET_DIGEST']
-                result = get_asset_digest.get('result', 0)
-                page_offset = get_asset_digest.get('page_offset', 0)
-                page_timestamp = get_asset_digest.get('timestamp_ms', 0)
-                log.debug('Completed %d requests to get asset digest.',
-                          req_count)
 
+        time.sleep(random.uniform(.7, 1.2))
+
+        while result == 2:
+            request = api.create_request()
+            request.get_asset_digest(
+                platform=1,
+                app_version=app_version,
+                paginate=True,
+                page_offset=page_offset,
+                page_timestamp=page_timestamp)
+            request.check_challenge()
+            request.get_hatched_eggs()
+            request.get_inventory(last_timestamp_ms=account[
+                'last_timestamp_ms'])
+            request.check_awarded_badges()
+            request.download_settings(hash=account[
+                'remote_config']['hash'])
+            response = request.call()
+
+            parse_new_timestamp_ms(account, response)
+
+            req_count += 1
+            total_req += 1
+
+            if i > 2:
+                time.sleep(random.uniform(1.4, 1.6))
+                i = 0
+            else:
+                i += 1
+                time.sleep(random.uniform(.3, .5))
+
+            try:
+                # Re-use variable name. Also helps GC.
+                response = response['responses']['GET_ASSET_DIGEST']
             except KeyError:
                 break
 
-    log.info('Trying to download Items Templates...')
-    # 5 - Download Item Templates request.
+            result = response.get('result', 0)
+            page_offset = response.get('page_offset', 0)
+            page_timestamp = response.get('timestamp_ms', 0)
+            log.debug('Completed %d requests to get asset digest.',
+                      req_count)
+
+    # 5 - Get item templates.
+    log.debug('Fetching item templates...')
+
     if config.get('template_time', 0) > old_config.get('template_time', 0):
         i = random.randint(0, 3)
         req_count = 0
         result = 2
         page_offset = 0
         page_timestamp = 0
-        while result == 2:
-            try:
-                request = api.create_request()
-                request.download_item_templates(paginate=True,
-                                                page_offset=page_offset,
-                                                page_timestamp=page_timestamp)
-                request.check_challenge()
-                request.get_hatched_eggs()
-                request.get_inventory(last_timestamp_ms=account[
-                    'last_timestamp_ms'])
-                request.check_awarded_badges()
-                request.download_settings(hash=account[
-                    'remote_config']['hash'])
-                response = request.call()
-                parse_new_timestamp_ms(account, response)
-                req_count += 1
-                total_req += 1
-                if i > 2:
-                    time.sleep(random.uniform(1.4, 1.6))
-                    i = 0
-                else:
-                    i += 1
-                    time.sleep(random.uniform(.3, .5))
 
-                download_item_templates = response['responses'][
-                    'DOWNLOAD_ITEM_TEMPLATES']
-                result = download_item_templates.get('result', 0)
-                page_offset = download_item_templates.get('page_offset', 0)
-                page_timestamp = download_item_templates.get('timestamp_ms', 0)
-                log.debug('Completed %d requests to download' +
-                          ' Item Templates.', req_count)
+        while result == 2:
+            request = api.create_request()
+            request.download_item_templates(
+                paginate=True,
+                page_offset=page_offset,
+                page_timestamp=page_timestamp)
+            request.check_challenge()
+            request.get_hatched_eggs()
+            request.get_inventory(
+                last_timestamp_ms=account['last_timestamp_ms'])
+            request.check_awarded_badges()
+            request.download_settings(
+                hash=account['remote_config']['hash'])
+            response = request.call()
+
+            parse_new_timestamp_ms(account, response)
+
+            req_count += 1
+            total_req += 1
+
+            if i > 2:
+                time.sleep(random.uniform(1.4, 1.6))
+                i = 0
+            else:
+                i += 1
+                time.sleep(random.uniform(.25, .5))
+
+            try:
+                # Re-use variable name. Also helps GC.
+                response = response['responses']['DOWNLOAD_ITEM_TEMPLATES']
             except KeyError:
                 break
 
-    log.info('Trying to get Player Profile...')
-    try:  # 6 - Get Player Profile request.
+            result = response.get('result', 0)
+            page_offset = response.get('page_offset', 0)
+            page_timestamp = response.get('timestamp_ms', 0)
+            log.debug('Completed %d requests to download'
+                      + ' item templates.', req_count)
+
+    # 6 - Get player profile.
+    log.debug('Fetching player profile...')
+
+    try:
         request = api.create_request()
         request.get_player_profile()
         request.check_challenge()
@@ -252,18 +299,22 @@ def check_login(args, account, api, position, proxy_url):
         request.download_settings(hash=account['remote_config']['hash'])
         request.get_buddy_walked()
         response = request.call()
-        total_req += 1
-        parse_new_timestamp_ms(account, response)
-        time.sleep(random.uniform(.2, .3))
 
+        parse_new_timestamp_ms(account, response)
+
+        total_req += 1
+        time.sleep(random.uniform(.2, .3))
     except Exception as e:
-        log.exception('Login for account %s failed. Exception in ' +
-                      'Get Player Profile request: %s', account['username'],
-                      repr(e))
-        raise LoginSequenceFail('Failed during login sequence.')
+        log.exception('Login for account %s failed. Exception occurred ' +
+                      'while fetching player profile: %s.',
+                      account['username'],
+                      e)
+        raise LoginSequenceFail('Failed while getting player profile in'
+                                + ' login sequence for account %s.',
+                                account['username'])
 
     # Needs updated PGoApi to be used.
-    # log.info('Retrieving Store Items...')
+    # log.debug('Retrieving Store Items...')
     # try:  # 7 - Make an empty request to retrieve store items.
     #    request = api.create_request()
     #    request.get_store_items()
@@ -272,12 +323,14 @@ def check_login(args, account, api, position, proxy_url):
     #    time.sleep(random.uniform(.6, 1.1))
     # except Exception as e:
     #    log.exception('Login for account %s failed. Exception in ' +
-    #                  'retrieving Store Items: %s', account['username'],
-    #                  repr(e))
+    #                  'retrieving Store Items: %s.', account['username'],
+    #                  e)
     #    raise LoginSequenceFail('Failed during login sequence.')
 
-    log.info('Check if Account has leveled up and collect rewards...')
-    try:  # 8 - Check if there are level up rewards to claim.
+    # 8 - Check if there are level up rewards to claim.
+    log.debug('Checking if there are level up rewards to claim...')
+
+    try:
         request = api.create_request()
         request.level_up_rewards(level=account['level'])
         request.check_challenge()
@@ -288,18 +341,23 @@ def check_login(args, account, api, position, proxy_url):
         request.get_buddy_walked()
         request.get_inbox(is_history=True)
         response = request.call()
-        total_req += 1
+
         parse_new_timestamp_ms(account, response)
+
+        total_req += 1
         time.sleep(random.uniform(.45, .7))
-
     except Exception as e:
-        log.exception('Login for account %s failed. Exception in ' +
-                      'Level up rewards request: %s', account['username'],
-                      repr(e))
-        raise LoginSequenceFail('Failed during login sequence.')
+        log.exception('Login for account %s failed. Exception occurred ' +
+                      'while fetching level-up rewards: %s.',
+                      account['username'],
+                      e)
+        raise LoginSequenceFail('Failed while getting level-up rewards in'
+                                + ' login sequence for account %s.',
+                                account['username'])
 
-    log.info('RPC Login Sequence for account %s with %s requests successful.',
-             account['username'], total_req)
+    log.info('RPC login sequence for account %s successful with %s requests.',
+             account['username'],
+             total_req)
     time.sleep(random.uniform(10, 20))
 
 
@@ -577,8 +635,9 @@ def parse_download_settings(account, api_response):
 
         account['remote_config'] = download_settings
 
-        log.debug('Download settings for account %s: %s',
-                  account['username'], download_settings)
+        log.debug('Download settings for account %s: %s.',
+                  account['username'],
+                  download_settings)
         return True
 
 
