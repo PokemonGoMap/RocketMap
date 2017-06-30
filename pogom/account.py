@@ -138,12 +138,7 @@ def rpc_login_sequence(args, api, account):
 
     try:
         req = api.create_request()
-        # TODO: Replace with PR 2057's reverse geolocate.
-        req.get_player(
-            player_locale={
-                'country': 'US',
-                'language': 'en',
-                'timezone': 'America/Denver'})
+        req.get_player(player_locale=args.player_locale)
         req.call()
 
         total_req += 1
