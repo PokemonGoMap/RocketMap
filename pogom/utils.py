@@ -957,6 +957,7 @@ def calc_pokemon_level(cp_multiplier):
     return pokemon_level
 
 
+@memoize
 def gmaps_reverse_geolocate(gmaps_key, locale, location):
     # Find the reverse geolocation
     geolocator = GoogleV3(api_key=gmaps_key)
