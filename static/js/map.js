@@ -500,7 +500,8 @@ function pokemonLabel(item) {
     return contentstring
 }
 
-function gymLabel(teamName, teamId, gymPoints, latitude, longitude, lastScanned = null, lastModified = null, name = null, members = [], gymId) {
+function gymLabel(teamName, teamId, gymPoints, latitude, longitude, lastScanned = null,
+    lastModified = null, name = null, members = [], gymId, raid) {
     var memberStr = ''
     for (var i = 0; i < members.length; i++) {
         memberStr += `
@@ -531,19 +532,7 @@ function gymLabel(teamName, teamId, gymPoints, latitude, longitude, lastScanned 
                         <b style='color:rgba(${gymColor[teamId]})'>${teamName}</b><br>
                         <img height='70px' style='padding: 5px;' src='static/forts/${teamName}_large.png'>
                     </div>
-                    ${nameStr}
-                    <div>
-                        Location: ${latitude.toFixed(6)}, ${longitude.toFixed(7)}
-                    </div>
-                    <div>
-                        Last Scanned: ${lastScannedStr}
-                    </div>
-                    <div>
-                        Last Modified: ${lastModifiedStr}
-                    </div>
-                    ${directionsStr}
-                </center>
-            </div>`
+                    ${nameStr}`
     } else {
         str = `
             <div>
@@ -561,19 +550,68 @@ function gymLabel(teamName, teamId, gymPoints, latitude, longitude, lastScanned 
                     <div>
                         ${memberStr}
                     </div>
-                    <div>
-                        Location: ${latitude.toFixed(6)}, ${longitude.toFixed(7)}
-                    </div>
-                    <div>
-                        Last Scanned: ${lastScannedStr}
-                    </div>
-                    <div>
-                        Last Modified: ${lastModifiedStr}
-                    </div>
-                    ${directionsStr}
-                </center>
-            </div>`
+                    <br>`
     }
+
+    if (raid !== null && raid['battle'] > Date.now()) {
+        var nextRaidStr = getDateStr(raid['battle'])
+        str += `
+                    <div>
+                        Level: ${raid['level']}
+                    </div>
+                    <div>
+                        Raid Start: ${nextRaidStr}
+                    </div>
+                    <br>`
+    } else if (raid !== null && raid['battle'] < Date.now() && raid['end'] > Date.now() && raid['pokemon_id'] !== null) {
+        var raidEndsStr = getDateStr(raid['end'])
+        var types = raid['pokemon_types']
+        var typesDisplay = ''
+        var pMove1 = (moves[raid['move_1']] !== undefined) ? i8ln(moves[raid['move_1']]['name']) : 'gen/unknown'
+        var pMove2 = (moves[raid['move_2']] !== undefined) ? i8ln(moves[raid['move_2']]['name']) : 'gen/unknown'
+
+        $.each(types, function (index, type) {
+            typesDisplay += getTypeSpan(type)
+        })
+
+        str += `
+                <div>
+                    Level: ${raid['level']}
+                </div>
+                <div>
+                    <b>${raid['pokemon_name']}</b>
+                    <span> - </span>
+                    <small>
+                        <a href='http://www.pokemon.com/us/pokedex/${raid['pokemon_id']}' target='_blank' title='View in Pokedex'>#${raid['pokemon_id']}</a>
+                    </small>
+                    <span> - </span>
+                    <small>${typesDisplay}</small>
+                </div>
+                <div>
+                    CP: ${raid['cp']}
+                </div>
+                <div>
+                    Moves: ${pMove1} / ${pMove2}
+                </div>
+                <div>
+                    Raid End: ${raidEndsStr}
+                </div>
+                <br>`
+    }
+
+    str += `
+                <div>
+                    Location: ${latitude.toFixed(6)}, ${longitude.toFixed(7)}
+                </div>
+                <div>
+                    Last Scanned: ${lastScannedStr}
+                </div>
+                <div>
+                    Last Modified: ${lastModifiedStr}
+                </div>
+                ${directionsStr}
+            </center>
+        </div>`
 
     return str
 }
@@ -741,8 +779,11 @@ function getNotifyText(item) {
         item['individual_defense'], item['individual_stamina']]
     var ntitle = repArray(((iv) ? notifyIvTitle : notifyNoIvTitle), find, replace)
     var dist = (new Date(item['disappear_time'])).toLocaleString([], {
-        hour: '2-digit', minute: '2-digit',
-        second: '2-digit', hour12: false})
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+    })
     var until = getTimeUntil(item['disappear_time'])
     var udist = (until.hour > 0) ? until.hour + ':' : ''
     udist += lpad(until.min, 2, 0) + 'm' + lpad(until.sec, 2, 0) + 's'
@@ -816,24 +857,52 @@ function customizePokemonMarker(marker, item, skipNotification) {
 }
 
 function setupGymMarker(item) {
-    var marker = new google.maps.Marker({
-        position: {
-            lat: item['latitude'],
-            lng: item['longitude']
-        },
-        map: map,
-        icon: {
-            url: 'static/forts/' + Store.get('gymMarkerStyle') + '/' + gymTypes[item['team_id']] + (item['pokemon'].length !== 0 ? '_' + item['pokemon'].length : '') + '.png',
-            scaledSize: new google.maps.Size(48, 48)
-        }
-    })
+    var marker
+    if (item['raid'] !== null && item['raid']['battle'] < Date.now() && item['raid']['end'] > Date.now() && item['raid']['pokemon_id'] !== null) {
+        marker = new google.maps.Marker({
+            position: {
+                lat: item['latitude'],
+                lng: item['longitude']
+            },
+            map: map,
+            icon: {
+                url: 'static/icons/' + item['raid']['pokemon_id'] + '.png',
+                scaledSize: new google.maps.Size(72, 72)
+            },
+            zIndex: 500
+        })
+    } else if (item['raid'] !== null && item['raid']['battle'] > Date.now()) {
+        marker = new google.maps.Marker({
+            position: {
+                lat: item['latitude'],
+                lng: item['longitude']
+            },
+            map: map,
+            icon: {
+                url: 'static/raids/level_' + item['raid']['level'] + '.png',
+                scaledSize: new google.maps.Size(48, 48)
+            }
+        })
+    } else {
+        marker = new google.maps.Marker({
+            position: {
+                lat: item['latitude'],
+                lng: item['longitude']
+            },
+            map: map,
+            icon: {
+                url: 'static/forts/' + Store.get('gymMarkerStyle') + '/' + gymTypes[item['team_id']] + '.png',
+                scaledSize: new google.maps.Size(48, 48)
+            }
+        })
+    }
 
     if (!marker.rangeCircle && isRangeActive(map)) {
         marker.rangeCircle = addRangeCircle(marker, map, 'gym', item['team_id'])
     }
 
     marker.infoWindow = new google.maps.InfoWindow({
-        content: gymLabel(gymTypes[item['team_id']], item['team_id'], item['gym_points'], item['latitude'], item['longitude'], item['last_scanned'], item['last_modified'], item['name'], item['pokemon'], item['gym_id']),
+        content: gymLabel(gymTypes[item['team_id']], item['team_id'], item['gym_points'], item['latitude'], item['longitude'], item['last_scanned'], item['last_modified'], item['name'], item['pokemon'], item['gym_id'], item['raid']),
         disableAutoPan: true
     })
 
@@ -872,11 +941,25 @@ function setupGymMarker(item) {
 }
 
 function updateGymMarker(item, marker) {
-    marker.setIcon({
-        url: 'static/forts/' + Store.get('gymMarkerStyle') + '/' + gymTypes[item['team_id']] + (item['pokemon'].length !== 0 ? '_' + item['pokemon'].length : '') + '.png',
-        scaledSize: new google.maps.Size(48, 48)
-    })
-    marker.infoWindow.setContent(gymLabel(gymTypes[item['team_id']], item['team_id'], item['gym_points'], item['latitude'], item['longitude'], item['last_scanned'], item['last_modified'], item['name'], item['pokemon'], item['gym_id']))
+    if (item['raid'] !== null && item['raid']['battle'] < Date.now() && item['raid']['end'] > Date.now() && item['raid']['pokemon_id'] !== null) {
+        marker.setIcon({
+            url: 'static/icons/' + item['raid']['pokemon_id'] + '.png',
+            scaledSize: new google.maps.Size(48, 48)
+        })
+        marker.setZIndex(500)
+    } else if (item['raid'] !== null && item['raid']['end'] > Date.now()) {
+        marker.setIcon({
+            url: 'static/raids/level_' + item['raid']['level'] + '.png',
+            scaledSize: new google.maps.Size(48, 48)
+        })
+    } else {
+        marker.setIcon({
+            url: 'static/forts/' + Store.get('gymMarkerStyle') + '/' + gymTypes[item['team_id']] + '.png',
+            scaledSize: new google.maps.Size(48, 48)
+        })
+        marker.setZIndex(1)
+    }
+    marker.infoWindow.setContent(gymLabel(gymTypes[item['team_id']], item['team_id'], item['gym_points'], item['latitude'], item['longitude'], item['last_scanned'], item['last_modified'], item['name'], item['pokemon'], item['gym_id'], item['raid']))
     return marker
 }
 
@@ -1794,6 +1877,30 @@ function showGymDetails(id) { // eslint-disable-line no-unused-vars
                 </div>
             </center>
         `
+        if (result.raid && result.raid.end > Date.now()) {
+            var raid = result.raid
+            var raidStartStr = getTimeStr(raid['start'])
+            var raidEndsStr = getTimeStr(raid['end'])
+            var levelStr = '★'.repeat(raid['level'])
+            headerHtml += `
+                    <center>
+                        <div>
+                            Raid: ${levelStr}
+                        </div>
+                        <div>
+                            <div style="margin-bottom: 10px">Time: <b>${raidStartStr}</b> - <b>${raidEndsStr}</b></div>
+                        </div>`
+            if (raid['pokemon_id'] !== null) {
+                var types = raid['pokemon_types']
+                var typesDisplay = ''
+                var pMove1 = (moves[raid['move_1']] !== undefined) ? i8ln(moves[raid['move_1']]['name']) : 'gen/unknown'
+                var pMove2 = (moves[raid['move_2']] !== undefined) ? i8ln(moves[raid['move_2']]['name']) : 'gen/unknown'
+
+                $.each(types, function (index, type) {
+                    typesDisplay += getTypeSpan(type)
+                })
+            }
+        }
 
         if (result.pokemon.length) {
             $.each(result.pokemon, function (i, pokemon) {

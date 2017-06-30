@@ -1039,7 +1039,7 @@ def search_worker_thread(args, account_queue, account_sets,
                         # Can only get gym details within 450m of our position.
                         distance = calc_distance(
                             step_location, [gym['latitude'], gym['longitude']])
-                        if distance < 0.45:
+                        if distance < 1.0:
                             # Check if we already have details on this gym.
                             # Get them if not.
                             try:
