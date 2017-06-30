@@ -720,6 +720,19 @@ def get_args():
 
     return args
 
+def get_player_locale():
+    locale = {'country': 'US',
+                       'language': 'en',
+                       'timezone': 'America/Denver'}
+    try:
+        res = requests.get(url='http://freegeoip.net/json')
+        dict = json.loads(res.text)
+        locale['country'] = dict['country_code']
+        locale['timezone'] = dict['time_zone']
+    except Exception:
+        pass
+
+    return locale
 
 def now():
     # The fact that you need this helper...

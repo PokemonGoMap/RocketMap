@@ -11,7 +11,7 @@ from pgoapi import PGoApi
 from pgoapi.exceptions import AuthException
 
 from .fakePogoApi import FakePogoApi
-from .utils import in_radius, generate_device_info, equi_rect_distance
+from .utils import in_radius, generate_device_info, equi_rect_distance, get_player_locale
 from .proxy import get_new_proxy
 
 log = logging.getLogger(__name__)
@@ -20,6 +20,8 @@ log = logging.getLogger(__name__)
 class TooManyLoginAttempts(Exception):
     pass
 
+
+locale = get_player_locale()
 
 # Create the API object that'll be used to scan.
 def setup_api(args, status, account):
@@ -108,9 +110,7 @@ def get_tutorial_state(api, account):
     log.debug('Checking tutorial state for %s.', account['username'])
     request = api.create_request()
     request.get_player(
-        player_locale={'country': 'US',
-                       'language': 'en',
-                       'timezone': 'America/Denver'})
+        player_locale=locale)
 
     response = request.call().get('responses', {})
 
@@ -185,11 +185,7 @@ def complete_tutorial(api, account, tutorial_state):
 
         time.sleep(random.uniform(0.5, 0.6))
         request = api.create_request()
-        request.get_player(
-            player_locale={
-                'country': 'US',
-                'language': 'en',
-                'timezone': 'America/Denver'})
+        request.get_player(player_locale=locale)
         responses = request.call().get('responses', {})
 
         inventory = responses.get('GET_INVENTORY', {}).get(
