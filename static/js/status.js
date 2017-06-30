@@ -5,6 +5,7 @@ var groupByWorker = true
 var showHashTable = true
 var showWorkersTable = true
 var hashkeys = {}
+var showAccountTable = true
 
 // Raw data updating
 var minUpdateDelay = 1000 // Minimum delay between updates (in ms).
@@ -73,6 +74,29 @@ function addHashtable(mainKeyHash, keyHash) {
     </div>
     `
     $(hashrow).appendTo('#hashtable_' + mainKeyHash)
+}
+
+function addAccountRow(accountHash) {
+    var row = `
+     <div id="account_row_${accountHash}" class="status_row">
+       <div id="acc_name_${accountHash}" class="status_cell"/>
+       <div id="acc_login_type_${accountHash}" class="status_cell"/>
+       <div id="acc_total_scans_${accountHash}" class="status_cell"/>
+       <div id="acc_total_fails_${accountHash}" class="status_cell"/>
+       <div id="acc_fail_rate_${accountHash}" class="status_cell"/>
+       <div id="acc_total_empty_${accountHash}" class="status_cell"/>
+       <div id="acc_empty_rate_${accountHash}" class="status_cell"/>
+       <div id="acc_total_captcha_${accountHash}" class="status_cell"/>
+       <div id="acc_captcha_rate_${accountHash}" class="status_cell"/>
+       <div id="acc_total_success_${accountHash}" class="status_cell"/>
+       <div id="acc_success_rate_${accountHash}" class="status_cell"/>
+       <div id="acc_level_${accountHash}" class= "status_cell"/>
+       <div id="acc_warning_${accountHash}" class="status_cell"/>
+       <div id="acc_lastmod_${accountHash}" class="status_cell"/>
+     </div>
+   `
+
+    $(row).appendTo('#table_accounts')
 }
 
 function processWorker(i, worker) {
@@ -152,6 +176,33 @@ function processHashKeys(i, hashkey) {
     $('#expires_' + keyHash).html(expires)
 }
 
+function processAccounts(i, account) {
+    var hash = hashFnv32a(account['name'], true)
+    if ($('#table_accounts').length === 0) {
+        createAccountTable('accounts')
+    }
+
+    if ($('#account_row_' + hash).length === 0) {
+        addAccountRow(hash)
+    }
+
+    var lastModified = getFormattedDate(new Date(account['last_active']))
+
+    $('#acc_name_' + hash).html(account['name'])
+    $('#acc_login_type_' + hash).html(account['login_type'])
+    $('#acc_total_scans_' + hash).html(account['total_scans'])
+    $('#acc_total_fails_' + hash).html(account['total_fails'])
+    $('#acc_total_empty_' + hash).html(account['total_empty'])
+    $('#acc_fail_rate_' + hash).html(account['fail_rate'])
+    $('#acc_empty_rate_' + hash).html(account['empty_rate'])
+    $('#acc_captcha_rate_' + hash).html(account['captcha_rate'])
+    $('#acc_lastmod_' + hash).html(lastModified)
+    $('#acc_total_success_' + hash).html(account['total_success'])
+    $('#acc_success_rate_' + hash).html(account['success_rate'])
+    $('#acc_level_' + hash).html(account['level'])
+    $('#acc_total_captcha_' + hash).html(account['total_captcha'])
+    $('#acc_warning_' + hash).html(account['warning'])
+}
 function parseResult(result) {
     if (groupByWorker && showWorkersTable) {
         $.each(result.main_workers, processMainWorker)
@@ -161,6 +212,9 @@ function parseResult(result) {
     }
     if (showHashTable) {
         $.each(result.hashkeys, processHashKeys)
+    }
+    if (showAccountTable) {
+        $.each(result.accounts, processAccounts)
     }
 }
 /*
@@ -267,6 +321,61 @@ function tableSort() {
     for (var i = 0; i < rows.length; i++) {
         table.append(rows[i])
     }
+}
+
+function createAccountTable() {
+    var table = `
+     <div class="status_table" id="table_accounts">
+       <div class="status_row header">
+         <div class="status_cell">
+           Username
+         </div>
+         <div class="status_cell">
+           Type
+         </div>
+         <div class="status_cell">
+           Total Scans
+         </div>
+         <div class="status_cell">
+           Fails
+         </div>
+         <div class="status_cell">
+           Fails %
+         </div>
+         <div class="status_cell">
+           Empty
+         </div>
+         <div class="status_cell">
+           Empty %
+         </div>
+         <div class="status_cell">
+           Captcha
+         </div>
+         <div class="status_cell">
+           Captcha %
+         </div>
+         <div class="status_cell">
+           Success
+         </div>
+         <div class="status_cell">
+           Success %
+         </div>
+         <div class="status_cell">
+           Level
+         </div>
+         <div class="status_cell">
+           Warning
+         </div>
+         <div class="status_cell">
+           Last Used
+         </div>
+       </div>
+     </div>
+   `
+
+    table = $(table)
+    table.appendTo('#status_container')
+    table.find('.status_row.header .status_cell').click(tableSort)
 }
 
 function getCellValue(row, index) {
@@ -400,6 +509,13 @@ $(document).ready(function () {
 
     $('#showworker-switch').change(function () {
         showWorkersTable = this.checked
+
+        $('#status_container .status_table').remove()
+        $('#status_container .worker').remove()
+    })
+
+    $('#account-switch').change(function () {
+        showAccountTable = this.checked
 
         $('#status_container .status_table').remove()
         $('#status_container .worker').remove()

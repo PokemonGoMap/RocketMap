@@ -32,7 +32,8 @@ module.exports = function(grunt) {
           'static/dist/js/mobile.built.js': 'static/js/mobile.js',
           'static/dist/js/stats.built.js': 'static/js/stats.js',
           'static/dist/js/statistics.built.js': 'static/js/statistics.js',
-          'static/dist/js/status.built.js': 'static/js/status.js'
+          'static/dist/js/status.built.js': 'static/js/status.js',
+          'static/dist/js/accstatus.built.js': 'static/js/accstatus.js'
         }
       }
     },
@@ -52,7 +53,8 @@ module.exports = function(grunt) {
           'static/dist/js/mobile.min.js': 'static/dist/js/mobile.built.js',
           'static/dist/js/stats.min.js': 'static/dist/js/stats.built.js',
           'static/dist/js/statistics.min.js': 'static/dist/js/statistics.built.js',
-          'static/dist/js/status.min.js': 'static/dist/js/status.built.js'
+          'static/dist/js/status.min.js': 'static/dist/js/status.built.js',
+          'static/dist/js/accstatus.min.js': 'static/dist/js/accstatus.built.js'
         }
       }
     },

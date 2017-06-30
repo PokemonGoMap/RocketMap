@@ -84,6 +84,9 @@ def get_args():
                               + ' containing '
                               + '"auth_service,username,passwd"'
                               + ' lines.'))
+    parser.add_argument('-adb', '--accountdb', action='store_true',
+                        help=('Load accounts previously loaded into the ' +
+                              'database.'), default=False)
     parser.add_argument('-bh', '--beehive',
                         help=('Use beehive configuration for multiple ' +
                               'accounts, one account per hex.  Make sure ' +
@@ -458,7 +461,21 @@ def get_args():
         # password and auth_service arguments.
         # CSV file should have lines like "ptc,username,password",
         # "username,password" or "username".
-        if args.accountcsv is not None:
+
+        errors = []
+
+        if args.accountdb and args.accountcsv:
+            errors.append('You selected to load accounts from both csv ' +
+                          'and database. Please select only one source.')
+        if args.accountdb:
+
+            # can't seem to import models here so add fake account
+            # then do it later
+            args.username.append('database')
+            args.password.append('database')
+            args.auth_service.append('ptc')
+
+        elif args.accountcsv is not None:
             # Giving num_fields something it would usually not get.
             num_fields = -1
             with open(args.accountcsv, 'r') as f:
@@ -568,8 +585,6 @@ def get_args():
                               line + "', your " + field_error +
                               " was " + type_error)
                         sys.exit(1)
-
-        errors = []
 
         num_auths = len(args.auth_service)
         num_usernames = 0

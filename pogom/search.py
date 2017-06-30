@@ -43,12 +43,14 @@ from pgoapi.utilities import f2i
 from pgoapi import utilities as util
 from pgoapi.hash_server import (HashServer, BadHashRequestException,
                                 HashingOfflineException)
+from pgoapi.exceptions import BannedAccountException
 from .models import (parse_map, GymDetails, parse_gyms, MainWorker,
-                     WorkerStatus, HashKeys)
+                     WorkerStatus, HashKeys, Account, BadScans)
 from .utils import now, clear_dict_response
 from .transform import get_new_coords, jitter_location
 from .account import (setup_api, check_login, get_tutorial_state,
-                      complete_tutorial, AccountSet)
+                      complete_tutorial, AccountSet, get_player_level,
+                      check_account_warning, get_account_stats)
 from .captcha import captcha_overseer_thread, handle_captcha
 from .proxy import get_new_proxy
 
@@ -363,6 +365,9 @@ def search_overseer_thread(args, new_location_queue, pause_bit, heartb,
     to prevent accounts from being cycled through too quickly.
     '''
     for i, account in enumerate(args.accounts):
+        if not args.accountdb:
+            Account.add_account(db_updates_queue, account['username'],
+                                account['password'], account['auth_service'])
         account_queue.put(account)
 
     '''
@@ -939,6 +944,26 @@ def search_worker_thread(args, account_queue, account_sets,
                 if first_login:
                     first_login = False
 
+                    # Check if account has warning will also find bans
+                    try:
+                        warning_status = check_account_warning(api, account)
+
+                        if warning_status:
+                            log.warning('{} has the warning flag from Niantic'
+                                        .format(account['username']))
+                        else:
+                            log.info('{} does not have a warning flag'
+                                     .format(account['username']))
+                        Account.set_warning(account['username'],
+                                            warning_status, dbq)
+                        Account.set_banned(account['username'],
+                                           False, dbq)
+                    except BannedAccountException:
+                        log.error('{} is a Banned Account'
+                                  .format(account['username']))
+                        Account.set_ban(account['username'],
+                                        True, dbq)
+
                     # Check tutorial completion.
                     if args.complete_tutorial:
                         tutorial_state = get_tutorial_state(args, api, account)
@@ -968,11 +993,18 @@ def search_worker_thread(args, account_queue, account_sets,
                 status['latitude'] = step_location[0]
                 status['longitude'] = step_location[1]
                 dbq.put((WorkerStatus, {0: WorkerStatus.db_format(status)}))
+                account_stats = {}
 
                 # Nothing back. Mark it up, sleep, carry on.
                 if not response_dict:
                     status['fail'] += 1
                     consecutive_fails += 1
+                    Account.update_accounts(dbq, account['username'],
+                                            True, False, False, 0,
+                                            account_stats)
+                    BadScans.add_bad_scan(account['username'], 'fail',
+                                          step_location[0], step_location[1],
+                                          args.status_name, dbq)
                     status['message'] = messages['invalid']
                     log.error(status['message'])
                     time.sleep(scheduler.delay(status['last_scan_date']))
@@ -981,10 +1013,22 @@ def search_worker_thread(args, account_queue, account_sets,
                 # Got the response, check for captcha, parse it out, then send
                 # todo's to db/wh queues.
                 try:
+                    level = get_player_level(response_dict)
+                    log.debug(
+                        '{} level {}'.format(account['username'], level))
                     captcha = handle_captcha(args, status, api, account,
                                              account_failures,
                                              account_captchas, whq,
                                              response_dict, step_location)
+                    if captcha is not None:
+                        Account.update_accounts(dbq, account['username'],
+                                                False, False, True, level,
+                                                account_stats)
+                        BadScans.add_bad_scan(account['username'], 'captcha',
+                                              step_location[0],
+                                              step_location[1],
+                                              args.status_name, dbq)
+
                     if captcha is not None and captcha:
                         # Make another request for the same location
                         # since the previous one was captcha'd.
@@ -995,7 +1039,7 @@ def search_worker_thread(args, account_queue, account_sets,
                         account_queue.task_done()
                         time.sleep(3)
                         break
-
+                    account_stats = get_account_stats(response_dict)
                     parsed = parse_map(args, response_dict, step_location,
                                        dbq, whq, key_scheduler, api, status,
                                        scan_date, account, account_sets)
@@ -1004,9 +1048,19 @@ def search_worker_thread(args, account_queue, account_sets,
                     if parsed['count'] > 0:
                         status['success'] += 1
                         consecutive_noitems = 0
+                        Account.update_accounts(dbq, account['username'],
+                                                False, False, False, level,
+                                                account_stats)
                     else:
                         status['noitems'] += 1
                         consecutive_noitems += 1
+                        Account.update_accounts(dbq, account['username'],
+                                                False, True, False, level,
+                                                account_stats)
+                        BadScans.add_bad_scan(account['username'], 'empty',
+                                              step_location[0],
+                                              step_location[1],
+                                              args.status_name, dbq)
                     consecutive_fails = 0
                     status['message'] = ('Search at {:6f},{:6f} completed ' +
                                          'with {} finds.').format(
@@ -1024,6 +1078,13 @@ def search_worker_thread(args, account_queue, account_sets,
                                          'banned.').format(step_location[0],
                                                            step_location[1],
                                                            account['username'])
+                    Account.update_accounts(dbq, account['username'],
+                                            True, False, False, level,
+                                            account_stats)
+
+                    BadScans.add_bad_scan(account['username'], 'fail',
+                                          step_location[0], step_location[1],
+                                          args.status_name, dbq)
                     log.exception('{}. Exception message: {}'.format(
                         status['message'], repr(e)))
                     if response_dict is not None:

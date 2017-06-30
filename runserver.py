@@ -23,7 +23,7 @@ from pogom.altitude import get_gmaps_altitude
 
 from pogom.search import search_overseer_thread
 from pogom.models import (init_database, create_tables, drop_tables,
-                          Pokemon, db_updater, clean_db_loop,
+                          Pokemon, db_updater, clean_db_loop, Account,
                           verify_table_encoding, verify_database_schema)
 from pogom.webhook import wh_updater
 
@@ -225,6 +225,20 @@ def main():
     app.before_request(app.validate_request)
 
     db = init_database(app)
+
+    if args.accountdb:
+        accounts = Account.get_all()
+        args.accounts = []
+        for account in accounts:
+            if account['enabled']:
+                args.accounts.append({'username': account['name'],
+                                      'password': account['password'],
+                                      'auth_service': account['login_type']})
+        connections = args.db_max_connections
+        if len(args.accounts) > 0:
+            connections *= len(args.accounts)
+            db.max_connections = connections
+
     if args.clear_db:
         log.info('Clearing database')
         if args.db_type == 'mysql':

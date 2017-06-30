@@ -44,6 +44,8 @@ cache = TTLCache(maxsize=100, ttl=60 * 5)
 
 db_schema_version = 19
 
+rare_ids = [111, 2, 3, 5, 6, 8, 9, 10, 13, 21, 48, 133, 163, 216]
+
 
 class MyRetryDB(RetryOperationalError, PooledMySQLDatabase):
     pass
@@ -441,6 +443,265 @@ class Pokemon(BaseModel):
             location['time'] = cls.get_spawn_time(location['time'])
 
         return filtered
+
+
+class BadScans(BaseModel):
+    name = CharField(null=False)
+    scan_type = CharField(null=False)
+    scan_number = IntegerField(null=False)
+    lat = CharField(default='-1')
+    lon = CharField(default='-1')
+    status_name = CharField(default='')
+    time = DateTimeField(default=datetime.utcnow())
+
+    @staticmethod
+    def add_bad_scan(name, scan_type, lat, lon, status_name, db_update_queue):
+        query = Account.select().where(Account.name == name).dicts()
+        result = []
+        for i in query:
+            result.append(i)
+
+        if len(result) != 1:
+            log.error('You account db is borked')
+            return False
+
+        result = result[0]
+        scan_number = result['total_scans']
+        if not status_name:
+            status_name = "No Instance Name"
+        out = {'name': name,
+               'scan_type': scan_type,
+               'scan_number': scan_number,
+               'lat': lat,
+               'lon': lon,
+               'status_name': status_name,
+               'time': datetime.utcnow()}
+        out = {0: out}
+        db_update_queue.put((BadScans, out))
+
+        return True
+
+
+class Account(BaseModel):
+    name = CharField(primary_key=True, null=False)
+    password = CharField(null=False)
+    login_type = CharField(null=False)
+    total_scans = IntegerField(default=0)
+    total_spawns = IntegerField(default=0)
+    total_fails = IntegerField(default=0)
+    total_empty = IntegerField(default=0)
+    total_success = IntegerField(default=0)
+    total_captcha = IntegerField(default=0)
+    level = IntegerField(default=0)
+    warning = BooleanField(default=False, null=False)
+    banned = BooleanField(default=False, null=False)
+    enabled = BooleanField(default=True, null=False)
+    instance = CharField(null=True)
+    distance = IntegerField(default=0)
+    stops = IntegerField(default=0)
+    caught = IntegerField(default=0)
+    encounters = IntegerField(default=0)
+    last_rare = IntegerField(default=0)
+    missed_spawns = IntegerField(default=0)
+    last_active = DateTimeField(default=datetime.utcnow())
+
+    @classmethod
+    def enable_account(cls, name, db_update_queue):
+        account = cls.select().dicts().where(cls.name == name)
+        if account['enabled']:
+            return False
+        else:
+            account['enabled'] = True
+            db_update_queue.put((cls, account))
+            return True
+
+    @classmethod
+    def disable_account(cls, name, db_update_queue):
+        account = cls.select().dicts().where(cls.name == name)
+        if not account['enabled']:
+            return False
+        else:
+            account['enabled'] = False
+            db_update_queue.put((cls, account))
+            return True
+
+    @classmethod
+    def set_warning(cls, name, flag, db_update_queue):
+        account = cls.select().where(cls.name == name).dicts().get()
+        if account['warning'] != flag:
+            log.info('Changing account warning flag for {} to {}'.format(name,
+                                                                         flag))
+            account['warning'] = flag
+            output = {0: account}
+            db_update_queue.put((cls, output))
+        return True
+
+    @classmethod
+    def set_banned(cls, name, flag, db_update_queue):
+        account = cls.select().where(cls.name == name).dicts().get()
+        if account['banned'] != flag:
+            log.info('Changing account ban flag for {} to {}'.format(name,
+                     flag))
+            account['banned'] = flag
+            output = {0: account}
+            db_update_queue.put((cls, output))
+        return True
+
+    @classmethod
+    def set_rare_seen(cls, name):
+        q = cls.update(last_rare=cls.total_spawns).where(cls.name == name)
+        q.execute()
+
+    @classmethod
+    def increase_spawn_missed(cls, name):
+        q = (cls
+             .update(missed_spawns=cls.missed_spawns+1)
+             .where(cls.name == name))
+        q.execute()
+
+    @classmethod
+    def increase_total_spawns(cls, name, spawns):
+        q = (cls
+             .update(total_spawns=cls.total_spawns+spawns)
+             .where(cls.name == name))
+        q.execute()
+
+    @classmethod
+    def get_all_stats(cls):
+        raw = [m for m in cls.select().dicts()]
+        for i in range(0, len(raw)):
+
+            raw[i].pop('password', None)
+
+            if raw[i]['total_scans'] == 0:
+                raw[i]['fail_rate'] = '0'
+                raw[i]['empty_rate'] = '0'
+                raw[i]['captcha_rate'] = '0'
+                raw[i]['success_rate'] = '0'
+            else:
+                fr = float(raw[i]['total_fails'])
+                fr = fr / raw[i]['total_scans'] * 100
+                raw[i]['fail_rate'] = round(fr, 2)
+
+                er = float(raw[i]['total_empty'])
+                er = er / raw[i]['total_scans'] * 100
+                raw[i]['empty_rate'] = round(er, 2)
+
+                cr = float(raw[i]['total_captcha'])
+                cr = cr / raw[i]['total_scans'] * 100
+                raw[i]['captcha_rate'] = round(cr, 2)
+
+                sr = float(raw[i]['total_success'])
+                sr = sr / raw[i]['total_scans'] * 100
+                raw[i]['success_rate'] = round(sr, 2)
+
+        return raw
+
+    @staticmethod
+    def get_accounts():
+        query = Account.select().dicts()
+        return query
+
+    @staticmethod
+    def get_account_name(name):
+        query = Account.select().where(Account.name == name).dicts()
+        return query
+
+    @staticmethod
+    def get_account_id(account_id):
+        query = Account.select().where(
+            Account.account_id == account_id).dicts()
+        return query
+
+    @staticmethod
+    def update_accounts(db_update_queue, name, fail, empty, captcha, level,
+                        account_stats):
+
+        # check account exists
+        query = (Account.select().where(Account.name == name).dicts())
+        result = []
+        for i in query:
+            result.append(i)
+        if len(result) == 0:
+            log.error('Account {} does not exists can\'t update'.format(name))
+            return False
+
+        elif len(result) > 1:
+            log.error('Multiple accounts with the same name')
+            return False
+
+        # check not more than one of fail, empty or captcha are true
+        if (fail and empty) or (fail and captcha) or (captcha and empty):
+            log.error('Scan should not have multiple fail, empty or captcha')
+            return False
+
+        # set level
+        if level != 0:
+            result[0]['level'] = level
+
+        # add stats
+        if account_stats.get('stops', 0) != 0:
+            result[0]['stops'] = account_stats.get('stops')
+        if account_stats.get('caught', 0) != 0:
+            result[0]['caught'] = account_stats.get('caught')
+        if account_stats.get('walk', 0) != 0:
+            result[0]['distance'] = account_stats.get('walk')
+        if account_stats.get('enc', 0) != 0:
+            result[0]['encounters'] = account_stats.get('enc')
+
+        # add 1 to scans
+        result[0]['total_scans'] += 1
+        result[0]['last_active'] = datetime.utcnow()
+
+        # deal with fail case
+        if fail:
+            result[0]['total_fails'] += 1
+
+        # deal with empty case
+        elif empty:
+            result[0]['total_empty'] += 1
+
+        # deal with captcha case
+        elif captcha:
+            result[0]['total_captcha'] += 1
+
+        # must be a success
+        else:
+            result[0]['total_success'] += 1
+
+        out = {0: result[0]}
+        db_update_queue.put((Account, out))
+        return True
+
+    @staticmethod
+    def add_account(db_update_queue, name, password, account_type):
+
+        # check exists
+        query = Account.select().where(Account.name == name).dicts()
+
+        if len(query) != 0:
+            log.debug('The account {} already exists'.format(name))
+            return False
+
+        # check login type valid
+        validTypes = ['ptc', 'google']
+
+        if account_type not in validTypes:
+            log.error('Invalid account type: {}'.format(account_type))
+            return False
+
+        # add account
+        account = {
+            0: {
+                'name': name,
+                'password': password,
+                'login_type': account_type
+            }
+        }
+        db_update_queue.put((Account, account))
+        log.info('Added account: {}'.format(name))
+
+        return True
 
 
 class Pokestop(BaseModel):
@@ -1862,6 +2123,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
         encountered_pokemon = [
             (p['encounter_id'], p['spawnpoint_id']) for p in query]
 
+        Account.increase_total_spawns(account['username'], len(wild_pokemon))
         for p in wild_pokemon:
 
             sp = SpawnPoint.get_by_id(p['spawn_point_id'], p[
@@ -1876,6 +2138,10 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                 'scan_time': now_date,
                 'tth_secs': None
             }
+
+            # Update the Account info if this is a rare
+            if p['pokemon_data']['pokemon_id'] in rare_ids:
+                Account.set_rare_seen(account['username'])
 
             # Keep a list of sp_ids to return.
             sp_id_list.append(p['spawn_point_id'])
@@ -2289,6 +2555,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
             endpoints = SpawnPoint.start_end(sp, args.spawn_delay)
             if clock_between(endpoints[0], now_secs, endpoints[1]):
                 sp['missed_count'] += 1
+                Account.increase_spawn_missed(account['username'])
                 spawn_points[sp['id']] = sp
                 log.warning('%s kind spawnpoint %s has no Pokemon %d times'
                             ' in a row.',
@@ -2654,7 +2921,7 @@ def create_tables(db):
     tables = [Pokemon, Pokestop, Gym, ScannedLocation, GymDetails,
               GymMember, GymPokemon, Trainer, MainWorker, WorkerStatus,
               SpawnPoint, ScanSpawnPoint, SpawnpointDetectionData,
-              Token, LocationAltitude, HashKeys]
+              Token, LocationAltitude, HashKeys, Account, BadScans]
     for table in tables:
         if not table.table_exists():
             log.info('Creating table: %s', table.__name__)
@@ -2669,7 +2936,7 @@ def drop_tables(db):
               GymDetails, GymMember, GymPokemon, Trainer, MainWorker,
               WorkerStatus, SpawnPoint, ScanSpawnPoint,
               SpawnpointDetectionData, LocationAltitude,
-              Token, HashKeys]
+              Token, HashKeys, Account, BadScans]
     db.connect()
     db.execute_sql('SET FOREIGN_KEY_CHECKS=0;')
     for table in tables:
