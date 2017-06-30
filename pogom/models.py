@@ -2008,6 +2008,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                     # Encounter Pokémon.
                     encounter_result = encounter_pokemon_request(
                         hlvl_api,
+                        account,
                         p['encounter_id'],
                         p['spawn_point_id'],
                         scan_location)
