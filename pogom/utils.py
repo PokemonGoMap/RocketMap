@@ -15,6 +15,7 @@ import zipfile
 import requests
 from uuid import uuid4
 from s2sphere import CellId, LatLng
+from geopy.geocoders import GoogleV3
 
 from . import config
 
@@ -954,3 +955,36 @@ def calc_pokemon_level(cp_multiplier):
         pokemon_level = 171.0112688 * cp_multiplier - 95.20425243
     pokemon_level = int((round(pokemon_level) * 2) / 2)
     return pokemon_level
+
+
+def gmaps_reverse_geolocate(gmaps_key, locale, location):
+    # Find the reverse geolocation
+    geolocator = GoogleV3(api_key=gmaps_key)
+
+    player_locale = {
+        'country': 'US',
+        'language': locale,
+        'timezone': 'America/Denver'
+    }
+
+    try:
+        location = geolocator.reverse(location)
+        country_code = location[-1].raw['address_components'][-1]['short_name']
+
+        try:
+            timezone = geolocator.timezone(location)
+            player_locale.update({
+                'country': country_code,
+                'timezone': str(timezone)
+            })
+        except Exception as e:
+            log.exception('Exception on Google Timezone API. '
+                          + 'Please check that you have Google Timezone API'
+                          + 'enabled for your API key '
+                          + '(https://developers.google.com/maps/documentation'
+                          + '/timezone/intro): %s.', e)
+    except Exception as e:
+        log.exception('Exception while obtaining player locale: %s.'
+                      + ' Using default locale.', e)
+
+    return player_locale
