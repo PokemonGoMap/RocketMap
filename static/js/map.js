@@ -501,7 +501,7 @@ function pokemonLabel(item) {
 }
 
 function gymLabel(teamName, teamId, gymPoints, latitude, longitude, lastScanned = null,
-lastModified = null, name = null, members = [], gymId, raid) {
+    lastModified = null, name = null, members = [], gymId, raid) {
     var memberStr = ''
     for (var i = 0; i < members.length; i++) {
         memberStr += `
@@ -779,8 +779,11 @@ function getNotifyText(item) {
         item['individual_defense'], item['individual_stamina']]
     var ntitle = repArray(((iv) ? notifyIvTitle : notifyNoIvTitle), find, replace)
     var dist = (new Date(item['disappear_time'])).toLocaleString([], {
-        hour: '2-digit', minute: '2-digit',
-        second: '2-digit', hour12: false})
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+    })
     var until = getTimeUntil(item['disappear_time'])
     var udist = (until.hour > 0) ? until.hour + ':' : ''
     udist += lpad(until.min, 2, 0) + 'm' + lpad(until.sec, 2, 0) + 's'
@@ -1896,6 +1899,8 @@ function showGymDetails(id) { // eslint-disable-line no-unused-vars
                 $.each(types, function (index, type) {
                     typesDisplay += getTypeSpan(type)
                 })
+            }
+        }
 
         if (result.pokemon.length) {
             $.each(result.pokemon, function (i, pokemon) {
