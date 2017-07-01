@@ -43,7 +43,7 @@ This project uses Google Maps. Each instance of Google Maps requires an API key 
     - Google Maps Time Zone API - Enables time zone for a location
      - Click on 'Library'
      - Type 'Time Zone' into the search box ' Search all 100+ APIs'
-     - Choose GGoogle Maps Time Zone API
+     - Choose Google Maps Time Zone API
      - Click 'ENABLE'
 
 ## Using the API Key
