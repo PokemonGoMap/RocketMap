@@ -641,6 +641,8 @@ def parse_download_settings(account, api_response):
     if 'DOWNLOAD_REMOTE_CONFIG_VERSION' in api_response['responses']:
         remote_config = (api_response['responses']
                          .get('DOWNLOAD_REMOTE_CONFIG_VERSION', 0))
+        asset_time = 0
+        template_time = 0
         if 'asset_digest_timestamp_ms' in remote_config:
             asset_time = remote_config['asset_digest_timestamp_ms'] / 1000000
         if 'item_templates_timestamp_ms' in remote_config:
@@ -694,7 +696,9 @@ class AccountSet(object):
         self.next_lock = Lock()
 
     # Set manipulation.
-    def create_set(self, name, values=[]):
+    def create_set(self, name, values=None):
+        if values is None:
+            values = []
         if name in self.sets:
             raise Exception('Account set ' + name + ' is being created twice.')
 
