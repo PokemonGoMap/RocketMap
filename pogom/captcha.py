@@ -23,7 +23,7 @@ from threading import Thread
 from pgoapi import PGoApi
 from .fakePogoApi import FakePogoApi
 
-from .models import Token
+import models
 from .transform import jitter_location
 from .account import check_login
 from .proxy import get_new_proxy
@@ -42,7 +42,7 @@ def captcha_overseer_thread(args, account_queue, account_captchas,
 
         tokens_needed = len(account_captchas)
         if tokens_needed > 0:
-            tokens = Token.get_valid(tokens_needed)
+            tokens = models.Token.get_valid(tokens_needed)
             tokens_available = len(tokens)
             solvers = min(tokens_needed, tokens_available)
             log.debug('Captcha overseer running. Captchas: %d - Tokens: %d',

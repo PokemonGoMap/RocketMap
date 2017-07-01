@@ -34,7 +34,7 @@ from .transform import transform_from_wgs_to_gcj, get_new_coords
 from .customLog import printPokemon
 from .account import (tutorial_pokestop_spin, check_login, setup_api,
                       encounter_pokemon_request)
-import captcha
+from .captcha import automatic_captcha_solve
 
 log = logging.getLogger(__name__)
 
@@ -2040,10 +2040,9 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                                               'captcha': status['captcha'],
                                               'time': 0}
                                 wh_update_queue.put(('captcha', wh_message))
-                        elif len(captcha_url) > 1 and (
-                                captcha.automatic_captcha_solve(
+                        elif len(captcha_url) > 1 and automatic_captcha_solve(
                                 args, status, api, captcha_url, account,
-                                wh_update_queue)):
+                                wh_update_queue):
                             # Retry Pokemon encounter request.
                             encounter_result = encounter_pokemon_request(
                                 hlvl_api,
