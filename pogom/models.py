@@ -32,8 +32,8 @@ from .utils import (get_pokemon_name, get_pokemon_rarity, get_pokemon_types,
                     get_move_type, clear_dict_response, calc_pokemon_level)
 from .transform import transform_from_wgs_to_gcj, get_new_coords
 from .customLog import printPokemon
-from .account import (tutorial_pokestop_spin, get_player_level, check_login,
-                      setup_api, encounter_pokemon_request)
+from .account import (tutorial_pokestop_spin, check_login, setup_api,
+                      encounter_pokemon_request)
 import captcha
 
 log = logging.getLogger(__name__)
@@ -1791,7 +1791,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
     # and a list of forts.
     cells = map_dict['responses']['GET_MAP_OBJECTS']['map_cells']
     # Get the level for the pokestop spin, and to send to webhook.
-    level = get_player_level(map_dict)
+    level = account['level']
     # Use separate level indicator for our L30 encounters.
     encounter_level = level
 
@@ -2008,6 +2008,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                     # Make a Pokemon encounter request.
                     encounter_result = encounter_pokemon_request(
                         hlvl_api,
+                        account,
                         p['encounter_id'],
                         p['spawn_point_id'],
                         scan_location)
@@ -2053,21 +2054,13 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
 
                         status_code = responses['ENCOUNTER'].get(
                                         'status', 0)
-                        if status_code == 8:
+                        if status_code != 1:
                             # Flag account.
                             hlvl_account['failed'] = True
-                            log.error('Account %s has failed a encounter.'
-                                      + ' Received Anti-Cheat response ('
-                                      + 'a "%s" status response).',
-                                      hlvl_account['username'],
-                                      status_code)
-
-                        if status_code != 1:
                             log.error('Account %s has failed a encounter.'
                                       + ' Got a "%s" status response.',
                                       hlvl_account['username'],
                                       status_code)
-
                         # Clear the response for memory management.
                         encounter_result = clear_dict_response(
                             encounter_result)
