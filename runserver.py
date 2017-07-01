@@ -312,7 +312,7 @@ def main():
         else:
             log.info('Periodical proxies refresh disabled.')
 
-        # Update player locale.
+        # Update player locale if not set correctly, yet.
         if not args.player_locale:
             args.player_locale = gmaps_reverse_geolocate(
                 args.gmaps_key,

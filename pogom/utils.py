@@ -676,6 +676,7 @@ def get_args():
             with open(args.enc_whitelist_file) as f:
                 args.enc_whitelist = frozenset([int(l.strip()) for l in f])
 
+        # Check if manually set player locale is in correct format and use it.
         if args.player_locale and len(args.player_locale) == 3:
             player_locale = args.player_locale
             args.player_locale = {
@@ -683,6 +684,8 @@ def get_args():
                 'language': player_locale[1],
                 'timezone': player_locale[2]
             }
+        else:
+            args.player_locale = {}  # Get it via Google API in runserver.
 
         # Make max workers equal number of accounts if unspecified, and disable
         # account switching.
