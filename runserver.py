@@ -313,10 +313,11 @@ def main():
             log.info('Periodical proxies refresh disabled.')
 
         # Update player locale.
-        args.player_locale = gmaps_reverse_geolocate(
-            args.gmaps_key,
-            args.locale,
-            str(position[0]) + ', ' + str(position[1]))
+        if not args.player_locale:
+            args.player_locale = gmaps_reverse_geolocate(
+                args.gmaps_key,
+                args.locale,
+                str(position[0]) + ', ' + str(position[1]))
 
         # Gather the Pokemon!
 
