@@ -221,9 +221,6 @@ def get_args():
                               '{} for more).').format(config['LOCALE'],
                                                       config['LOCALES_DIR']),
                         default='en')
-    parser.add_argument('-pl', '--player-locale',
-                        help='Simulated locale for searching workers.',
-                        default=[], action='append')
     parser.add_argument('-c', '--china',
                         help='Coordinates transformer for China.',
                         action='store_true')
@@ -675,17 +672,6 @@ def get_args():
         if args.enc_whitelist_file:
             with open(args.enc_whitelist_file) as f:
                 args.enc_whitelist = frozenset([int(l.strip()) for l in f])
-
-        # Check if manually set player locale is in correct format and use it.
-        if args.player_locale and len(args.player_locale) == 3:
-            player_locale = args.player_locale
-            args.player_locale = {
-                'country': player_locale[0],
-                'language': player_locale[1],
-                'timezone': player_locale[2]
-            }
-        else:
-            args.player_locale = {}  # Get it via Google API in runserver.
 
         # Make max workers equal number of accounts if unspecified, and disable
         # account switching.
