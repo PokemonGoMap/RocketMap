@@ -28,7 +28,7 @@ This project uses Google Maps. Each instance of Google Maps requires an API key 
 5. Enable five Google Maps APIs
    - Google Maps Javascript API - Enables Displaying of Map
      - Click on 'Library'
-	 - Type 'JavaScript' in the search box
+     - Type 'JavaScript' in the search box
      - Choose 'Google Maps Javascript API'
      - Click 'ENABLE'
    - Google Places API Web Service - Enables Location Searching
