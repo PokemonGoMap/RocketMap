@@ -364,7 +364,8 @@ def spin_pokestop_request(api, account, fort, step_location):
         return False
 
 
-def encounter_pokemon_request(api, encounter_id, spawnpoint_id, scan_location):
+def encounter_pokemon_request(api, account, encounter_id, spawnpoint_id,
+                              scan_location):
     try:
         # Setup encounter request envelope.
         req = api.create_request()
@@ -379,9 +380,9 @@ def encounter_pokemon_request(api, encounter_id, spawnpoint_id, scan_location):
         req.check_awarded_badges()
         req.get_buddy_walked()
         req.get_inbox(is_history=True)
-        encounter_result = req.call()
-
-        return encounter_result
+        response = req.call()
+        parse_new_timestamp_ms(account, response)
+        return response
     except Exception as e:
         log.exception('Exception while encountering Pokémon: %s.', repr(e))
         return False

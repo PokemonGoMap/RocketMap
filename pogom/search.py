@@ -47,8 +47,8 @@ from .models import (parse_map, GymDetails, parse_gyms, MainWorker,
 from .utils import now, clear_dict_response
 from .transform import get_new_coords, jitter_location
 from .account import (setup_api, check_login, get_tutorial_state,
-					  AccountSet, parse_new_timestamp_ms,
-					  reset_account, cleanup_account_stats)
+                      complete_tutorial, AccountSet, parse_new_timestamp_ms,
+                      reset_account, cleanup_account_stats)
 from .captcha import captcha_overseer_thread, handle_captcha
 from .proxy import get_new_proxy
 

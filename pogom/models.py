@@ -34,8 +34,8 @@ from .utils import (get_pokemon_name, get_pokemon_rarity, get_pokemon_types,
 from .transform import transform_from_wgs_to_gcj, get_new_coords
 from .customLog import printPokemon
 
-from .account import (tutorial_pokestop_spin, get_player_level, check_login,
-                      setup_api, encounter_pokemon_request, pokestop_spinnable,
+from .account import (tutorial_pokestop_spin, check_login, setup_api,
+                      encounter_pokemon_request, pokestop_spinnable,
                       spinning_try)
 
 log = logging.getLogger(__name__)
