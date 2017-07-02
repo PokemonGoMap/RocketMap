@@ -118,8 +118,256 @@ def check_login(args, account, api, position, proxy_url):
             account['username'], num_tries)
         raise TooManyLoginAttempts('Exceeded login attempts.')
 
-    log.debug('Login for account %s successful.', account['username'])
-    time.sleep(20)
+    time.sleep(random.uniform(2, 4))
+
+    # Simulate login sequence.
+    rpc_login_sequence(args, api, account)
+
+
+# Simulate real app via login sequence.
+def rpc_login_sequence(args, api, account):
+    total_req = 0
+    app_version = int(args.api_version.replace('.', '0'))
+
+    # 1 - Make an empty request to mimick real app behavior.
+    log.debug('Starting RPC login sequence...')
+
+    try:
+        request = api.create_request()
+        request.call()
+
+        total_req += 1
+        time.sleep(random.uniform(.43, .97))
+    except Exception as e:
+        log.exception('Login for account %s failed.'
+                      + ' Exception in call request: %s.',
+                      account['username'],
+                      e)
+        raise LoginSequenceFail('Failed during empty request in login'
+                                + ' sequence for account %s.',
+                                account['username'])
+
+    # 2 - Get player information.
+    log.debug('Fetching player information...')
+
+    try:
+        req = api.create_request()
+        req.get_player(player_locale=args.player_locale)
+        req.call()
+
+        total_req += 1
+        time.sleep(random.uniform(.53, 1.1))
+    except Exception as e:
+        log.exception('Login for account %s failed. Exception in ' +
+                      'player request: %s.',
+                      account['username'],
+                      e)
+        raise LoginSequenceFail('Failed while retrieving player information in'
+                                + ' login sequence for account %s.',
+                                account['username'])
+
+    # 3 - Get remote config version.
+    log.debug('Downloading remote config version...')
+    old_config = account.get('remote_config', {})
+
+    try:
+        request = api.create_request()
+        request.download_remote_config_version(platform=1,
+                                               app_version=app_version)
+        request.check_challenge()
+        request.get_hatched_eggs()
+        request.get_inventory(last_timestamp_ms=0)
+        request.check_awarded_badges()
+        request.download_settings()
+        response = request.call()
+
+        parse_download_settings(account, response)
+        parse_new_timestamp_ms(account, response)
+
+        total_req += 1
+        time.sleep(random.uniform(.53, 1.1))
+    except Exception as e:
+        log.exception('Error while downloading remote config: %s.', e)
+        raise LoginSequenceFail('Failed while getting remote config version in'
+                                + ' login sequence for account %s.',
+                                account['username'])
+
+    # 4 - Get asset digest.
+    log.debug('Fetching asset digest...')
+    config = account.get('remote_config', {})
+
+    if config.get('asset_time', 0) > old_config.get('asset_time', 0):
+        i = random.randint(0, 3)
+        req_count = 0
+        result = 2
+        page_offset = 0
+        page_timestamp = 0
+
+        time.sleep(random.uniform(.7, 1.2))
+
+        while result == 2:
+            request = api.create_request()
+            request.get_asset_digest(
+                platform=1,
+                app_version=app_version,
+                paginate=True,
+                page_offset=page_offset,
+                page_timestamp=page_timestamp)
+            request.check_challenge()
+            request.get_hatched_eggs()
+            request.get_inventory(last_timestamp_ms=account[
+                'last_timestamp_ms'])
+            request.check_awarded_badges()
+            request.download_settings(hash=account[
+                'remote_config']['hash'])
+            response = request.call()
+
+            parse_new_timestamp_ms(account, response)
+
+            req_count += 1
+            total_req += 1
+
+            if i > 2:
+                time.sleep(random.uniform(1.4, 1.6))
+                i = 0
+            else:
+                i += 1
+                time.sleep(random.uniform(.3, .5))
+
+            try:
+                # Re-use variable name. Also helps GC.
+                response = response['responses']['GET_ASSET_DIGEST']
+            except KeyError:
+                break
+
+            result = response.get('result', 0)
+            page_offset = response.get('page_offset', 0)
+            page_timestamp = response.get('timestamp_ms', 0)
+            log.debug('Completed %d requests to get asset digest.',
+                      req_count)
+
+    # 5 - Get item templates.
+    log.debug('Fetching item templates...')
+
+    if config.get('template_time', 0) > old_config.get('template_time', 0):
+        i = random.randint(0, 3)
+        req_count = 0
+        result = 2
+        page_offset = 0
+        page_timestamp = 0
+
+        while result == 2:
+            request = api.create_request()
+            request.download_item_templates(
+                paginate=True,
+                page_offset=page_offset,
+                page_timestamp=page_timestamp)
+            request.check_challenge()
+            request.get_hatched_eggs()
+            request.get_inventory(
+                last_timestamp_ms=account['last_timestamp_ms'])
+            request.check_awarded_badges()
+            request.download_settings(
+                hash=account['remote_config']['hash'])
+            response = request.call()
+
+            parse_new_timestamp_ms(account, response)
+
+            req_count += 1
+            total_req += 1
+
+            if i > 2:
+                time.sleep(random.uniform(1.4, 1.6))
+                i = 0
+            else:
+                i += 1
+                time.sleep(random.uniform(.25, .5))
+
+            try:
+                # Re-use variable name. Also helps GC.
+                response = response['responses']['DOWNLOAD_ITEM_TEMPLATES']
+            except KeyError:
+                break
+
+            result = response.get('result', 0)
+            page_offset = response.get('page_offset', 0)
+            page_timestamp = response.get('timestamp_ms', 0)
+            log.debug('Completed %d requests to download'
+                      + ' item templates.', req_count)
+
+    # 6 - Get player profile.
+    log.debug('Fetching player profile...')
+
+    try:
+        request = api.create_request()
+        request.get_player_profile()
+        request.check_challenge()
+        request.get_hatched_eggs()
+        request.get_inventory(last_timestamp_ms=account['last_timestamp_ms'])
+        request.check_awarded_badges()
+        request.download_settings(hash=account['remote_config']['hash'])
+        request.get_buddy_walked()
+        response = request.call()
+
+        parse_new_timestamp_ms(account, response)
+
+        total_req += 1
+        time.sleep(random.uniform(.2, .3))
+    except Exception as e:
+        log.exception('Login for account %s failed. Exception occurred ' +
+                      'while fetching player profile: %s.',
+                      account['username'],
+                      e)
+        raise LoginSequenceFail('Failed while getting player profile in'
+                                + ' login sequence for account %s.',
+                                account['username'])
+
+    # Needs updated PGoApi to be used.
+    # log.debug('Retrieving Store Items...')
+    # try:  # 7 - Make an empty request to retrieve store items.
+    #    request = api.create_request()
+    #    request.get_store_items()
+    #    response = request.call()
+    #    total_req += 1
+    #    time.sleep(random.uniform(.6, 1.1))
+    # except Exception as e:
+    #    log.exception('Login for account %s failed. Exception in ' +
+    #                  'retrieving Store Items: %s.', account['username'],
+    #                  e)
+    #    raise LoginSequenceFail('Failed during login sequence.')
+
+    # 8 - Check if there are level up rewards to claim.
+    log.debug('Checking if there are level up rewards to claim...')
+
+    try:
+        request = api.create_request()
+        request.level_up_rewards(level=account['level'])
+        request.check_challenge()
+        request.get_hatched_eggs()
+        request.get_inventory(last_timestamp_ms=account['last_timestamp_ms'])
+        request.check_awarded_badges()
+        request.download_settings(hash=account['remote_config']['hash'])
+        request.get_buddy_walked()
+        request.get_inbox(is_history=True)
+        response = request.call()
+
+        parse_new_timestamp_ms(account, response)
+
+        total_req += 1
+        time.sleep(random.uniform(.45, .7))
+    except Exception as e:
+        log.exception('Login for account %s failed. Exception occurred ' +
+                      'while fetching level-up rewards: %s.',
+                      account['username'],
+                      e)
+        raise LoginSequenceFail('Failed while getting level-up rewards in'
+                                + ' login sequence for account %s.',
+                                account['username'])
+
+    log.info('RPC login sequence for account %s successful with %s requests.',
+             account['username'],
+             total_req)
+    time.sleep(random.uniform(10, 20))
 
 
 # Check if all important tutorial steps have been completed.
@@ -287,35 +535,18 @@ def get_player_level(map_dict):
     return 0
 
 
-def get_inventory_items(map_dict):
-    inventory_items_response = map_dict['responses'][
-        'GET_INVENTORY']['inventory_delta']['inventory_items']
-
-    inventory_items = []
-    if len(inventory_items_response) > 0:
-        inventory_items = ([item['inventory_item_data']['item']
-                           for item in inventory_items_response
-                           if 'item' in item.get('inventory_item_data', {})])
-
-        if len(inventory_items) > 0:
-            return inventory_items
-
-    return False
-
-
 def spin_pokestop(api, account, fort, step_location):
     spinning_radius = 0.04
     if in_radius((fort.latitude, fort.longitude), step_location,
                  spinning_radius):
-        log.debug('Attempt to spin Pokestop (ID %s).', fort.id)
-
+        log.debug('Attempt to spin Pokestop (ID %s)', fort['id'])
         time.sleep(random.uniform(0.8, 1.8))  # Do not let Niantic throttle
         response = spin_pokestop_request(api, account, fort, step_location)
         time.sleep(random.uniform(2, 4))  # Don't let Niantic throttle.
 
         # Check for reCaptcha
-        captcha_url = response['responses']['CHECK_CHALLENGE'][
-            'challenge_url']
+        captcha_url = response['responses'][
+            'CHECK_CHALLENGE']['challenge_url']
         if len(captcha_url) > 1:
             log.debug('Account encountered a reCaptcha.')
             return False
@@ -351,16 +582,16 @@ def spin_pokestop_request(api, account, fort, step_location):
             player_longitude=step_location[1])
         req.check_challenge()
         req.get_hatched_eggs()
-        req.get_inventory()
+        req.get_inventory(last_timestamp_ms=account['last_timestamp_ms'])
         req.check_awarded_badges()
         req.get_buddy_walked()
         req.get_inbox(is_history=True)
-        spin_pokestop_response = req.call()
-
-        return spin_pokestop_response
+        response = req.call()
+        parse_new_timestamp_ms(account, response)
+        return response
 
     except Exception as e:
-        log.error('Exception while spinning Pokestop: %s.', repr(e))
+        log.exception('Exception while spinning Pokestop: %s.', repr(e))
         return False
 
 
