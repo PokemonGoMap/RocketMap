@@ -51,6 +51,7 @@ import geopy
 import json
 import time
 import sys
+import requests
 from timeit import default_timer
 from threading import Lock
 from copy import deepcopy
@@ -59,6 +60,7 @@ from collections import Counter
 from queue import Empty
 from operator import itemgetter
 from datetime import datetime, timedelta
+from requests.exceptions import Timeout
 from .transform import get_new_coords
 from .models import (hex_bounds, Pokemon, SpawnPoint, ScannedLocation,
                      ScanSpawnPoint, HashKeys)
@@ -1159,7 +1161,8 @@ class KeyScheduler(object):
     def __init__(self, keys, db_updates_queue):
         self.keys = {}
         for key in keys:
-            # TODO: If you find a better way to do the hash key check, please say it.
+            # TODO: If you find a better way to do the hash key check, please 
+            # say it. It's better for everyone that way.
             try:
                 # TODO: Translate api-version flag into hash URL
                 r = requests.post(url='https://pokehash.buddyauth.com/api/v137_1/hash', data={
@@ -1170,7 +1173,10 @@ class KeyScheduler(object):
                     'AuthTicket': 'dG90bw==',
                     'SessionData': 'dG90bw==',
                     'Requests': []
-                }, headers={'Content-Type': 'application/json', 'X-AuthToken': key}, timeout=5)
+                }, headers={
+                    'Content-Type': 'application/json', 
+                    'X-AuthToken': key
+                }, timeout=5)
 
                 if r.status_code == 200:
                     self.keys[key] = {
@@ -1180,11 +1186,15 @@ class KeyScheduler(object):
                         'expires': r.headers.get('x-authtokenexpiration')
                     }
                 elif r.status_code == 401:
-                    log.warning('Hash key "{}" appears invalid or expired, not adding into queue.'.format(key))
+                    log.warning('Hash key "{}" appears invalid or expired,' + 
+                                'not adding into queue.'.format(key))
                 else:
-                    log.error('Invalid HTTP status code received from key check: {}. Check if hashing is down.'.format(r.status_code))
+                    log.error('Invalid HTTP status code received from ' + 
+                              'key check: {}. Check if hashing is down.'
+                              .format(r.status_code))
             except Timeout:
-                log.warning('Hashing check request timed out, adding key to queue anyways.')
+                log.warning('Hashing check request timed out, adding key '+ 
+                            'to queue anyways.')
 
         self.key_cycle = itertools.cycle(keys)
         self.curr_key = ''
