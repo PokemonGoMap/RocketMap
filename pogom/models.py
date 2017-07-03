@@ -628,7 +628,6 @@ class Gym(BaseModel):
                                           Trainer.name))
                        .where(GymMember.gym_id << gym_ids)
                        .where(GymMember.last_scanned > Gym.last_modified)
-                       .order_by(GymMember.gym_id, GymMember.cp_decayed)
                        .distinct()
                        .dicts())
 
@@ -647,19 +646,9 @@ class Gym(BaseModel):
                 gyms[d['gym_id']]['name'] = d['name']
 
             raids = (Raid
-                     .select(
-                         Raid.gym_id,
-                         Raid.level,
-                         Raid.raid_start,
-                         Raid.raid_end,
-                         Raid.pokemon_id,
-                         Raid.cp,
-                         Raid.move_1,
-                         Raid.move_2)
+                     .select()
                      .join(Gym, on=(Raid.gym_id == Gym.gym_id))
                      .where(Raid.gym_id << gym_ids)
-                     .order_by(Raid.gym_id, Raid.battle)
-                     .distinct()
                      .dicts())
 
             for r in raids:
@@ -750,8 +739,8 @@ class Raid(BaseModel):
     gym_id = Utf8mb4CharField(primary_key=True, max_length=50)
     level = IntegerField(index=True)
     spawn = DateTimeField(index=True)
-    raid_start = DateTimeField(index=True)
-    raid_end = DateTimeField(index=True)
+    start = DateTimeField(index=True)
+    end = DateTimeField(index=True)
     pokemon_id = SmallIntegerField(null=True)
     cp = IntegerField(null=True)
     move_1 = SmallIntegerField(null=True)
@@ -2347,8 +2336,6 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                         f.get('owned_by_team', 0),
                     'guard_pokemon_id':
                         f.get('guard_pokemon_id', 0),
-                    'gym_points':
-                        f.get('gym_points', 0),
                     'slots_available':
                         gym_display.get('slots_available', 0),
                     'total_cp':
@@ -2372,9 +2359,9 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                             'level': raid_info['raid_level'],
                             'spawn': datetime.utcfromtimestamp(
                                 raid_info['raid_spawn_ms'] / 1000.0),
-                            'raid_start': datetime.utcfromtimestamp(
+                            'start': datetime.utcfromtimestamp(
                                 raid_info['raid_battle_ms'] / 1000.0),
-                            'raid_end': datetime.utcfromtimestamp(
+                            'end': datetime.utcfromtimestamp(
                                 raid_info['raid_end_ms'] / 1000.0),
                             'pokemon_id': None,
                             'cp': None,
@@ -2396,10 +2383,12 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                             wh_raid.update({
                                 'gym_id': b64_gym_id,
                                 'spawn': raid_info['raid_spawn_ms'],
-                                'raid_start': raid_info['raid_battle_ms'],
-                                'raid_end': raid_info['raid_end_ms']
+                                'start': raid_info['raid_battle_ms'],
+                                'end': raid_info['raid_end_ms'],
+                                'latitude': f['latitude'],
+                                'longitude': f['longitude']
                             })
-                            wh_update_queue.put('raid', wh_raid)
+                            wh_update_queue.put(('raid', wh_raid))
 
         # Helping out the GC.
         del forts
@@ -2534,7 +2523,6 @@ def parse_gyms(args, gym_responses, wh_update_queue, db_update_queue):
                     timedelta(milliseconds=member['deployment_totals']
                               ['deployment_duration_ms'])
             }
-
             gym_pokemon[i] = {
                 'pokemon_uid':
                     pokemon['id'],
