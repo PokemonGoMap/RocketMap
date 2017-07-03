@@ -1220,6 +1220,8 @@ class KeyScheduler(object):
                     except requests.Timeout:
                         log.warning('Hashing check request timed out, ' +
                                     'adding to queue anyways.')
+                    
+                    break
 
             retry_time += 1
             log.warning("Bossland check failed, switching proxies" +
