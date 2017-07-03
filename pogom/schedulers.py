@@ -1158,7 +1158,6 @@ class SchedulerFactory():
 # server keys.
 class KeyScheduler(object):
 
-
     def __init__(self, keys, args, db_updates_queue):
         self.keys = {}
         # Check if bossland is available
@@ -1194,7 +1193,7 @@ class KeyScheduler(object):
                                 'AuthTicket': 'dG90bw==',
                                 'SessionData': 'dG90bw==',
                                 'Requests': []
-                            }, 
+                            },
                             proxies=pr,
                             headers={
                                 'Content-Type': 'application/json',
@@ -1215,7 +1214,7 @@ class KeyScheduler(object):
                             log.warning('Hash key "{}" appears invalid,' +
                                         'not adding into queue.'.format(key))
                         else:
-                            log.error('Invalid HTTP status code received:'+
+                            log.error('Invalid HTTP status code received:' +
                                       ' {}. Check if hashing is down.'
                                       .format(r.status_code))
                     except requests.Timeout:
