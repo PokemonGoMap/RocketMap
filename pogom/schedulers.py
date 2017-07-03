@@ -1152,7 +1152,6 @@ class SchedulerFactory():
         raise NotImplementedError(
             "The requested scheduler has not been implemented")
 
-
 # The KeyScheduler returns a scheduler that cycles through the given hash
 # server keys.
 class KeyScheduler(object):
@@ -1160,12 +1159,32 @@ class KeyScheduler(object):
     def __init__(self, keys, db_updates_queue):
         self.keys = {}
         for key in keys:
-            self.keys[key] = {
-                'remaining': 0,
-                'maximum': 0,
-                'peak': 0,
-                'expires': None
-            }
+            # TODO: If you find a better way to do the hash key check, please say it.
+            try:
+                # TODO: Translate api-version flag into hash URL
+                r = requests.post(url='https://pokehash.buddyauth.com/api/v137_1/hash', data={
+                    'Timestamp': now(),
+                    'Latitude': 0,
+                    'Longitude': 0,
+                    'Altitude': 0,
+                    'AuthTicket': 'dG90bw==',
+                    'SessionData': 'dG90bw==',
+                    'Requests': []
+                }, headers={'Content-Type': 'application/json', 'X-AuthToken': key}, timeout=5)
+
+                if r.status_code == 200:
+                    self.keys[key] = {
+                        'remaining': 0,
+                        'maximum': r.headers.get('x-maxrequestcount'),
+                        'peak': 0,
+                        'expires': r.headers.get('x-authtokenexpiration')
+                    }
+                elif r.status_code == 401:
+                    log.warning('Hash key "{}" appears invalid or expired, not adding into queue.'.format(key))
+                else:
+                    log.error('Invalid HTTP status code received from key check: {}. Check if hashing is down.'.format(r.status_code))
+            except Timeout:
+                log.warning('Hashing check request timed out, adding key to queue anyways.')
 
         self.key_cycle = itertools.cycle(keys)
         self.curr_key = ''
