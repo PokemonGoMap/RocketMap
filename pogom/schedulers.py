@@ -1161,13 +1161,12 @@ class KeyScheduler(object):
     def __init__(self, keys, db_updates_queue):
         self.keys = {}
         for key in keys:
-            # TODO: If you find a better way to do the hash key check, please 
+            # TODO: If you find a better way to do the hash key check, please
             # say it. It's better for everyone that way.
             try:
                 # TODO: Translate api-version flag into hash URL
                 r = requests.post(
-                    'https://pokehash.buddyauth.com/api/v137_1/hash', 
-                data={
+                    'https://pokehash.buddyauth.com/api/v137_1/hash', data={
                     'Timestamp': now(),
                     'Latitude': 0,
                     'Longitude': 0,
