@@ -34,9 +34,8 @@ from .utils import (get_pokemon_name, get_pokemon_rarity, get_pokemon_types,
 from .transform import transform_from_wgs_to_gcj, get_new_coords
 from .customLog import printPokemon
 
-from .account import (tutorial_pokestop_spin, check_login, setup_api,
-                      encounter_pokemon_request, pokestop_spinnable,
-                      spinning_try)
+from .account import (check_login, setup_api, encounter_pokemon_request,
+                      pokestop_spinnable, spinning_try)
 
 log = logging.getLogger(__name__)
 
@@ -2092,11 +2091,6 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                     (f['last_modified'] -
                      datetime(1970, 1, 1)).total_seconds())) for f in query]
 
-        # Complete tutorial with a Pokestop spin
-        if (args.complete_tutorial and not args.pokestop_spinning):
-            if config['parse_pokestops']:
-                tutorial_pokestop_spin(
-                    api, level, forts, step_location, account)
             else:
                 log.error(
                     'Pokestop can not be spun since parsing Pokestops is ' +
@@ -2137,6 +2131,11 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                         f, step_location):
                     spinning_try(api, f, step_location, account, map_dict,
                                  args)
+                else:
+                    log.error(
+                        'Pokestop can not be spun since parsing Pokestops' +
+                        'is not active. Check if \'-nk\' flag is' +
+                        'accidentally set.')
 
                 if ((f['id'], int(f['last_modified_timestamp_ms'] / 1000.0))
                         in encountered_pokestops and not

@@ -46,9 +46,9 @@ from .models import (parse_map, GymDetails, parse_gyms, MainWorker,
                      WorkerStatus, HashKeys)
 from .utils import now, clear_dict_response
 from .transform import get_new_coords, jitter_location
-from .account import (setup_api, check_login, get_tutorial_state,
-                      complete_tutorial, AccountSet, parse_new_timestamp_ms,
-                      reset_account, cleanup_account_stats)
+from .account import (setup_api, check_login, AccountSet,
+                      parse_new_timestamp_ms, reset_account,
+                      cleanup_account_stats)
 from .captcha import captcha_overseer_thread, handle_captcha
 from .proxy import get_new_proxy
 
@@ -625,29 +625,18 @@ def get_stats_message(threadStatus, search_items_queue_array, db_updates_queue,
     cph = overseer['captcha_total'] * 3600.0 / elapsed
     ccost = cph * 0.00299
     cmonth = ccost * 730
-    # Print the queue length.
-    search_items_queue_size = 0
-    for i in range(0, len(search_items_queue_array)):
-        search_items_queue_size += search_items_queue_array[i].qsize()
 
-    message = (
-        'Queues: {} search items, {} db updates, {} webhook.  ' +
-        'Spare accounts available: {}. Accounts on hold: {}. ' +
-        'Accounts with captcha: {}\n'
-    ).format(search_items_queue_size,
-             db_updates_queue.qsize(),
-             wh_queue.qsize(),
-             account_queue.qsize(),
-             len(account_failures), len(account_captchas))
-
-    message += (
-        'Total active: {}  |  Success: {} ({:.1f}/hr) | ' +
-        'Fails: {} ({:.1f}/hr) | Empties: {} ({:.1f}/hr) | ' +
-        'Skips {} ({:.1f}/hr) | Captchas: {} ({:.1f}/hr)|${:.5f}/hr|${:.3f}/mo'
-    ).format(overseer['active_accounts'], overseer['success_total'], sph,
-             overseer['fail_total'], fph, overseer['empty_total'], eph,
-             overseer['skip_total'], skph, overseer['captcha_total'], cph,
-             ccost, cmonth)
+    message = ('Total active: {} | Success: {} ({:.1f}/hr) | ' +
+               'Fails: {} ({:.1f}/hr) | Empties: {} ({:.1f}/hr) | ' +
+               'Skips {} ({:.1f}/hr) | ' +
+               'Captchas: {} ({:.1f}/hr)|${:.5f}/hr|${:.3f}/mo').format(
+                   overseer['active_accounts'],
+                   overseer['success_total'], sph,
+                   overseer['fail_total'], fph,
+                   overseer['empty_total'], eph,
+                   overseer['skip_total'], skph,
+                   overseer['captcha_total'], cph,
+                   ccost, cmonth)
 
     return message
 
@@ -944,20 +933,6 @@ def search_worker_thread(args, account_queue, account_sets,
                 # check_login().
                 if first_login:
                     first_login = False
-
-                    # Check tutorial completion.
-                    if args.complete_tutorial:
-                        tutorial_state = get_tutorial_state(args, api, account)
-
-                        if not all(x in tutorial_state
-                                   for x in (0, 1, 3, 4, 7)):
-                            log.info('Completing tutorial steps for %s.',
-                                     account['username'])
-                            complete_tutorial(args, api, account,
-                                              tutorial_state)
-                        else:
-                            log.info('Account %s already completed tutorial.',
-                                     account['username'])
 
                 # Putting this message after the check_login so the messages
                 # aren't out of order.

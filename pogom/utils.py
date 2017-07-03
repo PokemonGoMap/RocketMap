@@ -449,10 +449,6 @@ def get_args():
                         help='Set the status page password.')
     parser.add_argument('-hk', '--hash-key', default=None, action='append',
                         help='Key for hash server')
-    parser.add_argument('-tut', '--complete-tutorial', action='store_true',
-                        help=("Complete ToS and tutorial steps on accounts " +
-                              "if they haven't already."),
-                        default=False)
     parser.add_argument('-novc', '--no-version-check', action='store_true',
                         help='Disable API version check.',
                         default=False)
