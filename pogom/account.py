@@ -113,7 +113,7 @@ def check_login(args, account, api, position, proxy_url):
             account['banned'] = True
             log.exception('Account %s is banned from Pokemon Go.',
                           account['username'])
-            return
+            return False
         except AuthException:
             num_tries += 1
             log.error(
