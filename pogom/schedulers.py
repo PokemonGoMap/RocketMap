@@ -1158,7 +1158,7 @@ class SchedulerFactory():
 # server keys.
 class KeyScheduler(object):
 
-    def __init__(self, keys, db_updates_queue):
+    def __init__(self, keys, args, db_updates_queue):
         self.keys = {}
         # Thanks Arengo
         # Check if bossland is available
