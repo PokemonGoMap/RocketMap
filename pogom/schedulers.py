@@ -1154,10 +1154,9 @@ class SchedulerFactory():
         raise NotImplementedError(
             "The requested scheduler has not been implemented")
 
+
 # The KeyScheduler returns a scheduler that cycles through the given hash
 # server keys.
-
-
 class KeyScheduler(object):
     def __init__(self, keys, args, db_updates_queue):
         self.keys = {}
