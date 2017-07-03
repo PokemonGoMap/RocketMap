@@ -66,6 +66,7 @@ from .models import (hex_bounds, Pokemon, SpawnPoint, ScannedLocation,
                      ScanSpawnPoint, HashKeys)
 from .utils import now, cur_sec, cellid, equi_rect_distance
 from .altitude import get_altitude
+from .proxy import get_new_proxy
 
 log = logging.getLogger(__name__)
 
@@ -1160,15 +1161,23 @@ class KeyScheduler(object):
 
     def __init__(self, keys, args, db_updates_queue):
         self.keys = {}
-        # Thanks Arengo
         # Check if bossland is available
         retry_time = 0
         while True:
-            log.debug("Using proxy: {}".format(status['proxy_url']) )
-            status_code = requests.get('https://pokehash.buddyauth.com', proxies=status['proxy_url']).status_code
+            pr = None
+            if args.proxy:
+                status = get_new_proxy(args)
+                proxy = status['proxy_url']
+                pr = {
+                    'https': proxy,
+                    'http': proxy
+                }
+                log.debug("Using proxy: {}".format(pr['http']))
+
+            status_code = requests.get('https://pokehash.buddyauth.com', proxies=pr).status_code
             log.debug("Bossland returned: {}".format(status_code))
             if status_code == 200:
-                log.debug("Bossland returned 200. Check OK.")
+                log.debug("Bossland returned 200. Check OK. Going to key check")
                 for key in keys:
                     # TODO: If you find a better way to do the hash key check, please
                     # say it. It's better for everyone that way.
@@ -1183,7 +1192,7 @@ class KeyScheduler(object):
                             'AuthTicket': 'dG90bw==',
                             'SessionData': 'dG90bw==',
                             'Requests': []
-                        }, headers={
+                        }, proxies=pr, headers={
                             'Content-Type': 'application/json',
                             'X-AuthToken': key
                         }, timeout=5)
@@ -1205,13 +1214,6 @@ class KeyScheduler(object):
                     except requests.Timeout:
                         log.warning('Hashing check request timed out, adding key ' +
                                     'to queue anyways.')
-
-            if args.proxy:
-                proxy_num, status['proxy_url'] = get_new_proxy(args)
-                if args.proxy_display.upper() != 'FULL':
-                    status['proxy_display'] = proxy_num
-                else:
-                    status['proxy_display'] = status['proxy_url']
 
             retry_time += 1
             log.warning("Bossland check failed, switching proxies, retrying in {} s.".format(retry_time))
