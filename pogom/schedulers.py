@@ -1165,7 +1165,9 @@ class KeyScheduler(object):
             # say it. It's better for everyone that way.
             try:
                 # TODO: Translate api-version flag into hash URL
-                r = requests.post(url='https://pokehash.buddyauth.com/api/v137_1/hash', data={
+                r = requests.post(
+                    'https://pokehash.buddyauth.com/api/v137_1/hash', 
+                data={
                     'Timestamp': now(),
                     'Latitude': 0,
                     'Longitude': 0,
@@ -1174,7 +1176,7 @@ class KeyScheduler(object):
                     'SessionData': 'dG90bw==',
                     'Requests': []
                 }, headers={
-                    'Content-Type': 'application/json', 
+                    'Content-Type': 'application/json',
                     'X-AuthToken': key
                 }, timeout=5)
 
@@ -1186,14 +1188,14 @@ class KeyScheduler(object):
                         'expires': r.headers.get('x-authtokenexpiration')
                     }
                 elif r.status_code == 401:
-                    log.warning('Hash key "{}" appears invalid or expired,' + 
+                    log.warning('Hash key "{}" appears invalid or expired,' +
                                 'not adding into queue.'.format(key))
                 else:
-                    log.error('Invalid HTTP status code received from ' + 
+                    log.error('Invalid HTTP status code received from ' +
                               'key check: {}. Check if hashing is down.'
                               .format(r.status_code))
-            except Timeout:
-                log.warning('Hashing check request timed out, adding key '+ 
+            except requests.Timeout:
+                log.warning('Hashing check request timed out, adding key ' +
                             'to queue anyways.')
 
         self.key_cycle = itertools.cycle(keys)
