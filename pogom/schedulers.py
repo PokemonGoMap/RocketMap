@@ -1156,8 +1156,9 @@ class SchedulerFactory():
 
 # The KeyScheduler returns a scheduler that cycles through the given hash
 # server keys.
-class KeyScheduler(object):
 
+
+class KeyScheduler(object):
     def __init__(self, keys, args, db_updates_queue):
         self.keys = {}
         # Check if bossland is available
