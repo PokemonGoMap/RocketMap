@@ -60,7 +60,6 @@ from collections import Counter
 from queue import Empty
 from operator import itemgetter
 from datetime import datetime, timedelta
-from requests.exceptions import Timeout
 from .transform import get_new_coords
 from .models import (hex_bounds, Pokemon, SpawnPoint, ScannedLocation,
                      ScanSpawnPoint, HashKeys)
@@ -1159,6 +1158,7 @@ class SchedulerFactory():
 # server keys.
 class KeyScheduler(object):
 
+
     def __init__(self, keys, args, db_updates_queue):
         self.keys = {}
         # Check if bossland is available
@@ -1174,7 +1174,7 @@ class KeyScheduler(object):
                 }
                 log.debug("Using proxy: {}".format(pr['http']))
 
-            status_code = requests.get('https://pokehash.buddyauth.com', 
+            status_code = requests.get('https://pokehash.buddyauth.com',
                                        proxies=pr).status_code
             log.debug("Bossland returned: {}".format(status_code))
             if status_code == 200:
@@ -1185,7 +1185,7 @@ class KeyScheduler(object):
                     try:
                         # TODO: Translate api-version flag into hash URL
                         r = requests.post(
-                            'https://pokehash.buddyauth.com/api/v137_1/hash', 
+                            'https://pokehash.buddyauth.com/api/v137_1/hash',
                             data={
                                 'Timestamp': now(),
                                 'Latitude': 0,
@@ -1195,35 +1195,35 @@ class KeyScheduler(object):
                                 'SessionData': 'dG90bw==',
                                 'Requests': []
                             }, 
-                            proxies=pr, 
+                            proxies=pr,
                             headers={
                                 'Content-Type': 'application/json',
                                 'X-AuthToken': key
-                            }, 
+                            },
                             timeout=5)
 
                         if r.status_code == 200:
+                            reqc = 'x-maxrequestcount'
+                            ate = 'x-authtokenexpiration'
                             self.keys[key] = {
                                 'remaining': 0,
-                                'maximum': r.headers
-                                                .get('x-maxrequestcount'),
+                                'maximum': r.headers.get(reqc),
                                 'peak': 0,
-                                'expires': r.headers
-                                                .get('x-authtokenexpiration')
+                                'expires': r.headers.get(ate)
                             }
                         elif r.status_code == 401:
                             log.warning('Hash key "{}" appears invalid,' +
                                         'not adding into queue.'.format(key))
                         else:
-                            log.error('Invalid HTTP status code received on ' +
-                                      'key check: {}. Check if hashing is down.'
+                            log.error('Invalid HTTP status code received:'+
+                                      ' {}. Check if hashing is down.'
                                       .format(r.status_code))
                     except requests.Timeout:
-                        log.warning('Hashing check request timed out, adding ' +
-                                    'to queue anyways.')
+                        log.warning('Hashing check request timed out, ' +
+                                    'adding to queue anyways.')
 
             retry_time += 1
-            log.warning("Bossland check failed, switching proxies"+
+            log.warning("Bossland check failed, switching proxies" +
                         ", retrying in {} s.".format(retry_time))
             time.sleep(retry_time)
 
