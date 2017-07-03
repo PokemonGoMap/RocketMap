@@ -763,20 +763,18 @@ class PlayerLocale(BaseModel):
 
     @staticmethod
     def get_locale(location):
-        query = (PlayerLocale
-                 .select()
-                 .where(PlayerLocale.location == location)
-                 .dicts())
-
         locale = None
-        for l in query:
+        try:
+            query = PlayerLocale.get(PlayerLocale.location == location)
             locale = {
-                'country': l['country'],
-                'language': l['language'],
-                'timezone': l['timezone']
+                'country': query.country,
+                'language': query.language,
+                'timezone': query.timezone
             }
-
-        return locale
+        except PlayerLocale.DoesNotExist:
+            log.debug('This location is not yet in PlayerLocale DB table.')
+        finally:
+            return locale
 
 
 class ScannedLocation(BaseModel):
