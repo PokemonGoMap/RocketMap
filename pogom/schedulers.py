@@ -1174,49 +1174,57 @@ class KeyScheduler(object):
                 }
                 log.debug("Using proxy: {}".format(pr['http']))
 
-            status_code = requests.get('https://pokehash.buddyauth.com', proxies=pr).status_code
+            status_code = requests.get('https://pokehash.buddyauth.com', 
+                                       proxies=pr).status_code
             log.debug("Bossland returned: {}".format(status_code))
             if status_code == 200:
-                log.debug("Bossland returned 200. Check OK. Going to key check")
+                log.debug("Bossland returned 200. Check OK. Start key check")
                 for key in keys:
-                    # TODO: If you find a better way to do the hash key check, please
-                    # say it. It's better for everyone that way.
+                    # TODO: If you find a better way to do the hash key check,
+                    # please say it. It's better for everyone that way.
                     try:
                         # TODO: Translate api-version flag into hash URL
                         r = requests.post(
-                            'https://pokehash.buddyauth.com/api/v137_1/hash', data={
-                            'Timestamp': now(),
-                            'Latitude': 0,
-                            'Longitude': 0,
-                            'Altitude': 0,
-                            'AuthTicket': 'dG90bw==',
-                            'SessionData': 'dG90bw==',
-                            'Requests': []
-                        }, proxies=pr, headers={
-                            'Content-Type': 'application/json',
-                            'X-AuthToken': key
-                        }, timeout=5)
+                            'https://pokehash.buddyauth.com/api/v137_1/hash', 
+                            data={
+                                'Timestamp': now(),
+                                'Latitude': 0,
+                                'Longitude': 0,
+                                'Altitude': 0,
+                                'AuthTicket': 'dG90bw==',
+                                'SessionData': 'dG90bw==',
+                                'Requests': []
+                            }, 
+                            proxies=pr, 
+                            headers={
+                                'Content-Type': 'application/json',
+                                'X-AuthToken': key
+                            }, 
+                            timeout=5)
 
                         if r.status_code == 200:
                             self.keys[key] = {
                                 'remaining': 0,
-                                'maximum': r.headers.get('x-maxrequestcount'),
+                                'maximum': r.headers
+                                                .get('x-maxrequestcount'),
                                 'peak': 0,
-                                'expires': r.headers.get('x-authtokenexpiration')
+                                'expires': r.headers
+                                                .get('x-authtokenexpiration')
                             }
                         elif r.status_code == 401:
-                            log.warning('Hash key "{}" appears invalid or expired,' +
+                            log.warning('Hash key "{}" appears invalid,' +
                                         'not adding into queue.'.format(key))
                         else:
-                            log.error('Invalid HTTP status code received from ' +
+                            log.error('Invalid HTTP status code received on ' +
                                       'key check: {}. Check if hashing is down.'
                                       .format(r.status_code))
                     except requests.Timeout:
-                        log.warning('Hashing check request timed out, adding key ' +
+                        log.warning('Hashing check request timed out, adding ' +
                                     'to queue anyways.')
 
             retry_time += 1
-            log.warning("Bossland check failed, switching proxies, retrying in {} s.".format(retry_time))
+            log.warning("Bossland check failed, switching proxies"+
+                        ", retrying in {} s.".format(retry_time))
             time.sleep(retry_time)
 
         self.key_cycle = itertools.cycle(keys)
