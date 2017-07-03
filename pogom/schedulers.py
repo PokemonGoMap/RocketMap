@@ -1160,42 +1160,62 @@ class KeyScheduler(object):
 
     def __init__(self, keys, db_updates_queue):
         self.keys = {}
-        for key in keys:
-            # TODO: If you find a better way to do the hash key check, please
-            # say it. It's better for everyone that way.
-            try:
-                # TODO: Translate api-version flag into hash URL
-                r = requests.post(
-                    'https://pokehash.buddyauth.com/api/v137_1/hash', data={
-                    'Timestamp': now(),
-                    'Latitude': 0,
-                    'Longitude': 0,
-                    'Altitude': 0,
-                    'AuthTicket': 'dG90bw==',
-                    'SessionData': 'dG90bw==',
-                    'Requests': []
-                }, headers={
-                    'Content-Type': 'application/json',
-                    'X-AuthToken': key
-                }, timeout=5)
+        # Thanks Arengo
+        # Check if bossland is available
+        retry_time = 0
+        while True:
+            log.debug("Using proxy: {}".format(status['proxy_url']) )
+            status_code = requests.get('https://pokehash.buddyauth.com', proxies=status['proxy_url']).status_code
+            log.debug("Bossland returned: {}".format(status_code))
+            if status_code == 200:
+                log.debug("Bossland returned 200. Check OK.")
+                for key in keys:
+                    # TODO: If you find a better way to do the hash key check, please
+                    # say it. It's better for everyone that way.
+                    try:
+                        # TODO: Translate api-version flag into hash URL
+                        r = requests.post(
+                            'https://pokehash.buddyauth.com/api/v137_1/hash', data={
+                            'Timestamp': now(),
+                            'Latitude': 0,
+                            'Longitude': 0,
+                            'Altitude': 0,
+                            'AuthTicket': 'dG90bw==',
+                            'SessionData': 'dG90bw==',
+                            'Requests': []
+                        }, headers={
+                            'Content-Type': 'application/json',
+                            'X-AuthToken': key
+                        }, timeout=5)
 
-                if r.status_code == 200:
-                    self.keys[key] = {
-                        'remaining': 0,
-                        'maximum': r.headers.get('x-maxrequestcount'),
-                        'peak': 0,
-                        'expires': r.headers.get('x-authtokenexpiration')
-                    }
-                elif r.status_code == 401:
-                    log.warning('Hash key "{}" appears invalid or expired,' +
-                                'not adding into queue.'.format(key))
+                        if r.status_code == 200:
+                            self.keys[key] = {
+                                'remaining': 0,
+                                'maximum': r.headers.get('x-maxrequestcount'),
+                                'peak': 0,
+                                'expires': r.headers.get('x-authtokenexpiration')
+                            }
+                        elif r.status_code == 401:
+                            log.warning('Hash key "{}" appears invalid or expired,' +
+                                        'not adding into queue.'.format(key))
+                        else:
+                            log.error('Invalid HTTP status code received from ' +
+                                      'key check: {}. Check if hashing is down.'
+                                      .format(r.status_code))
+                    except requests.Timeout:
+                        log.warning('Hashing check request timed out, adding key ' +
+                                    'to queue anyways.')
+
+            if args.proxy:
+                proxy_num, status['proxy_url'] = get_new_proxy(args)
+                if args.proxy_display.upper() != 'FULL':
+                    status['proxy_display'] = proxy_num
                 else:
-                    log.error('Invalid HTTP status code received from ' +
-                              'key check: {}. Check if hashing is down.'
-                              .format(r.status_code))
-            except requests.Timeout:
-                log.warning('Hashing check request timed out, adding key ' +
-                            'to queue anyways.')
+                    status['proxy_display'] = status['proxy_url']
+
+            retry_time += 1
+            log.warning("Bossland check failed, switching proxies, retrying in {} s.".format(retry_time))
+            time.sleep(retry_time)
 
         self.key_cycle = itertools.cycle(keys)
         self.curr_key = ''
