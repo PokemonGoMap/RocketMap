@@ -695,9 +695,9 @@ def parse_download_settings(account, api_response):
 
         account['remote_config'] = download_settings
 
-        log.info('Download settings for account %s: %s.',
-                 account['username'],
-                 download_settings)
+        log.debug('Download settings for account %s: %s.',
+                  account['username'],
+                  download_settings)
         return True
 
 
@@ -851,11 +851,13 @@ def parse_level_up_rewards(api, account, map_dict):
         req.level_up_rewards(level=account['level'])
         req.check_challenge()
         req.get_hatched_eggs()
-        req.get_inventory()
+        req.get_inventory(last_timestamp_ms=account['last_timestamp_ms'])
         req.check_awarded_badges()
         req.get_buddy_walked()
         req.get_inbox(is_history=True)
         response = req.call()
+
+        parse_new_timestamp_ms(account, response)
 
         response = response['responses']['LEVEL_UP_REWARDS']
         result = response.get('result', 0)
@@ -920,17 +922,19 @@ def encounter_pokemon_request(api, account, encounter_id, spawnpoint_id,
         return False
 
 
-def clear_inventory_request(api, item_id, drop_count):
+def clear_inventory_request(api, account, item_id, drop_count):
     try:
         req = api.create_request()
         req.recycle_inventory_item(item_id=item_id, count=drop_count)
         req.check_challenge()
         req.get_hatched_eggs()
-        req.get_inventory()
+        req.get_inventory(last_timestamp_ms=account['last_timestamp_ms'])
         req.check_awarded_badges()
         req.get_buddy_walked()
         req.get_inbox(is_history=True)
         clear_inventory_response = req.call()
+
+        parse_new_timestamp_ms(account, clear_inventory_response)
 
         return clear_inventory_response
 
@@ -948,11 +952,13 @@ def request_use_item_egg_incubator(api, account, incubator_id, egg_id):
         )
         req.check_challenge()
         req.get_hatched_eggs()
-        req.get_inventory()
+        req.get_inventory(last_timestamp_ms=account['last_timestamp_ms'])
         req.check_awarded_badges()
         req.get_buddy_walked()
         req.get_inbox(is_history=True)
-        req.call()
+        response = req.call()
+
+        parse_new_timestamp_ms(account, response)
         return True
 
     except Exception as e:
@@ -967,11 +973,13 @@ def request_release_pokemon(api, account, pokemon_id, release_ids=[]):
                             pokemon_ids=release_ids)
         req.check_challenge()
         req.get_hatched_eggs()
-        req.get_inventory()
+        req.get_inventory(last_timestamp_ms=account['last_timestamp_ms'])
         req.check_awarded_badges()
         req.get_buddy_walked()
         req.get_inbox(is_history=True)
         release_p_response = req.call()
+
+        parse_new_timestamp_ms(account, release_p_response)
 
         return release_p_response
 
