@@ -200,7 +200,7 @@ def rpc_login_sequence(args, api, account):
     log.debug('Fetching asset digest...')
     config = account.get('remote_config', {})
 
-    if config.get('asset_time') > old_config.get('asset_time', 0):
+    if config.get('asset_time', 0) > old_config.get('asset_time', 0):
         i = random.randint(0, 3)
         req_count = 0
         result = 2
@@ -253,7 +253,7 @@ def rpc_login_sequence(args, api, account):
     # 5 - Get item templates.
     log.debug('Fetching item templates...')
 
-    if config.get('template_time') > old_config.get('template_time', 0):
+    if config.get('template_time', 0) > old_config.get('template_time', 0):
         i = random.randint(0, 3)
         req_count = 0
         result = 2
