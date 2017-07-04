@@ -745,6 +745,10 @@ function getPokemonLevel(cpMultiplier) {
     return pokemonLevel
 }
 
+function getGymLevel(gym) {
+    return 6 - gym['slots_available']
+}
+
 function lpad(str, len, padstr) {
     return Array(Math.max(len - String(str).length + 1, 0)).join(padstr) + str
 }
@@ -868,7 +872,6 @@ function setupGymMarker(item) {
                 lng: item['longitude']
             },
             map: map,
-            label: item['raid']['level'],
             icon: {
                 url: 'static/icons/' + item['raid']['pokemon_id'] + '.png',
                 scaledSize: new google.maps.Size(72, 72)
@@ -895,7 +898,7 @@ function setupGymMarker(item) {
             },
             map: map,
             icon: {
-                url: 'static/forts/' + Store.get('gymMarkerStyle') + '/' + gymTypes[item['team_id']] + '_' + (6 - item['slots_available']) + '.png',
+                url: 'static/forts/' + Store.get('gymMarkerStyle') + '/' + gymTypes[item['team_id']] + '_' + getGymLevel(item) + '.png',
                 scaledSize: new google.maps.Size(48, 48)
             }
         })
@@ -958,7 +961,7 @@ function updateGymMarker(item, marker) {
         })
     } else {
         marker.setIcon({
-            url: 'static/forts/' + Store.get('gymMarkerStyle') + '/' + gymTypes[item['team_id']] + '_' + (6 - item['slots_available']) + '.png',
+            url: 'static/forts/' + Store.get('gymMarkerStyle') + '/' + gymTypes[item['team_id']] + '_' + getGymLevel(item) + '.png',
             scaledSize: new google.maps.Size(48, 48)
         })
         marker.setZIndex(1)
@@ -1408,7 +1411,7 @@ function updatePokestops() {
 }
 
 function processGyms(i, item) {
-    var gymLevel = item.pokemon.length
+    var gymLevel = getGymLevel(item)
     if (!Store.get('showGyms')) {
         return false // in case the checkbox was unchecked in the meantime.
     }
@@ -1424,7 +1427,7 @@ function processGyms(i, item) {
     }
 
     if (Store.get('showOpenGymsOnly')) {
-        if (item.pokemon.length === 6) {
+        if (item.slots_available === 0) {
             removeGymFromMap(item['gym_id'])
             return true
         }
@@ -1855,9 +1858,9 @@ function showGymDetails(id) { // eslint-disable-line no-unused-vars
     data.done(function (result) {
         var lastScannedDateStr = getDateStr(result.last_scanned)
         var lastModifiedDateStr = getDateStr(result.last_modified)
-        var freeSlots = 6 - result.pokemon.length
+        var freeSlots = result.slots_available
         var gymLevelStr = ''
-        if (result.team_id !== 0 && result.pokemon.length !== 0) {
+        if (result.team_id !== 0 && result.slots_available > 0) {
             gymLevelStr = `<div>
                             <b>${freeSlots} Free Slots</b>
                         </div>`

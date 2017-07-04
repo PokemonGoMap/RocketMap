@@ -2530,8 +2530,6 @@ def parse_gyms(args, gym_responses, wh_update_queue, db_update_queue):
                     pokemon['pokemon_id'],
                 'cp':
                     member['motivated_pokemon']['cp_when_deployed'],
-                'cp_decayed':
-                    member['motivated_pokemon']['cp_now'],
                 'trainer_name':
                     pokemon['owner_name'],
                 'num_upgrades':
@@ -2658,7 +2656,7 @@ def db_updater(args, q, db):
                     flaskDb.connect_db()
                     break
                 except Exception as e:
-                    log.warning('%s... Retrying...', repr(e))
+                    log.exception('%s... Retrying...', repr(e))
                     time.sleep(5)
 
             # Loop the queue.
@@ -2786,7 +2784,7 @@ def bulk_upsert(cls, data, db):
                 has_unrecoverable = filter(
                     lambda x: x in str(e), unrecoverable)
                 if has_unrecoverable:
-                    log.warning('%s. Data is:', repr(e))
+                    log.exception('%s. Data is:', repr(e))
                     log.warning(data.items())
                 else:
                     log.warning('%s... Retrying...', repr(e))
