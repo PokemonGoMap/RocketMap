@@ -8,7 +8,7 @@ from threading import Lock
 from timeit import default_timer
 
 from pgoapi import PGoApi
-from pgoapi.exceptions import AuthException, BannedAccountException
+from pgoapi.exceptions import AuthException
 
 from .fakePogoApi import FakePogoApi
 from .pgoapiwrapper import PGoApiWrapper
@@ -101,19 +101,8 @@ def check_login(args, account, api, position, proxy_url):
                     provider=account['auth_service'],
                     username=account['username'],
                     password=account['password'])
-            if rpc_login_sequence(args, api, account):
-                # Success!
-                break
-            else:
-                if account['banned']:
-                    return
-                num_tries += 1
-
-        except BannedAccountException:
-            account['banned'] = True
-            log.exception('Account %s is banned from Pokemon Go.',
-                          account['username'])
-            return False
+            # Success!
+            break
         except AuthException:
             num_tries += 1
             log.error(
@@ -197,11 +186,10 @@ def rpc_login_sequence(args, api, account):
         request.download_settings()
         response = request.call()
 
-        parse_download_settings(account, response)
         parse_new_timestamp_ms(account, response)
+        parse_download_settings(account, response)
 
         total_req += 1
-        time.sleep(random.uniform(.53, 1.1))
     except Exception as e:
         log.exception('Error while downloading remote config: %s.', e)
         raise LoginSequenceFail('Failed while getting remote config version in'
@@ -212,7 +200,7 @@ def rpc_login_sequence(args, api, account):
     log.debug('Fetching asset digest...')
     config = account.get('remote_config', {})
 
-    if config.get('asset_time', 0) > old_config.get('asset_time', 0):
+    if config.get('asset_time') > old_config.get('asset_time', 0):
         i = random.randint(0, 3)
         req_count = 0
         result = 2
@@ -265,7 +253,7 @@ def rpc_login_sequence(args, api, account):
     # 5 - Get item templates.
     log.debug('Fetching item templates...')
 
-    if config.get('template_time', 0) > old_config.get('template_time', 0):
+    if config.get('template_time') > old_config.get('template_time', 0):
         i = random.randint(0, 3)
         req_count = 0
         result = 2
@@ -314,7 +302,7 @@ def rpc_login_sequence(args, api, account):
     # Check tutorial completion.
     if not all(x in account['tutorials'] for x in (0, 1, 3, 4, 7)):
         log.debug('Completing tutorial steps for %s.', account['username'])
-        complete_tutorial(api, account)
+        complete_tutorial(args, api, account)
     else:
         log.info('Account %s already did the tutorials.', account['username'])
 
@@ -395,7 +383,8 @@ def rpc_login_sequence(args, api, account):
 # Complete minimal tutorial steps.
 # API argument needs to be a logged in API instance.
 # TODO: Check if game client bundles these requests, or does them separately.
-def complete_tutorial(args, api, account, tutorial_state):
+def complete_tutorial(args, api, account):
+    tutorial_state = account['tutorials']
     if 0 not in tutorial_state:
         time.sleep(random.uniform(1, 5))
         request = api.create_request()
@@ -706,9 +695,9 @@ def parse_download_settings(account, api_response):
 
         account['remote_config'] = download_settings
 
-        log.debug('Download settings for account %s: %s.',
-                  account['username'],
-                  download_settings)
+        log.info('Download settings for account %s: %s.',
+                 account['username'],
+                 download_settings)
         return True
 
 
@@ -741,7 +730,6 @@ def parse_get_player(account, api_response):
 def reset_account(account):
     account['start_time'] = time.time()
     account['warning'] = None
-    account['banned'] = False
     account['tutorials'] = []
     account['items'] = {}
     account['pokemons'] = {}
