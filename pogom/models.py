@@ -2131,7 +2131,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                         f, step_location):
                     spinning_try(api, f, step_location, account, map_dict,
                                  args)
-                if not args.pokestop_spinning and not config[
+                if args.pokestop_spinning and not config[
                         'parse_pokestops']:
                     log.error(
                         'Pokestop can not be spun since parsing Pokestops' +
