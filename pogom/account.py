@@ -798,7 +798,7 @@ def clear_inventory(api, account):
             # Do not let Niantic throttle
             time.sleep(random.uniform(2, 4))
             clear_inventory_response = clear_inventory_request(
-                api, item_id, drop_count)
+                api, account, item_id, drop_count)
 
             captcha_url = clear_inventory_response['responses'][
                 'CHECK_CHALLENGE']['challenge_url']
