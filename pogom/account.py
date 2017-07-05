@@ -302,10 +302,10 @@ def rpc_login_sequence(args, api, account):
 
     # Check tutorial completion.
     if not all(x in account['tutorials'] for x in (0, 1, 3, 4, 7)):
-        log.debug('Completing tutorial steps for %s.', account['username'])
+        log.info('Completing tutorial steps for %s.', account['username'])
         complete_tutorial(args, api, account)
     else:
-        log.info('Account %s already did the tutorials.', account['username'])
+        log.debug('Account %s already did the tutorials.', account['username'])
 
     # 6 - Get player profile.
     log.debug('Fetching player profile...')
@@ -515,11 +515,11 @@ def spin_pokestop(api, account, fort, step_location):
         log.debug('Attempt to spin Pokestop (ID %s)', fort['id'])
         time.sleep(random.uniform(0.8, 1.8))
         fort_details_request(api, account, fort)
-        time.sleep(random.uniform(0.8, 1.8))  # Don't let Niantic throttle
+        time.sleep(random.uniform(0.8, 1.8))  # Don't let Niantic throttle.
         response = spin_pokestop_request(api, account, fort, step_location)
-        time.sleep(random.uniform(2, 4))  # Don't let Niantic throttle
+        time.sleep(random.uniform(2, 4))  # Don't let Niantic throttle.
 
-        # Check for reCaptcha
+        # Check for reCaptcha.
         captcha_url = response['responses'][
             'CHECK_CHALLENGE']['challenge_url']
         if len(captcha_url) > 1:
@@ -764,7 +764,7 @@ def spinning_try(api, fort, step_location, account, args, map_dict):
         if not spin_response:
             return False
 
-        # Check for reCaptcha
+        # Check for reCaptcha.
         captcha_url = spin_response['responses']['CHECK_CHALLENGE'][
             'challenge_url']
         if len(captcha_url) > 1:
@@ -822,7 +822,7 @@ def cleanup_account_stats(account):
     elapsed_time = time.time() - account['start_time']
 
     # Just to prevent division by 0 errors, when needed
-    # set elapsed to 1 millisecond
+    # set elapsed to 1 millisecond.
     if elapsed_time == 0:
         elapsed_time = 1
 
@@ -917,7 +917,7 @@ def clear_inventory(api, account):
     release_count = int(total_pokemon - 5)
     if total_pokemon > random.randint(5, 10):
         release_ids = random.sample(account['pokemons'].keys(), release_count)
-        # Don't let Niantic throttle
+        # Don't let Niantic throttle.
         time.sleep(random.uniform(2, 4))
         release_p_response = request_release_pokemon(api, account, 0,
                                                      release_ids)
@@ -944,7 +944,7 @@ def clear_inventory(api, account):
         if item_count > random_max:
             drop_count = item_count - random_max
 
-            # Don't let Niantic throttle
+            # Don't let Niantic throttle.
             time.sleep(random.uniform(2, 4))
             clear_inventory_response = clear_inventory_request(
                 api, account, item_id, drop_count)
