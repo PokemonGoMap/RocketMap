@@ -2129,8 +2129,8 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                 # Spin Pokestop with 50% chance.
                 if args.pokestop_spinning and pokestop_spinnable(
                         f, step_location):
-                    spinning_try(api, f, step_location, account, map_dict,
-                                 args)
+                    spinning_try(api, f, step_location, account, args,
+                                 map_dict)
                 if args.pokestop_spinning and not config[
                         'parse_pokestops']:
                     log.error(
