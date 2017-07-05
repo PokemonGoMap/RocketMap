@@ -188,6 +188,7 @@ def rpc_login_sequence(args, api, account):
 
         parse_new_timestamp_ms(account, response)
         parse_download_settings(account, response)
+        parse_inventory(api, account, response)
 
         total_req += 1
     except Exception as e:
@@ -813,8 +814,6 @@ def parse_inventory(api, account, api_response):
     parsed_pokemons = 0
     parsed_eggs = 0
     parsed_incubators = 0
-    account['incubators'] = []
-    account['eggs'] = []
     for item in inventory['inventory_delta'].get('inventory_items', {}):
         item_data = item.get('inventory_item_data', {})
         if 'player_stats' in item_data:
@@ -870,11 +869,15 @@ def parse_inventory(api, account, api_response):
                     'km_target': p_data['egg_km_walked_target']
                 })
                 parsed_eggs += 1
-    log.info(
+    log.debug(
         'Parsed %s player inventory: %d items, %d pokemons, %d available ' +
         'eggs and %d available incubators.',
         account['username'], parsed_items, parsed_pokemons, parsed_eggs,
         parsed_incubators)
+    log.debug('Total amount in Inventory:' +
+              ' {} Items, {} pokemon, {} eggs, {} Incubator'.format(
+                int(parsed_items + item_count), len(account['pokemons']),
+                len(account['eggs']), len(account['incubators'])))
 
 
 def clear_inventory(api, account):
