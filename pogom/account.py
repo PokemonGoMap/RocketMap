@@ -606,6 +606,7 @@ def fort_details_request(api, account, fort):
         req.get_buddy_walked()
         req.get_inbox(is_history=True)
         response = req.call()
+        parse_new_timestamp_ms(account, response)
         return response
     except Exception as e:
         log.exception('Exception while getting Pokestop details: %s.', repr(e))
