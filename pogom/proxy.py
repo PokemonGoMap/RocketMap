@@ -91,6 +91,69 @@ def check_proxy(proxy_queue, timeout, proxies, show_warnings, check_results):
     check_results[check_result] += 1
     return False
 
+# Simple function to do a call to Pokemon's system for
+# testing proxy connectivity.
+def check_proxy2(proxy_queue, timeout, proxies, show_warnings, check_results):
+
+    # Url for proxy testing.
+    proxy_test_url = 'https://sso.pokemon.com'
+    proxy = proxy_queue.get()
+
+    check_result = check_result_ok
+
+    if proxy and proxy[1]:
+
+        log.debug('Checking proxy: %s', proxy[1])
+        try:
+            proxy_response = requests.get(proxy_test_url, '',
+                                           proxies={'http': proxy[1],
+                                                    'https': proxy[1]},
+                                           timeout=timeout)
+
+            if proxy_response.status_code == 200:
+                log.debug('Proxy %s is ok.', proxy[1])
+                proxy_queue.task_done()
+                proxies.append(proxy[1])
+                check_results[check_result_ok] += 1
+                return True
+
+            elif proxy_response.status_code == 409:
+                proxy_error = ("Proxy " + proxy[1] +
+                               " is banned - got status code: " +
+                               str(proxy_response.status_code))
+                check_result = check_result_banned
+
+            else:
+                proxy_error = ("Wrong status code - " +
+                               str(proxy_response.status_code))
+                check_result = check_result_wrong
+
+        except requests.ConnectTimeout:
+            proxy_error = ("Connection timeout (" + str(timeout) +
+                           " second(s) ) via proxy " + proxy[1])
+            check_result = check_result_timeout
+
+        except requests.ConnectionError:
+            proxy_error = "Failed to connect to proxy " + proxy[1]
+            check_result = check_result_failed
+
+        except Exception as e:
+            proxy_error = e
+            check_result = check_result_exception
+
+    else:
+        proxy_error = "Empty proxy server."
+        check_result = check_result_empty
+
+    # Decrease output amount if there are lot of proxies.
+    if show_warnings:
+        log.warning('%s', repr(proxy_error))
+    else:
+        log.debug('%s', repr(proxy_error))
+    proxy_queue.task_done()
+
+    check_results[check_result] += 1
+    return False
 
 # Check all proxies and return a working list with proxies.
 def check_proxies(args):
@@ -98,6 +161,7 @@ def check_proxies(args):
     source_proxies = []
 
     check_results = [0] * (check_result_max + 1)
+    check_results2 = [0] * (check_result_max + 1)
 
     # Load proxies from the file. Override args.proxy if specified.
     if args.proxy_file is not None:
@@ -150,24 +214,49 @@ def check_proxies(args):
     # completed so we have a working list of proxies.
     proxy_queue.join()
 
-    working_proxies = len(proxies)
+    step1_proxies = len(proxies)
+	
+	# Now we test the second URL
+    new_proxy_queue = Queue()
+
+    log.info('Checking %d proxies...', step1_proxies)
+    if (step1_proxies > 10):
+        log.info('Enable "-v or -vv" to see checking details.')
+
+    new_proxies = []
+
+    for proxy in enumerate(proxies):
+        new_proxy_queue.put(proxy)
+
+        t = Thread(target=check_proxy2,
+                   name='check_proxy2',
+                   args=(new_proxy_queue, args.proxy_timeout, new_proxies,
+                         step1_proxies <= 10, check_results2))
+        t.daemon = True
+        t.start()
+
+    # This is painful but we need to wait here until proxy_queue is
+    # completed so we have a working list of proxies.
+    new_proxy_queue.join()
+
+    working_proxies = len(new_proxies)	
 
     if working_proxies == 0:
         log.error('Proxy was configured but no working ' +
                   'proxies were found. Aborting.')
         sys.exit(1)
     else:
-        other_fails = (check_results[check_result_failed] +
-                       check_results[check_result_wrong] +
-                       check_results[check_result_exception] +
-                       check_results[check_result_empty])
+        other_fails = (check_results2[check_result_failed] +
+                       check_results2[check_result_wrong] +
+                       check_results2[check_result_exception] +
+                       check_results2[check_result_empty])
         log.info('Proxy check completed. Working: %d, banned: %d, ' +
                  'timeout: %d, other fails: %d of total %d configured.',
-                 working_proxies, check_results[check_result_banned],
-                 check_results[check_result_timeout],
+                 working_proxies, check_results2[check_result_banned],
+                 check_results2[check_result_timeout],
                  other_fails,
-                 total_proxies)
-        return proxies
+                 step1_proxies)
+        return new_proxies
 
 
 # Thread function for periodical proxy updating.
