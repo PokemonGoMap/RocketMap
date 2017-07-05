@@ -99,7 +99,7 @@ Good Job! We recommend making new accounts. [Current Tools are Here!](https://ro
 
 ### I am not sure how to update api
 
-You will get an error when you try to start your server with an different api that the one it is build for, to update your api to the required version do:
+You will get an error when you try to start your server with an different api that the one it is built for, to update your api to the required version do:
 
 ```bash
 pip uninstall pgoapi
@@ -200,9 +200,9 @@ Please read all wiki pages relating to the specific function you are questioning
 
 ## Formulas?
 
-st=step distance\  
-sd=scan delay [default: 10]\  
-w=# of workers\  
+st=step distance\
+sd=scan delay [default: 10]\
+w=# of workers\
 t=desired scan time  
 
 ### Speed Scan
