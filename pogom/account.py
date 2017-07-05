@@ -604,6 +604,27 @@ def spin_pokestop_request(api, account, fort, step_location):
         return False
 
 
+def fort_details_request(api, account, fort):
+    try:
+        req = api.create_request()
+        req.fort_details(
+            fort_id=fort['id'],
+            latitude=fort['latitude'],
+            longitude=fort['longitude'])
+        req.check_challenge()
+        req.get_hatched_eggs()
+        req.get_inventory(last_timestamp_ms=account['last_timestamp_ms'])
+        req.check_awarded_badges()
+        req.get_buddy_walked()
+        req.get_inbox(is_history=True)
+        response = req.call()
+        parse_new_timestamp_ms(account, response)
+        return response
+    except Exception as e:
+        log.exception('Exception while getting Pokestop details: %s.', repr(e))
+        return False
+
+
 def encounter_pokemon_request(api, account, encounter_id, spawnpoint_id,
                               scan_location):
     try:
