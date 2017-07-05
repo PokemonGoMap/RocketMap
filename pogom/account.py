@@ -536,7 +536,7 @@ def spin_pokestop(api, account, fort, step_location):
         log.debug('Attempt to spin Pokestop (ID %s)', fort['id'])
 
         time.sleep(random.uniform(0.8, 1.8))
-        fort_details_request(api, fort)
+        fort_details_request(api, account, fort)
         time.sleep(random.uniform(0.8, 1.8))  # Don't let Niantic throttle
         response = spin_pokestop_request(api, account, fort, step_location)
         time.sleep(random.uniform(2, 4))  # Don't let Niantic throttle.
@@ -592,13 +592,19 @@ def spin_pokestop_request(api, account, fort, step_location):
         return False
 
 
-def fort_details_request(api, fort):
+def fort_details_request(api, account, fort):
     try:
         req = api.create_request()
         req.fort_details(
             fort_id=fort['id'],
             latitude=fort['latitude'],
             longitude=fort['longitude'])
+        req.check_challenge()
+        req.get_hatched_eggs()
+        req.get_inventory(last_timestamp_ms=account['last_timestamp_ms'])
+        req.check_awarded_badges()
+        req.get_buddy_walked()
+        req.get_inbox(is_history=True)
         response = req.call()
         return response
     except Exception as e:
