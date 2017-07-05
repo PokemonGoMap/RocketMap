@@ -89,13 +89,15 @@ def handle_exception(exc_type, exc_value, exc_traceback):
         exc_type, exc_value, exc_traceback))
 
 
-def server_checks(args):
+def validate_assets(args):
+    assets_error_log = (
+        'Missing front-end assets (static/dist) -- please run ' +
+        '"npm install && npm run build" before starting the server.')
+
     root_path = os.path.dirname(__file__)
     if not os.path.exists(os.path.join(root_path, 'static/dist')):
-        log.critical(
-            'Missing front-end assets (static/dist) -- please run ' +
-            '"npm install && npm run build" before starting the server.')
-        sys.exit()
+        log.critical(assets_error_log)
+        return False
 
     static_path = os.path.join(root_path, 'static/js')
     for file in os.listdir(static_path):
@@ -106,10 +108,8 @@ def server_checks(args):
             if not os.path.exists(generated_path) or (
                     os.path.getmtime(source_path) >
                     os.path.getmtime(generated_path)):
-                log.critical(
-                    'Front-end assets not up to date -- please run "npm ' +
-                    'install && npm run build" before starting the server.')
-                sys.exit()
+                log.critical(assets_error_log)
+                return False
 
     # You need custom image files now.
     if not os.path.isfile(
@@ -126,6 +126,8 @@ def server_checks(args):
     else:
         args.custom_css = False
         log.info('No file \"custom.css\" found, using default settings.')
+
+    return True
 
 
 def main():
@@ -157,8 +159,9 @@ def main():
         log.setLevel(logging.INFO)
 
     # Let's not forget to run Grunt / Only needed when running with webserver.
-    if not args.no_server:
-        server_checks(args)
+    if not args.no_server and not validate_assets(args):
+        sys.exit(1)
+
     # These are very noisy, let's shush them up a bit.
     logging.getLogger('peewee').setLevel(logging.INFO)
     logging.getLogger('requests').setLevel(logging.WARNING)
