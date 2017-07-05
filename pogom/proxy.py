@@ -32,7 +32,10 @@ def check_proxy(proxy_queue, timeout, proxies, show_warnings, check_results):
 
     # Url for proxy testing.
     proxy_test_url = 'https://pgorelease.nianticlabs.com/plfe/rpc'
-    proxy_test_ptc_url = 'https://sso.pokemon.com/sso/oauth2.0/authorize?client_id=mobile-app_pokemon-go&redirect_uri=https%3A%2F%2Fwww.nianticlabs.com%2Fpokemongo%2Ferror'
+    proxy_test_ptc_url = 'https://sso.pokemon.com/sso/oauth2.0/authorize?' \
+                         'client_id=mobile-app_pokemon-go&redirect_uri=' \
+                         'https%3A%2F%2Fwww.nianticlabs.com%2Fpokemongo' \
+                         '%2Ferror'
     proxy = proxy_queue.get()
 
     check_result = check_result_ok
@@ -48,28 +51,31 @@ def check_proxy(proxy_queue, timeout, proxies, show_warnings, check_results):
                                            timeout=timeout)
 
             proxy_response_ptc = requests.get(proxy_test_ptc_url, '',
-                                           proxies={'http': proxy[1],
-                                                    'https': proxy[1]},
-                                           timeout=timeout,
-                                           headers={'User-Agent': 'pokemongo/1 CFNetwork/811.4.18 Darwin/16.5.0', 'Host': 'sso.pokemon.com', 'X-Unity-Version': '5.5.1f1'})
+                                              proxies={'http': proxy[1],
+                                                       'https': proxy[1]},
+                                              timeout=timeout,
+                                              headers={'User-Agent':
+                                                       'pokemongo/1 '
+                                                       'CFNetwork/811.4.18 '
+                                                       'Darwin/16.5.0',
+                                                       'Host':
+                                                       'sso.pokemon.com',
+                                                       'X-Unity-Version':
+                                                       '5.5.1f1'})
 
-            if proxy_response.status_code == 200 and proxy_response_ptc.status_code == 200:
+            if proxy_response.status_code == 200 and \
+               proxy_response_ptc.status_code == 200:
                 log.debug('Proxy %s is ok.', proxy[1])
                 proxy_queue.task_done()
                 proxies.append(proxy[1])
                 check_results[check_result_ok] += 1
                 return True
 
-            elif proxy_response.status_code == 403:
+            if proxy_response.status_code == 403 or \
+               proxy_response_ptc.status_code == 403:
                 proxy_error = ("Proxy " + proxy[1] +
                                " is banned - got status code: " +
                                str(proxy_response.status_code))
-                check_result = check_result_banned
- 
-            elif proxy_response_ptc.status_code == 403:
-                proxy_error = ("Proxy " + proxy[1] +
-                               " is banned - got status code: " +
-                               str(proxy_response_ptc.status_code))
                 check_result = check_result_banned
 
             elif proxy_response_ptc.status_code == 409:
