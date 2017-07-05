@@ -186,7 +186,7 @@ def check_proxies(args):
                  working_proxies, check_results[check_result_banned],
                  check_results[check_result_timeout],
                  other_fails,
-                 proxies)
+                 total_proxies)
         return proxies
 
 
