@@ -729,8 +729,8 @@ def pokestop_spinnable(fort, step_location):
 # 50% Chance to spin a Pokestop.
 def spinning_try(api, fort, step_location, account, args, map_dict):
     if account['hour_spins'] > args.account_max_spins:
-        log.info('Account %s has reached its Pokestop spinning limits.',
-                 account['username'])
+        log.warning('Account %s has reached its Pokestop spinning limits.',
+                    account['username'])
         return False
 
     # Set 50% Chance to spin a Pokestop.
@@ -822,9 +822,9 @@ def parse_inventory(api, account, api_response):
             account['spins'] = stats.get('poke_stop_visits', 0)
             account['walked'] = stats.get('km_walked', 0)
 
-            log.info('Parsed %s player stats: level %d, %f km ' +
-                     'walked, %d spins.', account['username'],
-                     account['level'], account['walked'], account['spins'])
+            log.debug('Parsed %s player stats: level %d, %f km ' +
+                      'walked, %d spins.', account['username'],
+                      account['level'], account['walked'], account['spins'])
         elif 'item' in item_data:
             item_id = item_data['item']['item_id']
             item_count = item_data['item'].get('count', 0)
@@ -1077,7 +1077,7 @@ def parse_level_up_rewards(api, account):
             parse_inventory(api, account, response)
             return True
         elif result != 1:
-            log.info('Account %s already collected its level up rewards.',
-                     account['username'])
+            log.debug('Account %s already collected its level up rewards.',
+                      account['username'])
     except Exception as e:
         log.exception('Error during getting Level Up Rewards %s.', e)
