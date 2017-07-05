@@ -513,9 +513,11 @@ def spin_pokestop(api, account, fort, step_location):
     if in_radius((fort['latitude'], fort['longitude']), step_location,
                  spinning_radius):
         log.debug('Attempt to spin Pokestop (ID %s)', fort['id'])
-        time.sleep(random.uniform(0.8, 1.8))  # Do not let Niantic throttle
+        time.sleep(random.uniform(0.8, 1.8))
+        fort_details_request(api, account, fort)
+        time.sleep(random.uniform(0.8, 1.8))  # Don't let Niantic throttle
         response = spin_pokestop_request(api, account, fort, step_location)
-        time.sleep(random.uniform(2, 4))  # Do not let Niantic throttle
+        time.sleep(random.uniform(2, 4))  # Don't let Niantic throttle
 
         # Check for reCaptcha
         captcha_url = response['responses'][
@@ -756,7 +758,7 @@ def spinning_try(api, fort, step_location, account, args, map_dict):
 
     # Set 50% Chance to spin a Pokestop.
     if random.randint(0, 100) < 50:
-        time.sleep(random.uniform(2, 4))  # Do not let Niantic throttle.
+        time.sleep(random.uniform(2, 4))  # Don't let Niantic throttle.
         spin_response = spin_pokestop_request(api, account, fort,
                                               step_location)
         if not spin_response:
@@ -915,7 +917,7 @@ def clear_inventory(api, account):
     release_count = int(total_pokemon - 5)
     if total_pokemon > random.randint(5, 10):
         release_ids = random.sample(account['pokemons'].keys(), release_count)
-        # Do not let Niantic throttle
+        # Don't let Niantic throttle
         time.sleep(random.uniform(2, 4))
         release_p_response = request_release_pokemon(api, account, 0,
                                                      release_ids)
@@ -942,7 +944,7 @@ def clear_inventory(api, account):
         if item_count > random_max:
             drop_count = item_count - random_max
 
-            # Do not let Niantic throttle
+            # Don't let Niantic throttle
             time.sleep(random.uniform(2, 4))
             clear_inventory_response = clear_inventory_request(
                 api, account, item_id, drop_count)
