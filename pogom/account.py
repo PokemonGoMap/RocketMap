@@ -1022,7 +1022,7 @@ def request_use_item_egg_incubator(api, account, incubator_id, egg_id):
         response = req.call()
 
         parse_new_timestamp_ms(account, response)
-        parse_inventory(api, account, response)
+
         return True
 
     except Exception as e:
@@ -1044,7 +1044,6 @@ def request_release_pokemon(api, account, pokemon_id, release_ids=[]):
         release_p_response = req.call()
 
         parse_new_timestamp_ms(account, release_p_response)
-        parse_inventory(api, account, release_p_response)
 
         return release_p_response
 
