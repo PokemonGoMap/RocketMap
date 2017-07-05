@@ -187,7 +187,7 @@ def check_proxies(args):
                  check_results[check_result_timeout],
                  other_fails,
                  proxies)
-        return new_proxies
+        return proxies
 
 
 # Thread function for periodical proxy updating.
