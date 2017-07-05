@@ -71,8 +71,8 @@ def check_proxy(proxy_queue, timeout, proxies, show_warnings, check_results):
                 check_results[check_result_ok] += 1
                 return True
 
-            if proxy_response.status_code == 403 or \
-               proxy_response_ptc.status_code == 403:
+            elif proxy_response.status_code == 403 or \
+                    proxy_response_ptc.status_code == 403:
                 proxy_error = ("Proxy " + proxy[1] +
                                " is banned - got status code: " +
                                str(proxy_response.status_code))
@@ -84,7 +84,7 @@ def check_proxy(proxy_queue, timeout, proxies, show_warnings, check_results):
                                str(proxy_response_ptc.status_code))
                 check_result = check_result_banned
 
-            else:   
+            else:
                 proxy_error = ("Wrong status codes - " +
                                str(proxy_response.status_code) + ", " +
                                str(proxy_response_ptc.status_code))
