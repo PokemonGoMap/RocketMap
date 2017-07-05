@@ -2382,9 +2382,9 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                             wh_raid = raids[f['id']].copy()
                             wh_raid.update({
                                 'gym_id': b64_gym_id,
-                                'spawn': raid_info['raid_spawn_ms'],
-                                'start': raid_info['raid_battle_ms'],
-                                'end': raid_info['raid_end_ms'],
+                                'spawn': raid_info['raid_spawn_ms'] / 1000,
+                                'start': raid_info['raid_battle_ms'] / 1000,
+                                'end': raid_info['raid_end_ms'] / 1000,
                                 'latitude': f['latitude'],
                                 'longitude': f['longitude']
                             })
