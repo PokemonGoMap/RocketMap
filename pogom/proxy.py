@@ -170,7 +170,7 @@ def check_proxies(args):
     # completed so we have a working list of proxies.
     proxy_queue.join()
 
-    working_proxies = len(new_proxies)
+    working_proxies = len(proxies)
 
     if working_proxies == 0:
         log.error('Proxy was configured but no working ' +
