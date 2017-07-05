@@ -91,6 +91,7 @@ def check_proxy(proxy_queue, timeout, proxies, show_warnings, check_results):
     check_results[check_result] += 1
     return False
 
+
 # Simple function to do a call to Pokemon's system for
 # testing proxy connectivity.
 def check_proxy2(proxy_queue, timeout, proxies, show_warnings, check_results):
@@ -106,9 +107,9 @@ def check_proxy2(proxy_queue, timeout, proxies, show_warnings, check_results):
         log.debug('Checking proxy: %s', proxy[1])
         try:
             proxy_response = requests.get(proxy_test_url, '',
-                                           proxies={'http': proxy[1],
-                                                    'https': proxy[1]},
-                                           timeout=timeout)
+                                          proxies={'http': proxy[1],
+                                                   'https': proxy[1]},
+                                          timeout=timeout)
 
             if proxy_response.status_code == 200:
                 log.debug('Proxy %s is ok.', proxy[1])
@@ -154,6 +155,7 @@ def check_proxy2(proxy_queue, timeout, proxies, show_warnings, check_results):
 
     check_results[check_result] += 1
     return False
+
 
 # Check all proxies and return a working list with proxies.
 def check_proxies(args):
@@ -215,8 +217,8 @@ def check_proxies(args):
     proxy_queue.join()
 
     step1_proxies = len(proxies)
-	
-	# Now we test the second URL
+
+    # Now we test the second URL
     new_proxy_queue = Queue()
 
     log.info('Checking %d proxies...', step1_proxies)
@@ -239,7 +241,7 @@ def check_proxies(args):
     # completed so we have a working list of proxies.
     new_proxy_queue.join()
 
-    working_proxies = len(new_proxies)	
+    working_proxies = len(new_proxies)
 
     if working_proxies == 0:
         log.error('Proxy was configured but no working ' +
