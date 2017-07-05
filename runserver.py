@@ -326,6 +326,8 @@ def main():
                 'timezone': args.player_locale['timezone'],
             }
             db_updates_queue.put((PlayerLocale, {0: db_player_locale}))
+        else:
+            log.debug('Existing player locale has been retrieved from the DB.')
 
         # Gather the Pokemon!
 
