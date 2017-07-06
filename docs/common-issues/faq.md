@@ -97,9 +97,11 @@ No, remove everything and start from scratch. A Pull Request is merged when it m
 
 Good Job! We recommend making new accounts. [Current Tools are Here!](https://rocketmap.readthedocs.io/en/develop/extras/Community-Tools.html)
 
-### I am not sure how to update api
+### I get an error about PGoAPI version
 
-You will get an error when you try to start your server with an different api that the one it is built for, to update your api to the required version do:
+You can get a warning which pauses your scanner due to a new API being forced. In that case check for announcements to see if a new version has been released, and update as it says.
+
+In case your server does not start due to a PGoAPI version mismatch the problem is that you are trying to start your server with an different installed PGoAPI that the one it is built for, to update your PGoAPI installation to the required version do:
 
 ```bash
 pip uninstall pgoapi
@@ -209,13 +211,13 @@ t=desired scan time
 
 Workers for initial scan(speed scan):
 ```
-Cells = (((steps * (steps - 1)) * 3) + 1)  
-Workers = Cells / 20
+cells = (((st * (st - 1)) * 3) + 1)  
+workers = cells / 20
 ```
 an example for st 19: (((19 * 18) * 3) +1 ) / 20 = 51.35 so use 52 workers.  
 You will not need as many accounts once initial scan is complete.
 
-### Hex scan
+### Hex Scan
 time to scan: `(sd/w)*(3st^2-3st+1)`\
 time to scan (using default scan delay): `(10/w)*(3st^2-3st+1)`
 
