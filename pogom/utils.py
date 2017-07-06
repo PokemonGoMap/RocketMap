@@ -329,7 +329,7 @@ def get_args():
                         type=float, default=0.25)
     parser.add_argument('-pxc', '--proxy-concurrency',
                         help=('Async requests pool size.'), type=int,
-                        default=10)
+                        default=0)
     parser.add_argument('-pxd', '--proxy-display',
                         help=('Display info on which proxy being used ' +
                               '(index or full). To be used with -ps.'),

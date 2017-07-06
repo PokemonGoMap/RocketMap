@@ -83,7 +83,7 @@ def get_proxy_test_status(proxy, future_ptc, future_niantic):
 
 
 # Requests to send for testing, which returns futures for Niantic and PTC.
-def start_request_futures(session, proxy, timeout):
+def start_request_futures(ptc_session, niantic_session, proxy, timeout):
     # URLs for proxy testing.
     proxy_test_url = 'https://pgorelease.nianticlabs.com/plfe/rpc'
     proxy_test_ptc_url = 'https://sso.pokemon.com/sso/oauth2.0/authorize?' \
@@ -93,16 +93,8 @@ def start_request_futures(session, proxy, timeout):
 
     log.debug('Checking proxy: %s.', proxy)
 
-    # Send request to nianticlabs.com.
-    future_niantic = session.post(
-        proxy_test_url,
-        '',
-        proxies={'http': proxy, 'https': proxy},
-        timeout=timeout,
-        background_callback=__proxy_check_completed)
-
     # Send request to pokemon.com.
-    future_ptc = session.get(
+    future_ptc = ptc_session.get(
         proxy_test_ptc_url,
         proxies={'http': proxy, 'https': proxy},
         timeout=timeout,
@@ -114,6 +106,14 @@ def start_request_futures(session, proxy, timeout):
                  'sso.pokemon.com',
                  'X-Unity-Version':
                  '5.5.1f1'},
+        background_callback=__proxy_check_completed)
+
+    # Send request to nianticlabs.com.
+    future_niantic = niantic_session.post(
+        proxy_test_url,
+        '',
+        proxies={'http': proxy, 'https': proxy},
+        timeout=timeout,
         background_callback=__proxy_check_completed)
 
     # Return futures.
@@ -160,12 +160,21 @@ def check_proxies(args, proxies):
     # Store counter per result type.
     check_results = [0] * (check_result_max + 1)
 
-    # Get persistent session.
+    # If proxy testing concurrency is set to automatic, use max.
+    proxy_concurrency = 0
+
+    if args.proxy_concurrency == 0:
+        proxy_concurrency = len(proxies)
+
+    # Get persistent session per host.
     # TODO: Rework API request wrapper so requests are retried, then increase
     # the # of retries to allow for proxies.
-    session = get_async_requests_session(args.proxy_retries,
-                                         args.proxy_backoff_factor,
-                                         args.proxy_concurrency)
+    ptc_session = get_async_requests_session(args.proxy_retries,
+                                             args.proxy_backoff_factor,
+                                             proxy_concurrency)
+    niantic_session = get_async_requests_session(args.proxy_retries,
+                                                 args.proxy_backoff_factor,
+                                                 proxy_concurrency)
 
     # Start proxy checking.
     total_proxies = len(proxies)
@@ -181,7 +190,8 @@ def check_proxies(args, proxies):
 
     # Start async requests & store futures.
     for proxy in proxies:
-        future_ptc, future_niantic = start_request_futures(session,
+        future_ptc, future_niantic = start_request_futures(ptc_session,
+                                                           niantic_session,
                                                            proxy,
                                                            args.proxy_timeout)
 
