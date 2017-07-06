@@ -91,13 +91,13 @@ def start_request_futures(session, proxy, timeout):
                          'https%3A%2F%2Fwww.nianticlabs.com%2Fpokemongo' \
                          '%2Ferror'
 
-    log.debug('Checking proxy: %s.', proxy[1])
+    log.debug('Checking proxy: %s.', proxy)
 
     # Send request to nianticlabs.com.
     future_niantic = session.post(
         proxy_test_url,
         '',
-        proxies={'http': proxy[1], 'https': proxy[1]},
+        proxies={'http': proxy, 'https': proxy},
         timeout=timeout,
         background_callback=__proxy_check_completed)
 
@@ -105,7 +105,7 @@ def start_request_futures(session, proxy, timeout):
     future_ptc = session.get(
         proxy_test_ptc_url,
         '',
-        proxies={'http': proxy[1], 'https': proxy[1]},
+        proxies={'http': proxy, 'https': proxy},
         timeout=timeout,
         headers={'User-Agent':
                  'pokemongo/1 '
