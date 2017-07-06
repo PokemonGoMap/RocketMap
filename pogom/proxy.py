@@ -157,6 +157,8 @@ def load_proxies(args):
 
 # Check all proxies and return a working list with proxies.
 def check_proxies(args, proxies):
+    total_proxies = len(proxies)
+
     # Store counter per result type.
     check_results = [0] * (check_result_max + 1)
 
@@ -164,7 +166,7 @@ def check_proxies(args, proxies):
     proxy_concurrency = args.proxy_concurrency
 
     if args.proxy_concurrency == 0:
-        proxy_concurrency = len(proxies)
+        proxy_concurrency = total_proxies
 
     # Get persistent session per host.
     # TODO: Rework API request wrapper so requests are retried, then increase
@@ -175,9 +177,6 @@ def check_proxies(args, proxies):
     niantic_session = get_async_requests_session(args.proxy_retries,
                                                  args.proxy_backoff_factor,
                                                  proxy_concurrency)
-
-    # Start proxy checking.
-    total_proxies = len(proxies)
 
     # List to hold background workers.
     proxy_queue = []
