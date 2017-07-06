@@ -104,7 +104,6 @@ def start_request_futures(session, proxy, timeout):
     # Send request to pokemon.com.
     future_ptc = session.get(
         proxy_test_ptc_url,
-        '',
         proxies={'http': proxy, 'https': proxy},
         timeout=timeout,
         headers={'User-Agent':
