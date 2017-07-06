@@ -184,18 +184,25 @@ def __get_requests_session(args):
 def __get_key_fields(whtype):
     key_fields = {
         # lure_expiration is a UTC timestamp so it's good (Y).
-        'pokestop': ['enabled', 'latitude',
-                     'longitude', 'lure_expiration', 'active_fort_modifier'],
-        'pokemon': ['spawnpoint_id', 'pokemon_id', 'latitude', 'longitude',
-                    'disappear_time', 'move_1', 'move_2',
-                    'individual_stamina', 'individual_defense',
-                    'individual_attack', 'form', 'cp', 'pokemon_level'],
-        'gym': ['team_id', 'guard_pokemon_id', 'gym_points', 'enabled',
-                'latitude', 'longitude', 'total_cp',
-                'lowest_pokemon_motivation', 'occupied_seconds'],
+        'pokestop': [
+            'enabled', 'latitude', 'longitude', 'lure_expiration',
+            'active_fort_modifier'
+        ],
+        'pokemon': [
+            'spawnpoint_id', 'pokemon_id', 'latitude', 'longitude',
+            'disappear_time', 'move_1', 'move_2', 'individual_stamina',
+            'individual_defense', 'individual_attack', 'form', 'cp',
+            'pokemon_level'
+        ],
+        'gym': [
+            'team_id', 'guard_pokemon_id', 'enabled', 'latitude', 'longitude',
+            'raid_active_until', 'occupied_since_ms', 'total_cp',
+            'lowest_pokemon_motivation', 'slots_available'
+        ],
         'gym_details': ['latitude', 'longitude', 'team', 'pokemon'],
-        'raid': ['spawn', 'start', 'end', 'pokemon_id', 'latitude',
-                 'longitude']
+        'raid': [
+            'spawn', 'start', 'end', 'pokemon_id', 'latitude', 'longitude'
+        ]
     }
 
     return key_fields.get(whtype, [])

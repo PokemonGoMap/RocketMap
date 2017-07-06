@@ -617,7 +617,7 @@ class Gym(BaseModel):
                            GymMember.gym_id,
                            GymPokemon.cp.alias('pokemon_cp'),
                            GymMember.cp_decayed.alias('pokemon_cp_decayed'),
-                           GymMember.deployment_time.alias('deployment_time'),
+                           GymMember.deployment_time,
                            GymPokemon.pokemon_id,
                            Trainer.name.alias('trainer_name'),
                            Trainer.level.alias('trainer_level'))
@@ -664,22 +664,26 @@ class Gym(BaseModel):
 
     @staticmethod
     def get_gym(id):
-        result = (Gym
-                  .select(Gym.gym_id,
-                          Gym.team_id,
-                          GymDetails.name,
-                          GymDetails.description,
-                          Gym.guard_pokemon_id,
-                          Gym.slots_available,
-                          Gym.latitude,
-                          Gym.longitude,
-                          Gym.last_modified,
-                          Gym.last_scanned)
-                  .join(GymDetails, JOIN.LEFT_OUTER,
-                        on=(Gym.gym_id == GymDetails.gym_id))
-                  .where(Gym.gym_id == id)
-                  .dicts()
-                  .get())
+
+        try:
+            result = (Gym
+                      .select(Gym.gym_id,
+                              Gym.team_id,
+                              GymDetails.name,
+                              GymDetails.description,
+                              Gym.guard_pokemon_id,
+                              Gym.slots_available,
+                              Gym.latitude,
+                              Gym.longitude,
+                              Gym.last_modified,
+                              Gym.last_scanned)
+                      .join(GymDetails, JOIN.LEFT_OUTER,
+                            on=(Gym.gym_id == GymDetails.gym_id))
+                      .where(Gym.gym_id == id)
+                      .dicts()
+                      .get())
+        except Gym.DoesNotExist:
+            return None
 
         result['guard_pokemon_name'] = get_pokemon_name(
             result['guard_pokemon_id']) if result['guard_pokemon_id'] else ''
@@ -687,7 +691,8 @@ class Gym(BaseModel):
 
         pokemon = (GymMember
                    .select(GymPokemon.cp.alias('pokemon_cp'),
-                           GymMember.cp_decayed.alias('pokemon_cp_decayed'),
+                           GymMember.cp_decayed,
+                           GymMember.deployment_time,
                            GymPokemon.pokemon_id,
                            GymPokemon.pokemon_uid,
                            GymPokemon.move_1,
@@ -722,15 +727,14 @@ class Gym(BaseModel):
 
             result['pokemon'].append(p)
 
-        raids = (Raid.select().where(Raid.gym_id == id).dicts())
-
-        # Really it should always be only one.
-        if len(raids) > 0:
-            raid = raids[0]
+        try:
+            raid = Raid.select(Raid).where(Raid.gym_id == id).dicts().get()
             if raid['pokemon_id']:
                 raid['pokemon_name'] = get_pokemon_name(raid['pokemon_id'])
                 raid['pokemon_types'] = get_pokemon_types(raid['pokemon_id'])
             result['raid'] = raid
+        except Raid.DoesNotExist:
+            pass
 
         return result
 
@@ -2298,9 +2302,16 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
             elif config['parse_gyms'] and f.get('type') is None:
                 b64_gym_id = b64encode(str(f['id']))
                 gym_display = f.get('gym_display', {})
-
+                raid_info = f.get('raid_info', {})
                 # Send gyms to webhooks.
                 if args.webhooks and not args.webhook_updates_only:
+                    raid_active_until = 0
+                    raid_battle_ms = raid_info.get('raid_battle_ms', 0)
+                    raid_end_ms = raid_info.get('raid_end_ms', 0)
+
+                    if raid_battle_ms / 1000 > time.time():
+                        raid_active_until = raid_end_ms / 1000
+
                     # Explicitly set 'webhook_data', in case we want to change
                     # the information pushed to webhooks.  Similar to above
                     # and previous commits.
@@ -2323,10 +2334,14 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                             f['longitude'],
                         'lowest_pokemon_motivation':
                             gym_display.get('lowest_pokemon_motivation', 0),
-                        'occupied_seconds':
-                            gym_display.get('occupied_millis', 0) / 1000,
+                        'occupied_since_ms':
+                            calendar.timegm((datetime.utcnow() - timedelta(
+                                milliseconds=gym_display.get(
+                                    'occupied_millis', 0))).timetuple()),
                         'last_modified':
-                            f['last_modified_timestamp_ms']
+                            f['last_modified_timestamp_ms'],
+                        'raid_active_until':
+                            raid_active_until
                     }))
 
                 gyms[f['id']] = {
@@ -2352,7 +2367,6 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                 }
 
                 if config['parse_raids'] and f.get('type') is None:
-                    raid_info = f.get('raid_info', {})
                     if raid_info:
                         raids[f['id']] = {
                             'gym_id': f['id'],
