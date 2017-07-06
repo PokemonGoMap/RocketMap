@@ -32,9 +32,9 @@ from .utils import (get_pokemon_name, get_pokemon_rarity, get_pokemon_types,
                     get_move_type, clear_dict_response, calc_pokemon_level)
 from .transform import transform_from_wgs_to_gcj, get_new_coords
 from .customLog import printPokemon
-
-from .account import (tutorial_pokestop_spin, check_login,
-                      setup_api, encounter_pokemon_request)
+from .account import (tutorial_pokestop_spin, check_login, setup_api,
+                      encounter_pokemon_request)
+from .captcha import automatic_captcha_solve
 
 log = logging.getLogger(__name__)
 
@@ -2027,7 +2027,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                     check_login(args, hlvl_account, hlvl_api, scan_location,
                                 status['proxy_url'])
 
-                    # Encounter Pokémon.
+                    # Make a Pokemon encounter request.
                     encounter_result = encounter_pokemon_request(
                         hlvl_api,
                         account,
@@ -2037,7 +2037,6 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
 
                     # Handle errors.
                     if encounter_result:
-                        # Readability.
                         responses = encounter_result['responses']
 
                         # Check for captcha.
@@ -2045,40 +2044,52 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                             'CHECK_CHALLENGE']['challenge_url']
 
                         # Throw warning but finish parsing.
-                        if len(captcha_url) > 1:
+                        if len(captcha_url) > 1 and (not args.captcha_solving
+                                                     and not args.captcha_key):
                             # Flag account.
-                            hlvl_account['captcha'] = True
-                            log.error('Account %s encountered a captcha.'
-                                      + ' Account will not be used.',
-                                      hlvl_account['username'])
-                        else:
-                            # Update level indicator before we clear the
-                            # response.
-                            encounter_level = hlvl_account['level']
+                            hlvl_account['failed'] = True
+                            status['message'] = (
+                                'Level 30 account {} encountered a captcha. ' +
+                                'Account will not be used.').format(
+                                                    hlvl_account['username'])
+                            log.error(status['message'])
 
-                            # User error?
-                            if encounter_level < 30:
-                                raise Exception('Expected account of level 30'
-                                                + ' or higher, but account '
-                                                + hlvl_account['username']
-                                                + ' is only level '
-                                                + encounter_level + '.')
+                            if args.webhooks:
+                                wh_message = {'status_name': args.status_name,
+                                              'status': 'encounter',
+                                              'mode': 'disabled',
+                                              'account': account['username'],
+                                              'captcha': status['captcha'],
+                                              'time': 0}
+                                wh_update_queue.put(('captcha', wh_message))
+                        elif len(captcha_url) > 1 and automatic_captcha_solve(
+                                args, status, api, captcha_url, account,
+                                wh_update_queue):
+                            # Retry Pokemon encounter request.
+                            encounter_result = encounter_pokemon_request(
+                                hlvl_api,
+                                p['encounter_id'],
+                                p['spawn_point_id'],
+                                scan_location)
+                            responses = encounter_result['responses']
 
-                        # We're done with the encounter. If it's from an
-                        # AccountSet, release account back to the pool.
-                        if using_accountset:
-                            account_sets.release(hlvl_account)
-
+                        status_code = responses['ENCOUNTER'].get(
+                                        'status', 0)
+                        if status_code != 1:
+                            # Flag account.
+                            hlvl_account['failed'] = True
+                            log.error('Account %s has failed a encounter.'
+                                      + ' Got a "%s" status response.',
+                                      hlvl_account['username'],
+                                      status_code)
                         # Clear the response for memory management.
                         encounter_result = clear_dict_response(
                             encounter_result)
-                    else:
-                        # Something happened. Clean up.
 
-                        # We're done with the encounter. If it's from an
-                        # AccountSet, release account back to the pool.
-                        if using_accountset:
-                            account_sets.release(hlvl_account)
+                    # We're done with the encounter. If it's from an
+                    # AccountSet, release account back to the pool.
+                    if using_accountset:
+                        account_sets.release(hlvl_account)
                 else:
                     log.error('No L30 accounts are available, please'
                               + ' consider adding more. Skipping encounter.')
@@ -2138,16 +2149,13 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                     'move_1': pokemon_info['move_1'],
                     'move_2': pokemon_info['move_2'],
                     'height': pokemon_info['height_m'],
-                    'weight': pokemon_info['weight_kg']
+                    'weight': pokemon_info['weight_kg'],
+                    'cp_multiplier': pokemon_info.get('cp_multiplier', None)
                 })
 
                 # Only add CP if we're level 30+.
                 if encounter_level >= 30:
                     pokemon[p['encounter_id']]['cp'] = cp
-                    pokemon[p['encounter_id']][
-                        'cp_multiplier'] = pokemon_info.get(
-                        'cp_multiplier', None)
-
             if args.webhooks:
                 if (pokemon_id in args.webhook_whitelist or
                     (not args.webhook_whitelist and pokemon_id

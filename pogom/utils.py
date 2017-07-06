@@ -660,7 +660,7 @@ def get_args():
                         'auth_service': service,
                         'username': username,
                         'password': password,
-                        'captcha': False
+                        'failed': False
                     }
 
                     args.accounts_L30.append(hlvl_account)

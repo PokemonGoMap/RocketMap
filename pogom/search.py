@@ -1230,7 +1230,7 @@ def map_request(api, account, position, no_jitter=False):
 
 def gym_request(api, account, position, gym, api_version):
     try:
-        log.debug('Getting details for gym @ %f/%f (%fkm away)',
+        log.debug('Getting details for gym @ %f/%f (%fkm away).',
                   gym['latitude'], gym['longitude'],
                   calc_distance(position, [gym['latitude'], gym['longitude']]))
         req = api.create_request()
