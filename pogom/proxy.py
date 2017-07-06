@@ -161,7 +161,7 @@ def check_proxies(args, proxies):
     check_results = [0] * (check_result_max + 1)
 
     # If proxy testing concurrency is set to automatic, use max.
-    proxy_concurrency = 0
+    proxy_concurrency = args.proxy_concurrency
 
     if args.proxy_concurrency == 0:
         proxy_concurrency = len(proxies)
