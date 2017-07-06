@@ -27,7 +27,7 @@ from pogom.models import (init_database, create_tables, drop_tables,
                           verify_table_encoding, verify_database_schema)
 from pogom.webhook import wh_updater
 
-from pogom.proxy import check_proxies, proxies_refresher
+from pogom.proxy import load_proxies, check_proxies, proxies_refresher
 
 # Currently supported pgoapi.
 pgoapi_version = "1.1.7"
@@ -313,17 +313,19 @@ def main():
     config['GMAPS_KEY'] = args.gmaps_key
 
     if not args.only_server:
-
-        # Abort if we don't have a hash key set
+        # Abort if we don't have a hash key set.
         if not args.hash_key:
             log.critical('Hash key is required for scanning. Exiting.')
             sys.exit()
 
         # Processing proxies if set (load from file, check and overwrite old
-        # args.proxy with new working list)
-        args.proxy = check_proxies(args)
+        # args.proxy with new working list).
+        args.proxy = load_proxies(args)
 
-        # Run periodical proxy refresh thread
+        if not args.proxy_skip_check:
+            check_proxies(args, args.proxy)
+
+        # Run periodical proxy refresh thread.
         if (args.proxy_file is not None) and (args.proxy_refresh > 0):
             t = Thread(target=proxies_refresher,
                        name='proxy-refresh', args=(args,))
