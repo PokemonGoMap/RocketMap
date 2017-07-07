@@ -616,7 +616,7 @@ class Gym(BaseModel):
                        .select(
                            GymMember.gym_id,
                            GymPokemon.cp.alias('pokemon_cp'),
-                           GymMember.cp_decayed.alias('pokemon_cp_decayed'),
+                           GymMember.cp_decayed,
                            GymMember.deployment_time,
                            GymPokemon.pokemon_id,
                            Trainer.name.alias('trainer_name'),
