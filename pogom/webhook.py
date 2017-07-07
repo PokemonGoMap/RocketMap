@@ -197,7 +197,7 @@ def __get_key_fields(whtype):
         'gym': [
             'team_id', 'guard_pokemon_id', 'enabled', 'latitude', 'longitude',
             'raid_active_until', 'occupied_since', 'total_cp',
-            'lowest_pokemon_motivation', 'slots_available'
+            'slots_available'
         ],
         'gym_details': ['latitude', 'longitude', 'team', 'pokemon'],
         'raid': [
