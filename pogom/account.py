@@ -776,8 +776,8 @@ def spinning_try(api, fort, step_location, account, args, map_dict):
         if spin_result is 1:
             log.info('Successful Pokestop spin with %s.', account['username'])
             # Update account stats and clear inventory if necessary.
-            parse_inventory(api, account, spin_response)
             parse_level_up_rewards(api, account)
+            parse_inventory(api, account, spin_response)
             clear_inventory(api, account)
             account['session_spins'] += 1
             incubate_eggs(api, account)
@@ -1095,9 +1095,6 @@ def parse_level_up_rewards(api, account):
         if result is 1:
             log.info('Account %s collected its level up rewards.',
                      account['username'])
-            # Parse item rewards into account inventory.
-            parse_inventory(api, account, response)
-            return True
         elif result != 1:
             log.debug('Account %s already collected its level up rewards.',
                       account['username'])
