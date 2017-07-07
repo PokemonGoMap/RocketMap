@@ -647,7 +647,6 @@ class Gym(BaseModel):
 
             raids = (Raid
                      .select()
-                     .join(Gym, on=(Raid.gym_id == Gym.gym_id))
                      .where(Raid.gym_id << gym_ids)
                      .dicts())
 
@@ -2334,7 +2333,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                             f['longitude'],
                         'lowest_pokemon_motivation':
                             gym_display.get('lowest_pokemon_motivation', 0),
-                        'occupied_since_ms':
+                        'occupied_since':
                             calendar.timegm((datetime.utcnow() - timedelta(
                                 milliseconds=gym_display.get(
                                     'occupied_millis', 0))).timetuple()),
@@ -2582,44 +2581,17 @@ def parse_gyms(args, gym_responses, wh_update_queue, db_update_queue):
             }
 
             if args.webhooks:
-                webhook_data['pokemon'].append({
-                    'pokemon_uid':
-                        pokemon['id'],
-                    'pokemon_id':
-                        pokemon['pokemon_id'],
-                    'cp':
-                        member['motivated_pokemon']['cp_when_deployed'],
+                wh_pokemon = gym_pokemon[i].copy()
+                del wh_pokemon['last_seen']
+                wh_pokemon.update({
                     'cp_decayed':
                         member['motivated_pokemon']['cp_now'],
-                    'num_upgrades':
-                        pokemon.get('num_upgrades', 0),
-                    'move_1':
-                        pokemon.get('move_1'),
-                    'move_2':
-                        pokemon.get('move_2'),
-                    'height':
-                        pokemon.get('height_m'),
-                    'weight':
-                        pokemon.get('weight_kg'),
-                    'stamina':
-                        pokemon.get('stamina'),
-                    'stamina_max':
-                        pokemon.get('stamina_max'),
-                    'cp_multiplier':
-                        pokemon.get('cp_multiplier'),
-                    'additional_cp_multiplier':
-                        pokemon.get('additional_cp_multiplier', 0),
-                    'iv_defense':
-                        pokemon.get('individual_defense', 0),
-                    'iv_stamina':
-                        pokemon.get('individual_stamina', 0),
-                    'iv_attack':
-                        pokemon.get('individual_attack', 0),
-                    'trainer_name':
-                        member['trainer_public_profile']['name'],
                     'trainer_level':
                         member['trainer_public_profile']['level'],
+                    'deployment_time': calendar.timegm(
+                        gym_members[i]['deployment_time'].timetuple())
                 })
+                webhook_data['pokemon'].append(wh_pokemon)
 
             i += 1
         if args.webhooks:
