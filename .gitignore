@@ -19,6 +19,7 @@ static/pixel_icons/*.png
 static/icons-sprite.png
 static/icons-large-sprite.png
 static/icons/*.png
+static/css/custom.css
 *.csv
 *.bat
 *.sh
@@ -30,3 +31,4 @@ static/icons/*.png
 !contrib/supervisord/install-reinstall.sh
 !static/data/*
 !static/icons/hsl*.png
+!static/app/settings.json

@@ -13,8 +13,10 @@ import socket
 import struct
 import zipfile
 import requests
-from uuid import uuid4
+import hashlib
+
 from s2sphere import CellId, LatLng
+from geopy.geocoders import GoogleV3
 
 from . import config
 
@@ -275,6 +277,10 @@ def get_args():
                         help=('Disables Gyms from the map (including ' +
                               'parsing them into local db).'),
                         action='store_true', default=False)
+    parser.add_argument('-nr', '--no-raids',
+                        help=('Disables Raids from the map (including ' +
+                              'parsing them into local db).'),
+                        action='store_true', default=False)
     parser.add_argument('-nk', '--no-pokestops',
                         help=('Disables PokeStops from the map (including ' +
                               'parsing them into local db).'),
@@ -433,6 +439,8 @@ def get_args():
                         help=('Enables the use of X-FORWARDED-FOR headers ' +
                               'to identify the IP of clients connecting ' +
                               'through these trusted proxies.'))
+    parser.add_argument('--api-version', default='0.67.2',
+                        help=('API version currently in use.'))
     verbosity = parser.add_mutually_exclusive_group()
     verbosity.add_argument('-v', '--verbose',
                            help=('Show debug messages from RocketMap ' +
@@ -900,7 +908,11 @@ IPHONES = {'iPhone5,1': 'N41AP',
            'iPhone9,4': 'D111AP'}
 
 
-def generate_device_info():
+def generate_device_info(identifier):
+    md5 = hashlib.md5()
+    md5.update(identifier)
+    pick_hash = int(md5.hexdigest(), 16)
+
     device_info = {'device_brand': 'Apple', 'device_model': 'iPhone',
                    'hardware_manufacturer': 'Apple',
                    'firmware_brand': 'iPhone OS'}
@@ -912,19 +924,19 @@ def generate_device_info():
             '9.3', '9.3.1', '9.3.2', '9.3.3', '9.3.4', '9.3.5')
     ios10 = ('10.0', '10.0.1', '10.0.2', '10.0.3', '10.1', '10.1.1')
 
-    device_info['device_model_boot'] = random.choice(devices)
-    device_info['hardware_model'] = IPHONES[device_info['device_model_boot']]
-    device_info['device_id'] = uuid4().hex
+    device_pick = devices[pick_hash % len(devices)]
+    device_info['device_model_boot'] = device_pick
+    device_info['hardware_model'] = IPHONES[device_pick]
+    device_info['device_id'] = md5.hexdigest()
 
-    if device_info['hardware_model'] in ('iPhone9,1', 'iPhone9,2',
-                                         'iPhone9,3', 'iPhone9,4'):
-        device_info['firmware_type'] = random.choice(ios10)
-    elif device_info['hardware_model'] in ('iPhone8,1', 'iPhone8,2',
-                                           'iPhone8,4'):
-        device_info['firmware_type'] = random.choice(ios9 + ios10)
+    if device_pick in ('iPhone9,1', 'iPhone9,2', 'iPhone9,3', 'iPhone9,4'):
+        ios_pool = ios10
+    elif device_pick in ('iPhone8,1', 'iPhone8,2', 'iPhone8,4'):
+        ios_pool = ios9 + ios10
     else:
-        device_info['firmware_type'] = random.choice(ios8 + ios9 + ios10)
+        ios_pool = ios8 + ios9 + ios10
 
+    device_info['firmware_type'] = ios_pool[pick_hash % len(ios_pool)]
     return device_info
 
 
@@ -967,3 +979,37 @@ def calc_pokemon_level(cp_multiplier):
         pokemon_level = 171.0112688 * cp_multiplier - 95.20425243
     pokemon_level = int((round(pokemon_level) * 2) / 2)
     return pokemon_level
+
+
+@memoize
+def gmaps_reverse_geolocate(gmaps_key, locale, location):
+    # Find the reverse geolocation
+    geolocator = GoogleV3(api_key=gmaps_key)
+
+    player_locale = {
+        'country': 'US',
+        'language': locale,
+        'timezone': 'America/Denver'
+    }
+
+    try:
+        reverse = geolocator.reverse(location)
+        country_code = reverse[-1].raw['address_components'][-1]['short_name']
+
+        try:
+            timezone = geolocator.timezone(location)
+            player_locale.update({
+                'country': country_code,
+                'timezone': str(timezone)
+            })
+        except Exception as e:
+            log.exception('Exception on Google Timezone API. '
+                          + 'Please check that you have Google Timezone API'
+                          + ' enabled for your API key'
+                          + ' (https://developers.google.com/maps/'
+                          + 'documentation/timezone/intro): %s.', e)
+    except Exception as e:
+        log.exception('Exception while obtaining player locale: %s.'
+                      + ' Using default locale.', e)
+
+    return player_locale
