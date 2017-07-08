@@ -186,8 +186,8 @@ def rpc_login_sequence(args, api, account):
         request.download_settings()
         response = request.call()
 
-        parse_new_timestamp_ms(account, response)
         parse_download_settings(account, response)
+        parse_new_timestamp_ms(account, response)
         parse_inventory(api, account, response)
 
         total_req += 1
@@ -602,7 +602,7 @@ def spin_pokestop_request(api, account, fort, step_location):
         return response
 
     except Exception as e:
-        log.exception('Exception while spinning Pokestop: %s.', repr(e))
+        log.exception('Exception while spinning Pokestop: %s.', e)
         return False
 
 
@@ -623,7 +623,7 @@ def fort_details_request(api, account, fort):
         parse_new_timestamp_ms(account, response)
         return response
     except Exception as e:
-        log.exception('Exception while getting Pokestop details: %s.', repr(e))
+        log.exception('Exception while getting Pokestop details: %s.', e)
         return False
 
 
@@ -647,7 +647,7 @@ def encounter_pokemon_request(api, account, encounter_id, spawnpoint_id,
         parse_new_timestamp_ms(account, response)
         return response
     except Exception as e:
-        log.exception('Exception while encountering Pokémon: %s.', repr(e))
+        log.exception('Exception while encountering Pokémon: %s.', e)
         return False
 
 
@@ -1025,7 +1025,7 @@ def clear_inventory_request(api, account, item_id, drop_count):
         return clear_inventory_response
 
     except Exception as e:
-        log.warning('Exception while clearing Inventory: %s', repr(e))
+        log.warning('Exception while clearing Inventory: %s', e)
         return False
 
 
@@ -1049,7 +1049,7 @@ def request_use_item_egg_incubator(api, account, incubator_id, egg_id):
         return True
 
     except Exception as e:
-        log.warning('Exception while putting an egg in incubator: %s', repr(e))
+        log.warning('Exception while putting an egg in incubator: %s', e)
     return False
 
 
@@ -1071,7 +1071,7 @@ def request_release_pokemon(api, account, pokemon_id, release_ids=[]):
         return release_p_response
 
     except Exception as e:
-        log.error('Exception while releasing Pokemon: %s', repr(e))
+        log.error('Exception while releasing Pokemon: %s', e)
 
     return False
 
