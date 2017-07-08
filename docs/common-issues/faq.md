@@ -192,7 +192,7 @@ pip uninstall certifi
 pip install certifi==2015.4.28
 ```
 
-User `sudo` or `--user` if you are not using an account with root permission.
+Use `sudo` or `--user` if you are not using an account with root permission.
 
 And remember that you should do this every time after updating the requirements of the project.
 
