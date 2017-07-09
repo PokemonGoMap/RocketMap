@@ -50,6 +50,7 @@ var oSwLat
 var oSwLng
 var oNeLat
 var oNeLng
+var nestMarkers = {}
 
 var lastpokestops
 var lastgyms
@@ -110,6 +111,37 @@ function removePokemonMarker(encounterId) { // eslint-disable-line no-unused-var
     }
     mapData.pokemons[encounterId].marker.setMap(null)
     mapData.pokemons[encounterId].hidden = true
+}
+
+function pointHistory() { // eslint-disable-line no-unused-vars
+    $('div[id=nestlist]').empty()
+    document.getElementById('spawn2-ldg-label').innerHTML = 'Retrieving data'
+    var bounds = map.getBounds()
+    var swPoint = bounds.getSouthWest()
+    var nePoint = bounds.getNorthEast()
+    var swLat = swPoint.lat()
+    var swLng = swPoint.lng()
+    var neLat = nePoint.lat()
+    var neLng = nePoint.lng()
+
+    $.ajax({
+        url: 'pointhistory',
+        dataType: 'json',
+        data: {
+            'swLat': swLat,
+            'swLng': swLng,
+            'neLat': neLat,
+            'neLng': neLng
+        },
+        async: true,
+        success: function (data) {
+            spHistory(data)
+        },
+        error: function (jqXHR, status, error) {
+            console.log('Error loading nest data: ' + error)
+            document.getElementById('spawn2-ldg-label').innerHTML = 'Error retrieving data'
+        }
+    })
 }
 
 function initMap() { // eslint-disable-line no-unused-vars
@@ -660,10 +692,36 @@ function formatSpawnTime(seconds) {
     return ('0' + Math.floor(((seconds + 3600) % 3600) / 60)).substr(-2) + ':' + ('0' + seconds % 60).substr(-2)
 }
 
+function addNestMarker(latilongi, spID, pokename) { // eslint-disable-line no-unused-vars
+    var marker = new google.maps.Marker({
+        position: latilongi,
+        title: spID,
+        draggable: false,
+        map: map,
+        id: spID,
+        animation: google.maps.Animation.DROP,
+        icon: {
+            url: 'static/marker_icons/grass1.png',
+            scaledSize: new google.maps.Size(48, 48)
+        }
+    })
+    nestMarkers[spID] = marker
+    marker.infoWindow = new google.maps.InfoWindow({
+        content: '<div><b>' + pokename + '</b></div>',
+        disableAutoPan: true
+    })
+    addListeners(marker)
+}
+
+function removeNestMarker(spID) { // eslint-disable-line no-unused-vars
+    var marker = nestMarkers[spID]
+    marker.setMap(null)
+}
+
 function spawnpointLabel(item) {
     var str = `
         <div>
-            <b>Spawn Point</b>
+            <i class="fa fa-paw" /> <b> Spawn Point </b></i>
         </div>
         <div>
             Every hour from ${formatSpawnTime(item.time)} to ${formatSpawnTime(item.time + 900)}
@@ -675,6 +733,11 @@ function spawnpointLabel(item) {
                 May appear as early as ${formatSpawnTime(item.time - 1800)}
             </div>`
     }
+
+    str += `
+      <div>
+      <a href="javascript:getStats('${item.spawnpoint_id}')">Spawn history</a>&nbsp;&nbsp;
+    </div>`
     return str
 }
 
