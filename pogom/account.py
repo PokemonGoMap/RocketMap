@@ -133,8 +133,8 @@ def rpc_login_sequence(args, api, account):
     log.debug('Starting RPC login sequence...')
 
     try:
-        request = api.create_request()
-        request.call()
+        req = api.create_request()
+        req.call()
 
         total_req += 1
         time.sleep(random.uniform(.43, .97))
@@ -176,15 +176,15 @@ def rpc_login_sequence(args, api, account):
     old_config = account.get('remote_config', {})
 
     try:
-        request = api.create_request()
-        request.download_remote_config_version(platform=1,
-                                               app_version=app_version)
-        request.check_challenge()
-        request.get_hatched_eggs()
-        request.get_inventory(last_timestamp_ms=0)
-        request.check_awarded_badges()
-        request.download_settings()
-        response = request.call()
+        req = api.create_request()
+        req.download_remote_config_version(platform=1,
+                                           app_version=app_version)
+        req.check_challenge()
+        req.get_hatched_eggs()
+        req.get_inventory(last_timestamp_ms=0)
+        req.check_awarded_badges()
+        req.download_settings()
+        response = req.call()
 
         parse_download_settings(account, response)
         parse_new_timestamp_ms(account, response)
@@ -211,21 +211,21 @@ def rpc_login_sequence(args, api, account):
         time.sleep(random.uniform(.7, 1.2))
 
         while result == 2:
-            request = api.create_request()
-            request.get_asset_digest(
+            req = api.create_request()
+            req.get_asset_digest(
                 platform=1,
                 app_version=app_version,
                 paginate=True,
                 page_offset=page_offset,
                 page_timestamp=page_timestamp)
-            request.check_challenge()
-            request.get_hatched_eggs()
-            request.get_inventory(last_timestamp_ms=account[
+            req.check_challenge()
+            req.get_hatched_eggs()
+            req.get_inventory(last_timestamp_ms=account[
                 'last_timestamp_ms'])
-            request.check_awarded_badges()
-            request.download_settings(hash=account[
+            req.check_awarded_badges()
+            req.download_settings(hash=account[
                 'remote_config']['hash'])
-            response = request.call()
+            response = req.call()
 
             parse_new_timestamp_ms(account, response)
 
@@ -262,19 +262,19 @@ def rpc_login_sequence(args, api, account):
         page_timestamp = 0
 
         while result == 2:
-            request = api.create_request()
-            request.download_item_templates(
+            req = api.create_request()
+            req.download_item_templates(
                 paginate=True,
                 page_offset=page_offset,
                 page_timestamp=page_timestamp)
-            request.check_challenge()
-            request.get_hatched_eggs()
-            request.get_inventory(
+            req.check_challenge()
+            req.get_hatched_eggs()
+            req.get_inventory(
                 last_timestamp_ms=account['last_timestamp_ms'])
-            request.check_awarded_badges()
-            request.download_settings(
+            req.check_awarded_badges()
+            req.download_settings(
                 hash=account['remote_config']['hash'])
-            response = request.call()
+            response = req.call()
 
             parse_new_timestamp_ms(account, response)
 
@@ -311,15 +311,15 @@ def rpc_login_sequence(args, api, account):
     log.debug('Fetching player profile...')
 
     try:
-        request = api.create_request()
-        request.get_player_profile()
-        request.check_challenge()
-        request.get_hatched_eggs()
-        request.get_inventory(last_timestamp_ms=account['last_timestamp_ms'])
-        request.check_awarded_badges()
-        request.download_settings(hash=account['remote_config']['hash'])
-        request.get_buddy_walked()
-        response = request.call()
+        req = api.create_request()
+        req.get_player_profile()
+        req.check_challenge()
+        req.get_hatched_eggs()
+        req.get_inventory(last_timestamp_ms=account['last_timestamp_ms'])
+        req.check_awarded_badges()
+        req.download_settings(hash=account['remote_config']['hash'])
+        req.get_buddy_walked()
+        response = req.call()
 
         parse_new_timestamp_ms(account, response)
 
@@ -336,9 +336,9 @@ def rpc_login_sequence(args, api, account):
 
     log.debug('Retrieving Store Items...')
     try:  # 7 - Make an empty request to retrieve store items.
-        request = api.create_request()
-        request.get_store_items()
-        response = request.call()
+        req = api.create_request()
+        req.get_store_items()
+        response = req.call()
 
         total_req += 1
         time.sleep(random.uniform(.6, 1.1))
@@ -352,16 +352,16 @@ def rpc_login_sequence(args, api, account):
     log.debug('Checking if there are level up rewards to claim...')
 
     try:
-        request = api.create_request()
-        request.level_up_rewards(level=account['level'])
-        request.check_challenge()
-        request.get_hatched_eggs()
-        request.get_inventory(last_timestamp_ms=account['last_timestamp_ms'])
-        request.check_awarded_badges()
-        request.download_settings(hash=account['remote_config']['hash'])
-        request.get_buddy_walked()
-        request.get_inbox(is_history=True)
-        response = request.call()
+        req = api.create_request()
+        req.level_up_rewards(level=account['level'])
+        req.check_challenge()
+        req.get_hatched_eggs()
+        req.get_inventory(last_timestamp_ms=account['last_timestamp_ms'])
+        req.check_awarded_badges()
+        req.download_settings(hash=account['remote_config']['hash'])
+        req.get_buddy_walked()
+        req.get_inbox(is_history=True)
+        response = req.call()
 
         parse_new_timestamp_ms(account, response)
 
@@ -389,15 +389,15 @@ def complete_tutorial(args, api, account):
     tutorial_state = account['tutorials']
     if 0 not in tutorial_state:
         time.sleep(random.uniform(1, 5))
-        request = api.create_request()
-        request.mark_tutorial_complete(tutorials_completed=0)
+        req = api.create_request()
+        req.mark_tutorial_complete(tutorials_completed=0)
         log.debug('Sending 0 tutorials_completed for %s.', account['username'])
-        request.call(False)
+        req.call()
 
     if 1 not in tutorial_state:
         time.sleep(random.uniform(5, 12))
-        request = api.create_request()
-        request.set_avatar(player_avatar={
+        req = api.create_request()
+        req.set_avatar(player_avatar={
             'hair': random.randint(1, 5),
             'shirt': random.randint(1, 3),
             'pants': random.randint(1, 2),
@@ -408,47 +408,48 @@ def complete_tutorial(args, api, account):
         })
         log.debug('Sending set random player character request for %s.',
                   account['username'])
-        request.call(False)
+        req.call()
 
         time.sleep(random.uniform(0.3, 0.5))
 
-        request = api.create_request()
-        request.mark_tutorial_complete(tutorials_completed=1)
+        req = api.create_request()
+        req.mark_tutorial_complete(tutorials_completed=1)
         log.debug('Sending 1 tutorials_completed for %s.', account['username'])
-        request.call(False)
+        req.call()
 
     time.sleep(random.uniform(0.5, 0.6))
-    request = api.create_request()
-    request.get_player_profile()
+    req = api.create_request()
+    req.get_player_profile()
     log.debug('Fetching player profile for %s...', account['username'])
-    request.call(False)
+    req.call()
 
     starter_id = None
     if 3 not in tutorial_state:
         time.sleep(random.uniform(1, 1.5))
-        request = api.create_request()
-        request.get_download_urls(asset_id=[
+        req = api.create_request()
+        req.get_download_urls(asset_id=[
             '1a3c2816-65fa-4b97-90eb-0b301c064b7a/1477084786906000',
             'aa8f7687-a022-4773-b900-3a8c170e9aea/1477084794890000',
             'e89109b0-9a54-40fe-8431-12f7826c8194/1477084802881000'])
         log.debug('Grabbing some game assets.')
-        request.call(False)
+        req.call()
 
         time.sleep(random.uniform(1, 1.6))
-        request = api.create_request()
-        request.call(False)
+        req = api.create_request()
+        req.call()
 
         time.sleep(random.uniform(6, 13))
-        request = api.create_request()
+        req = api.create_request()
         starter = random.choice((1, 4, 7))
-        request.encounter_tutorial_complete(pokemon_id=starter)
+        req.encounter_tutorial_complete(pokemon_id=starter)
         log.debug('Catching the starter for %s.', account['username'])
-        request.call(False)
+        req.call()
 
         time.sleep(random.uniform(0.5, 0.6))
-        request = api.create_request()
-        request.get_player(player_locale=args.player_locale)
-        responses = request.call(False).get('responses', {})
+        req = api.create_request()
+        req.get_player(
+            player_locale=args.player_locale)
+        responses = req.call().get('responses', {})
 
         if 'GET_INVENTORY' in responses:
             for item in (responses['GET_INVENTORY'].inventory_delta
@@ -459,36 +460,36 @@ def complete_tutorial(args, api, account):
 
     if 4 not in tutorial_state:
         time.sleep(random.uniform(5, 12))
-        request = api.create_request()
-        request.claim_codename(codename=account['username'])
+        req = api.create_request()
+        req.claim_codename(codename=account['username'])
         log.debug('Claiming codename for %s.', account['username'])
-        request.call(False)
+        req.call()
 
         time.sleep(random.uniform(1, 1.3))
-        request = api.create_request()
-        request.mark_tutorial_complete(tutorials_completed=4)
+        req = api.create_request()
+        req.mark_tutorial_complete(tutorials_completed=4)
         log.debug('Sending 4 tutorials_completed for %s.', account['username'])
-        request.call(False)
+        req.call()
 
         time.sleep(0.1)
-        request = api.create_request()
-        request.get_player(
+        req = api.create_request()
+        req.get_player(
             player_locale=args.player_locale)
-        request.call(False)
+        req.call()
 
     if 7 not in tutorial_state:
         time.sleep(random.uniform(4, 10))
-        request = api.create_request()
-        request.mark_tutorial_complete(tutorials_completed=7)
+        req = api.create_request()
+        req.mark_tutorial_complete(tutorials_completed=7)
         log.debug('Sending 7 tutorials_completed for %s.', account['username'])
-        request.call(False)
+        req.call()
 
     if starter_id:
         time.sleep(random.uniform(3, 5))
-        request = api.create_request()
-        request.set_buddy_pokemon(pokemon_id=starter_id)
+        req = api.create_request()
+        req.set_buddy_pokemon(pokemon_id=starter_id)
         log.debug('Setting buddy pokemon for %s.', account['username'])
-        request.call(False)
+        req.call()
         time.sleep(random.uniform(0.8, 1.8))
 
     # Sleeping before we start scanning to avoid Niantic throttling.
@@ -506,6 +507,33 @@ def get_player_level(map_dict):
                 return item.inventory_item_data.player_stats.level
 
     return 0
+
+
+def reset_account(account):
+    account['start_time'] = time.time()
+    account['warning'] = None
+    account['tutorials'] = []
+    account['items'] = {}
+    account['pokemons'] = {}
+    account['incubators'] = []
+    account['eggs'] = []
+    account['level'] = 0
+    account['spins'] = 0
+    account['session_spins'] = 0
+    account['hour_spins'] = 0
+    account['walked'] = 0.0
+
+
+def cleanup_account_stats(account):
+    elapsed_time = time.time() - account['start_time']
+
+    # Just to prevent division by 0 errors, when needed
+    # set elapsed to 1 millisecond.
+    if elapsed_time == 0:
+        elapsed_time = 1
+
+    spins_h = account['session_spins'] * 3600.0 / elapsed_time
+    account['hour_spins'] = spins_h
 
 
 def spin_pokestop(api, account, fort, step_location):
@@ -544,198 +572,6 @@ def spin_pokestop(api, account, fort, step_location):
                 spin_result)
 
     return False
-
-
-def parse_download_settings(account, api_response):
-    if 'DOWNLOAD_REMOTE_CONFIG_VERSION' in api_response['responses']:
-        remote_config = (api_response['responses']
-                         .get('DOWNLOAD_REMOTE_CONFIG_VERSION', 0))
-        if 'asset_digest_timestamp_ms' in remote_config:
-            asset_time = remote_config['asset_digest_timestamp_ms'] / 1000000
-        if 'item_templates_timestamp_ms' in remote_config:
-            template_time = remote_config['item_templates_timestamp_ms'] / 1000
-
-        download_settings = {}
-        download_settings['hash'] = api_response[
-            'responses']['DOWNLOAD_SETTINGS']['hash']
-        download_settings['asset_time'] = asset_time
-        download_settings['template_time'] = template_time
-
-        account['remote_config'] = download_settings
-
-        log.debug('Download settings for account %s: %s.',
-                  account['username'],
-                  download_settings)
-        return True
-
-
-# Parse new timestamp from the GET_INVENTORY response.
-def parse_new_timestamp_ms(account, api_response):
-    if 'GET_INVENTORY' in api_response['responses']:
-        account['last_timestamp_ms'] = (api_response['responses']
-                                                    ['GET_INVENTORY']
-                                                    ['inventory_delta']
-                                        .get('new_timestamp_ms', 0))
-
-        player_level = get_player_level(api_response)
-        if player_level:
-            account['level'] = player_level
-
-
-def spin_pokestop_request(api, account, fort, step_location):
-    try:
-        req = api.create_request()
-        req.fort_search(
-            fort_id=fort['id'],
-            fort_latitude=fort['latitude'],
-            fort_longitude=fort['longitude'],
-            player_latitude=step_location[0],
-            player_longitude=step_location[1])
-        req.check_challenge()
-        req.get_hatched_eggs()
-        req.get_inventory(last_timestamp_ms=account['last_timestamp_ms'])
-        req.check_awarded_badges()
-        req.get_buddy_walked()
-        req.get_inbox(is_history=True)
-        response = req.call()
-        parse_new_timestamp_ms(account, response)
-        return response
-
-    except Exception as e:
-        log.exception('Exception while spinning Pokestop: %s.', e)
-        return False
-
-
-def fort_details_request(api, account, fort):
-    try:
-        req = api.create_request()
-        req.fort_details(
-            fort_id=fort['id'],
-            latitude=fort['latitude'],
-            longitude=fort['longitude'])
-        req.check_challenge()
-        req.get_hatched_eggs()
-        req.get_inventory(last_timestamp_ms=account['last_timestamp_ms'])
-        req.check_awarded_badges()
-        req.get_buddy_walked()
-        req.get_inbox(is_history=True)
-        response = req.call()
-        parse_new_timestamp_ms(account, response)
-        return response
-    except Exception as e:
-        log.exception('Exception while getting Pokestop details: %s.', e)
-        return False
-
-
-def encounter_pokemon_request(api, account, encounter_id, spawnpoint_id,
-                              scan_location):
-    try:
-        # Setup encounter request envelope.
-        req = api.create_request()
-        req.encounter(
-            encounter_id=encounter_id,
-            spawn_point_id=spawnpoint_id,
-            player_latitude=scan_location[0],
-            player_longitude=scan_location[1])
-        req.check_challenge()
-        req.get_hatched_eggs()
-        req.get_inventory(last_timestamp_ms=account['last_timestamp_ms'])
-        req.check_awarded_badges()
-        req.get_buddy_walked()
-        req.get_inbox(is_history=True)
-        response = req.call()
-        parse_new_timestamp_ms(account, response)
-        return response
-    except Exception as e:
-        log.exception('Exception while encountering Pokémon: %s.', e)
-        return False
-
-
-# The AccountSet returns a scheduler that cycles through different
-# sets of accounts (e.g. L30). Each set is defined at runtime, and is
-# (currently) used to separate regular accounts from L30 accounts.
-# TODO: Migrate the old account Queue to a real AccountScheduler, preferably
-# handled globally via database instead of per instance.
-# TODO: Accounts in the AccountSet are exempt from things like the
-# account recycler thread. We could've hardcoded support into it, but that
-# would have added to the amount of ugly code. Instead, we keep it as is
-# until we have a proper account manager.
-class AccountSet(object):
-
-    def __init__(self, kph):
-        self.sets = {}
-
-        # Scanning limits.
-        self.kph = kph
-
-        # Thread safety.
-        self.next_lock = Lock()
-
-    # Set manipulation.
-    def create_set(self, name, values=[]):
-        if name in self.sets:
-            raise Exception('Account set ' + name + ' is being created twice.')
-
-        self.sets[name] = values
-
-    # Release an account back to the pool after it was used.
-    def release(self, account):
-        if 'in_use' not in account:
-            log.error('Released account %s back to the AccountSet,'
-                      + " but it wasn't locked.",
-                      account['username'])
-        else:
-            account['in_use'] = False
-
-    # Get next account that is ready to be used for scanning.
-    def next(self, set_name, coords_to_scan):
-        # Yay for thread safety.
-        with self.next_lock:
-            # Readability.
-            account_set = self.sets[set_name]
-
-            # Loop all accounts for a good one.
-            now = default_timer()
-            max_speed_kmph = self.kph
-
-            for i in range(len(account_set)):
-                account = account_set[i]
-
-                # Make sure it's not in use.
-                if account.get('in_use', False):
-                    continue
-
-                # Make sure it's not captcha'd.
-                if account.get('captcha', False):
-                    continue
-
-                # Check if we're below speed limit for account.
-                last_scanned = account.get('last_scanned', False)
-
-                if last_scanned:
-                    seconds_passed = now - last_scanned
-                    old_coords = account.get('last_coords', coords_to_scan)
-
-                    distance_km = equi_rect_distance(
-                        old_coords,
-                        coords_to_scan)
-                    cooldown_time_sec = distance_km / max_speed_kmph * 3600
-
-                    # Not enough time has passed for this one.
-                    if seconds_passed < cooldown_time_sec:
-                        continue
-
-                # We've found an account that's ready.
-                account['last_scanned'] = now
-                account['last_coords'] = coords_to_scan
-                account['in_use'] = True
-
-                return account
-
-        # TODO: Instead of returning False, return the amount of min. seconds
-        # the instance needs to wait until the first account becomes available,
-        # so it doesn't need to keep asking if we know we need to wait.
-        return False
 
 
 # Check if Pokestop is spinnable and not on cooldown.
@@ -803,31 +639,53 @@ def spinning_try(api, fort, step_location, account, args, map_dict):
     return False
 
 
-def reset_account(account):
-    account['start_time'] = time.time()
-    account['warning'] = None
-    account['tutorials'] = []
-    account['items'] = {}
-    account['pokemons'] = {}
-    account['incubators'] = []
-    account['eggs'] = []
-    account['level'] = 0
-    account['spins'] = 0
-    account['session_spins'] = 0
-    account['hour_spins'] = 0
-    account['walked'] = 0.0
+def parse_download_settings(account, api_response):
+    if 'DOWNLOAD_REMOTE_CONFIG_VERSION' in api_response['responses']:
+        remote_config = (api_response['responses']
+                         .get('DOWNLOAD_REMOTE_CONFIG_VERSION', 0))
+        if 'asset_digest_timestamp_ms' in remote_config:
+            asset_time = remote_config['asset_digest_timestamp_ms'] / 1000000
+        if 'item_templates_timestamp_ms' in remote_config:
+            template_time = remote_config['item_templates_timestamp_ms'] / 1000
+
+        download_settings = {}
+        download_settings['hash'] = api_response[
+            'responses']['DOWNLOAD_SETTINGS']['hash']
+        download_settings['asset_time'] = asset_time
+        download_settings['template_time'] = template_time
+
+        account['remote_config'] = download_settings
+
+        log.debug('Download settings for account %s: %s.',
+                  account['username'],
+                  download_settings)
+        return True
 
 
-def cleanup_account_stats(account):
-    elapsed_time = time.time() - account['start_time']
+# Parse new timestamp from the GET_INVENTORY response.
+def parse_new_timestamp_ms(account, api_response):
+    if 'GET_INVENTORY' in api_response['responses']:
+        account['last_timestamp_ms'] = (api_response['responses']
+                                                    ['GET_INVENTORY']
+                                                    ['inventory_delta']
+                                        .get('new_timestamp_ms', 0))
 
-    # Just to prevent division by 0 errors, when needed
-    # set elapsed to 1 millisecond.
-    if elapsed_time == 0:
-        elapsed_time = 1
+        player_level = get_player_level(api_response)
+        if player_level:
+            account['level'] = player_level
 
-    spins_h = account['session_spins'] * 3600.0 / elapsed_time
-    account['hour_spins'] = spins_h
+
+def parse_get_player(account, api_response):
+    if 'GET_PLAYER' in api_response['responses']:
+        player_data = (api_response['responses']
+                                   ['GET_PLAYER']
+                       .get('player_data', {}))
+
+        account['warning'] = (api_response['responses']['GET_PLAYER']
+                              .get('warn', None))
+        account['banned'] = (api_response['responses']['GET_PLAYER']
+                             .get('banned', False))
+        account['tutorials'] = player_data.get('tutorial_state', [])
 
 
 # Parse player stats and inventory into account.
@@ -973,21 +831,7 @@ def clear_inventory(api, account):
     return
 
 
-def parse_get_player(account, api_response):
-    if 'GET_PLAYER' in api_response['responses']:
-        player_data = (api_response['responses']
-                                   ['GET_PLAYER']
-                       .get('player_data', {}))
-
-        account['warning'] = (api_response['responses']['GET_PLAYER']
-                              .get('warn', None))
-        account['banned'] = (api_response['responses']['GET_PLAYER']
-                             .get('banned', False))
-        account['tutorials'] = player_data.get('tutorial_state', [])
-
-
 def incubate_eggs(api, account):
-    log.debug('Available incubators %d.', len(account['incubators']))
     account['eggs'] = sorted(account['eggs'], key=lambda k: k['km_target'])
     for incubator in account['incubators']:
         if not account['eggs']:
@@ -1002,9 +846,78 @@ def incubate_eggs(api, account):
                      egg['id'], egg['km_target'], incubator['id'])
             account['incubators'].remove(incubator)
         else:
-            log.error('Failed to put egg on incubator #%s.', incubator['id'])
+            log.warning('Failed to put egg on incubator #%s.', incubator['id'])
 
     return
+
+
+def spin_pokestop_request(api, account, fort, step_location):
+    try:
+        req = api.create_request()
+        req.fort_search(
+            fort_id=fort['id'],
+            fort_latitude=fort['latitude'],
+            fort_longitude=fort['longitude'],
+            player_latitude=step_location[0],
+            player_longitude=step_location[1])
+        req.check_challenge()
+        req.get_hatched_eggs()
+        req.get_inventory(last_timestamp_ms=account['last_timestamp_ms'])
+        req.check_awarded_badges()
+        req.get_buddy_walked()
+        req.get_inbox(is_history=True)
+        response = req.call()
+        parse_new_timestamp_ms(account, response)
+        return response
+
+    except Exception as e:
+        log.exception('Exception while spinning Pokestop: %s.', e)
+        return False
+
+
+def fort_details_request(api, account, fort):
+    try:
+        req = api.create_request()
+        req.fort_details(
+            fort_id=fort['id'],
+            latitude=fort['latitude'],
+            longitude=fort['longitude'])
+        req.check_challenge()
+        req.get_hatched_eggs()
+        req.get_inventory(last_timestamp_ms=account['last_timestamp_ms'])
+        req.check_awarded_badges()
+        req.get_buddy_walked()
+        req.get_inbox(is_history=True)
+        response = req.call()
+        parse_new_timestamp_ms(account, response)
+        return response
+    except Exception as e:
+        log.exception('Exception while getting Pokestop details: %s.', e)
+        return False
+
+
+def encounter_pokemon_request(api, account, encounter_id, spawnpoint_id,
+                              scan_location):
+    try:
+        # Setup encounter request envelope.
+        req = api.create_request()
+        req.encounter(
+            encounter_id=encounter_id,
+            spawn_point_id=spawnpoint_id,
+            player_latitude=scan_location[0],
+            player_longitude=scan_location[1])
+        req.check_challenge()
+        req.get_hatched_eggs()
+        req.get_inventory(last_timestamp_ms=account['last_timestamp_ms'])
+        req.check_awarded_badges()
+        req.get_buddy_walked()
+        req.get_inbox(is_history=True)
+        response = req.call()
+        parse_new_timestamp_ms(account, response)
+        return response
+    except Exception as e:
+        log.exception('Exception while encountering Pokémon: %s.', e)
+        return False
 
 
 def clear_inventory_request(api, account, item_id, drop_count):
@@ -1025,7 +938,7 @@ def clear_inventory_request(api, account, item_id, drop_count):
         return clear_inventory_response
 
     except Exception as e:
-        log.warning('Exception while clearing Inventory: %s', e)
+        log.exception('Exception while clearing Inventory: %s', e)
         return False
 
 
@@ -1049,7 +962,7 @@ def request_use_item_egg_incubator(api, account, incubator_id, egg_id):
         return True
 
     except Exception as e:
-        log.warning('Exception while putting an egg in incubator: %s', e)
+        log.exception('Exception while putting an egg in incubator: %s', e)
     return False
 
 
@@ -1071,7 +984,7 @@ def request_release_pokemon(api, account, pokemon_id, release_ids=[]):
         return release_p_response
 
     except Exception as e:
-        log.error('Exception while releasing Pokemon: %s', e)
+        log.exception('Exception while releasing Pokemon: %s', e)
 
     return False
 
@@ -1100,3 +1013,90 @@ def parse_level_up_rewards(api, account):
                       account['username'])
     except Exception as e:
         log.exception('Error during getting Level Up Rewards %s.', e)
+
+
+# The AccountSet returns a scheduler that cycles through different
+# sets of accounts (e.g. L30). Each set is defined at runtime, and is
+# (currently) used to separate regular accounts from L30 accounts.
+# TODO: Migrate the old account Queue to a real AccountScheduler, preferably
+# handled globally via database instead of per instance.
+# TODO: Accounts in the AccountSet are exempt from things like the
+# account recycler thread. We could've hardcoded support into it, but that
+# would have added to the amount of ugly code. Instead, we keep it as is
+# until we have a proper account manager.
+class AccountSet(object):
+
+    def __init__(self, kph):
+        self.sets = {}
+
+        # Scanning limits.
+        self.kph = kph
+
+        # Thread safety.
+        self.next_lock = Lock()
+
+    # Set manipulation.
+    def create_set(self, name, values=[]):
+        if name in self.sets:
+            raise Exception('Account set ' + name + ' is being created twice.')
+
+        self.sets[name] = values
+
+    # Release an account back to the pool after it was used.
+    def release(self, account):
+        if 'in_use' not in account:
+            log.error('Released account %s back to the AccountSet,'
+                      + " but it wasn't locked.",
+                      account['username'])
+        else:
+            account['in_use'] = False
+
+    # Get next account that is ready to be used for scanning.
+    def next(self, set_name, coords_to_scan):
+        # Yay for thread safety.
+        with self.next_lock:
+            # Readability.
+            account_set = self.sets[set_name]
+
+            # Loop all accounts for a good one.
+            now = default_timer()
+            max_speed_kmph = self.kph
+
+            for i in range(len(account_set)):
+                account = account_set[i]
+
+                # Make sure it's not in use.
+                if account.get('in_use', False):
+                    continue
+
+                # Make sure it's not captcha'd.
+                if account.get('captcha', False):
+                    continue
+
+                # Check if we're below speed limit for account.
+                last_scanned = account.get('last_scanned', False)
+
+                if last_scanned:
+                    seconds_passed = now - last_scanned
+                    old_coords = account.get('last_coords', coords_to_scan)
+
+                    distance_km = equi_rect_distance(
+                        old_coords,
+                        coords_to_scan)
+                    cooldown_time_sec = distance_km / max_speed_kmph * 3600
+
+                    # Not enough time has passed for this one.
+                    if seconds_passed < cooldown_time_sec:
+                        continue
+
+                # We've found an account that's ready.
+                account['last_scanned'] = now
+                account['last_coords'] = coords_to_scan
+                account['in_use'] = True
+
+                return account
+
+        # TODO: Instead of returning False, return the amount of min. seconds
+        # the instance needs to wait until the first account becomes available,
+        # so it doesn't need to keep asking if we know we need to wait.
+        return False
