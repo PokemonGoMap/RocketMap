@@ -1138,7 +1138,7 @@ def search_worker_thread(args, account_queue, account_sets,
                     time.strftime(
                         '%H:%M:%S',
                         time.localtime(time.time() + args.scan_delay)))
-                log.info(status['message'])
+                log.debug(status['message'])
                 time.sleep(delay)
 
         # Catch any process exceptions, log them, and continue the thread.

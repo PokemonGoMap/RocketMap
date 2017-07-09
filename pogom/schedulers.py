@@ -1026,7 +1026,6 @@ class SpeedScan(HexSearch):
                 'invalid': ('Invalid response at step {}, abandoning ' +
                             'location.').format(step)
             }
-
             try:
                 item = q[i]
             except IndexError:
@@ -1056,6 +1055,8 @@ class SpeedScan(HexSearch):
                 messages['wait'] = 'Moving {}m to step {} for a {}.'.format(
                     int(distance * 1000), step,
                     best['kind'])
+                log.info('Moving {}m to next Location. Time remaining is {}.'
+                         .format(int(distance * 1000), secs_to_arrival))
                 # So we wait while the worker arrives at the destination
                 # But we don't want to sleep too long or the item might get
                 # taken by another worker

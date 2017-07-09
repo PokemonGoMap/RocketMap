@@ -594,6 +594,8 @@ def spinning_try(api, fort, step_location, account, args, map_dict):
 
     # Set 50% Chance to spin a Pokestop.
     if random.randint(0, 100) < 50:
+        time.sleep(random.uniform(0.8, 1.8))
+        fort_details_request(api, account, fort)
         time.sleep(random.uniform(2, 4))  # Don't let Niantic throttle.
         spin_response = spin_pokestop_request(api, account, fort,
                                               step_location)
