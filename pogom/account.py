@@ -683,8 +683,6 @@ def parse_get_player(account, api_response):
 
         account['warning'] = (api_response['responses']['GET_PLAYER']
                               .get('warn', None))
-        account['banned'] = (api_response['responses']['GET_PLAYER']
-                             .get('banned', False))
         account['tutorials'] = player_data.get('tutorial_state', [])
 
 
