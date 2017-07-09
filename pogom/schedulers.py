@@ -51,6 +51,7 @@ import geopy
 import json
 import time
 import sys
+import requests
 from timeit import default_timer
 from threading import Lock
 from copy import deepcopy
@@ -64,6 +65,7 @@ from .models import (hex_bounds, SpawnPoint, ScannedLocation,
                      ScanSpawnPoint, HashKeys)
 from .utils import now, cur_sec, cellid, equi_rect_distance
 from .altitude import get_altitude
+from .proxy import get_new_proxy
 
 log = logging.getLogger(__name__)
 
@@ -1156,16 +1158,75 @@ class SchedulerFactory():
 # The KeyScheduler returns a scheduler that cycles through the given hash
 # server keys.
 class KeyScheduler(object):
-
-    def __init__(self, keys, db_updates_queue):
+    def __init__(self, keys, args, db_updates_queue):
         self.keys = {}
-        for key in keys:
-            self.keys[key] = {
-                'remaining': 0,
-                'maximum': 0,
-                'peak': 0,
-                'expires': None
-            }
+        # Check if bossland is available
+        retry_time = 0
+        while True:
+            pr = None
+            if args.proxy:
+                status = get_new_proxy(args)
+                proxy = status['proxy_url']
+                pr = {
+                    'https': proxy,
+                    'http': proxy
+                }
+                log.debug("Using proxy: {}".format(pr['http']))
+
+            status_code = requests.get('https://pokehash.buddyauth.com',
+                                       proxies=pr).status_code
+            log.debug("Bossland returned: {}".format(status_code))
+            if status_code == 200:
+                log.debug("Bossland returned 200. Check OK. Start key check")
+                for key in keys:
+                    # TODO: If you find a better way to do the hash key check,
+                    # please say it. It's better for everyone that way.
+                    try:
+                        # TODO: Translate api-version flag into hash URL
+                        r = requests.post(
+                            'https://pokehash.buddyauth.com/api/v137_1/hash',
+                            data={
+                                'Timestamp': now(),
+                                'Latitude': 0,
+                                'Longitude': 0,
+                                'Altitude': 0,
+                                'AuthTicket': 'dG90bw==',
+                                'SessionData': 'dG90bw==',
+                                'Requests': []
+                            },
+                            proxies=pr,
+                            headers={
+                                'Content-Type': 'application/json',
+                                'X-AuthToken': key
+                            },
+                            timeout=5)
+
+                        if r.status_code == 200:
+                            reqc = 'x-maxrequestcount'
+                            ate = 'x-authtokenexpiration'
+                            self.keys[key] = {
+                                'remaining': 0,
+                                'maximum': r.headers.get(reqc),
+                                'peak': 0,
+                                'expires': r.headers.get(ate)
+                            }
+                        elif r.status_code == 401:
+                            log.warning('Hash key "{}" appears invalid,' +
+                                        'not adding into queue.'.format(key))
+                        else:
+                            log.error('Invalid HTTP status code received:' +
+                                      ' {}. Check if hashing is down.'
+                                      .format(r.status_code))
+                    except requests.Timeout:
+                        log.warning('Hashing check request timed out, ' +
+                                    'adding to queue anyways.')
+
+                break
+
+            retry_time += 1
+            log.warning("Bossland check failed, switching proxies" +
+                        ", retrying in {} s.".format(retry_time))
+            time.sleep(retry_time)
 
         self.key_cycle = itertools.cycle(keys)
         self.curr_key = ''
