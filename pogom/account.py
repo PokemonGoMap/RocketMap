@@ -26,7 +26,8 @@ class LoginSequenceFail(Exception):
 
 
 class NullTimeException(Exception):
-    pass
+    def __init__(self, type):
+        self.type = type
 
 
 # Create the API object that'll be used to scan.
@@ -176,6 +177,10 @@ def rpc_login_sequence(args, api, account):
 
         total_req += 1
         time.sleep(random.uniform(.53, 1.1))
+    except NullTimeException as e:
+        log.exception('Could not get %s time for Account %s,'
+                      + 'probably banned or Hashing error. Exception: %s.',
+                      e.type, account['username'], e)
     except Exception as e:
         log.exception('Error while downloading remote config: %s.', e)
         raise LoginSequenceFail('Failed while getting remote config version in'
@@ -653,9 +658,9 @@ def parse_download_settings(account, api_response):
             template_time = remote_config['item_templates_timestamp_ms'] / 1000
 
         if asset_time == 0:
-            raise NullTimeException('Could not get asset time.')
+            raise NullTimeException(type="asset")
         if template_time == 0:
-            raise NullTimeException('Could not get template time.')
+            raise NullTimeException(type="template")
 
         download_settings = {}
         download_settings['hash'] = api_response[
