@@ -25,6 +25,10 @@ class LoginSequenceFail(Exception):
     pass
 
 
+class NullTimeException(Exception):
+    pass
+
+
 # Create the API object that'll be used to scan.
 def setup_api(args, status, account):
     # Create the API instance this will use.
@@ -647,6 +651,11 @@ def parse_download_settings(account, api_response):
             asset_time = remote_config['asset_digest_timestamp_ms'] / 1000000
         if 'item_templates_timestamp_ms' in remote_config:
             template_time = remote_config['item_templates_timestamp_ms'] / 1000
+
+        if asset_time == 0:
+            raise NullTimeException('Could not get asset time.')
+        if template_time == 0:
+            raise NullTimeException('Could not get template time.')
 
         download_settings = {}
         download_settings['hash'] = api_response[
