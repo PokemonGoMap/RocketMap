@@ -2286,8 +2286,8 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
             del map_dict['responses']['GET_INVENTORY']
         del forts
 
-    log.info('Scanning successful' +
-             ' Pokemon: %d, nearby: %d, pokestops: %d, gyms: %d, Raids: %s where found.',
+    log.info('Parsing found Pokemon: %d, nearby: %d, pokestops: %d,' +
+             ' gyms: %d, raids: %d.',
              len(pokemon) + skipped,
              filtered,
              nearby_pokemon,

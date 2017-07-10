@@ -552,51 +552,46 @@ def spin_pokestop(api, account, args, fort, step_location):
         log.warning('Account %s has reached its Pokestop spinning limits.',
                     account['username'])
         return False
-    spinning_radius = 0.038  # Maximum distance to spin Pokestops.
-    if in_radius((fort['latitude'], fort['longitude']), step_location,
-                 spinning_radius):
-        # Set 50% Chance to spin a Pokestop.
-        if random.randint(0, 100) < 50:
-            log.debug('Attempt to spin Pokestop (ID %s)', fort['id'])
-            time.sleep(random.uniform(0.8, 1.8))
-            fort_details_request(api, account, fort)
-            time.sleep(random.uniform(0.8, 1.8))  # Don't let Niantic throttle.
-            response = spin_pokestop_request(api, account, fort, step_location)
-            time.sleep(random.uniform(2, 4))  # Don't let Niantic throttle.
+    # Set 50% Chance to spin a Pokestop.
+    if random.randint(0, 100) < 50:
+        fort_details_request(api, account, fort)
+        time.sleep(random.uniform(0.8, 1.8))  # Don't let Niantic throttle.
+        response = spin_pokestop_request(api, account, fort, step_location)
+        time.sleep(random.uniform(2, 4))  # Don't let Niantic throttle.
 
-            # Check for reCaptcha.
-            captcha_url = response['responses'][
-                'CHECK_CHALLENGE']['challenge_url']
-            if len(captcha_url) > 1:
-                log.debug('Account encountered a reCaptcha.')
-                return False
+        # Check for reCaptcha.
+        captcha_url = response['responses'][
+            'CHECK_CHALLENGE']['challenge_url']
+        if len(captcha_url) > 1:
+            log.debug('Account encountered a reCaptcha.')
+            return False
 
-            spin_result = response['responses']['FORT_SEARCH']['result']
-            if spin_result is 1:
-                log.info('Successful Pokestop spin with %s.',
-                         account['username'])
-                # Update account stats and clear inventory if necessary.
-                parse_level_up_rewards(api, account)
-                parse_inventory(api, account, response)
-                clear_inventory(api, account)
-                account['session_spins'] += 1
-                incubate_eggs(api, account)
-                return True
-            elif spin_result is 2:
-                log.debug('Pokestop was not in range to spin.')
-            elif spin_result is 3:
-                log.debug('Failed to spin Pokestop. Has recently been spun.')
-            elif spin_result is 4:
-                log.debug('Failed to spin Pokestop. Inventory is full.')
-                clear_inventory(api, account)
-            elif spin_result is 5:
-                log.debug('Maximum number of Pokestops spun for this day.')
-            else:
-                log.debug(
-                    'Failed to spin a Pokestop. Unknown result %d.',
-                    spin_result)
+        spin_result = response['responses']['FORT_SEARCH']['result']
+        if spin_result is 1:
+            log.info('Successful Pokestop spin with %s.',
+                     account['username'])
+            # Update account stats and clear inventory if necessary.
+            parse_level_up_rewards(api, account)
+            parse_inventory(api, account, response)
+            clear_inventory(api, account)
+            account['session_spins'] += 1
+            incubate_eggs(api, account)
+            return True
+        elif spin_result is 2:
+            log.debug('Pokestop was not in range to spin.')
+        elif spin_result is 3:
+            log.debug('Failed to spin Pokestop. Has recently been spun.')
+        elif spin_result is 4:
+            log.debug('Failed to spin Pokestop. Inventory is full.')
+            clear_inventory(api, account)
+        elif spin_result is 5:
+            log.debug('Maximum number of Pokestops spun for this day.')
+        else:
+            log.debug(
+                'Failed to spin a Pokestop. Unknown result %d.',
+                spin_result)
 
-        return False
+    return False
 
 
 def parse_download_settings(account, api_response):
