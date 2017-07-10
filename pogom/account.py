@@ -547,7 +547,7 @@ def pokestop_spinnable(fort, step_location):
     return in_range and not pause_needed
 
 
-def spin_pokestop(api, account, fort, step_location):
+def spin_pokestop(api, account, args, fort, step_location):
     if account['hour_spins'] > args.account_max_spins:
         log.warning('Account %s has reached its Pokestop spinning limits.',
                     account['username'])

@@ -2129,7 +2129,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                 # Spin Pokestop with 50% chance.
                 if args.pokestop_spinning and pokestop_spinnable(
                         f, step_location):
-                    spin_pokestop(api, account, fort, step_location)
+                    spin_pokestop(api, account, args, f, step_location)
                 if args.pokestop_spinning and not config[
                         'parse_pokestops']:
                     log.error(
@@ -2287,7 +2287,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
         del forts
 
     log.info('Scanning successful' +
-             ' Pokemon: %d, nearby: %d, pokestops: %d, gyms: %d where found.',
+             ' Pokemon: %d, nearby: %d, pokestops: %d, gyms: %d, Raids: %s where found.',
              len(pokemon) + skipped,
              filtered,
              nearby_pokemon,
