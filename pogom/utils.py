@@ -316,18 +316,18 @@ def get_args():
     parser.add_argument('-pxsc', '--proxy-skip-check',
                         help='Disable checking of proxies before start.',
                         action='store_true', default=False)
-    parser.add_argument('-pxt', '--proxy-timeout',
+    parser.add_argument('-pxt', '--proxy-test-timeout',
                         help='Timeout settings for proxy checker in seconds.',
                         type=int, default=5)
-    parser.add_argument('-pxre', '--proxy-retries',
+    parser.add_argument('-pxre', '--proxy-test-retries',
                         help=('Number of times to retry sending proxy ' +
                               'test requests on failure.'),
                         type=int, default=0)
-    parser.add_argument('-pxbf', '--proxy-backoff-factor',
+    parser.add_argument('-pxbf', '--proxy-test-backoff-factor',
                         help=('Factor (in seconds) by which the delay ' +
                               'until next retry will increase.'),
                         type=float, default=0.25)
-    parser.add_argument('-pxc', '--proxy-concurrency',
+    parser.add_argument('-pxc', '--proxy-test-concurrency',
                         help=('Async requests pool size.'), type=int,
                         default=0)
     parser.add_argument('-pxd', '--proxy-display',

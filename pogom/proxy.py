@@ -163,20 +163,22 @@ def check_proxies(args, proxies):
     check_results = [0] * (check_result_max + 1)
 
     # If proxy testing concurrency is set to automatic, use max.
-    proxy_concurrency = args.proxy_concurrency
+    proxy_concurrency = args.proxy_test_concurrency
 
-    if args.proxy_concurrency == 0:
+    if args.proxy_test_concurrency == 0:
         proxy_concurrency = total_proxies
 
     # Get persistent session per host.
     # TODO: Rework API request wrapper so requests are retried, then increase
     # the # of retries to allow for proxies.
-    ptc_session = get_async_requests_session(args.proxy_retries,
-                                             args.proxy_backoff_factor,
-                                             proxy_concurrency)
-    niantic_session = get_async_requests_session(args.proxy_retries,
-                                                 args.proxy_backoff_factor,
-                                                 proxy_concurrency)
+    ptc_session = get_async_requests_session(
+        args.proxy_test_retries,
+        args.proxy_test_backoff_factor,
+        proxy_concurrency)
+    niantic_session = get_async_requests_session(
+        args.proxy_test_retries,
+        args.proxy_test_backoff_factor,
+        proxy_concurrency)
 
     # List to hold background workers.
     proxy_queue = []
@@ -189,10 +191,11 @@ def check_proxies(args, proxies):
 
     # Start async requests & store futures.
     for proxy in proxies:
-        future_ptc, future_niantic = start_request_futures(ptc_session,
-                                                           niantic_session,
-                                                           proxy,
-                                                           args.proxy_timeout)
+        future_ptc, future_niantic = start_request_futures(
+            ptc_session,
+            niantic_session,
+            proxy,
+            args.proxy_test_timeout)
 
         proxy_queue.append((proxy, future_ptc, future_niantic))
 

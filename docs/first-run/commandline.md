@@ -20,8 +20,8 @@
                         [-nk] [-ss [SPAWNPOINT_SCANNING]] [-speed] [-kph KPH]
                         [-hkph HLVL_KPH] [-ldur LURE_DURATION]
                         [--dump-spawnpoints] [-pd PURGE_DATA] [-px PROXY] [-pxsc]
-                        [-pxt PROXY_TIMEOUT] [-pxre PROXY_RETRIES]
-                        [-pxbf PROXY_BACKOFF_FACTOR] [-pxc PROXY_CONCURRENCY]
+                        [-pxt PROXY_TEST_TIMEOUT] [-pxre PROXY_TEST_RETRIES]
+                        [-pxbf PROXY_TEST_BACKOFF_FACTOR] [-pxc PROXY_TEST_CONCURRENCY]
                         [-pxd PROXY_DISPLAY] [-pxf PROXY_FILE]
                         [-pxr PROXY_REFRESH] [-pxo PROXY_ROTATION]
                         [--db-type DB_TYPE] [--db-name DB_NAME]
@@ -255,19 +255,19 @@
       -pxsc, --proxy-skip-check
                             Disable checking of proxies before start. [env var:
                             POGOMAP_PROXY_SKIP_CHECK]
-      -pxt PROXY_TIMEOUT, --proxy-timeout PROXY_TIMEOUT
+      -pxt PROXY_TEST_TIMEOUT, --proxy-test-timeout PROXY_TEST_TIMEOUT
                             Timeout settings for proxy checker in seconds. [env
-                            var: POGOMAP_PROXY_TIMEOUT]
-      -pxre PROXY_RETRIES, --proxy-retries PROXY_RETRIES
+                            var: POGOMAP_PROXY_TEST_TIMEOUT]
+      -pxre PROXY_TEST_RETRIES, --proxy-test-retries PROXY_TEST_RETRIES
                             Number of times to retry sending proxy test requests
-                            on failure. [env var: POGOMAP_PROXY_RETRIES]
-      -pxbf PROXY_BACKOFF_FACTOR, --proxy-backoff-factor PROXY_BACKOFF_FACTOR
+                            on failure. [env var: POGOMAP_PROXY_TEST_RETRIES]
+      -pxbf PROXY_TEST_BACKOFF_FACTOR, --proxy-test-backoff-factor PROXY_TEST_BACKOFF_FACTOR
                             Factor (in seconds) by which the delay until next
                             retry will increase. [env var:
-                            POGOMAP_PROXY_BACKOFF_FACTOR]
-      -pxc PROXY_CONCURRENCY, --proxy-concurrency PROXY_CONCURRENCY
+                            POGOMAP_PROXY_TEST_BACKOFF_FACTOR]
+      -pxc PROXY_TEST_CONCURRENCY, --proxy-test-concurrency PROXY_TEST_CONCURRENCY
                             Async requests pool size. [env var:
-                            POGOMAP_PROXY_CONCURRENCY]
+                            POGOMAP_PROXY_TEST_CONCURRENCY]
       -pxd PROXY_DISPLAY, --proxy-display PROXY_DISPLAY
                             Display info on which proxy being used (index or
                             full). To be used with -ps. [env var:
