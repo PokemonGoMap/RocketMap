@@ -42,25 +42,10 @@ class LogFilter(logging.Filter):
 from time import strftime
 
 # Initialize and configure Logger at load time.
-args = get_args()
 logging.basicConfig(
     format='%(asctime)s [%(threadName)18s][%(module)14s][%(levelname)8s] ' +
     '%(message)s')
 log = logging.getLogger()
-if args.verbose:
-    log.setLevel(logging.DEBUG)
-else:
-    log.setLevel(logging.INFO)
-
-# Always write to log file.
-if not os.path.exists('logs'):
-    os.mkdir('logs')
-if not args.disable_file_logs:
-    filelog = logging.FileHandler(strftime('logs/log_%Y_%m_%d.txt'))
-    filelog.setFormatter(logging.Formatter(
-        '%(asctime)s [%(threadName)18s][%(module)14s][%(levelname)8s] ' +
-        '%(message)s'))
-    logging.getLogger('').addHandler(filelog)
 
 # Assert pgoapi is installed.
 try:
@@ -196,6 +181,24 @@ def main():
     config['parse_gyms'] = not args.no_gyms
     config['parse_raids'] = not args.no_raids
 
+    # Always write to log file.
+    if not args.no_file_logs:
+        if not os.path.exists(args.log_path):
+            os.mkdir(args.log_path)
+        date = strftime('%Y_%m_%d_%H_%M_')
+        filename = os.path.join(
+            args.log_path, '{}_{}.log'.format(date, args.status_name))
+        filelog = logging.FileHandler(filename)
+        filelog.setFormatter(logging.Formatter(
+            '%(asctime)s [%(threadName)18s][%(module)14s][%(levelname)8s] ' +
+            '%(message)s'))
+        logging.getLogger('').addHandler(filelog)
+
+    if args.verbose:
+        log.setLevel(logging.DEBUG)
+    else:
+        log.setLevel(logging.INFO)
+
     # These are very noisy, let's shush them up a bit.
     logging.getLogger('peewee').setLevel(logging.INFO)
     logging.getLogger('requests').setLevel(logging.WARNING)
@@ -208,11 +211,11 @@ def main():
         logging.getLogger('pgoapi').setLevel(logging.DEBUG)
     elif args.verbose == 2:
         logging.getLogger('pgoapi.pgoapi').setLevel(logging.DEBUG)
-        logging.getLogger('rpc_api').setLevel(logging.DEBUG)
-    elif args.verbose >= 3:
-        logging.getLogger('pgoapi.rpc_api').setLevel(logging.DEBUG)
         logging.getLogger('requests').setLevel(logging.DEBUG)
         logging.getLogger('peewee').setLevel(logging.DEBUG)
+    elif args.verbose >= 3:
+        logging.getLogger('rpc_api').setLevel(logging.DEBUG)
+        logging.getLogger('pgoapi.rpc_api').setLevel(logging.DEBUG)
         logging.getLogger('werkzeug').setLevel(logging.DEBUG)
 
     # Web access logs.

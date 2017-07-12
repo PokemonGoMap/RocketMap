@@ -452,9 +452,13 @@ def get_args():
                         help=('Show debug messages from RocketMap ' +
                               'and pgoapi. Can be repeated up to 3 times.'),
                         action='count', default=0)
-    parser.add_argument('-dfl', '--disable-file-logs',
-                        help=('Disables file logging completley.'),
+    parser.add_argument('--no-file-logs',
+                        help=('Disable logging to files.' +
+                              'Does not disable --access-logs.'),
                         action='store_true', default=False)
+    parser.add_argument('--log-path',
+                        help=('Defines Directory to save Debug log files to.'),
+                        action='store_true', default='logs/')
 
     args = parser.parse_args()
 
