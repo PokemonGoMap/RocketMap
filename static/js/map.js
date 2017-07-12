@@ -401,7 +401,7 @@ function initSidebar() {
 }
 
 function getTypeSpan(type) {
-    return `<img class='pokemon elements' src='static/images/elements//${type['type']}.png'></span>`
+    return `<img class='pokemon elements' src='static/images/elements/${type['type']}.png'></span>`
 }
 
 function openMapDirections(lat, lng) { // eslint-disable-line no-unused-vars
@@ -561,7 +561,7 @@ function gymLabel(gym, includeMembers = true) {
     const slotsString = gym.slots_available ? (gym.slots_available === 1 ? '1 Free Slot' : `${gym.slots_available} Free Slots`) : 'No Free Slots'
     const teamColor = ['85,85,85,1', '0,134,255,1', '255,26,26,1', '255,159,25,1']
     const teamName = gymTypes[gym.team_id]
-    const isUpcommingRaid = raid != null && Date.now() < raid.start
+    const isUpcomingRaid = raid != null && Date.now() < raid.start
     const isRaidStarted = isOngoingRaid(raid)
 
     let subtitle = ''
@@ -587,7 +587,7 @@ function gymLabel(gym, includeMembers = true) {
         </div>`
     }
 
-    if (isUpcommingRaid || isRaidStarted) {
+    if (isUpcomingRaid || isRaidStarted) {
         const raidColor = ['252,112,176', '255,158,22']
         const levelStr = '★'.repeat(raid['level'])
 
@@ -600,7 +600,7 @@ function gymLabel(gym, includeMembers = true) {
             image = `<img class='gym sprite' src='static/images/raid/${gymTypes[gym.team_id]}_${getGymLevel(gym)}_${raid.level}.png'>`
         }
 
-        if (isUpcommingRaid) {
+        if (isUpcomingRaid) {
             imageLbl = `
                 <div class='raid'>
                   <span style='color:rgb(${raidColor[Math.floor((raid.level - 1) / 2)]})'>
