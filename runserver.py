@@ -185,7 +185,7 @@ def main():
     if not args.no_file_logs:
         if not os.path.exists(args.log_path):
             os.mkdir(args.log_path)
-        date = strftime('%Y_%m_%d_%H_%M_')
+        date = strftime('%Y_%m_%d_%H_%M')
         filename = os.path.join(
             args.log_path, '{}_{}.log'.format(date, args.status_name))
         filelog = logging.FileHandler(filename)
