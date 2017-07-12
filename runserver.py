@@ -185,7 +185,7 @@ def main():
     if not args.no_file_logs:
         if not os.path.exists(args.log_path):
             os.mkdir(args.log_path)
-        date = strftime('%Y_%m_%d_%H_%M')
+        date = strftime('%Y%m%d_%H%M')
         filename = os.path.join(
             args.log_path, '{}_{}.log'.format(date, args.status_name))
         filelog = logging.FileHandler(filename)
@@ -212,8 +212,8 @@ def main():
     elif args.verbose == 2:
         logging.getLogger('pgoapi.pgoapi').setLevel(logging.DEBUG)
         logging.getLogger('requests').setLevel(logging.DEBUG)
-        logging.getLogger('peewee').setLevel(logging.DEBUG)
     elif args.verbose >= 3:
+        logging.getLogger('peewee').setLevel(logging.DEBUG)
         logging.getLogger('rpc_api').setLevel(logging.DEBUG)
         logging.getLogger('pgoapi.rpc_api').setLevel(logging.DEBUG)
         logging.getLogger('werkzeug').setLevel(logging.DEBUG)

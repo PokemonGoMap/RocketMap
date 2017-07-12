@@ -457,8 +457,8 @@ def get_args():
                               'Does not disable --access-logs.'),
                         action='store_true', default=False)
     parser.add_argument('--log-path',
-                        help=('Defines Directory to save Debug log files to.'),
-                        action='store_true', default='logs/')
+                        help=('Defines directory to save log files to.'),
+                        default='logs/')
 
     args = parser.parse_args()
 
