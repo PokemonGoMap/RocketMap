@@ -39,25 +39,28 @@ class LogFilter(logging.Filter):
         return record.levelno < self.level
 
 
-# Moved here so logger is configured at load time.
-formatter = logging.Formatter(
-    '%(asctime)s [%(threadName)18s][%(module)14s][%(levelname)8s] %(message)s')
+from time import strftime
 
-# Redirect messages lower than WARNING to stdout
-stdout_hdlr = logging.StreamHandler(sys.stdout)
-stdout_hdlr.setFormatter(formatter)
-log_filter = LogFilter(logging.WARNING)
-stdout_hdlr.addFilter(log_filter)
-stdout_hdlr.setLevel(logging.DEBUG)
-
-# Redirect messages equal or higher than WARNING to stderr
-stderr_hdlr = logging.StreamHandler(sys.stderr)
-stderr_hdlr.setFormatter(formatter)
-stderr_hdlr.setLevel(logging.WARNING)
-
+# Initialize and configure Logger at load time.
+args = get_args()
+logging.basicConfig(
+    format='%(asctime)s [%(threadName)18s][%(module)14s][%(levelname)8s] ' +
+    '%(message)s')
 log = logging.getLogger()
-log.addHandler(stdout_hdlr)
-log.addHandler(stderr_hdlr)
+if args.verbose:
+    log.setLevel(logging.DEBUG)
+else:
+    log.setLevel(logging.INFO)
+
+# Always write to log file.
+if not os.path.exists('logs'):
+    os.mkdir('logs')
+if not args.disable_file_logs:
+    filelog = logging.FileHandler(strftime('logs/log_%Y_%m_%d.txt'))
+    filelog.setFormatter(logging.Formatter(
+        '%(asctime)s [%(threadName)18s][%(module)14s][%(levelname)8s] ' +
+        '%(message)s'))
+    logging.getLogger('').addHandler(filelog)
 
 # Assert pgoapi is installed.
 try:
@@ -184,28 +187,14 @@ def main():
 
     args = get_args()
 
-    # Add file logging if enabled.
-    if args.verbose and args.verbose != 'nofile':
-        filelog = logging.FileHandler(args.verbose)
-        filelog.setFormatter(logging.Formatter(
-            '%(asctime)s [%(threadName)16s][%(module)14s][%(levelname)8s] ' +
-            '%(message)s'))
-        logging.getLogger('').addHandler(filelog)
-    if args.very_verbose and args.very_verbose != 'nofile':
-        filelog = logging.FileHandler(args.very_verbose)
-        filelog.setFormatter(logging.Formatter(
-            '%(asctime)s [%(threadName)16s][%(module)14s][%(levelname)8s] ' +
-            '%(message)s'))
-        logging.getLogger('').addHandler(filelog)
-
-    if args.verbose or args.very_verbose:
-        log.setLevel(logging.DEBUG)
-    else:
-        log.setLevel(logging.INFO)
-
     # Let's not forget to run Grunt / Only needed when running with webserver.
     if not args.no_server and not validate_assets(args):
         sys.exit(1)
+
+    config['parse_pokemon'] = not args.no_pokemon
+    config['parse_pokestops'] = not args.no_pokestops
+    config['parse_gyms'] = not args.no_gyms
+    config['parse_raids'] = not args.no_raids
 
     # These are very noisy, let's shush them up a bit.
     logging.getLogger('peewee').setLevel(logging.INFO)
@@ -214,20 +203,16 @@ def main():
     logging.getLogger('pgoapi.rpc_api').setLevel(logging.INFO)
     logging.getLogger('werkzeug').setLevel(logging.ERROR)
 
-    config['parse_pokemon'] = not args.no_pokemon
-    config['parse_pokestops'] = not args.no_pokestops
-    config['parse_gyms'] = not args.no_gyms
-    config['parse_raids'] = not args.no_raids
-
     # Turn these back up if debugging.
-    if args.verbose or args.very_verbose:
+    if args.verbose == 1:
         logging.getLogger('pgoapi').setLevel(logging.DEBUG)
-    if args.very_verbose:
-        logging.getLogger('peewee').setLevel(logging.DEBUG)
-        logging.getLogger('requests').setLevel(logging.DEBUG)
+    elif args.verbose == 2:
         logging.getLogger('pgoapi.pgoapi').setLevel(logging.DEBUG)
-        logging.getLogger('pgoapi.rpc_api').setLevel(logging.DEBUG)
         logging.getLogger('rpc_api').setLevel(logging.DEBUG)
+    elif args.verbose >= 3:
+        logging.getLogger('pgoapi.rpc_api').setLevel(logging.DEBUG)
+        logging.getLogger('requests').setLevel(logging.DEBUG)
+        logging.getLogger('peewee').setLevel(logging.DEBUG)
         logging.getLogger('werkzeug').setLevel(logging.DEBUG)
 
     # Web access logs.
