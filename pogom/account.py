@@ -28,6 +28,7 @@ class LoginSequenceFail(Exception):
 class NullTimeException(Exception):
     def __init__(self, type):
         self.type = type
+        super(NullTimeException, self).__init__(NullTimeException.__name__)
 
 
 # Create the API object that'll be used to scan.
@@ -178,7 +179,7 @@ def rpc_login_sequence(args, api, account):
         total_req += 1
         time.sleep(random.uniform(.53, 1.1))
     except NullTimeException as e:
-        log.exception('Could not get %s time for Account %s,'
+        log.exception('Could not get %s time for Account %s, '
                       + 'probably banned or Hashing error. Exception: %s.',
                       e.type, account['username'], e)
     except Exception as e:
