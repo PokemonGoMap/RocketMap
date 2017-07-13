@@ -134,6 +134,10 @@
   }
 
   .rocket.icon {
+    @media screen and (max-width: 480px) {
+      height: 24px !important;
+      width:: 24px !important;
+    }
     height: 32px;
     width: 32px;
     margin-left: 5px;
