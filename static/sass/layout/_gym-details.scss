@@ -109,18 +109,25 @@
     }
 
     td {
+      @media screen and (max-width: 480px) {
+        padding: 0.25em !important;
+        vertical-align: middle !important;
+      }
+      @media screen and (max-width: 320px) {
+        padding: 0em !important;
+        vertical-align: middle !important;
+      }
       padding: 0.25em 1em;
       vertical-align: middle;
     }
 
     .ivs {
+      color: rgb(93,109,126);
       float:left;
-      margin-right: 20px;
 
       .iv {
         text-align: center;
         width: 20px;
-        color: black;
         display: inline-block;
       }
 
@@ -137,7 +144,7 @@
 
     .moves {
       line-height: 1em;
-      color: black;
+      color: rgb(93,109,126);
       font-size: .8em;
       // float: right;
 
@@ -163,11 +170,10 @@
 
         .type {
           margin-top: 2px;
-          font-size: 10px;
+          font-size: 9px;
           display: inline-block;
-          vertical-align: middle;
           text-transform: uppercase;
-          padding: 2px 5px;
+          padding: 2px 3px;
           border-radius: 4px;
           color: white;
           font-family: 'Open Sans', sans-serif;
@@ -265,8 +271,11 @@
       }
 
       .damage {
+        @media screen and (max-width: 480px) {
+          margin-right: 2px !important;
+        }
         float: right;
-        margin-top: 2px;
+        margin-top: 5px;
         font-family: 'Open Sans', sans-serif;
       }
     }
@@ -306,11 +315,10 @@
 
     .gym {
       @media screen and (max-width: 480px) {
-        font-size: 11px !important;
+        font-size: 10px !important;
       }
       color: rgb(93,109,126);
-      font-size: 16px;
-      font-weight: 500;
+      font-size: 14px;
 
       &.container {
         display: grid;
@@ -320,10 +328,11 @@
       &.name {
         @media screen and (max-width: 480px) {
           font-size: 14px !important;
+          margin-bottom: 0px;
         }
-        font-size: 18px;
+        font-size: 16px;
         font-weight: 900;
-        margin-bottom: 2px;
+        margin-bottom: -5px;
         text-decoration: underline;
       }
 
@@ -333,9 +342,19 @@
           width:: 48px !important;
         }
         display: block;
-        height: 96px;
-        width: 96px;
-        margin: 10px 0px 10px 0px;
+        height: 72px;
+        width: 72px;
+        margin: 5px 0px 5px 0px;
+
+        &.pokemon {
+          @media screen and (max-width: 480px) {
+            height: 30px !important;
+            width:: 30px !important;
+          }
+          display: block;
+          height: 48px;
+          width: 48px;
+        }
       }
 
       &.info {
@@ -380,21 +399,20 @@
       }
 
       &.pokemon {
-        font-size: 14px;
+        font-size: 12px;
 
         &.motivation {
           font-weight: 900;
 
           &.heart {
-            height: 16px;
-            width: 16px;
-            margin-right: -1px;
+            @media screen and (max-width: 480px) {
+              height: 8px !important;
+              width: 8px !important;
+            }
+            height: 12px;
+            width: 12px;
             vertical-align: middle;
           }
-        }
-
-        &.trainer {
-          font-weight: 900;
         }
       }
     }
@@ -404,7 +422,7 @@
         font-size: 11px !important;
       }
       color: rgb(93,109,126);
-      font-size: 16px;
+      font-size: 14px;
       font-weight: 900;
       margin-bottom: 5px;
 

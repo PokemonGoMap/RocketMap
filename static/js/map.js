@@ -401,7 +401,7 @@ function initSidebar() {
 }
 
 function getTypeSpan(type) {
-    return `<img class='pokemon elements' src='static/images/elements/${type['type']}.png'></span>`
+    return `<span style='padding: 2px 5px; text-transform: uppercase; color: white; margin-right: 2px; border-radius: 4px; font-size: 0.6em; vertical-align: middle; background-color: ${type['color']}'>${type['type']}</span>`
 }
 
 function openMapDirections(lat, lng) { // eslint-disable-line no-unused-vars
@@ -449,7 +449,7 @@ function pokemonLabel(item) {
     var formString = ''
 
     if (id === 201 && form !== null && form > 0) {
-        formString = `(${unownForm[item['form']]})`
+        formString += `(${unownForm[item['form']]})`
     }
 
     contentstring += `
@@ -606,7 +606,7 @@ function gymLabel(gym, includeMembers = true) {
                   <span style='color:rgb(${raidColor[Math.floor((raid.level - 1) / 2)]})'>
                   ${levelStr}
                   </span>
-                  starts in <span class='raid countdown label-countdown' disappears-at='${raid.start}'></span>
+                  raid in <span class='raid countdown label-countdown' disappears-at='${raid.start}'></span>
                 </div>`
         } else {
             let typesDisplay = ''
@@ -1949,14 +1949,15 @@ function getSidebarGymMember(pokemon) {
     return `
                     <tr onclick=toggleGymPokemonDetails(this)>
                         <td width="30px">
-                            <img class="pokemon sprite" src="static/icons/${pokemon.pokemon_id}.png">
+                            <img class="gym pokemon sprite" src="static/icons/${pokemon.pokemon_id}.png">
                         </td>
                         <td>
-                            <div class="gym pokemon" style="line-height:1em;">${pokemon.pokemon_name}</div>
-                            <div><img class="gym pokemon motivation heart" src="static/images/gym/Heart.png"> <span class="gym pokemon">${pokemon.cp_decayed}</span></div>
+                            <div class="gym pokemon" style="line-height:0.5em;">${pokemon.pokemon_name}</div>
+                            <div><img class="gym pokemon motivation heart" src="static/images/gym/Heart.png"> <span class="gym pokemon motivation">${pokemon.cp_decayed}</span></div>
                         </td>
                         <td width="190" align="center">
-                            <div class="gym pokemon trainer">${pokemon.trainer_name} (${pokemon.trainer_level})</div>
+                            <div class="gym pokemon" style="line-height:1em;">${pokemon.trainer_name} (${pokemon.trainer_level})</div>
+                            <div class="gym pokemon">Deployed ${getDateStr(pokemon.deployment_time)}</div>
                         </td>
                         <td width="10">
                             <!--<a href="#" onclick="toggleGymPokemonDetails(this)">-->
