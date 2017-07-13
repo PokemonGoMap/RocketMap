@@ -23,11 +23,11 @@ from pogom.altitude import get_gmaps_altitude
 
 from pogom.search import search_overseer_thread
 from pogom.models import (init_database, create_tables, drop_tables,
-                          Pokemon, PlayerLocale, db_updater, clean_db_loop,
+                          PlayerLocale, SpawnPoint, db_updater, clean_db_loop,
                           verify_table_encoding, verify_database_schema)
 from pogom.webhook import wh_updater
 
-from pogom.proxy import check_proxies, proxies_refresher
+from pogom.proxy import load_proxies, check_proxies, proxies_refresher
 
 # Moved here so logger is configured at load time.
 logging.basicConfig(
@@ -287,10 +287,17 @@ def main():
     app.set_current_location(position)
 
     # Control the search status (running or not) across threads.
-    pause_bit = Event()
-    pause_bit.clear()
+    control_flags = {
+      'on_demand': Event(),
+      'api_watchdog': Event(),
+      'search_control': Event()
+    }
+
+    for flag in control_flags.values():
+        flag.clear()
+
     if args.on_demand_timeout > 0:
-        pause_bit.set()
+        control_flags['on_demand'].set()
 
     heartbeat = [now()]
 
@@ -339,10 +346,13 @@ def main():
             sys.exit(1)
 
         # Processing proxies if set (load from file, check and overwrite old
-        # args.proxy with new working list)
-        args.proxy = check_proxies(args)
+        # args.proxy with new working list).
+        args.proxy = load_proxies(args)
 
-        # Run periodical proxy refresh thread
+        if args.proxy and not args.proxy_skip_check:
+            args.proxy = check_proxies(args, args.proxy)
+
+        # Run periodical proxy refresh thread.
         if (args.proxy_file is not None) and (args.proxy_refresh > 0):
             t = Thread(target=proxies_refresher,
                        name='proxy-refresh', args=(args,))
@@ -377,12 +387,12 @@ def main():
                 args.dump_spawnpoints):
             with open(args.spawnpoint_scanning, 'w+') as file:
                 log.info('Saving spawn points to %s', args.spawnpoint_scanning)
-                spawns = Pokemon.get_spawnpoints_in_hex(
+                spawns = SpawnPoint.get_spawnpoints_in_hex(
                     position, args.step_limit)
                 file.write(json.dumps(spawns))
                 log.info('Finished exporting spawn points')
 
-        argset = (args, new_location_queue, pause_bit,
+        argset = (args, new_location_queue, control_flags,
                   heartbeat, db_updates_queue, wh_updates_queue)
 
         log.debug('Starting a %s search thread', args.scheduler)
@@ -397,7 +407,7 @@ def main():
     # No more stale JS.
     init_cache_busting(app)
 
-    app.set_search_control(pause_bit)
+    app.set_search_control(control_flags['search_control'])
     app.set_heartbeat_control(heartbeat)
     app.set_location_queue(new_location_queue)
 
