@@ -686,8 +686,9 @@ function gymLabel(gym, includeMembers = true) {
                 ${imageLbl}
             </center>
             ${navInfo}
-
-            ${memberStr}
+            <center>
+                ${memberStr}
+            </center>
         </div>`
 }
 
