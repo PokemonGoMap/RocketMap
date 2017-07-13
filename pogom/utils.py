@@ -453,7 +453,7 @@ def get_args():
                               'and pgoapi. Can be repeated up to 3 times.'),
                         action='count', default=0)
     parser.add_argument('--no-file-logs',
-                        help=('Disable logging to files.' +
+                        help=('Disable logging to files. ' +
                               'Does not disable --access-logs.'),
                         action='store_true', default=False)
     parser.add_argument('--log-path',
