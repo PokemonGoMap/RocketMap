@@ -144,8 +144,11 @@ def load_proxies(args):
             log.error('Proxy file was configured but ' +
                       'no proxies were loaded. Aborting.')
             sys.exit(1)
-    else:
-        proxies = args.proxy
+    elif args.proxy:
+        if isinstance(args.proxy, list):
+            proxies = args.proxy
+        else:
+            proxies.append(args.proxy)
 
     # No proxies - no cookies.
     if (proxies is None) or (len(proxies) == 0):
