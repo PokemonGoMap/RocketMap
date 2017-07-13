@@ -1001,7 +1001,7 @@ function updateGymMarker(item, marker) {
             url: 'static/images/raid/' + item.raid.pokemon_id + '.png',
             scaledSize: new google.maps.Size(48, 48)
         })
-        marker.setZIndex(500)
+        marker.setZIndex(google.maps.Marker.MAX_ZINDEX + 1)
     } else if (item.raid !== null && item.raid.end > Date.now()) {
         marker.setIcon({
             url: 'static/images/raid/' + gymTypes[item.team_id] + '_' + getGymLevel(item) + '_' + item['raid']['level'] + '.png',
