@@ -540,12 +540,17 @@ function isOngoingRaid(raid) {
 }
 
 function gymLabel(gym, includeMembers = true) {
+    const pokemonWithImages = [
+        3, 6, 9, 59, 65, 68, 89, 94, 103, 110, 112, 125, 126, 129, 131, 134,
+        135, 136, 143, 153, 156, 159, 248
+    ]
+
     const raid = gym.raid
-    let raidStr = ''
+    var raidStr = ''
     if (raid && raid.end > Date.now()) {
         if (raid.pokemon_id !== null) {
-            const pMove1 = (moves[raid['move_1']] !== undefined) ? i8ln(moves[raid['move_1']]['name']) : 'gen/unknown'
-            const pMove2 = (moves[raid['move_2']] !== undefined) ? i8ln(moves[raid['move_2']]['name']) : 'gen/unknown'
+            let pMove1 = (moves[raid['move_1']] !== undefined) ? i8ln(moves[raid['move_1']]['name']) : 'gen/unknown'
+            let pMove2 = (moves[raid['move_2']] !== undefined) ? i8ln(moves[raid['move_2']]['name']) : 'gen/unknown'
 
             raidStr += `
                     <div class='raid encounter'>
@@ -564,11 +569,11 @@ function gymLabel(gym, includeMembers = true) {
     const isUpcomingRaid = raid != null && Date.now() < raid.start
     const isRaidStarted = isOngoingRaid(raid)
 
-    let subtitle = ''
-    let image = ''
-    let imageLbl = ''
-    let navInfo = ''
-    let memberStr = ''
+    var subtitle = ''
+    var image = ''
+    var imageLbl = ''
+    var navInfo = ''
+    var memberStr = ''
 
     const gymPoints = gym.total_cp
     const titleText = gym.name ? gym.name : (gym.team_id === 0 ? teamName : 'Team ' + teamName)
@@ -592,10 +597,19 @@ function gymLabel(gym, includeMembers = true) {
         const levelStr = '★'.repeat(raid['level'])
 
         if (isRaidStarted && raid.pokemon_id) {
+            // Set default image.
             image = `
-                <img class='gym sprite' src='static/images/raid/${raid.pokemon_id}.png'>
+                <img class='gym sprite' src='static/images/raid/unknown.png'>
                 ${raidStr}
             `
+
+            // Use Pokémon-specific image if we have one.
+            if (pokemonWithImages.indexOf(raid.pokemon_id) !== -1) {
+                image = `
+                    <img class='gym sprite' src='static/images/raid/${raid.pokemon_id}.png'>
+                    ${raidStr}
+                `
+            }
         } else {
             image = `<img class='gym sprite' src='static/images/raid/${gymTypes[gym.team_id]}_${getGymLevel(gym)}_${raid.level}.png'>`
         }
