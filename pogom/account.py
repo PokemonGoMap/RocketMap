@@ -26,6 +26,7 @@ class LoginSequenceFail(Exception):
 
 
 class NullTimeException(Exception):
+
     def __init__(self, type):
         self.type = type
         super(NullTimeException, self).__init__(NullTimeException.__name__)
@@ -640,14 +641,14 @@ def encounter_pokemon_request(api, account, encounter_id, spawnpoint_id,
 
 def parse_download_settings(account, api_response):
     if 'DOWNLOAD_REMOTE_CONFIG_VERSION' in api_response['responses']:
-        remote_config = api_response['responses']
-                        .get('DOWNLOAD_REMOTE_CONFIG_VERSION', 0)
+        remote_config = (api_response['responses']
+                         .get('DOWNLOAD_REMOTE_CONFIG_VERSION', 0))
         asset_time = remote_config.asset_digest_timestamp_ms / 1000000
         template_time = remote_config.item_templates_timestamp_ms / 1000
 
-        if asset_time == 0:
+        if asset_time == 0 or asset_time is None:
             raise NullTimeException(type="asset")
-        if template_time == 0:
+        if template_time == 0 or template_time is None:
             raise NullTimeException(type="template")
 
         download_settings = {}
