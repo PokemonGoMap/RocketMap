@@ -519,7 +519,7 @@ function pokemonLabel(item) {
             Moveset: <span class='pokemon no-encounter'>No information</span>
           </div>
           <div class='pokemon'>
-            Weight: <span class='pokemon no-encounter'>- kg</span> | Height: <span class='pokemon no-encounter'>- m</span>
+            Weight: <span class='pokemon no-encounter'>n/a</span> | Height: <span class='pokemon no-encounter'>n/a</span>
           </div>
           <div>
             <span class='pokemon navigate'><a href='javascript:void(0);' onclick='javascript:openMapDirections(${latitude},${longitude});' title='Open in Google Maps'>${latitude.toFixed(6)}, ${longitude.toFixed(7)}</a></span>
@@ -606,7 +606,7 @@ function gymLabel(gym, includeMembers = true) {
                   <span style='color:rgb(${raidColor[Math.floor((raid.level - 1) / 2)]})'>
                   ${levelStr}
                   </span>
-                  raid in <span class='raid countdown label-countdown' disappears-at='${raid.start}'></span>
+                  Raid in <span class='raid countdown label-countdown' disappears-at='${raid.start}'></span>
                 </div>`
         } else {
             let typesDisplay = ''
