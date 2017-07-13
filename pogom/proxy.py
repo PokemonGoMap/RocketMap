@@ -172,7 +172,7 @@ def check_proxies(args, proxies):
         proxy_concurrency = total_proxies
 
     if proxy_concurrency >= 100:
-        log.critical(
+        log.warning(
             "Starting proxy test for %d proxies with %d concurrency. If this" +
             " concurrency level breaks the map for you, consider lowering it.",
             total_proxies, proxy_concurrency)
