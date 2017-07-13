@@ -171,6 +171,12 @@ def check_proxies(args, proxies):
     if args.proxy_test_concurrency == 0:
         proxy_concurrency = total_proxies
 
+    if proxy_concurrency >= 100:
+        log.critical(
+            "Starting proxy test for %d proxies with %d concurrency. If this" +
+            " concurrency level breaks the map for you, consider lowering it.",
+            total_proxies, proxy_concurrency)
+
     # Get persistent session per host.
     # TODO: Rework API request wrapper so requests are retried, then increase
     # the # of retries to allow for proxies.
