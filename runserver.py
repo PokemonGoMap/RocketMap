@@ -207,9 +207,8 @@ def main():
     logging.getLogger('werkzeug').setLevel(logging.ERROR)
 
     # Turn these back up if debugging.
-    if args.verbose == 1:
+    if args.verbose == 2:
         logging.getLogger('pgoapi').setLevel(logging.DEBUG)
-    elif args.verbose == 2:
         logging.getLogger('pgoapi.pgoapi').setLevel(logging.DEBUG)
         logging.getLogger('requests').setLevel(logging.DEBUG)
     elif args.verbose >= 3:
