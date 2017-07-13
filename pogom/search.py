@@ -660,11 +660,13 @@ def update_total_stats(threadStatus, last_account_status):
     overseer = threadStatus['Overseer']
 
     # Calculate totals.
-    usercount = 0
+    active_count = 0
     current_accounts = Set()
     for tstatus in threadStatus.itervalues():
         if tstatus.get('type', '') == 'Worker':
-            usercount += 1
+            if tstatus.get('active', False):
+                active_count += 1
+
             username = tstatus.get('username', '')
             current_accounts.add(username)
             last_status = last_account_status.get(username, {})
@@ -678,7 +680,7 @@ def update_total_stats(threadStatus, last_account_status):
                 'success_total'] += stat_delta(tstatus, last_status, 'success')
             last_account_status[username] = copy.deepcopy(tstatus)
 
-    overseer['active_accounts'] = usercount
+    overseer['active_accounts'] = active_count
 
     # Remove last status for accounts that workers
     # are not using anymore
@@ -768,6 +770,7 @@ def search_worker_thread(args, account_queue, account_sets,
                 dbq.put((WorkerStatus, {0: WorkerStatus.db_format(status)}))
 
             status['starttime'] = now()
+            status['active'] = False
 
             # Track per loop.
             first_login = True
@@ -809,7 +812,7 @@ def search_worker_thread(args, account_queue, account_sets,
 
             # The forever loop for the searches.
             while True:
-
+                status['active'] = True
                 while is_paused(control_flags):
                     status['message'] = 'Scanning paused.'
                     time.sleep(2)
@@ -1088,19 +1091,17 @@ def search_worker_thread(args, account_queue, account_sets,
                             # Make sure the gym was in range. (Sometimes the
                             # API gets cranky about gyms that are ALMOST 1km
                             # away.)
-                            if response:
-                                if response['responses'][
-                                        'GYM_GET_INFO']['result'] == 2:
-                                    log.warning(
-                                        ('Gym @ %f/%f is out of range (%dkm),'
-                                         + ' skipping.'),
-                                        gym['latitude'], gym['longitude'],
-                                        distance)
-                                else:
-                                    gym_responses[gym['gym_id']] = response[
-                                        'responses']['GYM_GET_INFO']
-                                del response
-
+                            if response['responses'][
+                                    'GYM_GET_INFO'].result == 2:
+                                log.warning(
+                                    ('Gym @ %f/%f is out of range (%dkm), ' +
+                                     'skipping.'),
+                                    gym['latitude'], gym['longitude'],
+                                    distance)
+                            else:
+                                gym_responses[gym['gym_id']] = response[
+                                    'responses']['GYM_GET_INFO']
+                            del response
                             # Increment which gym we're on for status messages.
                             current_gym += 1
 
@@ -1164,6 +1165,7 @@ def search_worker_thread(args, account_queue, account_sets,
             log.error((
                 'Exception in search_worker under account {} Exception ' +
                 'message: {}.').format(account['username'], repr(e)))
+            status['active'] = False
             status['message'] = (
                 'Exception in search_worker using account {}. Restarting ' +
                 'with fresh account. See logs for details.').format(
@@ -1214,7 +1216,7 @@ def map_request(api, account, position, no_jitter=False):
         req.check_awarded_badges()
         req.get_buddy_walked()
         req.get_inbox(is_history=True)
-        response = req.call()
+        response = req.call(False)
         parse_new_timestamp_ms(account, response)
         response = clear_dict_response(response)
         return response
@@ -1247,7 +1249,7 @@ def gym_request(api, account, position, gym, api_version):
         req.check_awarded_badges()
         req.get_buddy_walked()
         req.get_inbox(is_history=True)
-        response = req.call()
+        response = req.call(False)
         parse_new_timestamp_ms(account, response)
         response = clear_dict_response(response)
         return response
