@@ -28,6 +28,7 @@ from pogom.models import (init_database, create_tables, drop_tables,
 from pogom.webhook import wh_updater
 
 from pogom.proxy import load_proxies, check_proxies, proxies_refresher
+from time import strftime
 
 
 class LogFilter(logging.Filter):
@@ -39,13 +40,21 @@ class LogFilter(logging.Filter):
         return record.levelno < self.level
 
 
-from time import strftime
+# Moved here so logger is configured at load time.
+formatter = logging.Formatter(
+    '%(asctime)s [%(threadName)18s][%(module)14s][%(levelname)8s] %(message)s')
 
-# Initialize and configure Logger at load time.
-logging.basicConfig(
-    format='%(asctime)s [%(threadName)18s][%(module)14s][%(levelname)8s] ' +
-    '%(message)s')
-log = logging.getLogger()
+# Redirect messages lower than WARNING to stdout
+stdout_hdlr = logging.StreamHandler(sys.stdout)
+stdout_hdlr.setFormatter(formatter)
+log_filter = LogFilter(logging.WARNING)
+stdout_hdlr.addFilter(log_filter)
+stdout_hdlr.setLevel(logging.DEBUG)
+
+# Redirect messages equal or higher than WARNING to stderr
+stderr_hdlr = logging.StreamHandler(sys.stderr)
+stderr_hdlr.setFormatter(formatter)
+stderr_hdlr.setLevel(logging.WARNING)
 
 # Assert pgoapi is installed.
 try:
