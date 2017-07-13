@@ -56,12 +56,16 @@ stderr_hdlr = logging.StreamHandler(sys.stderr)
 stderr_hdlr.setFormatter(formatter)
 stderr_hdlr.setLevel(logging.WARNING)
 
+log = logging.getLogger()
+log.addHandler(stdout_hdlr)
+log.addHandler(stderr_hdlr)
+
 # Assert pgoapi is installed.
 try:
     import pgoapi
     from pgoapi import PGoApi, utilities as util
 except ImportError:
-    logging.critical(
+    log.critical(
         "It seems `pgoapi` is not installed. Try running " +
         "pip install --upgrade -r requirements.txt.")
     sys.exit(1)
@@ -95,7 +99,7 @@ def handle_exception(exc_type, exc_value, exc_traceback):
         sys.__excepthook__(exc_type, exc_value, exc_traceback)
         return
 
-    logging.error("Uncaught exception", exc_info=(
+    log.error("Uncaught exception", exc_info=(
         exc_type, exc_value, exc_traceback))
 
 
@@ -106,7 +110,7 @@ def validate_assets(args):
 
     root_path = os.path.dirname(__file__)
     if not os.path.exists(os.path.join(root_path, 'static/dist')):
-        logging.critical(assets_error_log)
+        log.critical(assets_error_log)
         return False
 
     static_path = os.path.join(root_path, 'static/js')
@@ -118,24 +122,24 @@ def validate_assets(args):
             if not os.path.exists(generated_path) or (
                     os.path.getmtime(source_path) >
                     os.path.getmtime(generated_path)):
-                logging.critical(assets_error_log)
+                log.critical(assets_error_log)
                 return False
 
     # You need custom image files now.
     if not os.path.isfile(
             os.path.join(root_path, 'static/icons-sprite.png')):
-        logging.info('Sprite files not present, extracting bundled ones...')
+        log.info('Sprite files not present, extracting bundled ones...')
         extract_sprites(root_path)
-        logging.info('Done!')
+        log.info('Done!')
 
     # Check if custom.css is used otherwise fall back to default.
     if os.path.exists(os.path.join(root_path, 'static/css/custom.css')):
         args.custom_css = True
-        logging.info(
+        log.info(
             'File \"custom.css\" found, applying user-defined settings.')
     else:
         args.custom_css = False
-        logging.info('No file \"custom.css\" found, using default settings.')
+        log.info('No file \"custom.css\" found, using default settings.')
 
     return True
 
@@ -152,21 +156,21 @@ def can_start_scanning(args):
     # Assert pgoapi >= pgoapi_version.
     if (not hasattr(pgoapi, "__version__") or
             StrictVersion(pgoapi.__version__) < StrictVersion(pgoapi_version)):
-        logging.critical(api_version_error)
+        log.critical(api_version_error)
         return False
 
     # Abort if we don't have a hash key set.
     if not args.hash_key:
-        logging.critical('Hash key is required for scanning. Exiting.')
+        log.critical('Hash key is required for scanning. Exiting.')
         return False
 
     # Check the PoGo api pgoapi implements against what RM is expecting
     try:
         if PGoApi.get_api_version() != int(args.api_version.replace('.', '0')):
-            logging.critical(api_version_error)
+            log.critical(api_version_error)
             return False
     except AttributeError:
-        logging.critical(api_version_error)
+        log.critical(api_version_error)
         return False
 
     return True
@@ -201,12 +205,12 @@ def main():
         filelog.setFormatter(logging.Formatter(
             '%(asctime)s [%(threadName)18s][%(module)14s][%(levelname)8s] ' +
             '%(message)s'))
-        logging.getLogger('').addHandler(filelog)
+        log.getLogger('').addHandler(filelog)
 
     if args.verbose:
-        logging.setLevel(logging.DEBUG)
+        log.setLevel(logging.DEBUG)
     else:
-        logging.setLevel(logging.INFO)
+        log.setLevel(logging.INFO)
 
     # These are very noisy, let's shush them up a bit.
     logging.getLogger('peewee').setLevel(logging.INFO)
@@ -237,44 +241,44 @@ def main():
     prog = re.compile("^(\-?\d+\.\d+),?\s?(\-?\d+\.\d+)$")
     res = prog.match(args.location)
     if res:
-        logging.debug('Using coordinates from CLI directly')
+        log.debug('Using coordinates from CLI directly')
         position = (float(res.group(1)), float(res.group(2)), 0)
     else:
-        logging.debug('Looking up coordinates in API')
+        log.debug('Looking up coordinates in API')
         position = util.get_pos_by_name(args.location)
 
     if position is None or not any(position):
-        logging.error("Location not found: '{}'".format(args.location))
+        log.error("Location not found: '{}'".format(args.location))
         sys.exit()
 
     # Use the latitude and longitude to get the local altitude from Google.
     (altitude, status) = get_gmaps_altitude(position[0], position[1],
                                             args.gmaps_key)
     if altitude is not None:
-        logging.debug('Local altitude is: %sm', altitude)
+        log.debug('Local altitude is: %sm', altitude)
         position = (position[0], position[1], altitude)
     else:
         if status == 'REQUEST_DENIED':
-            logging.error(
+            log.error(
                 'Google API Elevation request was denied. You probably ' +
                 'forgot to enable elevation api in https://console.' +
                 'developers.google.com/apis/api/elevation_backend/')
             sys.exit()
         else:
-            logging.error('Unable to retrieve altitude from Google APIs' +
-                          'setting to 0')
+            log.error('Unable to retrieve altitude from Google APIs' +
+                      'setting to 0')
 
-    logging.info('Parsed location is: %.4f/%.4f/%.4f (lat/lng/alt)',
-                 position[0], position[1], position[2])
+    log.info('Parsed location is: %.4f/%.4f/%.4f (lat/lng/alt)',
+             position[0], position[1], position[2])
 
     if args.no_pokemon:
-        logging.info('Parsing of Pokemon disabled.')
+        log.info('Parsing of Pokemon disabled.')
     if args.no_pokestops:
-        logging.info('Parsing of Pokestops disabled.')
+        log.info('Parsing of Pokestops disabled.')
     if args.no_gyms:
-        logging.info('Parsing of Gyms disabled.')
+        log.info('Parsing of Gyms disabled.')
     if args.encounter:
-        logging.info('Encountering pokemon enabled.')
+        log.info('Encountering pokemon enabled.')
 
     config['LOCALE'] = args.locale
     config['CHINA'] = args.china
@@ -287,7 +291,7 @@ def main():
 
     db = init_database(app)
     if args.clear_db:
-        logging.info('Clearing database')
+        log.info('Clearing database')
         if args.db_type == 'mysql':
             drop_tables(db)
         elif os.path.isfile(args.db):
@@ -301,7 +305,7 @@ def main():
     verify_table_encoding(db)
 
     if args.clear_db:
-        logging.info(
+        log.info(
             'Drop and recreate is complete. Now remove -cd and restart.')
         sys.exit()
 
@@ -331,7 +335,7 @@ def main():
 
     # Thread(s) to process database updates.
     for i in range(args.db_threads):
-        logging.debug('Starting db-updater worker thread %d', i)
+        log.debug('Starting db-updater worker thread %d', i)
         t = Thread(target=db_updater, name='db-updater-{}'.format(i),
                    args=(args, db_updates_queue, db))
         t.daemon = True
@@ -352,7 +356,7 @@ def main():
 
     # Thread to process webhook updates.
     for i in range(args.wh_threads):
-        logging.debug('Starting wh-updater worker thread %d', i)
+        log.debug('Starting wh-updater worker thread %d', i)
         t = Thread(target=wh_updater, name='wh-updater-{}'.format(i),
                    args=(args, wh_updates_queue, wh_key_cache))
         t.daemon = True
@@ -380,7 +384,7 @@ def main():
             t.daemon = True
             t.start()
         else:
-            logging.info('Periodical proxies refresh disabled.')
+            log.info('Periodical proxies refresh disabled.')
 
         # Update player locale if not set correctly, yet.
         args.player_locale = PlayerLocale.get_locale(args.location)
@@ -397,7 +401,7 @@ def main():
             }
             db_updates_queue.put((PlayerLocale, {0: db_player_locale}))
         else:
-            logging.debug(
+            log.debug(
                 'Existing player locale has been retrieved from the DB.')
 
         # Gather the Pokemon!
@@ -408,17 +412,17 @@ def main():
                 args.spawnpoint_scanning != 'nofile' and
                 args.dump_spawnpoints):
             with open(args.spawnpoint_scanning, 'w+') as file:
-                logging.info(
+                log.info(
                     'Saving spawn points to %s', args.spawnpoint_scanning)
                 spawns = SpawnPoint.get_spawnpoints_in_hex(
                     position, args.step_limit)
                 file.write(json.dumps(spawns))
-                logging.info('Finished exporting spawn points')
+                log.info('Finished exporting spawn points')
 
         argset = (args, new_location_queue, control_flags,
                   heartbeat, db_updates_queue, wh_updates_queue)
 
-        logging.debug('Starting a %s search thread', args.scheduler)
+        log.debug('Starting a %s search thread', args.scheduler)
         search_thread = Thread(target=search_overseer_thread,
                                name='search-overseer', args=argset)
         search_thread.daemon = True
@@ -447,7 +451,7 @@ def main():
             ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
             ssl_context.load_cert_chain(
                 args.ssl_certificate, args.ssl_privatekey)
-            logging.info('Web server in SSL mode.')
+            log.info('Web server in SSL mode.')
         if args.verbose or args.very_verbose:
             app.run(threaded=True, use_reloader=False, debug=True,
                     host=args.host, port=args.port, ssl_context=ssl_context)
