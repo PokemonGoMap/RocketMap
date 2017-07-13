@@ -45,11 +45,11 @@
     
     Args that start with '--' (eg. -a) can also be set in a config file
     or specified via -cf). The recognized syntax for setting (key, value) pairs 
-	is based on the INI and YAML formats (e.g. key=value or foo=TRUE). For full 
-	documentation of the   differences from the standards please refer to the 
-	ConfigArgParse documentation. If an arg is specified in more than one place,
-	then commandline values override environment variables which override config 
-	file values which override defaults.
+    is based on the INI and YAML formats (e.g. key=value or foo=TRUE). For full 
+    documentation of the   differences from the standards please refer to the 
+    ConfigArgParse documentation. If an arg is specified in more than one place,
+    then commandline values override environment variables which override config 
+    qfile values which override defaults.
     
     optional arguments:
       -h, --help            show this help message and exit [env var:
