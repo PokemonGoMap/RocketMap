@@ -205,7 +205,7 @@ def main():
         filelog.setFormatter(logging.Formatter(
             '%(asctime)s [%(threadName)18s][%(module)14s][%(levelname)8s] ' +
             '%(message)s'))
-        log.getLogger('').addHandler(filelog)
+        log.addHandler(filelog)
 
     if args.verbose:
         log.setLevel(logging.DEBUG)
