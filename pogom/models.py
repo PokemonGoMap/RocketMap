@@ -2006,7 +2006,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                 filtered += 1
                 continue
 
-            printPokemon(pokemon_id, p['latitude'], p['longitude'],
+            printPokemon(pokemon_id, p.latitude, p.longitude,
                          disappear_time)
 
             # Scan for IVs/CP and moves.
