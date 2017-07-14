@@ -575,7 +575,10 @@ def search_overseer_thread(args, new_location_queue, control_flags, heartb,
         if args.stats_log_timer:
             stats_timer += 1
             if stats_timer == args.stats_log_timer:
-                log.info(get_stats_message(threadStatus))
+                msg = get_stats_message(threadStatus)
+                log.info(msg[0:msg.find(" | Skips")])
+                log.info(msg[0:msg.find("Success")] +
+                         msg[(msg.find(" | Skips")+3):])
                 stats_timer = 0
 
         # Update Overseer statistics
