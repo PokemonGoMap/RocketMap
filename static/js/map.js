@@ -117,6 +117,15 @@ function removePokemonMarker(encounterId) { // eslint-disable-line no-unused-var
     mapData.pokemons[encounterId].hidden = true
 }
 
+function createServiceWorkerReceiver() {
+    navigator.serviceWorker.addEventListener('message', function(event) {
+        const data = JSON.parse(event.data);
+        if (data.action === 'centerMap' && data.lat && data.lon) {
+            centerMap(data.lat, data.lon, 20)
+        }
+    });
+}
+
 function initMap() { // eslint-disable-line no-unused-vars
     map = new google.maps.Map(document.getElementById('map'), {
         center: {
@@ -255,6 +264,10 @@ function initMap() { // eslint-disable-line no-unused-vars
             searchControl('on')
         }
     })
+
+    if (Push._agents.chrome.isSupported()) {
+        createServiceWorkerReceiver();
+    }
 }
 
 function updateLocationMarker(style) {
@@ -1862,26 +1875,28 @@ function getPointDistance(pointA, pointB) {
     return google.maps.geometry.spherical.computeDistanceBetween(pointA, pointB)
 }
 
-function sendNotification(title, text, icon, lat, lng) {
-    if (!('Notification' in window)) {
-        return false // Notifications are not present in browser
-    }
-
-    if (Notification.permission !== 'granted') {
-        Notification.requestPermission()
-    } else {
-        var notification = new Notification(title, {
+function sendNotification(title, text, icon, lat, lon) {
+    /* The Push library requests the Notification permission automatically */
+    if (Push.supported()) {
+        Push.create(title, {
             icon: icon,
             body: text,
-            sound: 'sounds/ding.mp3'
+            onClick: function (event) {
+                /* Only run in browsers which support the old Notifications API */
+                /* Browsers supporting the newer Push API are handled by serviceWorker.js */
+                if (Push._agents.desktop.isSupported()) {
+                    window.focus()
+                    event.currentTarget.close()
+                    centerMap(lat, lon, 20)
+                }
+            },
+            data: {
+                lat: lat,
+                lon: lon,
+            }
         })
-
-        notification.onclick = function () {
-            window.focus()
-            notification.close()
-
-            centerMap(lat, lng, 20)
-        }
+    } else {
+        console.log('could not load notifications')
     }
 }
 
@@ -2229,17 +2244,6 @@ function getParameterByName(name, url) {
 //
 // Page Ready Execution
 //
-
-$(function () {
-    if (!Notification) {
-        console.log('could not load notifications')
-        return
-    }
-
-    if (Notification.permission !== 'granted') {
-        Notification.requestPermission()
-    }
-})
 
 $(function () {
     // populate Navbar Style menu
