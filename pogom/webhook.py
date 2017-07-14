@@ -5,11 +5,8 @@ import logging
 import requests
 from datetime import datetime
 from cachetools import LFUCache
-from requests_futures.sessions import FuturesSession
 import threading
-from .utils import get_args
-from requests.packages.urllib3.util.retry import Retry
-from requests.adapters import HTTPAdapter
+from .utils import get_args, get_async_requests_session
 
 log = logging.getLogger(__name__)
 
@@ -43,7 +40,7 @@ def send_to_webhook(session, message_type, message):
         except requests.exceptions.ReadTimeout:
             log.exception('Response timeout on webhook endpoint %s.', w)
         except requests.exceptions.RequestException as e:
-            log.exception(repr(e))
+            log.exception(e)
 
 
 def wh_updater(args, queue, key_caches):
@@ -53,7 +50,10 @@ def wh_updater(args, queue, key_caches):
     # Set up one session to use for all requests.
     # Requests to the same host will reuse the underlying TCP
     # connection, giving a performance increase.
-    session = __get_requests_session(args)
+    session = get_async_requests_session(
+        args.wh_retries,
+        args.wh_backoff_factor,
+        args.wh_concurrency)
 
     # Extract the proper identifier. This list also controls which message
     # types are getting cached.
@@ -61,7 +61,8 @@ def wh_updater(args, queue, key_caches):
         'pokestop': 'pokestop_id',
         'pokemon': 'encounter_id',
         'gym': 'gym_id',
-        'gym_details': 'id'
+        'gym_details': 'id',
+        'raid': 'gym_id'
     }
 
     # Instantiate WH LFU caches for all cached types. We separate the caches
@@ -140,7 +141,7 @@ def wh_updater(args, queue, key_caches):
 
             queue.task_done()
         except Exception as e:
-            log.exception('Exception in wh_updater: %s.', repr(e))
+            log.exception('Exception in wh_updater: %s.', e)
 
 
 # Helpers
@@ -151,47 +152,28 @@ def __wh_completed():
     pass
 
 
-def __get_requests_session(args):
-    # Config / arg parser
-    num_retries = args.wh_retries
-    backoff_factor = args.wh_backoff_factor
-    pool_size = args.wh_concurrency
-
-    # Use requests & urllib3 to auto-retry.
-    # If the backoff_factor is 0.1, then sleep() will sleep for [0.1s, 0.2s,
-    # 0.4s, ...] between retries. It will also force a retry if the status
-    # code returned is 500, 502, 503 or 504.
-    session = FuturesSession(max_workers=pool_size)
-
-    # If any regular response is generated, no retry is done. Without using
-    # the status_forcelist, even a response with status 500 will not be
-    # retried.
-    retries = Retry(total=num_retries, backoff_factor=backoff_factor,
-                    status_forcelist=[500, 502, 503, 504])
-
-    # Mount handler on both HTTP & HTTPS.
-    session.mount('http://', HTTPAdapter(max_retries=retries,
-                                         pool_connections=pool_size,
-                                         pool_maxsize=pool_size))
-    session.mount('https://', HTTPAdapter(max_retries=retries,
-                                          pool_connections=pool_size,
-                                          pool_maxsize=pool_size))
-
-    return session
-
-
 def __get_key_fields(whtype):
     key_fields = {
         # lure_expiration is a UTC timestamp so it's good (Y).
-        'pokestop': ['enabled', 'latitude',
-                     'longitude', 'lure_expiration', 'active_fort_modifier'],
-        'pokemon': ['spawnpoint_id', 'pokemon_id', 'latitude', 'longitude',
-                    'disappear_time', 'move_1', 'move_2',
-                    'individual_stamina', 'individual_defense',
-                    'individual_attack', 'form', 'cp', 'pokemon_level'],
-        'gym': ['team_id', 'guard_pokemon_id',
-                'gym_points', 'enabled', 'latitude', 'longitude'],
-        'gym_details': ['latitude', 'longitude', 'team', 'pokemon']
+        'pokestop': [
+            'enabled', 'latitude', 'longitude', 'lure_expiration',
+            'active_fort_modifier'
+        ],
+        'pokemon': [
+            'spawnpoint_id', 'pokemon_id', 'latitude', 'longitude',
+            'disappear_time', 'move_1', 'move_2', 'individual_stamina',
+            'individual_defense', 'individual_attack', 'form', 'cp',
+            'pokemon_level'
+        ],
+        'gym': [
+            'team_id', 'guard_pokemon_id', 'enabled', 'latitude', 'longitude',
+            'raid_active_until', 'occupied_since', 'total_cp',
+            'slots_available'
+        ],
+        'gym_details': ['latitude', 'longitude', 'team', 'pokemon'],
+        'raid': [
+            'spawn', 'start', 'end', 'pokemon_id', 'latitude', 'longitude'
+        ]
     }
 
     return key_fields.get(whtype, [])

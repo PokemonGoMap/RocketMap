@@ -13,8 +13,13 @@ import socket
 import struct
 import zipfile
 import requests
-from uuid import uuid4
+import hashlib
+
 from s2sphere import CellId, LatLng
+from geopy.geocoders import GoogleV3
+from requests_futures.sessions import FuturesSession
+from requests.packages.urllib3.util.retry import Retry
+from requests.adapters import HTTPAdapter
 
 from . import config
 
@@ -268,6 +273,10 @@ def get_args():
                         help=('Disables Gyms from the map (including ' +
                               'parsing them into local db).'),
                         action='store_true', default=False)
+    parser.add_argument('-nr', '--no-raids',
+                        help=('Disables Raids from the map (including ' +
+                              'parsing them into local db).'),
+                        action='store_true', default=False)
     parser.add_argument('-nk', '--no-pokestops',
                         help=('Disables PokeStops from the map (including ' +
                               'parsing them into local db).'),
@@ -307,9 +316,20 @@ def get_args():
     parser.add_argument('-pxsc', '--proxy-skip-check',
                         help='Disable checking of proxies before start.',
                         action='store_true', default=False)
-    parser.add_argument('-pxt', '--proxy-timeout',
+    parser.add_argument('-pxt', '--proxy-test-timeout',
                         help='Timeout settings for proxy checker in seconds.',
                         type=int, default=5)
+    parser.add_argument('-pxre', '--proxy-test-retries',
+                        help=('Number of times to retry sending proxy ' +
+                              'test requests on failure.'),
+                        type=int, default=0)
+    parser.add_argument('-pxbf', '--proxy-test-backoff-factor',
+                        help=('Factor (in seconds) by which the delay ' +
+                              'until next retry will increase.'),
+                        type=float, default=0.25)
+    parser.add_argument('-pxc', '--proxy-test-concurrency',
+                        help=('Async requests pool size.'), type=int,
+                        default=0)
     parser.add_argument('-pxd', '--proxy-display',
                         help=('Display info on which proxy being used ' +
                               '(index or full). To be used with -ps.'),
@@ -434,6 +454,8 @@ def get_args():
                         help=('Enables the use of X-FORWARDED-FOR headers ' +
                               'to identify the IP of clients connecting ' +
                               'through these trusted proxies.'))
+    parser.add_argument('--api-version', default='0.67.2',
+                        help=('API version currently in use.'))
     verbosity = parser.add_mutually_exclusive_group()
     verbosity.add_argument('-v', '--verbose',
                            help=('Show debug messages from RocketMap ' +
@@ -895,7 +917,11 @@ IPHONES = {'iPhone5,1': 'N41AP',
            'iPhone9,4': 'D111AP'}
 
 
-def generate_device_info():
+def generate_device_info(identifier):
+    md5 = hashlib.md5()
+    md5.update(identifier)
+    pick_hash = int(md5.hexdigest(), 16)
+
     device_info = {'device_brand': 'Apple', 'device_model': 'iPhone',
                    'hardware_manufacturer': 'Apple',
                    'firmware_brand': 'iPhone OS'}
@@ -907,50 +933,47 @@ def generate_device_info():
             '9.3', '9.3.1', '9.3.2', '9.3.3', '9.3.4', '9.3.5')
     ios10 = ('10.0', '10.0.1', '10.0.2', '10.0.3', '10.1', '10.1.1')
 
-    device_info['device_model_boot'] = random.choice(devices)
-    device_info['hardware_model'] = IPHONES[device_info['device_model_boot']]
-    device_info['device_id'] = uuid4().hex
+    device_pick = devices[pick_hash % len(devices)]
+    device_info['device_model_boot'] = device_pick
+    device_info['hardware_model'] = IPHONES[device_pick]
+    device_info['device_id'] = md5.hexdigest()
 
-    if device_info['device_model_boot'] in ('iPhone9,1', 'iPhone9,2',
-                                            'iPhone9,3', 'iPhone9,4'):
-        device_info['firmware_type'] = random.choice(ios10)
-    elif device_info['device_model_boot'] in ('iPhone8,1', 'iPhone8,2',
-                                              'iPhone8,4'):
-        device_info['firmware_type'] = random.choice(ios9 + ios10)
+    if device_pick in ('iPhone9,1', 'iPhone9,2', 'iPhone9,3', 'iPhone9,4'):
+        ios_pool = ios10
+    elif device_pick in ('iPhone8,1', 'iPhone8,2', 'iPhone8,4'):
+        ios_pool = ios9 + ios10
     else:
-        device_info['firmware_type'] = random.choice(ios8 + ios9 + ios10)
+        ios_pool = ios8 + ios9 + ios10
 
+    device_info['firmware_type'] = ios_pool[pick_hash % len(ios_pool)]
     return device_info
 
 
 def extract_sprites(root_path):
     zip_path = os.path.join(
-           root_path,
-           'static01.zip')
+        root_path,
+        'static01.zip')
     extract_path = os.path.join(
-           root_path,
-           'static')
+        root_path,
+        'static')
     log.debug('Extracting sprites from "%s" to "%s"', zip_path, extract_path)
     zip = zipfile.ZipFile(zip_path, 'r')
     zip.extractall(extract_path)
     zip.close()
 
 
-def clear_dict_response(response, keep_inventory=False):
-    if 'platform_returns' in response:
-        del response['platform_returns']
+def clear_dict_response(response):
+    del response['envelope'].platform_returns[:]
     if 'responses' not in response:
         return response
-    if 'GET_INVENTORY' in response['responses'] and not keep_inventory:
-        del response['responses']['GET_INVENTORY']
-    if 'GET_HATCHED_EGGS' in response['responses']:
-        del response['responses']['GET_HATCHED_EGGS']
-    if 'CHECK_AWARDED_BADGES' in response['responses']:
-        del response['responses']['CHECK_AWARDED_BADGES']
-    if 'DOWNLOAD_SETTINGS' in response['responses']:
-        del response['responses']['DOWNLOAD_SETTINGS']
-    if 'GET_BUDDY_WALKED' in response['responses']:
-        del response['responses']['GET_BUDDY_WALKED']
+    responses = [
+        'GET_HATCHED_EGGS', 'GET_INVENTORY', 'CHECK_AWARDED_BADGES',
+        'DOWNLOAD_SETTINGS', 'GET_BUDDY_WALKED', 'GET_INBOX'
+    ]
+    for item in responses:
+        if item in response['responses']:
+            del response['responses'][item]
+
     return response
 
 
@@ -962,3 +985,67 @@ def calc_pokemon_level(cp_multiplier):
         pokemon_level = 171.0112688 * cp_multiplier - 95.20425243
     pokemon_level = int((round(pokemon_level) * 2) / 2)
     return pokemon_level
+
+
+@memoize
+def gmaps_reverse_geolocate(gmaps_key, locale, location):
+    # Find the reverse geolocation
+    geolocator = GoogleV3(api_key=gmaps_key)
+
+    player_locale = {
+        'country': 'US',
+        'language': locale,
+        'timezone': 'America/Denver'
+    }
+
+    try:
+        reverse = geolocator.reverse(location)
+        country_code = reverse[-1].raw['address_components'][-1]['short_name']
+
+        try:
+            timezone = geolocator.timezone(location)
+            player_locale.update({
+                'country': country_code,
+                'timezone': str(timezone)
+            })
+        except Exception as e:
+            log.exception('Exception on Google Timezone API. '
+                          + 'Please check that you have Google Timezone API'
+                          + ' enabled for your API key'
+                          + ' (https://developers.google.com/maps/'
+                          + 'documentation/timezone/intro): %s.', e)
+    except Exception as e:
+        log.exception('Exception while obtaining player locale: %s.'
+                      + ' Using default locale.', e)
+
+    return player_locale
+
+
+# Get a future_requests FuturesSession that supports asynchronous workers
+# and retrying requests on failure.
+# Setting up a persistent session that is re-used by multiple requests can
+# speed up requests to the same host, as it'll re-use the underlying TCP
+# connection.
+def get_async_requests_session(num_retries, backoff_factor, pool_size,
+                               status_forcelist=[500, 502, 503, 504]):
+    # Use requests & urllib3 to auto-retry.
+    # If the backoff_factor is 0.1, then sleep() will sleep for [0.1s, 0.2s,
+    # 0.4s, ...] between retries. It will also force a retry if the status
+    # code returned is in status_forcelist.
+    session = FuturesSession(max_workers=pool_size)
+
+    # If any regular response is generated, no retry is done. Without using
+    # the status_forcelist, even a response with status 500 will not be
+    # retried.
+    retries = Retry(total=num_retries, backoff_factor=backoff_factor,
+                    status_forcelist=status_forcelist)
+
+    # Mount handler on both HTTP & HTTPS.
+    session.mount('http://', HTTPAdapter(max_retries=retries,
+                                         pool_connections=pool_size,
+                                         pool_maxsize=pool_size))
+    session.mount('https://', HTTPAdapter(max_retries=retries,
+                                          pool_connections=pool_size,
+                                          pool_maxsize=pool_size))
+
+    return session

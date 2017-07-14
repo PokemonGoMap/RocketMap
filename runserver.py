@@ -18,42 +18,55 @@ from flask_cache_bust import init_cache_busting
 
 from pogom import config
 from pogom.app import Pogom
-from pogom.utils import get_args, now, extract_sprites
+from pogom.utils import get_args, now, extract_sprites, gmaps_reverse_geolocate
 from pogom.altitude import get_gmaps_altitude
 
 from pogom.search import search_overseer_thread
 from pogom.models import (init_database, create_tables, drop_tables,
-                          Pokemon, db_updater, clean_db_loop,
+                          PlayerLocale, SpawnPoint, db_updater, clean_db_loop,
                           verify_table_encoding, verify_database_schema)
 from pogom.webhook import wh_updater
 
-from pogom.proxy import check_proxies, proxies_refresher
+from pogom.proxy import load_proxies, check_proxies, proxies_refresher
 
-# Currently supported pgoapi.
-pgoapi_version = "1.1.7"
+
+class LogFilter(logging.Filter):
+
+    def __init__(self, level):
+        self.level = level
+
+    def filter(self, record):
+        return record.levelno < self.level
+
 
 # Moved here so logger is configured at load time.
-logging.basicConfig(
-    format='%(asctime)s [%(threadName)18s][%(module)14s][%(levelname)8s] ' +
-    '%(message)s')
+formatter = logging.Formatter(
+    '%(asctime)s [%(threadName)18s][%(module)14s][%(levelname)8s] %(message)s')
+
+# Redirect messages lower than WARNING to stdout
+stdout_hdlr = logging.StreamHandler(sys.stdout)
+stdout_hdlr.setFormatter(formatter)
+log_filter = LogFilter(logging.WARNING)
+stdout_hdlr.addFilter(log_filter)
+stdout_hdlr.setLevel(logging.DEBUG)
+
+# Redirect messages equal or higher than WARNING to stderr
+stderr_hdlr = logging.StreamHandler(sys.stderr)
+stderr_hdlr.setFormatter(formatter)
+stderr_hdlr.setLevel(logging.WARNING)
+
 log = logging.getLogger()
+log.addHandler(stdout_hdlr)
+log.addHandler(stderr_hdlr)
 
 # Assert pgoapi is installed.
 try:
     import pgoapi
-    from pgoapi import utilities as util
+    from pgoapi import PGoApi, utilities as util
 except ImportError:
     log.critical(
         "It seems `pgoapi` is not installed. Try running " +
         "pip install --upgrade -r requirements.txt.")
-    sys.exit(1)
-
-# Assert pgoapi >= pgoapi_version.
-if (not hasattr(pgoapi, "__version__") or
-        StrictVersion(pgoapi.__version__) < StrictVersion(pgoapi_version)):
-    log.critical(
-        "It seems `pgoapi` is not up-to-date. Try running " +
-        "pip install --upgrade -r requirements.txt again.")
     sys.exit(1)
 
 
@@ -89,6 +102,79 @@ def handle_exception(exc_type, exc_value, exc_traceback):
         exc_type, exc_value, exc_traceback))
 
 
+def validate_assets(args):
+    assets_error_log = (
+        'Missing front-end assets (static/dist) -- please run ' +
+        '"npm install && npm run build" before starting the server.')
+
+    root_path = os.path.dirname(__file__)
+    if not os.path.exists(os.path.join(root_path, 'static/dist')):
+        log.critical(assets_error_log)
+        return False
+
+    static_path = os.path.join(root_path, 'static/js')
+    for file in os.listdir(static_path):
+        if file.endswith(".js"):
+            generated_path = os.path.join(static_path, '../dist/js/',
+                                          file.replace(".js", ".min.js"))
+            source_path = os.path.join(static_path, file)
+            if not os.path.exists(generated_path) or (
+                    os.path.getmtime(source_path) >
+                    os.path.getmtime(generated_path)):
+                log.critical(assets_error_log)
+                return False
+
+    # You need custom image files now.
+    if not os.path.isfile(
+            os.path.join(root_path, 'static/icons-sprite.png')):
+        log.info('Sprite files not present, extracting bundled ones...')
+        extract_sprites(root_path)
+        log.info('Done!')
+
+    # Check if custom.css is used otherwise fall back to default.
+    if os.path.exists(os.path.join(root_path, 'static/css/custom.css')):
+        args.custom_css = True
+        log.info(
+            'File \"custom.css\" found, applying user-defined settings.')
+    else:
+        args.custom_css = False
+        log.info('No file \"custom.css\" found, using default settings.')
+
+    return True
+
+
+def can_start_scanning(args):
+    # Currently supported pgoapi.
+    pgoapi_version = "1.2.0"
+    api_version_error = (
+        'The installed pgoapi is out of date. Please refer to ' +
+        'http://rocketmap.readthedocs.io/en/develop/common-issues/' +
+        'faq.html#i-get-an-error-about-pgooapi-version'
+    )
+
+    # Assert pgoapi >= pgoapi_version.
+    if (not hasattr(pgoapi, "__version__") or
+            StrictVersion(pgoapi.__version__) < StrictVersion(pgoapi_version)):
+        log.critical(api_version_error)
+        return False
+
+    # Abort if we don't have a hash key set.
+    if not args.hash_key:
+        log.critical('Hash key is required for scanning. Exiting.')
+        return False
+
+    # Check the PoGo api pgoapi implements against what RM is expecting
+    try:
+        if PGoApi.get_api_version() != int(args.api_version.replace('.', '0')):
+            log.critical(api_version_error)
+            return False
+    except AttributeError:
+        log.critical(api_version_error)
+        return False
+
+    return True
+
+
 def main():
     # Patch threading to make exceptions catchable.
     install_thread_excepthook()
@@ -118,30 +204,8 @@ def main():
         log.setLevel(logging.INFO)
 
     # Let's not forget to run Grunt / Only needed when running with webserver.
-    if not args.no_server:
-        root_path = os.path.dirname(__file__)
-        if not os.path.exists(
-                os.path.join(root_path, 'static/dist')):
-            log.critical(
-                'Missing front-end assets (static/dist) -- please run ' +
-                '"npm install && npm run build" before starting the server.')
-            sys.exit()
-
-        # You need custom image files now.
-        if not os.path.isfile(
-                os.path.join(root_path, 'static/icons-sprite.png')):
-            log.info('Sprite files not present, extracting bundled ones...')
-            extract_sprites(root_path)
-            log.info('Done!')
-
-        # Check if custom.css is used otherwise fall back to default.
-        if os.path.exists(os.path.join(root_path, 'static/css/custom.css')):
-            args.custom_css = True
-            log.info(
-                'File \"custom.css\" found, applying user-defined settings.')
-        else:
-            args.custom_css = False
-            log.info('No file \"custom.css\" found, using default settings.')
+    if not args.no_server and not validate_assets(args):
+        sys.exit(1)
 
     # These are very noisy, let's shush them up a bit.
     logging.getLogger('peewee').setLevel(logging.INFO)
@@ -153,6 +217,7 @@ def main():
     config['parse_pokemon'] = not args.no_pokemon
     config['parse_pokestops'] = not args.no_pokestops
     config['parse_gyms'] = not args.no_gyms
+    config['parse_raids'] = not args.no_raids
 
     # Turn these back up if debugging.
     if args.verbose or args.very_verbose:
@@ -246,10 +311,17 @@ def main():
     app.set_current_location(position)
 
     # Control the search status (running or not) across threads.
-    pause_bit = Event()
-    pause_bit.clear()
+    control_flags = {
+      'on_demand': Event(),
+      'api_watchdog': Event(),
+      'search_control': Event()
+    }
+
+    for flag in control_flags.values():
+        flag.clear()
+
     if args.on_demand_timeout > 0:
-        pause_bit.set()
+        control_flags['on_demand'].set()
 
     heartbeat = [now()]
 
@@ -293,17 +365,18 @@ def main():
     config['GMAPS_KEY'] = args.gmaps_key
 
     if not args.only_server:
-
-        # Abort if we don't have a hash key set
-        if not args.hash_key:
-            log.critical('Hash key is required for scanning. Exiting.')
-            sys.exit()
+        # Check if we are able to scan.
+        if not can_start_scanning(args):
+            sys.exit(1)
 
         # Processing proxies if set (load from file, check and overwrite old
-        # args.proxy with new working list)
-        args.proxy = check_proxies(args)
+        # args.proxy with new working list).
+        args.proxy = load_proxies(args)
 
-        # Run periodical proxy refresh thread
+        if args.proxy and not args.proxy_skip_check:
+            args.proxy = check_proxies(args, args.proxy)
+
+        # Run periodical proxy refresh thread.
         if (args.proxy_file is not None) and (args.proxy_refresh > 0):
             t = Thread(target=proxies_refresher,
                        name='proxy-refresh', args=(args,))
@@ -311,6 +384,23 @@ def main():
             t.start()
         else:
             log.info('Periodical proxies refresh disabled.')
+
+        # Update player locale if not set correctly, yet.
+        args.player_locale = PlayerLocale.get_locale(args.location)
+        if not args.player_locale:
+            args.player_locale = gmaps_reverse_geolocate(
+                args.gmaps_key,
+                args.locale,
+                str(position[0]) + ', ' + str(position[1]))
+            db_player_locale = {
+                'location': args.location,
+                'country': args.player_locale['country'],
+                'language': args.player_locale['country'],
+                'timezone': args.player_locale['timezone'],
+            }
+            db_updates_queue.put((PlayerLocale, {0: db_player_locale}))
+        else:
+            log.debug('Existing player locale has been retrieved from the DB.')
 
         # Gather the Pokemon!
 
@@ -321,12 +411,12 @@ def main():
                 args.dump_spawnpoints):
             with open(args.spawnpoint_scanning, 'w+') as file:
                 log.info('Saving spawn points to %s', args.spawnpoint_scanning)
-                spawns = Pokemon.get_spawnpoints_in_hex(
+                spawns = SpawnPoint.get_spawnpoints_in_hex(
                     position, args.step_limit)
                 file.write(json.dumps(spawns))
                 log.info('Finished exporting spawn points')
 
-        argset = (args, new_location_queue, pause_bit,
+        argset = (args, new_location_queue, control_flags,
                   heartbeat, db_updates_queue, wh_updates_queue)
 
         log.debug('Starting a %s search thread', args.scheduler)
@@ -341,7 +431,7 @@ def main():
     # No more stale JS.
     init_cache_busting(app)
 
-    app.set_search_control(pause_bit)
+    app.set_search_control(control_flags['search_control'])
     app.set_heartbeat_control(heartbeat)
     app.set_location_queue(new_location_queue)
 

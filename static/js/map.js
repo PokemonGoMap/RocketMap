@@ -8,14 +8,13 @@ var $selectRarityNotify
 var $textPerfectionNotify
 var $selectStyle
 var $selectIconSize
-var $selectOpenGymsOnly
+var $switchOpenGymsOnly
 var $selectTeamGymsOnly
 var $selectLastUpdateGymsOnly
 var $selectMinGymLevel
 var $selectMaxGymLevel
 var $selectLuredPokestopsOnly
 var $selectSearchIconMarker
-var $selectGymMarkerStyle
 var $selectLocationIconMarker
 var $switchGymSidebar
 
@@ -63,7 +62,6 @@ var updateWorker
 var lastUpdateTime
 
 var gymTypes = ['Uncontested', 'Mystic', 'Valor', 'Instinct']
-var gymPrestige = [2000, 4000, 8000, 12000, 16000, 20000, 30000, 40000, 50000]
 var audio = new Audio('static/sounds/ding.mp3')
 
 var genderType = ['♂', '♀', '⚲']
@@ -71,21 +69,21 @@ var unownForm = ['unset', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K',
 
 
 /*
-  text place holders:
-  <pkm> - pokemon name
-  <prc> - iv in percent without percent symbol
-  <atk> - attack as number
-  <def> - defense as number
-  <sta> - stamnia as number
-*/
+ text place holders:
+ <pkm> - pokemon name
+ <prc> - iv in percent without percent symbol
+ <atk> - attack as number
+ <def> - defense as number
+ <sta> - stamnia as number
+ */
 var notifyIvTitle = '<pkm> <prc>% (<atk>/<def>/<sta>)'
 var notifyNoIvTitle = '<pkm>'
 
 /*
-  text place holders:
-  <dist>  - disappear time
-  <udist> - time until disappear
-*/
+ text place holders:
+ <dist>  - disappear time
+ <udist> - time until disappear
+ */
 var notifyText = 'disappears at <dist> (<udist>)'
 
 //
@@ -232,9 +230,18 @@ function initMap() { // eslint-disable-line no-unused-vars
 
 function updateLocationMarker(style) {
     if (style in searchMarkerStyles) {
-        locationMarker.setIcon(searchMarkerStyles[style].icon)
+        var url = searchMarkerStyles[style].icon
+        if (url) {
+            locationMarker.setIcon({
+                url: url,
+                scaledSize: new google.maps.Size(24, 24)
+            })
+        } else {
+            locationMarker.setIcon(url)
+        }
         Store.set('locationMarkerStyle', style)
     }
+
     return locationMarker
 }
 
@@ -276,7 +283,15 @@ function createLocationMarker() {
 
 function updateSearchMarker(style) {
     if (style in searchMarkerStyles) {
-        searchMarker.setIcon(searchMarkerStyles[style].icon)
+        var url = searchMarkerStyles[style].icon
+        if (url) {
+            searchMarker.setIcon({
+                url: url,
+                scaledSize: new google.maps.Size(24, 24)
+            })
+        } else {
+            searchMarker.setIcon(url)
+        }
         Store.set('searchMarkerStyle', style)
     }
 
@@ -345,7 +360,7 @@ function initSidebar() {
     $('#gym-sidebar-wrapper').toggle(Store.get('showGyms'))
     $('#gyms-filter-wrapper').toggle(Store.get('showGyms'))
     $('#team-gyms-only-switch').val(Store.get('showTeamGymsOnly'))
-    $('#open-gyms-only-switch').val(Store.get('showOpenGymsOnly'))
+    $('#open-gyms-only-switch').prop('checked', Store.get('showOpenGymsOnly'))
     $('#min-level-gyms-filter-switch').val(Store.get('minGymLevel'))
     $('#max-level-gyms-filter-switch').val(Store.get('maxGymLevel'))
     $('#last-update-gyms-switch').val(Store.get('showLastUpdatedGymsOnly'))
@@ -385,12 +400,8 @@ function initSidebar() {
     $('#pokemon-icon-size').val(Store.get('iconSizeModifier'))
 }
 
-function pad(number) {
-    return number <= 99 ? ('0' + number).slice(-2) : number
-}
-
 function getTypeSpan(type) {
-    return `<span style='padding: 2px 5px; text-transform: uppercase; color: white; margin-right: 2px; border-radius: 4px; font-size: 0.8em; vertical-align: text-bottom; background-color: ${type['color']}'>${type['type']}</span>`
+    return `<span style='padding: 2px 5px; text-transform: uppercase; color: white; margin-right: 2px; border-radius: 4px; font-size: 0.6em; vertical-align: middle; background-color: ${type['color']}'>${type['type']}</span>`
 }
 
 function openMapDirections(lat, lng) { // eslint-disable-line no-unused-vars
@@ -402,7 +413,7 @@ function openMapDirections(lat, lng) { // eslint-disable-line no-unused-vars
 function getDateStr(t) {
     var dateStr = 'Unknown'
     if (t) {
-        dateStr = moment(t).format('YYYY-MM-DD HH:mm:ss')
+        dateStr = moment(t).startOf('hour').fromNow()
     }
     return dateStr
 }
@@ -417,7 +428,6 @@ function pokemonLabel(item) {
     var latitude = item['latitude']
     var longitude = item['longitude']
     var disappearTime = item['disappear_time']
-    var disappearDate = new Date(disappearTime)
     var atk = item['individual_attack']
     var def = item['individual_defense']
     var sta = item['individual_stamina']
@@ -435,193 +445,301 @@ function pokemonLabel(item) {
     })
 
     var details = ''
-    if (atk !== null && def !== null && sta !== null) {
-        var iv = getIv(atk, def, sta)
-        details = `
-            <div>
-                IV: ${iv.toFixed(1)}% (${atk}/${def}/${sta})
-            </div>
-            `
 
-        if (cp !== null && cpMultiplier !== null) {
-            var pokemonLevel = getPokemonLevel(cpMultiplier)
-            details += `
-            <div>
-                CP: ${cp} | Level: ${pokemonLevel} 
-            </div>
-            `
-        }
+    var contentstring = ''
+    var formString = ''
 
-        details += `
-            <div>
-                Moves: ${pMove1} / ${pMove2}
-            </div>
-            `
-    }
-    if (gender !== null) {
-        details += `
-            <div>
-                Gender: ${genderType[gender - 1]}
-            `
-        if (weight !== null && height !== null) {
-            details += `| Weight: ${weight.toFixed(2)}kg | Height: ${height.toFixed(2)}m`
-        }
-        details += `
-                </div>
-                `
-    }
-    var contentstring = `
-        <div>
-            <b>${name}</b>`
     if (id === 201 && form !== null && form > 0) {
-        contentstring += ` (${unownForm[item['form']]})`
+        formString += `(${unownForm[item['form']]})`
     }
-    contentstring += `<span> - </span>
-            <small>
-                <a href='http://www.pokemon.com/us/pokedex/${id}' target='_blank' title='View in Pokedex'>#${id}</a>
-            </small>
-            <span> ${rarityDisplay}</span>
-            <span> - </span>
-            <small>${typesDisplay}</small>
+
+    contentstring += `
+    <div class='pokemon name'>
+      ${name} <span class='pokemon name pokedex'><a href='http://pokemon.gameinfo.io/en/pokemon/${id}' target='_blank' title='View in Pokédex'>#${id}</a></span> ${formString} <span class='pokemon gender rarity'>${genderType[gender - 1]} ${rarityDisplay}</span> ${typesDisplay}
+    </div>`
+
+    if (cp !== null && cpMultiplier !== null) {
+        var pokemonLevel = getPokemonLevel(cpMultiplier)
+
+        if (atk !== null && def !== null && sta !== null) {
+            var iv = getIv(atk, def, sta)
+        }
+
+        contentstring += `
+          <div class='pokemon container'>
+            <div class='pokemon container content-left'>
+              <div>
+                <img class='pokemon sprite' src='static/icons/${id}.png'>
+                <span class='pokemon'>Level: </span><span class='pokemon'>${pokemonLevel}</span>
+                <span class='pokemon links exclude'><a href='javascript:excludePokemon(${id})'>Exclude</a></span>
+                <span class='pokemon links notify'><a href='javascript:notifyAboutPokemon(${id})'>Notify</a></span>
+                <span class='pokemon links remove'><a href='javascript:removePokemonMarker("${encounterId}")'>Remove</a></span>
+              </div>
+          </div>
+          <div class='pokemon container content-right'>
+            <div>
+              <div class='pokemon disappear'>
+                <span class='label-countdown' disappears-at='${disappearTime}'>00m00s</span> left
+              </div>
+              <div class='pokemon'>
+                CP: <span class='pokemon encounter'>${cp}/${iv.toFixed(1)}%</span> (A${atk}/D${def}/S${sta})
+              </div>
+              <div class='pokemon'>
+                Moveset: <span class='pokemon encounter'>${pMove1}/${pMove2}</span>
+              </div>
+              <div class='pokemon'>
+                Weight: ${weight.toFixed(2)}kg | Height: ${height.toFixed(2)}m
+              </div>
+              <div>
+                <span class='pokemon navigate'><a href='javascript:void(0);' onclick='javascript:openMapDirections(${latitude},${longitude});' title='Open in Google Maps'>${latitude.toFixed(6)}, ${longitude.toFixed(7)}</a></span>
+              </div>
+          </div>
         </div>
+      </div>`
+    } else {
+        contentstring += `
+      <div class='pokemon container'>
+        <div class='pokemon container content-left'>
+          <div>
+            <img class='pokemon sprite' src='static/icons/${id}.png'>
+            <span class='pokemon'>Level: </span><span class='pokemon no-encounter'>n/a</span>
+            <span class='pokemon links exclude'><a href='javascript:excludePokemon(${id})'>Exclude</a></span>
+            <span class='pokemon links notify'><a href='javascript:notifyAboutPokemon(${id})'>Notify</a></span>
+            <span class='pokemon links remove'><a href='javascript:removePokemonMarker("${encounterId}")'>Remove</a></span>
+          </div>
+      </div>
+      <div class='pokemon container content-right'>
         <div>
-            Disappears at ${pad(disappearDate.getHours())}:${pad(disappearDate.getMinutes())}:${pad(disappearDate.getSeconds())}
-            <span class='label-countdown' disappears-at='${disappearTime}'>(00m00s)</span>
-        </div>
-        <div>
-            Location: ${latitude.toFixed(6)}, ${longitude.toFixed(7)}
-        </div>
-            ${details}
-        <div>
-            <a href='javascript:excludePokemon(${id})'>Exclude</a>&nbsp;&nbsp
-            <a href='javascript:notifyAboutPokemon(${id})'>Notify</a>&nbsp;&nbsp
-            <a href='javascript:removePokemonMarker("${encounterId}")'>Remove</a>&nbsp;&nbsp
-            <a href='javascript:void(0);' onclick='javascript:openMapDirections(${latitude},${longitude});' title='View in Maps'>Get directions</a>
-        </div>`
+          <div class='pokemon disappear'>
+            <span class='label-countdown' disappears-at='${disappearTime}'>00m00s</span> left
+          </div>
+          <div class='pokemon'>
+            CP: <span class='pokemon no-encounter'>No information</span>
+          </div>
+          <div class='pokemon'>
+            Moveset: <span class='pokemon no-encounter'>No information</span>
+          </div>
+          <div class='pokemon'>
+            Weight: <span class='pokemon no-encounter'>n/a</span> | Height: <span class='pokemon no-encounter'>n/a</span>
+          </div>
+          <div>
+            <span class='pokemon navigate'><a href='javascript:void(0);' onclick='javascript:openMapDirections(${latitude},${longitude});' title='Open in Google Maps'>${latitude.toFixed(6)}, ${longitude.toFixed(7)}</a></span>
+          </div>
+      </div>
+    </div>
+  </div>`
+    }
+
+    contentstring += `
+      ${details}`
+
     return contentstring
 }
 
-function gymLabel(teamName, teamId, gymPoints, latitude, longitude, lastScanned = null, lastModified = null, name = null, members = [], gymId) {
-    var memberStr = ''
-    for (var i = 0; i < members.length; i++) {
-        memberStr += `
-            <span class="gym-member" title="${members[i].pokemon_name} | ${members[i].trainer_name} (Lvl ${members[i].trainer_level})">
-                <i class="pokemon-sprite n${members[i].pokemon_id}"></i>
-                <span class="cp team-${teamId}">${members[i].pokemon_cp}</span>
-            </span>`
-    }
-
-    var lastScannedStr = getDateStr(lastScanned)
-    var lastModifiedStr = getDateStr(lastModified)
-    var directionsStr = ''
-    if (!Store.get('useGymSidebar')) {
-        directionsStr = `<div>
-                <a href='javascript:void(0);' onclick='javascript:openMapDirections(${latitude},${longitude});' title='View in Maps'>Get directions</a>
-            </div>`
-    }
-
-    var nameStr = (name ? `<div>${name}</div>` : '')
-
-    var gymColor = ['0, 0, 0, .4', '74, 138, 202, .6', '240, 68, 58, .6', '254, 217, 40, .6']
-    var str
-    if (teamId === 0) {
-        str = `
-            <div>
-                <center>
-                    <div>
-                        <b style='color:rgba(${gymColor[teamId]})'>${teamName}</b><br>
-                        <img height='70px' style='padding: 5px;' src='static/forts/${teamName}_large.png'>
-                    </div>
-                    ${nameStr}
-                    <div>
-                        Location: ${latitude.toFixed(6)}, ${longitude.toFixed(7)}
-                    </div>
-                    <div>
-                        Last Scanned: ${lastScannedStr}
-                    </div>
-                    <div>
-                        Last Modified: ${lastModifiedStr}
-                    </div>
-                    ${directionsStr}
-                </center>
-            </div>`
-    } else {
-        var gymLevel = getGymLevel(gymPoints)
-        str = `
-            <div>
-                <center>
-                    <div style='padding-bottom: 2px'>
-                        Gym owned by:
-                    </div>
-                    <div>
-                        <b style='color:rgba(${gymColor[teamId]})'>Team ${teamName}</b><br>
-                        <img height='70px' style='padding: 5px;' src='static/forts/${teamName}_large.png'>
-                    </div>
-                    <div>
-                        ${nameStr}
-                    </div>
-                    <div>
-                        Level: ${gymLevel} | Prestige: ${gymPoints}/${gymPrestige[gymLevel - 1] || 50000}
-                    </div>
-                    <div>
-                        ${memberStr}
-                    </div>
-                    <div>
-                        Location: ${latitude.toFixed(6)}, ${longitude.toFixed(7)}
-                    </div>
-                    <div>
-                        Last Scanned: ${lastScannedStr}
-                    </div>
-                    <div>
-                        Last Modified: ${lastModifiedStr}
-                    </div>
-                    ${directionsStr}
-                </center>
-            </div>`
-    }
-
-    return str
+function isOngoingRaid(raid) {
+    return raid && Date.now() < raid.end && Date.now() > raid.start
 }
 
-function getGymLevel(points) {
-    var level = 1
-    while (points >= gymPrestige[level - 1]) {
-        level++
+function gymLabel(gym, includeMembers = true) {
+    const pokemonWithImages = [
+        3, 6, 9, 59, 65, 68, 89, 94, 103, 110, 112, 125, 126, 129, 131, 134,
+        135, 136, 143, 153, 156, 159, 248
+    ]
+
+    const raid = gym.raid
+    var raidStr = ''
+    if (raid && raid.end > Date.now()) {
+        if (raid.pokemon_id !== null) {
+            let pMove1 = (moves[raid['move_1']] !== undefined) ? i8ln(moves[raid['move_1']]['name']) : 'gen/unknown'
+            let pMove2 = (moves[raid['move_2']] !== undefined) ? i8ln(moves[raid['move_2']]['name']) : 'gen/unknown'
+
+            raidStr += `
+                    <div class='raid encounter'>
+                       CP: <span class='raid encounter info'>${raid['cp']}</span>
+                    </div>
+                    <div class='raid encounter'>
+                         Moveset: <span class='raid encounter info'>${pMove1}/${pMove2}</span>
+                    </div>`
+        }
+    }
+    const lastScannedStr = getDateStr(gym.last_scanned)
+    const lastModifiedStr = getDateStr(gym.last_modified)
+    const slotsString = gym.slots_available ? (gym.slots_available === 1 ? '1 Free Slot' : `${gym.slots_available} Free Slots`) : 'No Free Slots'
+    const teamColor = ['85,85,85,1', '0,134,255,1', '255,26,26,1', '255,159,25,1']
+    const teamName = gymTypes[gym.team_id]
+    const isUpcomingRaid = raid != null && Date.now() < raid.start
+    const isRaidStarted = isOngoingRaid(raid)
+
+    var subtitle = ''
+    var image = ''
+    var imageLbl = ''
+    var navInfo = ''
+    var memberStr = ''
+
+    const gymPoints = gym.total_cp
+    const titleText = gym.name ? gym.name : (gym.team_id === 0 ? teamName : 'Team ' + teamName)
+    const title = `
+      <div class='gym name' style='color:rgba(${teamColor[gym.team_id]})'>
+        ${titleText}
+      </div>`
+
+    if (gym.team_id !== 0) {
+        subtitle = `
+        <div>
+            <img class='gym info strength' src='static/images/gym/Strength.png'>
+            <span class='gym info strength'>
+              Strength: ${gymPoints} (${slotsString})
+            </span>
+        </div>`
     }
 
-    return level
+    if (isUpcomingRaid || isRaidStarted) {
+        const raidColor = ['252,112,176', '255,158,22']
+        const levelStr = '★'.repeat(raid['level'])
+
+        if (isRaidStarted && raid.pokemon_id) {
+            // Set default image.
+            image = `
+                <img class='gym sprite' src='static/images/raid/unknown.png'>
+                ${raidStr}
+            `
+
+            // Use Pokémon-specific image if we have one.
+            if (pokemonWithImages.indexOf(raid.pokemon_id) !== -1) {
+                image = `
+                    <img class='gym sprite' src='static/images/raid/${raid.pokemon_id}.png'>
+                    ${raidStr}
+                `
+            }
+        } else {
+            image = `<img class='gym sprite' src='static/images/raid/${gymTypes[gym.team_id]}_${getGymLevel(gym)}_${raid.level}.png'>`
+        }
+
+        if (isUpcomingRaid) {
+            imageLbl = `
+                <div class='raid'>
+                  <span style='color:rgb(${raidColor[Math.floor((raid.level - 1) / 2)]})'>
+                  ${levelStr}
+                  </span>
+                  Raid in <span class='raid countdown label-countdown' disappears-at='${raid.start}'></span>
+                </div>`
+        } else {
+            let typesDisplay = ''
+
+            $.each(raid.pokemon_types, function (index, type) {
+                typesDisplay += getTypeSpan(type)
+            })
+
+            subtitle = `
+                <div class='raid'>
+                  <span style='color:rgb(${raidColor[Math.floor((raid.level - 1) / 2)]})'>
+                  ${levelStr}
+                  </span>
+                  <span class='raid countdown label-countdown' disappears-at='${raid.end}'></span> left
+                </div>
+                   <div class='raid pokemon name'>
+                        ${raid['pokemon_name']}
+                            <a href='http://pokemon.gameinfo.io/en/pokemon/${raid['pokemon_id']}' target='_blank' title='View in Pokédex'>#${raid['pokemon_id']}</a>
+                        ${typesDisplay}
+                </div>`
+        }
+    } else {
+        image = `<img class='gym sprite' src='static/images/gym/${teamName}_${getGymLevel(gym)}.png'>`
+    }
+
+
+    navInfo = `
+            <div class='gym container'>
+                <div>
+                  <span class='gym info navigate'>
+                    <a href='javascript:void(0);' onclick='javascript:openMapDirections(${gym.latitude},${gym.longitude});' title='Open in Google Maps'>
+                      ${gym.latitude.toFixed(6)}, ${gym.longitude.toFixed(7)}
+                    </a>
+                  </span>
+                </div>
+                <div class='gym info last-scanned'>
+                    Last Scanned: ${lastScannedStr}
+                </div>
+                <div class='gym info last-modified'>
+                    Last Modified: ${lastModifiedStr}
+                </div>
+            </div>
+        </div>`
+
+
+    if (!isRaidStarted && includeMembers) {
+        memberStr = '<div>'
+
+        gym.pokemon.forEach((member) => {
+            memberStr += `
+            <span class='gym member'>
+              <center>
+                <div>
+                  <div>
+                    <i class='pokemon-sprite n${member.pokemon_id}'></i>
+                  </div>
+                  <div>
+                    <span class='gym pokemon'>${member.pokemon_name}</span>
+                  </div>
+                  <div class='gym pokemon motivation'>
+                    <img class='gym pokemon motivation heart' src='static/images/gym/Heart.png'> ${member.cp_decayed}
+                  </div>
+                </div>
+              </center>
+            </span>`
+        })
+
+        memberStr += '</div>'
+    }
+
+    return `
+        <div>
+            <center>
+                ${title}
+                ${subtitle}
+                ${image}
+                ${imageLbl}
+            </center>
+            ${navInfo}
+            <center>
+                ${memberStr}
+            </center>
+        </div>`
 }
 
 function pokestopLabel(expireTime, latitude, longitude) {
     var str
     if (expireTime) {
-        var expireDate = new Date(expireTime)
-
         str = `
             <div>
-                <b>Lured Pokéstop</b>
+              <div class='pokestop lure'>
+                Lured Pokéstop
+              </div>
+              <div class='pokestop-expire'>
+                  <span class='label-countdown' disappears-at='${expireTime}'>00m00s</span> left
+              </div>
+              <div>
+                <img class='pokestop sprite' src='static/images/pokestop//PokestopLured.png'>
+              </div>
+              <div>
+                <span class='pokestop navigate'><a href='javascript:void(0);' onclick='javascript:openMapDirections(${latitude},${longitude});' title='Open in Google Maps'; class='pokestop lure'>${latitude.toFixed(6)}, ${longitude.toFixed(7)}</a></span>
+              </div>
             </div>
-            <div>
-                Lure expires at ${pad(expireDate.getHours())}:${pad(expireDate.getMinutes())}:${pad(expireDate.getSeconds())}
-                <span class='label-countdown' disappears-at='${expireTime}'>(00m00s)</span>
-            </div>
-            <div>
-                Location: ${latitude.toFixed(6)}, ${longitude.toFixed(7)}
-            </div>
-            <div>
-                <a href='javascript:void(0);' onclick='javascript:openMapDirections(${latitude},${longitude});' title='View in Maps'>Get directions</a>
-            </div>`
+          </div>`
     } else {
         str = `
             <div>
-                <b>Pokéstop</b>
+              <div class='pokestop nolure'>
+                Pokéstop
+              </div>
+              <div>
+                <img class='pokestop sprite' src='static/images/pokestop//Pokestop.png'>
+              </div>
+              <div>
+                <span class='pokestop navigate'><a href='javascript:void(0);' onclick='javascript:openMapDirections(${latitude},${longitude});' title='Open in Google Maps'; class='pokestop nolure'>${latitude.toFixed(6)}, ${longitude.toFixed(7)}</a></span>
+              </div>
             </div>
-            <div>
-                Location: ${latitude.toFixed(6)}, ${longitude.toFixed(7)}
-            </div>
-            <div>
-                <a href='javascript:void(0);' onclick='javascript:openMapDirections(${latitude},${longitude});' title='View in Maps'>Get directions</a>
-            </div>`
+          </div>`
     }
 
     return str
@@ -637,15 +755,17 @@ function spawnpointLabel(item) {
     var str = `
         <div>
             <b>Spawn Point</b>
-        </div>
-        <div>
-            Every hour from ${formatSpawnTime(item.time)} to ${formatSpawnTime(item.time + 900)}
         </div>`
 
-    if (item.special) {
+    if (item.uncertain) {
         str += `
             <div>
-                May appear as early as ${formatSpawnTime(item.time - 1800)}
+                Spawn times not yet determined. Current guess ${formatSpawnTime(item.appear_time)} until ${formatSpawnTime(item.disappear_time)}
+            </div>`
+    } else {
+        str += `
+            <div>
+                Every hour from ${formatSpawnTime(item.appear_time)} to ${formatSpawnTime(item.disappear_time)}
             </div>`
     }
     return str
@@ -709,13 +829,17 @@ function getIv(atk, def, stm) {
 function getPokemonLevel(cpMultiplier) {
     if (cpMultiplier < 0.734) {
         var pokemonLevel = (58.35178527 * cpMultiplier * cpMultiplier -
-                         2.838007664 * cpMultiplier + 0.8539209906)
+        2.838007664 * cpMultiplier + 0.8539209906)
     } else {
         pokemonLevel = 171.0112688 * cpMultiplier - 95.20425243
     }
     pokemonLevel = (Math.round(pokemonLevel) * 2) / 2
 
     return pokemonLevel
+}
+
+function getGymLevel(gym) {
+    return 6 - gym['slots_available']
 }
 
 function lpad(str, len, padstr) {
@@ -755,8 +879,11 @@ function getNotifyText(item) {
         item['individual_defense'], item['individual_stamina']]
     var ntitle = repArray(((iv) ? notifyIvTitle : notifyNoIvTitle), find, replace)
     var dist = (new Date(item['disappear_time'])).toLocaleString([], {
-        hour: '2-digit', minute: '2-digit',
-        second: '2-digit', hour12: false})
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+    })
     var until = getTimeUntil(item['disappear_time'])
     var udist = (until.hour > 0) ? until.hour + ':' : ''
     udist += lpad(until.min, 2, 0) + 'm' + lpad(until.sec, 2, 0) + 's'
@@ -835,21 +962,18 @@ function setupGymMarker(item) {
             lat: item['latitude'],
             lng: item['longitude']
         },
-        map: map,
-        icon: {
-            url: 'static/forts/' + Store.get('gymMarkerStyle') + '/' + gymTypes[item['team_id']] + (item['team_id'] !== 0 ? '_' + getGymLevel(item['gym_points']) : '') + '.png',
-            scaledSize: new google.maps.Size(48, 48)
-        }
+        map: map
     })
+    marker.infoWindow = new google.maps.InfoWindow({
+        content: '',
+        disableAutoPan: true
+    })
+    updateGymMarker(item, marker)
 
     if (!marker.rangeCircle && isRangeActive(map)) {
         marker.rangeCircle = addRangeCircle(marker, map, 'gym', item['team_id'])
     }
 
-    marker.infoWindow = new google.maps.InfoWindow({
-        content: gymLabel(gymTypes[item['team_id']], item['team_id'], item['gym_points'], item['latitude'], item['longitude'], item['last_scanned'], item['last_modified'], item['name'], item['pokemon'], item['gym_id']),
-        disableAutoPan: true
-    })
 
     if (Store.get('useGymSidebar')) {
         marker.addListener('click', function () {
@@ -882,37 +1006,47 @@ function setupGymMarker(item) {
     } else {
         addListeners(marker)
     }
+
     return marker
 }
 
 function updateGymMarker(item, marker) {
-    marker.setIcon({
-        url: 'static/forts/' + Store.get('gymMarkerStyle') + '/' + gymTypes[item['team_id']] + (item['team_id'] !== 0 ? '_' + getGymLevel(item['gym_points']) : '') + '.png',
-        scaledSize: new google.maps.Size(48, 48)
-    })
-    marker.infoWindow.setContent(gymLabel(gymTypes[item['team_id']], item['team_id'], item['gym_points'], item['latitude'], item['longitude'], item['last_scanned'], item['last_modified'], item['name'], item['pokemon'], item['gym_id']))
+    if (item.raid !== null && item.raid.end > Date.now() && item.raid.pokemon_id !== null) {
+        marker.setIcon({
+            url: 'static/images/raid/' + item.raid.pokemon_id + '.png',
+            scaledSize: new google.maps.Size(48, 48)
+        })
+        marker.setZIndex(google.maps.Marker.MAX_ZINDEX + 1)
+    } else if (item.raid !== null && item.raid.end > Date.now()) {
+        marker.setIcon({
+            url: 'static/images/raid/' + gymTypes[item.team_id] + '_' + getGymLevel(item) + '_' + item['raid']['level'] + '.png',
+            scaledSize: new google.maps.Size(48, 48)
+        })
+    } else {
+        marker.setIcon({
+            url: 'static/images/gym/' + gymTypes[item.team_id] + '_' + getGymLevel(item) + '.png',
+            scaledSize: new google.maps.Size(48, 48)
+        })
+        marker.setZIndex(1)
+    }
+    marker.infoWindow.setContent(gymLabel(item))
     return marker
 }
 
-function updateGymIcons() {
-    $.each(mapData.gyms, function (key, value) {
-        mapData.gyms[key]['marker'].setIcon({
-            url: 'static/forts/' + Store.get('gymMarkerStyle') + '/' + gymTypes[mapData.gyms[key]['team_id']] + (mapData.gyms[key]['team_id'] !== 0 ? '_' + getGymLevel(mapData.gyms[key]['gym_points']) : '') + '.png',
-            scaledSize: new google.maps.Size(48, 48)
-        })
-    })
-}
-
 function setupPokestopMarker(item) {
-    var imagename = item['lure_expiration'] ? 'PstopLured' : 'Pstop'
+    var imagename = item['lure_expiration'] ? 'PokestopLured' : 'Pokestop'
+    var image = {
+        url: 'static/images/pokestop/' + '/' + imagename + '.png',
+        scaledSize: new google.maps.Size(32, 32)
+    }
     var marker = new google.maps.Marker({
         position: {
             lat: item['latitude'],
             lng: item['longitude']
         },
         map: map,
-        zIndex: 2,
-        icon: 'static/forts/' + imagename + '.png'
+        zIndex: item['lure_expiration'] ? 3 : 2,
+        icon: image
     })
 
     if (!marker.rangeCircle && isRangeActive(map)) {
@@ -1335,11 +1469,11 @@ function updatePokestops() {
 }
 
 function processGyms(i, item) {
+    var gymLevel = getGymLevel(item)
     if (!Store.get('showGyms')) {
         return false // in case the checkbox was unchecked in the meantime.
     }
 
-    var gymLevel = getGymLevel(item.gym_points)
     var removeGymFromMap = function (gymid) {
         if (mapData.gyms[gymid] && mapData.gyms[gymid].marker) {
             if (mapData.gyms[gymid].marker.rangeCircle) {
@@ -1350,32 +1484,8 @@ function processGyms(i, item) {
         }
     }
 
-    var gymHasOpenSpot = function (gymLevel, pokemonInGym) {
-        return gymLevel > item.pokemon.length && item.pokemon.length !== 0
-    }
-
-    if (Store.get('showOpenGymsOnly') === 1) {
-        if (!gymHasOpenSpot(gymLevel, item.pokemon.length)) {
-            removeGymFromMap(item['gym_id'])
-            return true
-        }
-    }
-
-    if (Store.get('showOpenGymsOnly') > 1) {
-        var closePrestige = 0
-        switch (Store.get('showOpenGymsOnly')) {
-            case 2:
-                closePrestige = 1000
-                break
-            case 3:
-                closePrestige = 2500
-                break
-            case 4:
-                closePrestige = 5000
-                break
-        }
-
-        if (!gymHasOpenSpot(gymLevel, item.pokemon.length) && (gymPrestige[gymLevel - 1] > closePrestige + item.gym_points || gymLevel === 10)) {
+    if (Store.get('showOpenGymsOnly')) {
+        if (item.slots_available === 0) {
             removeGymFromMap(item['gym_id'])
             return true
         }
@@ -1449,7 +1559,7 @@ function processSpawnpoints(i, item) {
         return false
     }
 
-    var id = item['spawnpoint_id']
+    var id = item['id']
 
     if (!(id in mapData.spawnpoints)) { // add marker to map and item to dict
         if (item.marker) {
@@ -1569,14 +1679,14 @@ var updateLabelDiffTime = function () {
         if (disappearsAt.ttime < disappearsAt.now) {
             timestring = '(expired)'
         } else {
-            timestring = '('
+            timestring = ''
             if (hours > 0) {
-                timestring = hours + 'h'
+                timestring = hours + 'hour '
             }
 
-            timestring += lpad(minutes, 2, 0) + 'm'
-            timestring += lpad(seconds, 2, 0) + 's'
-            timestring += ')'
+            timestring += lpad(minutes, 2, 0) + 'min '
+            timestring += lpad(seconds, 2, 0) + 'sec '
+            timestring += ''
         }
 
         $(element).text(timestring)
@@ -1804,69 +1914,66 @@ function showGymDetails(id) { // eslint-disable-line no-unused-vars
     })
 
     data.done(function (result) {
-        var gymLevel = getGymLevel(result.gym_points)
-        var nextLvlPrestige = gymPrestige[gymLevel - 1] || 50000
-        var prestigePercentage = (result.gym_points / nextLvlPrestige) * 100
-        var lastScannedDateStr = getDateStr(result.last_scanned)
-        var lastModifiedDateStr = getDateStr(result.last_modified)
-        var freeSlots = result.pokemon.length ? gymLevel - result.pokemon.length : 0
-        var freeSlotsStr = freeSlots ? ` - ${freeSlots} Free Slots` : ''
-        var gymLevelStr = ''
-
-        if (result.team_id === 0) {
-            gymLevelStr = `
-                <center>
-                    <b>Uncontested - 1 Free Slot</b>
-                </center>`
-        } else {
-            gymLevelStr = `<div>
-                <b>Level ${gymLevel}${freeSlotsStr}</b>
-            </div>`
-        }
         var pokemonHtml = ''
-        var headerHtml = `
-            <center>
-                <div>
-                    <b>${result.name || ''}</b>
-                </div>
-                <img height="100px" style="padding: 5px;" src="static/forts/${gymTypes[result.team_id]}_large.png">
-                <div class="prestige-bar team-${result.team_id}">
-                    <div class="prestige team-${result.team_id}" style="width: ${prestigePercentage}%">
-                    </div>
-                </div>
-                <div>
-                    ${result.gym_points}/${nextLvlPrestige}
-                </div>
-                ${gymLevelStr}
-                <div style="font-size: .7em;">
-                    Last Scanned: ${lastScannedDateStr}
-                </div>
-                <div style="font-size: .7em;">
-                    Last Modified: ${lastModifiedDateStr}
-                </div>
-                <div>
-                    <a href='javascript:void(0);' onclick='javascript:openMapDirections(${result.latitude},${result.longitude});' title='View in Maps'>Get directions</a>
-                </div>
-            </center>
-        `
-
         if (result.pokemon.length) {
-            $.each(result.pokemon, function (i, pokemon) {
-                var perfectPercent = getIv(pokemon.iv_attack, pokemon.iv_defense, pokemon.iv_stamina)
-                var moveEnergy = Math.round(100 / pokemon.move_2_energy)
+            if (!isOngoingRaid(result.raid)) {
+                result.pokemon.forEach((pokemon) => {
+                    pokemonHtml += getSidebarGymMember(pokemon)
+                })
 
-                pokemonHtml += `
+                pokemonHtml = `<table><tbody>${pokemonHtml}</tbody></table>`
+            }
+        } else if (result.team_id === 0) {
+            pokemonHtml = ''
+        } else {
+            pokemonHtml = `
+                <center>
+                    Gym Leader:<br>
+                    <i class="pokemon-large-sprite n${result.guard_pokemon_id}"></i><br>
+                    <b>${result.guard_pokemon_name}</b>
+
+                    <p style="font-size: .75em; margin: 5px;">
+                        No additional gym information is available for this gym. Make sure you are collecting <a href="https://rocketmap.readthedocs.io/en/develop/extras/gyminfo.html">detailed gym info.</a>
+                        If you have detailed gym info collection running, this gym's Pokemon information may be out of date.
+                    </p>
+                </center>
+            `
+        }
+
+        var topPart = gymLabel(result, false)
+        sidebar.innerHTML = `${topPart}${pokemonHtml}`
+
+        sidebarClose = document.createElement('a')
+        sidebarClose.href = '#'
+        sidebarClose.className = 'close'
+        sidebarClose.tabIndex = 0
+        sidebar.appendChild(sidebarClose)
+
+        sidebarClose.addEventListener('click', function (event) {
+            event.preventDefault()
+            event.stopPropagation()
+            sidebar.classList.remove('visible')
+        })
+    })
+}
+
+function getSidebarGymMember(pokemon) {
+    var perfectPercent = getIv(pokemon.iv_attack, pokemon.iv_defense, pokemon.iv_stamina)
+    var moveEnergy = Math.round(100 / pokemon.move_2_energy)
+
+
+    return `
                     <tr onclick=toggleGymPokemonDetails(this)>
                         <td width="30px">
-                            <i class="pokemon-sprite n${pokemon.pokemon_id}"></i>
+                            <img class="gym pokemon sprite" src="static/icons/${pokemon.pokemon_id}.png">
                         </td>
                         <td>
-                            <div style="line-height:1em;">${pokemon.pokemon_name}</div>
-                            <div class="cp">CP ${pokemon.pokemon_cp}</div>
+                            <div class="gym pokemon" style="line-height:0.5em;">${pokemon.pokemon_name}</div>
+                            <div><img class="gym pokemon motivation heart" src="static/images/gym/Heart.png"> <span class="gym pokemon motivation">${pokemon.cp_decayed}</span></div>
                         </td>
                         <td width="190" align="center">
-                            <div class="trainer-level">${pokemon.trainer_level}</div>
-                            <div style="line-height: 1em;">${pokemon.trainer_name}</div>
+                            <div class="gym pokemon" style="line-height:1em;">${pokemon.trainer_name} (${pokemon.trainer_level})</div>
+                            <div class="gym pokemon">Deployed ${getDateStr(pokemon.deployment_time)}</div>
                         </td>
                         <td width="10">
                             <!--<a href="#" onclick="toggleGymPokemonDetails(this)">-->
@@ -1931,40 +2038,6 @@ function showGymDetails(id) { // eslint-disable-line no-unused-vars
                         </td>
                     </tr>
                     `
-            })
-
-            pokemonHtml = `<table><tbody>${pokemonHtml}</tbody></table>`
-        } else if (result.team_id === 0) {
-            pokemonHtml = ''
-        } else {
-            pokemonHtml = `
-                <center>
-                    Gym Leader:<br>
-                    <i class="pokemon-large-sprite n${result.guard_pokemon_id}"></i><br>
-                    <b>${result.guard_pokemon_name}</b>
-
-                    <p style="font-size: .75em; margin: 5px;">
-                        No additional gym information is available for this gym. Make sure you are collecting <a href="https://rocketmap.readthedocs.io/en/develop/extras/gyminfo.html">detailed gym info.</a>
-                        If you have detailed gym info collection running, this gym's Pokemon information may be out of date.
-                    </p>
-                </center>
-            `
-        }
-
-        sidebar.innerHTML = `${headerHtml}${pokemonHtml}`
-
-        sidebarClose = document.createElement('a')
-        sidebarClose.href = '#'
-        sidebarClose.className = 'close'
-        sidebarClose.tabIndex = 0
-        sidebar.appendChild(sidebarClose)
-
-        sidebarClose.addEventListener('click', function (event) {
-            event.preventDefault()
-            event.stopPropagation()
-            sidebar.classList.remove('visible')
-        })
-    })
 }
 
 function toggleGymPokemonDetails(e) { // eslint-disable-line no-unused-vars
@@ -2034,15 +2107,10 @@ $(function () {
         redrawPokemon(mapData.lurePokemons)
     })
 
-    $selectOpenGymsOnly = $('#open-gyms-only-switch')
+    $switchOpenGymsOnly = $('#open-gyms-only-switch')
 
-    $selectOpenGymsOnly.select2({
-        placeholder: 'Only Show Open Gyms',
-        minimumResultsForSearch: Infinity
-    })
-
-    $selectOpenGymsOnly.on('change', function () {
-        Store.set('showOpenGymsOnly', this.value)
+    $switchOpenGymsOnly.on('change', function () {
+        Store.set('showOpenGymsOnly', this.checked)
         lastgyms = false
         updateMap()
     })
@@ -2173,20 +2241,6 @@ $(function () {
 
         $selectLocationIconMarker.val(Store.get('locationMarkerStyle')).trigger('change')
     })
-
-    $selectGymMarkerStyle = $('#gym-marker-style')
-
-    $selectGymMarkerStyle.select2({
-        placeholder: 'Select Style',
-        minimumResultsForSearch: Infinity
-    })
-
-    $selectGymMarkerStyle.on('change', function (e) {
-        Store.set('gymMarkerStyle', this.value)
-        updateGymIcons()
-    })
-
-    $selectGymMarkerStyle.val(Store.get('gymMarkerStyle')).trigger('change')
 })
 
 $(function () {
