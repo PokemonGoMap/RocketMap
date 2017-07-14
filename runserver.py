@@ -452,7 +452,7 @@ def main():
             ssl_context.load_cert_chain(
                 args.ssl_certificate, args.ssl_privatekey)
             log.info('Web server in SSL mode.')
-        if args.verbose or args.very_verbose:
+        if args.verbose:
             app.run(threaded=True, use_reloader=False, debug=True,
                     host=args.host, port=args.port, ssl_context=ssl_context)
         else:
