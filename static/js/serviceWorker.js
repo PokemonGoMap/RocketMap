@@ -33,7 +33,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-/* eslint eqeqeq: "off", curly: "error" */
+ /* global clients */
 'use strict'
 
 function isFunction(obj) {
@@ -42,6 +42,7 @@ function isFunction(obj) {
 
 function runFunctionString(funcStr) {
     if (funcStr.trim().length > 0) {
+        // eslint-disable-next-line no-new-func
         var func = new Function(funcStr)
         if (isFunction(func)) {
             func()
@@ -78,18 +79,18 @@ self.addEventListener('message', function (event) {
 self.onnotificationclick = function (event) {
     event.notification.close()
 
-    event.waitUntil(clients.matchAll({includeUncontrolled: true, type: 'window'}).then(function(clientList) {
-      var client = findValidClient(clientList, event.notification.data.origin)
+    event.waitUntil(clients.matchAll({includeUncontrolled: true, type: 'window'}).then(function (clientList) {
+        var client = findValidClient(clientList, event.notification.data.origin)
 
-      if (client && 'focus' in client) {
-          client.focus().then(function(client) {
-              sendCenterMapMessage(client, event.notification.data.lat, event.notification.data.lon)
-          })
-      } else if ('openWindow' in clients) {
-          clients.openWindow('/').then(function(client) {
-              sendCenterMapMessage(client, event.notification.data.lat, event.notification.data.lon)
-          })
-      }
+        if (client && 'focus' in client) {
+            client.focus().then(function (client) {
+                sendCenterMapMessage(client, event.notification.data.lat, event.notification.data.lon)
+            })
+        } else if ('openWindow' in clients) {
+            clients.openWindow('/').then(function (client) {
+                sendCenterMapMessage(client, event.notification.data.lat, event.notification.data.lon)
+            })
+        }
     }))
 }
 

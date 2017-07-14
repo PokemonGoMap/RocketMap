@@ -118,12 +118,12 @@ function removePokemonMarker(encounterId) { // eslint-disable-line no-unused-var
 }
 
 function createServiceWorkerReceiver() {
-    navigator.serviceWorker.addEventListener('message', function(event) {
-        const data = JSON.parse(event.data);
+    navigator.serviceWorker.addEventListener('message', function (event) {
+        const data = JSON.parse(event.data)
         if (data.action === 'centerMap' && data.lat && data.lon) {
             centerMap(data.lat, data.lon, 20)
         }
-    });
+    })
 }
 
 function initMap() { // eslint-disable-line no-unused-vars
@@ -266,7 +266,7 @@ function initMap() { // eslint-disable-line no-unused-vars
     })
 
     if (Push._agents.chrome.isSupported()) {
-        createServiceWorkerReceiver();
+        createServiceWorkerReceiver()
     }
 }
 
@@ -1892,7 +1892,7 @@ function sendNotification(title, text, icon, lat, lon) {
             },
             data: {
                 lat: lat,
-                lon: lon,
+                lon: lon
             }
         })
     } else {
