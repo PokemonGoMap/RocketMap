@@ -2370,7 +2370,7 @@ def encounter_pokemon(args, pokemon, account, api, account_sets, status,
             return False
 
         # Logging.
-        log.info('Encountering Pokémon ID %s with account %s at %s, %s.',
+        log.info('Encountering Pokemon ID %s with account %s at %s, %s.',
                  pokemon_id, hlvl_account['username'], scan_location[0],
                  scan_location[1])
 
@@ -2406,7 +2406,7 @@ def encounter_pokemon(args, pokemon, account, api, account_sets, status,
                     status['proxy_url'])
         encounter_level = hlvl_account['level']
 
-        # User error -> we skip freeing the account
+        # User error -> we skip freeing the account.
         if encounter_level < 30:
             log.warning('Expected account of level 30 or higher, ' +
                         'but account %s is only level %d',
@@ -2434,7 +2434,7 @@ def encounter_pokemon(args, pokemon, account, api, account_sets, status,
 
             if ('ENCOUNTER' in enc_responses and
                     enc_responses['ENCOUNTER'].status != 1):
-                log.error('There was an error encountering Pokémon ID %s with '
+                log.error('There was an error encountering Pokemon ID %s with '
                           + 'account %s: %d', pokemon_id,
                           hlvl_account['username'],
                           enc_responses['ENCOUNTER'].status)
@@ -2452,7 +2452,7 @@ def encounter_pokemon(args, pokemon, account, api, account_sets, status,
                 result = pokemon_info
 
     except Exception as e:
-        log.exception('There was an error encountering Pokémon ID %s with ' +
+        log.exception('There was an error encountering Pokemon ID %s with ' +
                       'account %s', pokemon_id, hlvl_account['username'], e)
 
     # We're done with the encounter. If it's from an
