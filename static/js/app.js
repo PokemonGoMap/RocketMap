@@ -2,7 +2,7 @@
     'use strict'
 
     // addEventsListener
-    function addEventsListener ( object, types, callback) {
+    function addEventsListener(object, types, callback) {
         types.split(' ').forEach(type => object.addEventListener(type, callback))
     }
 
