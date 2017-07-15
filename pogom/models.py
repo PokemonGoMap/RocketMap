@@ -2415,8 +2415,8 @@ def encounter_pokemon(args, pokemon, account, api, account_sets, status,
 
         # Encounter Pokémon.
         encounter_result = encounter_pokemon_request(
-            hlvl_api, account, pokemon.encounter_id, pokemon.spawn_point_id,
-            scan_location)
+            hlvl_api, hlvl_account, pokemon.encounter_id,
+            pokemon.spawn_point_id, scan_location)
 
         # Handle errors.
         if encounter_result:
