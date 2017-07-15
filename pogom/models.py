@@ -1855,7 +1855,6 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
     sightings = {}
     new_spawn_points = []
     sp_id_list = []
-    captcha_url = ''
 
     # Consolidate the individual lists in each cell into two lists of Pokemon
     # and a list of forts.
@@ -2040,11 +2039,9 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                     'move_2': pokemon_info.move_2,
                     'height': pokemon_info.height_m,
                     'weight': pokemon_info.weight_kg,
+                    'cp': pokemon_info.cp,
+                    'cp_multiplier': pokemon_info.cp_multiplier
                 })
-
-                pokemon[p.encounter_id]['cp'] = pokemon_info.cp
-                pokemon[p.encounter_id][
-                    'cp_multiplier'] = pokemon_info.cp_multiplier
 
             if args.webhooks:
                 if (pokemon_id in args.webhook_whitelist or
@@ -2082,7 +2079,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                      datetime(1970, 1, 1)).total_seconds())) for f in query]
 
         # Complete tutorial with a Pokestop spin
-        if args.complete_tutorial and not (len(captcha_url) > 1):
+        if args.complete_tutorial:
             if config['parse_pokestops']:
                 tutorial_pokestop_spin(
                     api, level, forts, step_location, account)
@@ -2445,7 +2442,7 @@ def encounter_pokemon(args, pokemon, account, api, account_sets, status,
                 pokemon_info = enc_responses[
                     'ENCOUNTER'].wild_pokemon.pokemon_data
                 # Logging: let the user know we succeeded.
-                log.info('Encounter for Pokémon ID %s at %s, %s ' +
+                log.info('Encounter for Pokemon ID %s at %s, %s ' +
                          'successful: %s/%s/%s, %s CP.', pokemon_id,
                          pokemon.latitude, pokemon.longitude,
                          pokemon_info.individual_attack,
