@@ -654,8 +654,9 @@ def get_stats_message(threadStatus, search_items_queue_array, db_updates_queue,
 
 
 def update_total_stats(threadStatus, last_account_status):
-    overseer = threadStatus['Overseer']
+    startTime = timeit.default_timer()
 
+    overseer = threadStatus['Overseer']
     # Calculate totals.
     active_count = 0
     current_accounts = Set()
@@ -668,13 +669,13 @@ def update_total_stats(threadStatus, last_account_status):
             current_accounts.add(username)
             last_status = last_account_status.get(username, {})
             overseer['skip_total'] += stat_delta(tstatus, last_status, 'skip')
-            overseer[
-                'captcha_total'] += stat_delta(tstatus, last_status, 'captcha')
-            overseer[
-                'empty_total'] += stat_delta(tstatus, last_status, 'noitems')
+            overseer['captcha_total'] += stat_delta(tstatus, last_status,
+                                                    'captcha')
+            overseer['empty_total'] += stat_delta(tstatus, last_status,
+                                                  'noitems')
             overseer['fail_total'] += stat_delta(tstatus, last_status, 'fail')
-            overseer[
-                'success_total'] += stat_delta(tstatus, last_status, 'success')
+            overseer['success_total'] += stat_delta(tstatus, last_status,
+                                                    'success')
             last_account_status[username] = copy.deepcopy(tstatus)
 
     overseer['active_accounts'] = active_count
@@ -684,6 +685,8 @@ def update_total_stats(threadStatus, last_account_status):
     for username in last_account_status.keys():
         if username not in current_accounts:
             del last_account_status[username]
+
+    log.info('total stats in %.8fs.', timeit.default_timer() - startTime)
 
 
 # Generates the list of locations to scan.
