@@ -89,7 +89,7 @@ class Geofences:
         if geofence_file:
             with open(geofence_file) as f:
                 for line in f:
-                    line.strip()
+                    line = line.strip()
                     if len(line) == 0:  # Empty line.
                         continue
                     elif line.startswith("["):  # Name line.
