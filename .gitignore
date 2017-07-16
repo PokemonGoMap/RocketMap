@@ -8,8 +8,7 @@
 config/*
 !config/config.ini.example
 geofences/*
-!geofences/geofences.txt.example
-!geofences/forbidden.txt.example
+!geofences/*.example
 static/dist/
 node_modules/
 venv/

@@ -277,9 +277,8 @@ class HexSearch(BaseScheduler):
         if self.geofences.is_enabled():
             results = self.geofences.get_geofenced_coordinates(results)
             if not results:
-                log.error(
-                    'No cells regarded as valid for desired scan area. ' +
-                    'Check your provided geofences. Aborting.')
+                log.error('No cells regarded as valid for desired scan area. '
+                          'Check your provided geofences. Aborting.')
                 sys.exit()
 
         # Add the required appear and disappear times.
@@ -384,9 +383,8 @@ class SpawnScan(BaseScheduler):
             self.locations = self.geofences.get_geofenced_coordinates(
                 self.locations)
             if not self.locations:
-                log.error(
-                    'No cells regarded as valid for desired scan area. ' +
-                    'Check your provided geofences. Aborting.')
+                log.error('No cells regarded as valid for desired scan area. '
+                          'Check your provided geofences. Aborting.')
                 sys.exit()
 
         # Well shit...
@@ -599,9 +597,8 @@ class SpeedScan(HexSearch):
         if self.geofences.is_enabled():
             results = self.geofences.get_geofenced_coordinates(results)
             if not results:
-                log.error(
-                    'No cells regarded as valid for desired scan area. ' +
-                    'Check your provided geofences. Aborting.')
+                log.error('No cells regarded as valid for desired scan area. '
+                          'Check your provided geofences. Aborting.')
                 sys.exit()
 
         generated_locations = []

@@ -126,8 +126,8 @@ def get_args():
                         help=('Geofence file to define outer borders of the ' +
                               'scan area.'),
                         default='')
-    parser.add_argument('-ff', '--forbidden-file',
-                        help=('File to define forbidden areas inside scan ' +
+    parser.add_argument('-gef', '--geofence-excluded-file',
+                        help=('File to define excluded areas inside scan ' +
                               'area. Regarded this as inverted geofence. ' +
                               'Can be combined with geofence-file.'),
                         default='')

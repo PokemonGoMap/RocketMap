@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import sys
-import time
+import timeit
 import logging
 
 from .utils import get_args
@@ -17,100 +17,91 @@ try:
     from matplotlib.path import Path
 except ImportError as e:
     if not args.no_matplotlib:
-        log.error('Exception while importing "matplotlib": %s', repr(e))
-        log.error(
-            'Aborting. Install "matplotlib" or ' +
-            'enable "-nmptl" or "--no-matplotlib" to circumvent.')
+        log.error('Exception while importing "matplotlib": %s', e)
+        log.error('Aborting. Install "matplotlib" or enable "-nmptl" or '
+                  '"--no-matplotlib" to circumvent.')
         sys.exit()
-    else:
-        pass
 
 
 class Geofences:
-
     def __init__(self):
-        self.valid_areas = []
-        self.forbidden_areas = []
+        self.geofenced_areas = []
+        self.excluded_areas = []
 
-        if args.geofence_file or args.forbidden_file:
-            log.info('Looking for geofenced or forbidden areas.')
-            self.valid_areas = self.parse_geofences_file(
-                args.geofence_file, forbidden=False)
-            self.forbidden_areas = self.parse_geofences_file(
-                args.forbidden_file, forbidden=True)
-            log.info(
-                'Loaded %d valid and %d forbidden areas',
-                len(self.valid_areas),
-                len(self.forbidden_areas))
+        if args.geofence_file or args.excluded_file:
+            log.info('Loading geofenced or excluded areas.')
+            self.geofenced_areas = self.parse_geofences_file(
+                args.geofence_file, excluded=False)
+            self.excluded_areas = self.parse_geofences_file(
+                args.excluded_file, excluded=True)
+            log.info('Loaded %d geofenced and %d excluded areas.',
+                     len(self.geofenced_areas),
+                     len(self.excluded_areas))
 
     def is_enabled(self):
-        enabled = False
-        if self.valid_areas or self.forbidden_areas:
-            enabled = True
-
-        return enabled
+        return (self.geofenced_areas or self.excluded_areas)
 
     def get_geofenced_coordinates(self, coordinates):
         log.info('Found %d coordinates to geofence.', len(coordinates))
         geofenced_coordinates = []
-        startTime = time.time()
-        if self.valid_areas:
+        startTime = timeit.default_timer()
+        if self.geofenced_areas:
             for c in coordinates:
-                for va in self.valid_areas:
-                    if self.is_coordinate_in_geofence(c, va):
-                        # Coordinate is valid if in one valid area.
+                for va in self.geofenced_areas:
+                    if self._in_area(c, va):
+                        # Coordinate is geofenced if in one geofenced area.
                         geofenced_coordinates.append(c)
                         break
         else:
             geofenced_coordinates = coordinates
 
-        if self.forbidden_areas:
+        if self.excluded_areas:
             for c in reversed(geofenced_coordinates):
-                for fa in self.forbidden_areas:
-                    if self.is_coordinate_in_geofence(c, fa):
-                        # Coordinate is invalid if in one forbidden area.
+                for ea in self.excluded_areas:
+                    if self._in_area(c, ea):
+                        # Coordinate is not valid if in one excluded area.
                         geofenced_coordinates.pop(
                             geofenced_coordinates.index(c))
                         break
 
-        endTime = time.time()
-        elapsedTime = endTime - startTime
+        elapsedTime = timeit.default_timer() - startTime
         log.info(
-            'Geofenced to %s coordinates in %.2f s.',
+            'Geofenced to %s coordinates in %.2fs.',
             len(geofenced_coordinates), elapsedTime)
 
         return geofenced_coordinates
 
-    def is_coordinate_in_geofence(self, coordinate, geofence):
+    def _in_area(self, coordinate, area):
         if args.spawnpoint_scanning:
             point = {'lat': coordinate['lat'], 'lon': coordinate['lng']}
         else:
             point = {'lat': coordinate[0], 'lon': coordinate[1]}
-        polygon = geofence['polygon']
+        polygon = area['polygon']
         if args.no_matplotlib:
             return self.is_point_in_polygon_custom(point, polygon)
         else:
             return self.is_point_in_polygon_matplotlib(point, polygon)
 
     @staticmethod
-    def parse_geofences_file(geofence_file, forbidden):
+    def parse_geofences_file(geofence_file, excluded):
         geofences = []
-        # Read coordinates of forbidden areas from file.
+        # Read coordinates of excluded areas from file.
         if geofence_file:
             with open(geofence_file) as f:
                 for line in f:
-                    if len(line.strip()) == 0:  # Empty line.
+                    line.strip()
+                    if len(line) == 0:  # Empty line.
                         continue
                     elif line.startswith("["):  # Name line.
-                        name = line.strip().replace("[", "").replace("]", "")
+                        name = line.replace("[", "").replace("]", "")
                         geofences.append({
-                            'forbidden': forbidden,
+                            'excluded': excluded,
                             'name': name,
                             'polygon': []
                         })
-                        log.debug('Found geofence: %s', name)
+                        log.debug('Found geofence: %s.', name)
                     else:  # Coordinate line.
-                        lat, lon = line.strip().split(",")
+                        lat, lon = line.split(",")
                         LatLon = {'lat': float(lat), 'lon': float(lon)}
                         geofences[-1]['polygon'].append(LatLon)
 
@@ -118,16 +109,16 @@ class Geofences:
 
     @staticmethod
     def is_point_in_polygon_matplotlib(point, polygon):
-        pointTouple = (point['lat'], point['lon'])
-        polygonToupleList = []
+        pointTuple = (point['lat'], point['lon'])
+        polygonTupleList = []
         for c in polygon:
-            coordinateTouple = (c['lat'], c['lon'])
-            polygonToupleList.append(coordinateTouple)
+            coordinateTuple = (c['lat'], c['lon'])
+            polygonTupleList.append(coordinateTuple)
 
-        polygonToupleList.append(polygonToupleList[0])
-        path = Path(polygonToupleList)
+        polygonTupleList.append(polygonTupleList[0])
+        path = Path(polygonTupleList)
 
-        return path.contains_point(pointTouple)
+        return path.contains_point(pointTuple)
 
     @staticmethod
     def is_point_in_polygon_custom(point, polygon):
