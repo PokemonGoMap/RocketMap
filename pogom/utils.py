@@ -448,10 +448,14 @@ def get_args():
                               'through these trusted proxies.'))
     parser.add_argument('--api-version', default='0.67.2',
                         help=('API version currently in use.'))
-    parser.add_argument('-v', '--verbose',
+    parser.add_argument('-v',
                         help=('Show debug messages from RocketMap ' +
                               'and pgoapi. Can be repeated up to 3 times.'),
                         action='count', default=0)
+    parser.add_argument('--verbose',
+                        help=('Show debug messages from RocketMap ' +
+                              'and pgoapi.'),
+                        type=int, default=0)
     parser.add_argument('--no-file-logs',
                         help=('Disable logging to files. ' +
                               'Does not disable --access-logs.'),
