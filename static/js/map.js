@@ -612,7 +612,7 @@ function gymLabel(gym, includeMembers = true) {
                 `
             }
         } else {
-            image = `<img class='gym sprite' src='static/images/raid/${gymTypes[gym.team_id]}_${getGymLevel(gym)}_${raid.level}.png'>`
+            image = `<img class='gym sprite' src='static/images/gym/${gymTypes[gym.team_id]}_${getGymLevel(gym)}_${raid.level}.png'>`
         }
 
         if (isUpcomingRaid) {
@@ -1019,7 +1019,7 @@ function updateGymMarker(item, marker) {
         marker.setZIndex(google.maps.Marker.MAX_ZINDEX + 1)
     } else if (item.raid !== null && item.raid.end > Date.now()) {
         marker.setIcon({
-            url: 'static/images/raid/' + gymTypes[item.team_id] + '_' + getGymLevel(item) + '_' + item['raid']['level'] + '.png',
+            url: 'static/images/gym/' + gymTypes[item.team_id] + '_' + getGymLevel(item) + '_' + item['raid']['level'] + '.png',
             scaledSize: new google.maps.Size(48, 48)
         })
     } else {
