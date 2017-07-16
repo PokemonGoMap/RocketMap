@@ -459,6 +459,7 @@ def get_args():
     parser.add_argument('--log-path',
                         help=('Defines directory to save log files to.'),
                         default='logs/')
+    parser.set_defaults(DEBUG=False)
 
     args = parser.parse_args()
 

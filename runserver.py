@@ -185,57 +185,16 @@ def main():
 
     args = get_args()
 
-    # Let's not forget to run Grunt / Only needed when running with webserver.
-    if not args.no_server and not validate_assets(args):
-        sys.exit(1)
+    set_log_and_verbosity(log)
 
     config['parse_pokemon'] = not args.no_pokemon
     config['parse_pokestops'] = not args.no_pokestops
     config['parse_gyms'] = not args.no_gyms
     config['parse_raids'] = not args.no_raids
 
-    # Always write to log file.
-    if not args.no_file_logs:
-        if not os.path.exists(args.log_path):
-            os.mkdir(args.log_path)
-        date = strftime('%Y%m%d_%H%M')
-        filename = os.path.join(
-            args.log_path, '{}_{}.log'.format(date, args.status_name))
-        filelog = logging.FileHandler(filename)
-        filelog.setFormatter(logging.Formatter(
-            '%(asctime)s [%(threadName)18s][%(module)14s][%(levelname)8s] ' +
-            '%(message)s'))
-        log.addHandler(filelog)
-
-    if args.verbose:
-        log.setLevel(logging.DEBUG)
-    else:
-        log.setLevel(logging.INFO)
-
-    # These are very noisy, let's shush them up a bit.
-    logging.getLogger('peewee').setLevel(logging.INFO)
-    logging.getLogger('requests').setLevel(logging.WARNING)
-    logging.getLogger('pgoapi.pgoapi').setLevel(logging.WARNING)
-    logging.getLogger('pgoapi.rpc_api').setLevel(logging.INFO)
-    logging.getLogger('werkzeug').setLevel(logging.ERROR)
-
-    # Turn these back up if debugging.
-    if args.verbose == 2:
-        logging.getLogger('pgoapi').setLevel(logging.DEBUG)
-        logging.getLogger('pgoapi.pgoapi').setLevel(logging.DEBUG)
-        logging.getLogger('requests').setLevel(logging.DEBUG)
-    elif args.verbose >= 3:
-        logging.getLogger('peewee').setLevel(logging.DEBUG)
-        logging.getLogger('rpc_api').setLevel(logging.DEBUG)
-        logging.getLogger('pgoapi.rpc_api').setLevel(logging.DEBUG)
-        logging.getLogger('werkzeug').setLevel(logging.DEBUG)
-
-    # Web access logs.
-    if args.access_logs:
-        logger = logging.getLogger('werkzeug')
-        handler = logging.FileHandler('access.log')
-        logger.setLevel(logging.INFO)
-        logger.addHandler(handler)
+    # Let's not forget to run Grunt / Only needed when running with webserver.
+    if not args.no_server and not validate_assets(args):
+        sys.exit(1)
 
     # Use lat/lng directly if matches such a pattern.
     prog = re.compile("^(\-?\d+\.\d+),?\s?(\-?\d+\.\d+)$")
@@ -459,6 +418,51 @@ def main():
             app.run(threaded=True, use_reloader=False, debug=False,
                     host=args.host, port=args.port, ssl_context=ssl_context)
 
+
+def set_log_and_verbosity(log):
+    # Always write to log file.
+    args = get_args()
+    if not args.no_file_logs:
+        if not os.path.exists(args.log_path):
+            os.mkdir(args.log_path)
+        date = strftime('%Y%m%d_%H%M')
+        filename = os.path.join(
+            args.log_path, '{}_{}.log'.format(date, args.status_name))
+        filelog = logging.FileHandler(filename)
+        filelog.setFormatter(logging.Formatter(
+            '%(asctime)s [%(threadName)18s][%(module)14s][%(levelname)8s] ' +
+            '%(message)s'))
+        log.addHandler(filelog)
+
+    if args.verbose:
+        log.setLevel(logging.DEBUG)
+    else:
+        log.setLevel(logging.INFO)
+
+    # These are very noisy, let's shush them up a bit.
+    logging.getLogger('peewee').setLevel(logging.INFO)
+    logging.getLogger('requests').setLevel(logging.WARNING)
+    logging.getLogger('pgoapi.pgoapi').setLevel(logging.WARNING)
+    logging.getLogger('pgoapi.rpc_api').setLevel(logging.INFO)
+    logging.getLogger('werkzeug').setLevel(logging.ERROR)
+
+    # Turn these back up if debugging.
+    if args.verbose == 2:
+        logging.getLogger('pgoapi').setLevel(logging.DEBUG)
+        logging.getLogger('pgoapi.pgoapi').setLevel(logging.DEBUG)
+        logging.getLogger('requests').setLevel(logging.DEBUG)
+    elif args.verbose >= 3:
+        logging.getLogger('peewee').setLevel(logging.DEBUG)
+        logging.getLogger('rpc_api').setLevel(logging.DEBUG)
+        logging.getLogger('pgoapi.rpc_api').setLevel(logging.DEBUG)
+        logging.getLogger('werkzeug').setLevel(logging.DEBUG)
+
+    # Web access logs.
+    if args.access_logs:
+        logger = logging.getLogger('werkzeug')
+        handler = logging.FileHandler('access.log')
+        logger.setLevel(logging.INFO)
+        logger.addHandler(handler)
 
 if __name__ == '__main__':
     main()
