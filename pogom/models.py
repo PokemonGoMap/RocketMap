@@ -2383,7 +2383,7 @@ def encounter_pokemon(args, pokemon, account, api, account_sets, status,
         # Make new API for this account if we're not using an
         # API that's already logged in.
         if not hlvl_api:
-            hlvl_api = setup_api(args, status, account)
+            hlvl_api = setup_api(args, status, hlvl_account)
 
             # Hashing key.
             # TODO: all of this should be handled properly... all
