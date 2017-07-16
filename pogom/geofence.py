@@ -28,12 +28,12 @@ class Geofences:
         self.geofenced_areas = []
         self.excluded_areas = []
 
-        if args.geofence_file or args.excluded_file:
+        if args.geofence_file or args.geofence_excluded_file:
             log.info('Loading geofenced or excluded areas.')
             self.geofenced_areas = self.parse_geofences_file(
                 args.geofence_file, excluded=False)
             self.excluded_areas = self.parse_geofences_file(
-                args.excluded_file, excluded=True)
+                args.geofence_excluded_file, excluded=True)
             log.info('Loaded %d geofenced and %d excluded areas.',
                      len(self.geofenced_areas),
                      len(self.excluded_areas))
