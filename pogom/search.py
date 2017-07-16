@@ -24,7 +24,6 @@ import sys
 import traceback
 import random
 import time
-import copy
 import requests
 import schedulers
 import terminalsize
@@ -676,7 +675,13 @@ def update_total_stats(threadStatus, last_account_status):
             overseer['fail_total'] += stat_delta(tstatus, last_status, 'fail')
             overseer['success_total'] += stat_delta(tstatus, last_status,
                                                     'success')
-            last_account_status[username] = copy.deepcopy(tstatus)
+            last_account_status[username] = {
+                'skip': tstatus['skip'],
+                'captcha': tstatus['captcha'],
+                'noitems': tstatus['noitems'],
+                'fail': tstatus['fail'],
+                'success': tstatus['success']
+            }
 
     overseer['active_accounts'] = active_count
 
