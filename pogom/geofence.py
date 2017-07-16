@@ -45,31 +45,31 @@ class Geofences:
         log.info('Found %d coordinates to geofence.', len(coordinates))
         geofenced_coordinates = []
         startTime = timeit.default_timer()
-        if self.geofenced_areas:
-            for c in coordinates:
+        for c in coordinates:
+            # Coordinate is not valid if in one excluded area.
+            if self._is_excluded(c):
+                continue
+
+            # Coordinate is geofenced if in one geofenced area.
+            if self.geofenced_areas:
                 for va in self.geofenced_areas:
                     if self._in_area(c, va):
-                        # Coordinate is geofenced if in one geofenced area.
                         geofenced_coordinates.append(c)
                         break
-        else:
-            geofenced_coordinates = coordinates
-
-        if self.excluded_areas:
-            for c in reversed(geofenced_coordinates):
-                for ea in self.excluded_areas:
-                    if self._in_area(c, ea):
-                        # Coordinate is not valid if in one excluded area.
-                        geofenced_coordinates.pop(
-                            geofenced_coordinates.index(c))
-                        break
+            else:
+                geofenced_coordinates.append(c)
 
         elapsedTime = timeit.default_timer() - startTime
-        log.info(
-            'Geofenced to %s coordinates in %.2fs.',
-            len(geofenced_coordinates), elapsedTime)
-
+        log.info('Geofenced to %s coordinates in %.2fs.',
+                 len(geofenced_coordinates), elapsedTime)
         return geofenced_coordinates
+
+    def _is_excluded(self, coordinate):
+        for ea in self.excluded_areas:
+            if self._in_area(coordinate, ea):
+                return True
+
+        return False
 
     def _in_area(self, coordinate, area):
         if args.spawnpoint_scanning:
@@ -117,7 +117,6 @@ class Geofences:
 
         polygonTupleList.append(polygonTupleList[0])
         path = Path(polygonTupleList)
-
         return path.contains_point(pointTuple)
 
     @staticmethod
