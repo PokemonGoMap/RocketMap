@@ -1155,7 +1155,7 @@ function spawnPointIndex(color) {
 
 function setupSpawnpointMarker(item) {
     var circleCenter = new google.maps.LatLng(item['latitude'], item['longitude'])
-    var hue = getColorBySpawnTime(item.time)
+    var hue = getColorBySpawnTime(item.appear_time)
     var zoom = map.getZoom()
 
     var marker = new google.maps.Marker({
@@ -1579,7 +1579,7 @@ function updateSpawnPoints() {
 
     $.each(mapData.spawnpoints, function (key, value) {
         if (map.getBounds().contains(value.marker.getPosition())) {
-            var hue = getColorBySpawnTime(value['time'])
+            var hue = getColorBySpawnTime(value.appear_time)
             value.marker.setIcon(changeSpawnIcon(hue, zoom))
             value.marker.setZIndex(spawnPointIndex(hue))
         }
