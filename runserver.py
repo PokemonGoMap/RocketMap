@@ -464,5 +464,6 @@ def set_log_and_verbosity(log):
         logger.setLevel(logging.INFO)
         logger.addHandler(handler)
 
+
 if __name__ == '__main__':
     main()
