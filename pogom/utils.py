@@ -452,7 +452,7 @@ def get_args():
                         help=('Show debug messages from RocketMap ' +
                               'and pgoapi. Can be repeated up to 3 times.'),
                         action='count', default=0)
-    parser.add_argument('--verbose',
+    parser.add_argument('--verbosity',
                         help=('Show debug messages from RocketMap ' +
                               'and pgoapi.'),
                         type=int, default=0)

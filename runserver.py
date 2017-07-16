@@ -434,7 +434,7 @@ def set_log_and_verbosity(log):
             '%(message)s'))
         log.addHandler(filelog)
 
-    if args.verbose:
+    if args.verbose or args.verbosity:
         log.setLevel(logging.DEBUG)
     else:
         log.setLevel(logging.INFO)
@@ -447,11 +447,11 @@ def set_log_and_verbosity(log):
     logging.getLogger('werkzeug').setLevel(logging.ERROR)
 
     # Turn these back up if debugging.
-    if args.verbose == 2:
+    if args.verbose or args.verbosity == 2:
         logging.getLogger('pgoapi').setLevel(logging.DEBUG)
         logging.getLogger('pgoapi.pgoapi').setLevel(logging.DEBUG)
         logging.getLogger('requests').setLevel(logging.DEBUG)
-    elif args.verbose >= 3:
+    elif args.verbose or args.verbosity >= 3:
         logging.getLogger('peewee').setLevel(logging.DEBUG)
         logging.getLogger('rpc_api').setLevel(logging.DEBUG)
         logging.getLogger('pgoapi.rpc_api').setLevel(logging.DEBUG)
