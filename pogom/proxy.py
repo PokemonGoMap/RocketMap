@@ -109,7 +109,8 @@ def start_request_futures(ptc_session, niantic_session, proxy, timeout):
                  'Host': 'sso.pokemon.com',
                  'X-Unity-Version': '5.5.1f1',
                  'Connection': 'close'},
-        background_callback=__proxy_check_completed)
+        background_callback=__proxy_check_completed,
+        stream=True)
 
     # Send request to nianticlabs.com.
     future_niantic = niantic_session.post(
@@ -118,7 +119,8 @@ def start_request_futures(ptc_session, niantic_session, proxy, timeout):
         proxies={'http': proxy, 'https': proxy},
         timeout=timeout,
         headers={'Connection': 'close'},
-        background_callback=__proxy_check_completed)
+        background_callback=__proxy_check_completed,
+        stream=True)
 
     # Return futures.
     return (future_ptc, future_niantic)
