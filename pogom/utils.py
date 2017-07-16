@@ -456,7 +456,7 @@ def get_args():
     verbose.add_argument('--verbosity',
                          help=('Show debug messages from RocketMap ' +
                                'and pgoapi.'),
-                         action='append', type=int, dest='verbose')
+                         type=int, dest='verbose')
     parser.add_argument('--no-file-logs',
                         help=('Disable logging to files. ' +
                               'Does not disable --access-logs.'),
