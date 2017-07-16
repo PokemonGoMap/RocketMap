@@ -653,8 +653,6 @@ def get_stats_message(threadStatus, search_items_queue_array, db_updates_queue,
 
 
 def update_total_stats(threadStatus, last_account_status):
-    startTime = timeit.default_timer()
-
     overseer = threadStatus['Overseer']
     # Calculate totals.
     active_count = 0
@@ -690,8 +688,6 @@ def update_total_stats(threadStatus, last_account_status):
     for username in last_account_status.keys():
         if username not in current_accounts:
             del last_account_status[username]
-
-    log.info('total stats in %.8fs.', timeit.default_timer() - startTime)
 
 
 # Generates the list of locations to scan.
