@@ -162,7 +162,8 @@ class Pogom(Flask):
                                  args.spawnpoint_scanning) else True
 
         visibility_flags = {
-            'geofences': (args.geofence_file or args.geofence_excluded_file),
+            'geofences': bool(args.geofence_file or
+                              args.geofence_excluded_file),
             'gyms': not args.no_gyms,
             'pokemons': not args.no_pokemon,
             'pokestops': not args.no_pokestops,
@@ -174,8 +175,6 @@ class Pogom(Flask):
             'custom_css': args.custom_css
         }
 
-        print visibility_flags
-        
         map_lat = self.current_location[0]
         map_lng = self.current_location[1]
 
