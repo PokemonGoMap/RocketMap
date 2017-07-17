@@ -48,6 +48,7 @@ def setup_api(args, status, account):
         # If proxy is not assigned yet or if proxy-rotation is defined
         # - query for new proxy.
         if ((not status['proxy_url']) or
+                (status['proxy_url'] not in args.proxy) or
                 ((args.proxy_rotation is not None) and
                  (args.proxy_rotation != 'none'))):
 
