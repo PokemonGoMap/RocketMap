@@ -6,6 +6,7 @@ import timeit
 import logging
 
 from .utils import get_args
+from .models import Geofence
 
 log = logging.getLogger(__name__)
 
@@ -34,6 +35,8 @@ class Geofences:
                 args.geofence_file, excluded=False)
             self.excluded_areas = self.parse_geofences_file(
                 args.geofence_excluded_file, excluded=True)
+            print "Push"
+            Geofence.push_geofences(self.geofenced_areas+self.excluded_areas)
             log.info('Loaded %d geofenced and %d excluded areas.',
                      len(self.geofenced_areas),
                      len(self.excluded_areas))
