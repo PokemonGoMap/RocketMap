@@ -61,6 +61,14 @@
 #dump-spawnpoints               # Dump the spawnpoints from the db to json (only for use with -ss).
 
 
+# Geofence settings
+###################
+
+#geofence-file:                 # Geofence file to define outer borders of the scan area.
+#geofence-excluded-file:        # File to define forbidden areas inside scan area. Regarded this as inverted geofence. Can be combined with geofence-file.
+#no-matplotlib                  # Prevents the usage of matplotlib when running on incompatible hardware. (default=False)
+
+
 # Search settings
 #################
 
@@ -137,7 +145,6 @@
 #proxy-rotation:                # Enable proxy rotation with account changing for search threads (none/round/random). (default='none')
 
 
-
 # Webhook settings
 ##################
 
@@ -176,10 +183,9 @@
 # Misc
 ######
 
-#verbose                        # Show debug messages from PokemonGo-Map and pgoapi.
-                                # Optionally specify file to log to by adding ": PATH/FILENAME.log". (default=False)
-#very-verbose                   # Like verbose, but show debug messages from all modules as well.
-                                # Optionally specify file to log to like above mentioned. (default=False)
+#verbosity						          # Show debug messages from RocketMap and PGoApi. Values are 1,2,3 (default=0)
+#no-file-logs					          # Disables logging to files except for access.log. (default=False)
+#log-path						            # Defines the path logs are saved at. (default=logs/)
 #no-version-check               # Disable API version check. (default=False)
 #version-check-interval:        # Interval to check API version in seconds (Default: in range [60, 300]).
 #mock:                          # Mock mode - point to a fpgo endpoint instead of using the real PogoApi,

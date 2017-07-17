@@ -7,6 +7,8 @@
 *.json
 config/*
 !config/config.ini.example
+geofences/*
+!geofences/*.example
 static/dist/
 node_modules/
 venv/
@@ -15,7 +17,8 @@ src/
 _build
 _build_html
 beehive.*
-static/pixel_icons/*.png
+static/images/raid/*.png
+!static/images/raid/unknown.png
 static/icons-sprite.png
 static/icons-large-sprite.png
 static/icons/*.png
