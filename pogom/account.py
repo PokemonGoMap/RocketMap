@@ -63,7 +63,9 @@ def setup_api(args, status, account):
             'https': status['proxy_url']})
         if (status['proxy_url'] not in args.proxy):
             log.warning(
-                'Proxy %s is not active but proxy rotation is set to none.',
+                'Tried replacing proxy %s with a new proxy, but proxy ' +
+                'rotation is disabled ("none"). If this isn\'t intentional, ' +
+                'enable proxy rotation.',
                 status['proxy_url'])
 
     return api
