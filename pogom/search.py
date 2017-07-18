@@ -626,18 +626,29 @@ def get_stats_message(threadStatus, search_items_queue_array, db_updates_queue,
     ccost = cph * 0.00299
     cmonth = ccost * 730
 
-    message = ('Total active: {}  |  Success: {} ({:.1f}/hr) | ' +
-               'Fails: {} ({:.1f}/hr) | Empties: {} ({:.1f}/hr) | ' +
-               'Skips {} ({:.1f}/hr) | ' +
-               'Captchas: {} ({:.1f}/hr)|${:.5f}/hr|${:.3f}/mo').format(
-                   overseer['active_accounts'],
-                   overseer['success_total'], sph,
-                   overseer['fail_total'], fph,
-                   overseer['empty_total'], eph,
-                   overseer['skip_total'], skph,
-                   overseer['captcha_total'], cph,
-                   ccost, cmonth)
+    # Print the queue length.
+    search_items_queue_size = 0
+    for i in range(0, len(search_items_queue_array)):
+        search_items_queue_size += search_items_queue_array[i].qsize()
 
+    message = (
+        'Queues: {} search items, {} db updates, {} webhook.  ' +
+        'Spare accounts available: {}. Accounts on hold: {}. ' +
+        'Accounts with captcha: {}\n'
+    ).format(search_items_queue_size,
+             db_updates_queue.qsize(),
+             wh_queue.qsize(),
+             account_queue.qsize(),
+             len(account_failures), len(account_captchas))
+
+    message += (
+        'Total active: {}  |  Success: {} ({:.1f}/hr) | ' +
+        'Fails: {} ({:.1f}/hr) | Empties: {} ({:.1f}/hr) | ' +
+        'Skips {} ({:.1f}/hr) | Captchas: {} ({:.1f}/hr)|${:.5f}/hr|${:.3f}/mo'
+    ).format(overseer['active_accounts'], overseer['success_total'], sph,
+             overseer['fail_total'], fph, overseer['empty_total'], eph,
+             overseer['skip_total'], skph, overseer['captcha_total'], cph,
+             ccost, cmonth)
     return message
 
 
