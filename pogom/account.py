@@ -449,7 +449,7 @@ def complete_tutorial(args, api, account):
         req = api.create_request()
         req.get_player(
             player_locale=args.player_locale)
-        response = req.call(False).get('responses', {})
+        responses = req.call(False).get('responses', {})
 
         if 'GET_INVENTORY' in responses:
             for item in (responses['GET_INVENTORY'].inventory_delta
@@ -542,8 +542,8 @@ def pokestop_spinnable(fort, step_location):
     in_range = in_radius((fort.latitude, fort.longitude),
                          step_location, spinning_radius)
     now = time.time()
-    pause_needed = 'cooldown_complete_timestamp_ms' in fort and fort[
-        'cooldown_complete_timestamp_ms'] / 1000 > now
+    pause_needed = fort.cooldown_complete_timestamp_ms and (
+        fort.cooldown_complete_timestamp_ms / 1000 > now)
     return in_range and not pause_needed
 
 
@@ -653,7 +653,7 @@ def parse_inventory(api, account, api_response):
             account['spins'] = stats.poke_stop_visits
             account['walked'] = stats.km_walked
 
-            log.info('Parsed %s player stats: level %d, %f km ' +
+            log.debug('Parsed %s player stats: level %d, %f km ' +
                       'walked, %d spins.', account['username'],
                       account['level'], account['walked'], account['spins'])
         elif item_data.HasField('item'):
@@ -675,13 +675,12 @@ def parse_inventory(api, account, api_response):
                         'uses_remaining': incubator.uses_remaining
                     })
                     parsed_incubators += 1
-        elif item_data.HasField('pokemon_data'):
-            pokemon_data = item_data.pokemon_data
+        elif item_data.HasField('pokemon_data') in item_data:
             p_data = item_data.pokemon_data
             p_id = p_data.id
             if not p_data.is_egg:
                 account['pokemons'][p_id] = {
-                    'pokemon_id': p_data.pokemon_id,
+                    'pokemon_id': p_data.get.pokemon_id,
                     'move_1': p_data.move_1,
                     'move_2': p_data.move_2,
                     'height': p_data.height_m,
@@ -692,7 +691,7 @@ def parse_inventory(api, account, api_response):
                 }
                 parsed_pokemons += 1
             else:
-                if p_data.egg_incubator_id is None:
+                if p_data.egg_incubator_id:
                     # Egg is already incubating.
                     continue
                 account['eggs'].append({
@@ -700,7 +699,7 @@ def parse_inventory(api, account, api_response):
                     'km_target': p_data.egg_km_walked_target
                 })
                 parsed_eggs += 1
-    log.info(
+    log.debug(
         'Parsed %s player inventory: %d items, %d pokemons, %d available ' +
         'eggs and %d available incubators.',
         account['username'], parsed_items, parsed_pokemons, parsed_eggs,
