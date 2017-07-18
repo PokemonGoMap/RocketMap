@@ -153,7 +153,7 @@ def rpc_login_sequence(args, api, account):
     try:
         req = api.create_request()
         req.get_player(player_locale=args.player_locale)
-        response = req.call(False)
+        response = req.call(True)
 
         parse_get_player(account, response)
 
@@ -227,7 +227,7 @@ def rpc_login_sequence(args, api, account):
                 'remote_config']['hash'])
             response = req.call(False)
 
-            parse_new_timestamp_ms(account, response)
+            parse_new_timestamp_ms(account, responses)
 
             req_count += 1
             total_req += 1
@@ -241,13 +241,13 @@ def rpc_login_sequence(args, api, account):
 
             try:
                 # Re-use variable name. Also helps GC.
-                response = response['responses']['GET_ASSET_DIGEST']
+                response = responses['GET_ASSET_DIGEST']
             except KeyError:
                 break
 
-            result = response.get('result', 0)
-            page_offset = response.get('page_offset', 0)
-            page_timestamp = response.get('timestamp_ms', 0)
+            result = response.result
+            page_offset = response.page_offset
+            page_timestamp = response.timestamp_ms
             log.debug('Completed %d requests to get asset digest.',
                       req_count)
 
@@ -276,7 +276,7 @@ def rpc_login_sequence(args, api, account):
                 hash=account['remote_config']['hash'])
             response = req.call(False)
 
-            parse_new_timestamp_ms(account, response)
+            parse_new_timestamp_ms(account, responses)
 
             req_count += 1
             total_req += 1
@@ -290,13 +290,13 @@ def rpc_login_sequence(args, api, account):
 
             try:
                 # Re-use variable name. Also helps GC.
-                response = response['responses']['DOWNLOAD_ITEM_TEMPLATES']
+                response = responses['DOWNLOAD_ITEM_TEMPLATES']
             except KeyError:
                 break
 
-            result = response.get('result', 0)
-            page_offset = response.get('page_offset', 0)
-            page_timestamp = response.get('timestamp_ms', 0)
+            result = response.result
+            page_offset = responses.page_offset
+            page_timestamp = response.timestamp_ms
             log.debug('Completed %d requests to download'
                       + ' item templates.', req_count)
 
@@ -539,7 +539,7 @@ def cleanup_account_stats(account):
 # Check if Pokestop is spinnable and not on cooldown.
 def pokestop_spinnable(fort, step_location):
     spinning_radius = 0.038
-    in_range = in_radius((fort['latitude'], fort['longitude']),
+    in_range = in_radius((fort.latitude, fort.longitude),
                          step_location, spinning_radius)
     now = time.time()
     pause_needed = 'cooldown_complete_timestamp_ms' in fort and fort[
@@ -556,23 +556,22 @@ def spin_pokestop(api, account, args, fort, step_location):
     if random.random() < 0.5 or account['level'] == 1:
         fort_details_request(api, account, fort)
         time.sleep(random.uniform(0.8, 1.8))  # Don't let Niantic throttle.
-        response = spin_pokestop_request(api, account, fort, step_location)
+        responses = spin_pokestop_request(api, account, fort, step_location)
         time.sleep(random.uniform(2, 4))  # Don't let Niantic throttle.
 
         # Check for reCaptcha.
-        captcha_url = response['responses'][
-            'CHECK_CHALLENGE']['challenge_url']
+        captcha_url = responses['CHECK_CHALLENGE'].challenge_url
         if len(captcha_url) > 1:
             log.debug('Account encountered a reCaptcha.')
             return False
 
-        spin_result = response['responses']['FORT_SEARCH']['result']
+        spin_result = responses['FORT_SEARCH'].result
         if spin_result is 1:
             log.info('Successful Pokestop spin with %s.',
                      account['username'])
             # Update account stats and clear inventory if necessary.
             parse_level_up_rewards(api, account)
-            parse_inventory(api, account, response)
+            parse_inventory(api, account, responses)
             clear_inventory(api, account)
             account['session_spins'] += 1
             incubate_eggs(api, account)
@@ -598,14 +597,17 @@ def parse_download_settings(account, api_response):
     if 'DOWNLOAD_REMOTE_CONFIG_VERSION' in api_response['responses']:
         remote_config = (api_response['responses']
                          .get('DOWNLOAD_REMOTE_CONFIG_VERSION', 0))
-        if 'asset_digest_timestamp_ms' in remote_config:
-            asset_time = remote_config['asset_digest_timestamp_ms'] / 1000000
-        if 'item_templates_timestamp_ms' in remote_config:
-            template_time = remote_config['item_templates_timestamp_ms'] / 1000
+        asset_time = remote_config.asset_digest_timestamp_ms / 1000000
+        template_time = remote_config.item_templates_timestamp_ms / 1000
+
+        if asset_time == 0 or asset_time is None:
+            raise NullTimeException(type="asset")
+        if template_time == 0 or template_time is None:
+            raise NullTimeException(type="template")
 
         download_settings = {}
-        download_settings['hash'] = api_response[
-            'responses']['DOWNLOAD_SETTINGS']['hash']
+        download_settings['hash'] = api_response['responses'][
+            'DOWNLOAD_SETTINGS'].hash
         download_settings['asset_time'] = asset_time
         download_settings['template_time'] = template_time
 
@@ -620,10 +622,8 @@ def parse_download_settings(account, api_response):
 # Parse new timestamp from the GET_INVENTORY response.
 def parse_new_timestamp_ms(account, api_response):
     if 'GET_INVENTORY' in api_response['responses']:
-        account['last_timestamp_ms'] = (api_response['responses']
-                                                    ['GET_INVENTORY']
-                                                    ['inventory_delta']
-                                        .get('new_timestamp_ms', 0))
+        account['last_timestamp_ms'] = (api_response['responses'][
+            'GET_INVENTORY'].inventory_delta.new_timestamp_ms)
 
         player_level = get_player_level(api_response)
         if player_level:
@@ -733,14 +733,14 @@ def clear_inventory(api, account):
         release_p_response = request_release_pokemon(api, account, 0,
                                                      release_ids)
 
-        captcha_url = release_p_response['responses']['CHECK_CHALLENGE'][
-            'challenge_url']
+        captcha_url = release_p_response[
+            'responses']['CHECK_CHALLENGE'].challenge_url
         if len(captcha_url) > 1:
             log.info('Account encountered a reCaptcha.')
             return False
 
         release_response = release_p_response['responses']['RELEASE_POKEMON']
-        release_result = release_response['result']
+        release_result = release_response.result
 
         if release_result is 1:
             log.info('Sucessfully Released %s Pokemon', len(release_ids))
@@ -761,14 +761,14 @@ def clear_inventory(api, account):
                 api, account, item_id, drop_count)
 
             captcha_url = clear_inventory_response['responses'][
-                'CHECK_CHALLENGE']['challenge_url']
+                'CHECK_CHALLENGE'].challenge_url
             if len(captcha_url) > 1:
                 log.info('Account encountered a reCaptcha.')
                 return False
 
             clear_response = clear_inventory_response[
                 'responses']['RECYCLE_INVENTORY_ITEM']
-            clear_result = clear_response['result']
+            clear_result = clear_response.result
             if clear_result is 1:
                 log.info('Clearing %s %ss succeeded.', item_count,
                          item_name)
