@@ -48,9 +48,7 @@ def setup_api(args, status, account):
         # If proxy is not assigned yet or if proxy-rotation is defined
         # - query for new proxy.
         if ((not status['proxy_url']) or
-                (status['proxy_url'] not in args.proxy) or
-                ((args.proxy_rotation is not None) and
-                 (args.proxy_rotation != 'none'))):
+                (args.proxy_rotation != 'none')):
 
             proxy_num, status['proxy_url'] = get_new_proxy(args)
             if args.proxy_display.upper() != 'FULL':
@@ -63,6 +61,10 @@ def setup_api(args, status, account):
         api.set_proxy({
             'http': status['proxy_url'],
             'https': status['proxy_url']})
+        if (status['proxy_url'] not in args.proxy):
+            log.warning(
+                'Proxy %s is not active but proxy rotation is set to none.',
+                status['proxy_url'])
 
     return api
 
