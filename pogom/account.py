@@ -153,7 +153,7 @@ def rpc_login_sequence(args, api, account):
     try:
         req = api.create_request()
         req.get_player(player_locale=args.player_locale)
-        response = req.call(True)
+        response = req.call(False)
 
         parse_get_player(account, response)
 
@@ -227,7 +227,7 @@ def rpc_login_sequence(args, api, account):
                 'remote_config']['hash'])
             response = req.call(False)
 
-            parse_new_timestamp_ms(account, responses)
+            parse_new_timestamp_ms(account, response)
 
             req_count += 1
             total_req += 1
@@ -241,7 +241,7 @@ def rpc_login_sequence(args, api, account):
 
             try:
                 # Re-use variable name. Also helps GC.
-                response = responses['GET_ASSET_DIGEST']
+                response = response['responses']['GET_ASSET_DIGEST']
             except KeyError:
                 break
 
@@ -276,7 +276,7 @@ def rpc_login_sequence(args, api, account):
                 hash=account['remote_config']['hash'])
             response = req.call(False)
 
-            parse_new_timestamp_ms(account, responses)
+            parse_new_timestamp_ms(account, response)
 
             req_count += 1
             total_req += 1
@@ -290,12 +290,12 @@ def rpc_login_sequence(args, api, account):
 
             try:
                 # Re-use variable name. Also helps GC.
-                response = responses['DOWNLOAD_ITEM_TEMPLATES']
+                response = response['responses']['DOWNLOAD_ITEM_TEMPLATES']
             except KeyError:
                 break
 
             result = response.result
-            page_offset = responses.page_offset
+            page_offset = response.page_offset
             page_timestamp = response.timestamp_ms
             log.debug('Completed %d requests to download'
                       + ' item templates.', req_count)
@@ -449,7 +449,7 @@ def complete_tutorial(args, api, account):
         req = api.create_request()
         req.get_player(
             player_locale=args.player_locale)
-        responses = req.call(False).get('responses', {})
+        response = req.call(False).get('responses', {})
 
         if 'GET_INVENTORY' in responses:
             for item in (responses['GET_INVENTORY'].inventory_delta
@@ -556,22 +556,22 @@ def spin_pokestop(api, account, args, fort, step_location):
     if random.random() < 0.5 or account['level'] == 1:
         fort_details_request(api, account, fort)
         time.sleep(random.uniform(0.8, 1.8))  # Don't let Niantic throttle.
-        responses = spin_pokestop_request(api, account, fort, step_location)
+        response = spin_pokestop_request(api, account, fort, step_location)
         time.sleep(random.uniform(2, 4))  # Don't let Niantic throttle.
 
         # Check for reCaptcha.
-        captcha_url = responses['CHECK_CHALLENGE'].challenge_url
+        captcha_url = response['CHECK_CHALLENGE'].challenge_url
         if len(captcha_url) > 1:
             log.debug('Account encountered a reCaptcha.')
             return False
 
-        spin_result = responses['FORT_SEARCH'].result
+        spin_result = response['FORT_SEARCH'].result
         if spin_result is 1:
             log.info('Successful Pokestop spin with %s.',
                      account['username'])
             # Update account stats and clear inventory if necessary.
             parse_level_up_rewards(api, account)
-            parse_inventory(api, account, responses)
+            parse_inventory(api, account, response)
             clear_inventory(api, account)
             account['session_spins'] += 1
             incubate_eggs(api, account)
@@ -622,8 +622,8 @@ def parse_download_settings(account, api_response):
 # Parse new timestamp from the GET_INVENTORY response.
 def parse_new_timestamp_ms(account, api_response):
     if 'GET_INVENTORY' in api_response['responses']:
-        account['last_timestamp_ms'] = (api_response['responses'][
-            'GET_INVENTORY'].inventory_delta.new_timestamp_ms)
+        account['last_timestamp_ms'] = api_response['responses'][
+            'GET_INVENTORY'].inventory_delta.new_timestamp_ms
 
         player_level = get_player_level(api_response)
         if player_level:
@@ -632,78 +632,75 @@ def parse_new_timestamp_ms(account, api_response):
 
 def parse_get_player(account, api_response):
     if 'GET_PLAYER' in api_response['responses']:
-        player_data = (api_response['responses']
-                                   ['GET_PLAYER']
-                       .get('player_data', {}))
+        player_data = api_response['responses']['GET_PLAYER'].player_data
 
-        account['warning'] = (api_response['responses']['GET_PLAYER']
-                              .get('warn', None))
-        account['tutorials'] = player_data.get('tutorial_state', [])
+        account['warning'] = api_response['responses']['GET_PLAYER'].warn
+        account['tutorials'] = player_data.tutorial_state
 
 
 # Parse player stats and inventory into account.
 def parse_inventory(api, account, api_response):
-    inventory = api_response['responses'].get('GET_INVENTORY', {})
+    inventory = api_response['responses']['GET_INVENTORY']
     parsed_items = 0
     parsed_pokemons = 0
     parsed_eggs = 0
     parsed_incubators = 0
-    for item in inventory['inventory_delta'].get('inventory_items', {}):
-        item_data = item.get('inventory_item_data', {})
-        if 'player_stats' in item_data:
-            stats = item_data['player_stats']
-            account['level'] = stats['level']
-            account['spins'] = stats.get('poke_stop_visits', 0)
-            account['walked'] = stats.get('km_walked', 0)
+    for item in inventory.inventory_delta.inventory_items:
+        item_data = item.inventory_item_data
+        if item_data.HasField('player_stats'):
+            stats = item_data.player_stats
+            account['level'] = stats.level
+            account['spins'] = stats.poke_stop_visits
+            account['walked'] = stats.km_walked
 
-            log.debug('Parsed %s player stats: level %d, %f km ' +
+            log.info('Parsed %s player stats: level %d, %f km ' +
                       'walked, %d spins.', account['username'],
                       account['level'], account['walked'], account['spins'])
-        elif 'item' in item_data:
-            item_id = item_data['item']['item_id']
-            item_count = item_data['item'].get('count', 0)
+        elif item_data.HasField('item'):
+            item_id = item_data.item.item_id
+            item_count = item_data.item.count
             account['items'][item_id] = item_count
             parsed_items += item_count
-        elif 'egg_incubators' in item_data:
-            incubators = item_data['egg_incubators']['egg_incubator']
+        elif item_data.HasField('egg_incubators'):
+            incubators = item_data.egg_incubators.egg_incubator
             for incubator in incubators:
-                if incubator.get('pokemon_id', 0):
+                if incubator.pokemon_id != 0:
                     left = (incubator['target_km_walked']
                             - account['walked'])
                     log.debug('Egg kms remaining: %.2f', left)
                 else:
                     account['incubators'].append({
-                        'id': incubator['id'],
-                        'item_id': incubator['item_id'],
-                        'uses_remaining': incubator.get('uses_remaining', 0),
+                        'id': incubator.id,
+                        'item_id': incubator.item_id,
+                        'uses_remaining': incubator.uses_remaining
                     })
                     parsed_incubators += 1
-        elif ('pokemon_data' in item_data and
-              item_data['pokemon_data'].get('id', 0)):
-            p_data = item_data['pokemon_data']
-            p_id = p_data.get('id', 0)
-            if not p_data.get('is_egg', False):
+        elif item_data.HasField('pokemon_data'):
+            pokemon_data = item_data.pokemon_data
+            p_data = item_data.pokemon_data
+            p_id = p_data.id
+            if not p_data.is_egg:
                 account['pokemons'][p_id] = {
-                    'pokemon_id': p_data.get('pokemon_id', 0),
-                    'move_1': p_data['move_1'],
-                    'move_2': p_data['move_2'],
-                    'height': p_data['height_m'],
-                    'weight': p_data['weight_kg'],
-                    'gender': p_data['pokemon_display']['gender'],
-                    'cp': p_data['cp'],
-                    'cp_multiplier': p_data['cp_multiplier']
+                    'pokemon_id': p_data.pokemon_id,
+                    'move_1': p_data.move_1,
+                    'move_2': p_data.move_2,
+                    'height': p_data.height_m,
+                    'weight': p_data.weight_kg,
+                    'gender': p_data.pokemon_display.gender,
+                    'cp': p_data.cp,
+                    'cp_multiplier': p_data.cp_multiplier
                 }
                 parsed_pokemons += 1
             else:
-                if p_data.get('egg_incubator_id', None):
+                if p_data.egg_incubator_id is None:
                     # Egg is already incubating.
                     continue
                 account['eggs'].append({
                     'id': p_id,
-                    'km_target': p_data['egg_km_walked_target']
+                    'km_target': p_data.egg_km_walked_target
                 })
                 parsed_eggs += 1
-    log.debug(
+    log.info(
         'Parsed %s player inventory: %d items, %d pokemons, %d available ' +
         'eggs and %d available incubators.',
         account['username'], parsed_items, parsed_pokemons, parsed_eggs,
