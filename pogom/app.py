@@ -16,7 +16,7 @@ from collections import OrderedDict
 from bisect import bisect_left
 
 from . import config
-from .models import (Pokemon, Gym, Pokestop, ScannedLocation,
+from .models import (Geofence, Pokemon, Gym, Pokestop, ScannedLocation,
                      MainWorker, WorkerStatus, Token, HashKeys,
                      SpawnPoint)
 from .utils import now, dottedQuadToNum, get_blacklist
@@ -162,6 +162,8 @@ class Pogom(Flask):
                                  args.spawnpoint_scanning) else True
 
         visibility_flags = {
+            'geofences': bool(args.geofence_file or
+                              args.geofence_excluded_file),
             'gyms': not args.no_gyms,
             'pokemons': not args.no_pokemon,
             'pokestops': not args.no_pokestops,
@@ -368,6 +370,27 @@ class Pogom(Flask):
                             swLat, swLng, neLat, neLng,
                             oSwLat=oSwLat, oSwLng=oSwLng,
                             oNeLat=oNeLat, oNeLng=oNeLng))
+
+        if request.args.get('geofences', 'true') == 'true':
+            db_geofences = Geofence.get_geofences()
+
+            geofences = {}
+            for g in db_geofences:
+                # Check if already there
+                geofence = geofences.get(g['name'], None)
+                if not geofence:  # Create a new sub-dict if new
+                    geofences[g['name']] = {
+                        'excluded': g['excluded'],
+                        'name': g['name'],
+                        'coordinates': []
+                    }
+                coordinate = {
+                    'lat': g['latitude'],
+                    'lng': g['longitude']
+                }
+                geofences[g['name']]['coordinates'].append(coordinate)
+
+            d['geofences'] = geofences
 
         if request.args.get('status', 'false') == 'true':
             args = get_args()
