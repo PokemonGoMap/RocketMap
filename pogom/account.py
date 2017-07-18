@@ -542,8 +542,7 @@ def pokestop_spinnable(fort, step_location):
     in_range = in_radius((fort.latitude, fort.longitude),
                          step_location, spinning_radius)
     now = time.time()
-    pause_needed = fort.cooldown_complete_timestamp_ms and (
-        fort.cooldown_complete_timestamp_ms / 1000 > now)
+    pause_needed = fort.cooldown_complete_timestamp_ms / 1000 > now
     return in_range and not pause_needed
 
 
@@ -675,12 +674,12 @@ def parse_inventory(api, account, api_response):
                         'uses_remaining': incubator.uses_remaining
                     })
                     parsed_incubators += 1
-        elif item_data.HasField('pokemon_data') in item_data:
+        elif item_data.HasField('pokemon_data'):
             p_data = item_data.pokemon_data
             p_id = p_data.id
             if not p_data.is_egg:
                 account['pokemons'][p_id] = {
-                    'pokemon_id': p_data.get.pokemon_id,
+                    'pokemon_id': p_data.pokemon_id,
                     'move_1': p_data.move_1,
                     'move_2': p_data.move_2,
                     'height': p_data.height_m,
