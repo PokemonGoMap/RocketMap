@@ -2137,14 +2137,12 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                         ' or spining is not active. Check if \'-nk\' flag is' +
                         'accidentally set.')
 
-                if not args.pokestop_spinning:
-                    if ((
-                        f['id'], int(f['last_modified_timestamp_ms'] / 1000.0))
-                            in encountered_pokestops):
-                            # If pokestop has been encountered before and
-                            # hasn't changed don't process it.
-                            stopsskipped += 1
-                            continue
+                if ((f.id, int(f.last_modified_timestamp_ms / 1000.0))
+                        in encountered_pokestops):
+                    # If pokestop has been encountered before and hasn't
+                    # changed don't process it.
+                    stopsskipped += 1
+                    continue
 
                 pokestops[f.id] = {
                     'pokestop_id': f.id,

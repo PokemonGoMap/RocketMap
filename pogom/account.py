@@ -513,6 +513,7 @@ def reset_account(account):
     account['start_time'] = time.time()
     account['warning'] = None
     account['tutorials'] = []
+    account['used_pokestops'] = {}
     account['items'] = {}
     account['pokemons'] = {}
     account['incubators'] = []
@@ -524,7 +525,7 @@ def reset_account(account):
     account['walked'] = 0.0
 
 
-def cleanup_account_stats(account):
+def cleanup_account_stats(account, pokestop_timeout):
     elapsed_time = time.time() - account['start_time']
 
     # Just to prevent division by 0 errors, when needed
@@ -534,6 +535,14 @@ def cleanup_account_stats(account):
 
     spins_h = account['session_spins'] * 3600.0 / elapsed_time
     account['hour_spins'] = spins_h
+
+    # Refresh visited pokestops that were on timeout.
+    used_pokestops = dict(account['used_pokestops'])
+    for pokestop_id in account['used_pokestops']:
+        last_attempt = account['used_pokestops'][pokestop_id]
+        if (last_attempt + pokestop_timeout) < time.time():
+            del used_pokestops[pokestop_id]
+            account['used_pokestops'] = used_pokestops
 
 
 # Check if Pokestop is spinnable and not on cooldown.
@@ -552,19 +561,19 @@ def spin_pokestop(api, account, args, fort, step_location):
                     account['username'])
         return False
     # Set 50% Chance to spin a Pokestop.
-    if random.random() < 0.5 or account['level'] == 1:
+    if random.random() > 0.5 or account['level'] == 1:
         fort_details_request(api, account, fort)
         time.sleep(random.uniform(0.8, 1.8))  # Don't let Niantic throttle.
         response = spin_pokestop_request(api, account, fort, step_location)
         time.sleep(random.uniform(2, 4))  # Don't let Niantic throttle.
 
         # Check for reCaptcha.
-        captcha_url = response['CHECK_CHALLENGE'].challenge_url
+        captcha_url = response['responses']['CHECK_CHALLENGE'].challenge_url
         if len(captcha_url) > 1:
             log.debug('Account encountered a reCaptcha.')
             return False
 
-        spin_result = response['FORT_SEARCH'].result
+        spin_result = response['responses']['FORT_SEARCH'].result
         if spin_result is 1:
             log.info('Successful Pokestop spin with %s.',
                      account['username'])
@@ -573,6 +582,7 @@ def spin_pokestop(api, account, args, fort, step_location):
             parse_inventory(api, account, response)
             clear_inventory(api, account)
             account['session_spins'] += 1
+            account['used_pokestops'][fort.id] = time.time()
             incubate_eggs(api, account)
             return True
         elif spin_result is 2:
@@ -803,9 +813,9 @@ def spin_pokestop_request(api, account, fort, step_location):
     try:
         req = api.create_request()
         req.fort_search(
-            fort_id=fort['id'],
-            fort_latitude=fort['latitude'],
-            fort_longitude=fort['longitude'],
+            fort_id=fort.id,
+            fort_latitude=fort.latitude,
+            fort_longitude=fort.longitude,
             player_latitude=step_location[0],
             player_longitude=step_location[1])
         req.check_challenge()
@@ -827,9 +837,9 @@ def fort_details_request(api, account, fort):
     try:
         req = api.create_request()
         req.fort_details(
-            fort_id=fort['id'],
-            latitude=fort['latitude'],
-            longitude=fort['longitude'])
+            fort_id=fort.id,
+            latitude=fort.latitude,
+            longitude=fort.longitude)
         req.check_challenge()
         req.get_hatched_eggs()
         req.get_inventory(last_timestamp_ms=account['last_timestamp_ms'])
@@ -952,7 +962,7 @@ def parse_level_up_rewards(api, account):
         parse_new_timestamp_ms(account, response)
 
         response = response['responses']['LEVEL_UP_REWARDS']
-        result = response.get('result', 0)
+        result = response.result
         if result is 1:
             log.info('Account %s collected its level up rewards.',
                      account['username'])
