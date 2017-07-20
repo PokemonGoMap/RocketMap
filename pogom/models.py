@@ -1997,11 +1997,11 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
 
             pokemon_id = p.pokemon_data.pokemon_id
 
-            # if this is an ignored pokemon, skip this whole section
+            # If this is an ignored pokemon, skip this whole section.
             # We want the stuff above or we will impact spawn detection
-            # but we don't want to insert it, or send it to webhooks
-            if args.ignorelist_file and (pokemon_id in args.ignorelist):
-                log.debug("Ignoring Pokemon id: %i", pokemon_id)
+            # but we don't want to insert it, or send it to webhooks.
+            if args.ignorelist_file and pokemon_id in args.ignorelist:
+                log.debug('Ignoring Pokemon id: %i.', pokemon_id)
                 filtered += 1
                 continue
 
@@ -2268,7 +2268,8 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
 
     log.info('Parsing found Pokemon: %d (%d filtered), nearby: %d, ' +
              'pokestops: %d, gyms: %d, raids: %d.',
-             len(pokemon) + skipped, filtered,
+             len(pokemon) + skipped,
+             filtered,
              nearby_pokemon,
              len(pokestops) + stopsskipped,
              len(gyms),
