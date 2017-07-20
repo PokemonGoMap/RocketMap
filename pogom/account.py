@@ -674,8 +674,7 @@ def parse_inventory(api, account, api_response):
             incubators = item_data.egg_incubators.egg_incubator
             for incubator in incubators:
                 if incubator.pokemon_id != 0:
-                    left = (incubator['target_km_walked']
-                            - account['walked'])
+                    left = (incubator.target_km_walked - account['walked'])
                     log.debug('Egg kms remaining: %.2f', left)
                 else:
                     account['incubators'].append({
