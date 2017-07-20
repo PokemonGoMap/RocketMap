@@ -994,6 +994,8 @@ class AccountSet(object):
 
     # Set manipulation.
     def create_set(self, name, values=[]):
+        if values is None:
+            values = []
         if name in self.sets:
             raise Exception('Account set ' + name + ' is being created twice.')
 
