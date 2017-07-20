@@ -11,7 +11,6 @@ from pgoapi import PGoApi
 from pgoapi.exceptions import AuthException
 
 from .fakePogoApi import FakePogoApi
-from .pgoapiwrapper import PGoApiWrapper
 from .utils import (in_radius, generate_device_info, equi_rect_distance,
                     clear_dict_response)
 from .proxy import get_new_proxy
@@ -562,6 +561,7 @@ def spin_pokestop(api, account, args, fort, step_location):
         return False
     # Set 50% Chance to spin a Pokestop.
     if random.random() > 0.5 or account['level'] == 1:
+        time.sleep(random.uniform(0.8, 1.8))
         fort_details_request(api, account, fort)
         time.sleep(random.uniform(0.8, 1.8))  # Don't let Niantic throttle.
         response = spin_pokestop_request(api, account, fort, step_location)
@@ -872,7 +872,7 @@ def encounter_pokemon_request(api, account, encounter_id, spawnpoint_id,
         req.get_inbox(is_history=True)
         response = req.call(False)
         parse_new_timestamp_ms(account, response)
-        return response
+        return clear_dict_response(response)
     except Exception as e:
         log.exception('Exception while encountering Pokémon: %s.', e)
         return False
