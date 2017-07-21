@@ -35,6 +35,7 @@ from .customLog import printPokemon
 
 from .account import (tutorial_pokestop_spin, check_login,
                       setup_api, encounter_pokemon_request)
+from .proxy import get_new_proxy
 
 log = logging.getLogger(__name__)
 
@@ -1844,6 +1845,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
     gyms = {}
     raids = {}
     skipped = 0
+    filtered = 0
     stopsskipped = 0
     forts = []
     forts_count = 0
@@ -1995,6 +1997,15 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                 timedelta(seconds=seconds_until_despawn)
 
             pokemon_id = p.pokemon_data.pokemon_id
+
+            # if this is an ignored pokemon, skip this whole section
+            # We want the stuff above or we will impact spawn detection
+            # but we don't want to insert it, or send it to webhooks
+            if args.ignorelist_file and (pokemon_id in args.ignorelist):
+                log.debug("Ignoring Pokemon id: %i", pokemon_id)
+                filtered += 1
+                continue
+
             printPokemon(pokemon_id, p.latitude, p.longitude,
                          disappear_time)
 
@@ -2256,9 +2267,9 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
         # Helping out the GC.
         del forts
 
-    log.info('Parsing found Pokemon: %d, nearby: %d, pokestops: %d,' +
-             ' gyms: %d, raids: %d.',
-             len(pokemon) + skipped,
+    log.info('Parsing found Pokemon: %d (%d filtered), nearby: %d, ' +
+             'pokestops: %d, gyms: %d, raids: %d.',
+             len(pokemon) + skipped, filtered,
              nearby_pokemon,
              len(pokestops) + stopsskipped,
              len(gyms),
@@ -2384,15 +2395,23 @@ def encounter_pokemon(args, pokemon, account, api, account_sets, status,
         # API that's already logged in.
         if not hlvl_api:
             hlvl_api = setup_api(args, status, hlvl_account)
+        # If the already existent API is using a proxy but
+        # it's not alive anymore, we need to get a new proxy.
+        elif (args.proxy and
+              (hlvl_api._session.proxies['http'] not in args.proxy)):
+                proxy_num, proxy_new = get_new_proxy(args)
+                hlvl_api.set_proxy({
+                    'http': proxy_new,
+                    'https': proxy_new})
 
-            # Hashing key.
-            # TODO: all of this should be handled properly... all
-            # these useless, inefficient threads passing around all
-            # these single-use variables are making me ill.
-            if args.hash_key:
-                key = key_scheduler.next()
-                log.debug('Using hashing key %s for this encounter.', key)
-                hlvl_api.activate_hash_server(key)
+        # Hashing key.
+        # TODO: all of this should be handled properly... all
+        # these useless, inefficient threads passing around all
+        # these single-use variables are making me ill.
+        if args.hash_key:
+            key = key_scheduler.next()
+            log.debug('Using hashing key %s for this encounter.', key)
+            hlvl_api.activate_hash_server(key)
 
         # We have an API object now. If necessary, store it.
         if using_accountset and not args.no_api_store:
