@@ -16,6 +16,8 @@ args = get_args()
 try:
     from matplotlib.path import Path
 except ImportError as e:
+    # Pass as this is an optional requirement we are going to check later if it
+    # was properly importe and only use it in that case.
     pass
 
 
@@ -39,7 +41,7 @@ class Geofences:
         return (self.geofenced_areas or self.excluded_areas)
 
     def get_geofenced_coordinates(self, coordinates):
-        log.info('Using matplotlib: %s', self.use_matplotlib)
+        log.info('Using matplotlib: %s.', self.use_matplotlib)
         log.info('Found %d coordinates to geofence.', len(coordinates))
         geofenced_coordinates = []
         startTime = timeit.default_timer()

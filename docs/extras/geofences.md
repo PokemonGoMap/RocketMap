@@ -5,19 +5,19 @@ With the help of geofences you can define your search area even better. This fea
 ## Speed
 The included algorithm should be fast enough, but if you see your geofencing takes too long, there are some things you can do to improve geofencing times:
 
-  * Try to make the polygon simpler removing vertexes
-  * Reduce step size to better fit your polygon
+  * Try to make the polygon simpler removing vertexes.
+  * Reduce step size to better fit your polygon.
   * Install ``matplotlib``.
 
 ## Matplotlib
 The geofence calculations can be faster if the powerful ``matplotlib`` python package is installed, in that case it will use it instead of the included algorithm to check if a point is inside an area.
-The real improvement varies a lot between setups but it should be faster anyway, in tests we have seen it ranging from 12%-100%.
+The real improvement varies a lot between setups but it should be faster anyway, in tests we have seen it ranging from 12% to 100%.
 
 The install procedure is the same as any other python package:
 ``pip install matplotlib``
 
 You can see in the logs if RM is using ``matplotlib`` or not for the calculations.
-While this is a powerful tool, it also has its downsides that it may not be supported on certain devices, for example older Raspberry Pi. 
+While this is a powerful tool, it also has its downsides that it may not be supported on certain devices, for example older Raspberry Pi.
 
 ## How to use?
 1. Define areas which you like geofence or exclude, from your standard hex. Best done via an online tool. The resulting format needs to match the content of ``geofences/geofence.txt.example`` or ``geofences/excluded.txt.example``.
