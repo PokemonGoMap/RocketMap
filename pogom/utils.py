@@ -1011,10 +1011,11 @@ def gmaps_reverse_geolocate(gmaps_key, locale, location):
         address = reverse[-1].raw['address_components']
         country_code = 'US'
 
-        # find country component
+        # Find country component.
         for component in address:
-            # look for country
-            component_is_country = any([t == 'country' for t in component.get('types', [])])
+            # Look for country.
+            component_is_country = any([t == 'country'
+                                        for t in component.get('types', [])])
 
             if component_is_country:
                 country_code = component['short_name']
