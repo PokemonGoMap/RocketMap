@@ -1011,17 +1011,16 @@ def gmaps_reverse_geolocate(gmaps_key, locale, location):
         address = reverse[-1].raw['address_components']
         country_code = 'US'
 
-        # google returns an array of components, we need to find the one that is the country
+        # find country component
         for component in address:
             component_is_country = False
 
-            # for good measure, each component has one or more types, look for country
+            # look for country
             for type in component['types']:
                 if type == 'country':
                     component_is_country = True
                     break
 
-            # Only when we found the country can we stop looking
             if component_is_country:
                 country_code = component['short_name']
                 break
@@ -1037,7 +1036,7 @@ def gmaps_reverse_geolocate(gmaps_key, locale, location):
                           + 'Please check that you have Google Timezone API'
                           + ' enabled for your API key'
                           + ' (https://developers.google.com/maps/'
-                          + 'documentation/timezone/intro): %s.', e)
+                          + 'documentatiogit lon/timezone/intro): %s.', e)
     except Exception as e:
         log.exception('Exception while obtaining player locale: %s.'
                       + ' Using default locale.', e)
