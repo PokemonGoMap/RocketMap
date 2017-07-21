@@ -2393,6 +2393,9 @@ def encounter_pokemon(args, pokemon, account, api, account_sets, status,
                 hlvl_api.set_proxy({
                     'http': proxy_new,
                     'https': proxy_new})
+                hlvl_api._auth_provider.set_proxy({
+                    'http': proxy_new,
+                    'https': proxy_new})
 
         # Hashing key.
         # TODO: all of this should be handled properly... all
