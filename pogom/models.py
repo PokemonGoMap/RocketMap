@@ -2389,7 +2389,7 @@ def encounter_pokemon(args, pokemon, account, api, account_sets, status,
         # it's not alive anymore, we need to get a new proxy.
         elif (args.proxy and
               (hlvl_api._session.proxies['http'] not in args.proxy)):
-                proxy_num, proxy_new = get_new_proxy(args)
+                proxy_idx, proxy_new = get_new_proxy(args)
                 hlvl_api.set_proxy({
                     'http': proxy_new,
                     'https': proxy_new})
