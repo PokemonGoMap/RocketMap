@@ -187,6 +187,11 @@ def main():
 
     args = get_args()
 
+    # Abort if status name is not alphanumeric.
+    if not str(args.status_name).isalnum():
+        log.critical('Status name must be alphanumeric.')
+        sys.exit(1)
+
     set_log_and_verbosity(log)
 
     config['parse_pokemon'] = not args.no_pokemon

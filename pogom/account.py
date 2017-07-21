@@ -49,7 +49,6 @@ def setup_api(args, status, account):
         # - query for new proxy.
         if ((not status['proxy_url']) or
                 (args.proxy_rotation != 'none')):
-
             proxy_num, status['proxy_url'] = get_new_proxy(args)
             if args.proxy_display.upper() != 'FULL':
                 status['proxy_display'] = proxy_num
