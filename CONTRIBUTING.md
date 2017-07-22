@@ -41,7 +41,7 @@ NodeJS packages are found in package.json in the project root, and can be easily
 
 ### Before you report
 
-1. **Make sure you are on the latest version! When in doubt, `git pull`.
+1. **Make sure you are on the latest version!** When in doubt, `git pull`.
 2. Ensure it is an actual issue with the project itself. Confirm that you do not have faulty config, and that you have properly installed all the required dependencies. ***READ THE ERROR OUTPUT YOU ARE GIVEN!*** It may have the solution readily printed for you!
 3. Reproduce. Confirm the circumstances you are able to reproduce the bug. If specific configuration is required, include in your report the configuration required. Find a friend, spin up a virtual machine, or use a different computer and test the issue there. If you do not have the issue on the new machine, it may be indicative that it is something with your configuration.
 4. *USE GITHUB SEARCH.* Search open issues and look for any open issues that already address the problem. Duplicate issues will be closed.
