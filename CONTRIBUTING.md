@@ -26,8 +26,8 @@ Please do not open a GitHub issue for support or questions. They are best answer
 
 RocketMap has two main dependencies to get started:
 
-1. RocketMap is a Python2 project, therefor, you need [Python 2](https://www.python.org/downloads/)!
-2. RocketMap also requires [NodeJS](https://nodejs.org/en/download/) in order to minify frontend assets.
+1. RocketMap is a Python2 project, therefore, you need [Python 2](https://www.python.org/downloads/)!
+2. RocketMap also requires [NodeJS](https://nodejs.org/en/download/) in order to build frontend assets.
 
 ### Python Packages
 
@@ -42,18 +42,18 @@ NodeJS packages are found in package.json in the project root, and can be easily
 ### Before you report
 
 1. **Make sure you are on the latest version!** When in doubt, `git pull`.
-2. Ensure it is an actual issue with the project itself. Confirm that you do not have faulty config, and that you have properly installed all the required dependencies. ***READ THE ERROR OUTPUT YOU ARE GIVEN!*** It may have the solution readily printed for you!
+2. Ensure it is an actual issue with the project itself. Confirm that you do not have a faulty config, and that you have properly installed all the required dependencies. ***READ THE ERROR OUTPUT YOU ARE GIVEN!*** It may have the solution readily printed for you!
 3. Reproduce. Confirm the circumstances you are able to reproduce the bug. If specific configuration is required, include in your report the configuration required. Find a friend, spin up a virtual machine, or use a different computer and test the issue there. If you do not have the issue on the new machine, it may be indicative that it is something with your configuration.
 4. *USE GITHUB SEARCH.* Search open issues and look for any open issues that already address the problem. Duplicate issues will be closed.
 
 ### Submitting a helpful bug report
 
-When you begin the process of opening an issue, you will be given a template in the text box that should help guide you through the process.
+When you begin the process of opening an issue, you will be given a template in the text box that should help guide you through the process. Please fill in as much detail as you can.
 
 * **Expected Behavior** - What did you expect to happen? Should the map have handled an exception, or have done something different?
 * **Current Behavior** - What actually happened? Did the map crash? Did a function behave in a way it was not intended? Include any logs or stack traces here.
-* **Possible Solution** - If you know how this issue is caused, and have a possible solution, please include it. Be as detailed as you can.
-* **Steps to reproduce** - Here is where your “Reproduce” stage comes in. Provide specific configuration that you ran with. Frontend issue? Provide instructions on what to click or do on the frontend to cause the issue. Be as detailed as possible.
+* **Possible Solution** - If you know how this issue is caused, and have a possible solution, please include it.
+* **Steps to reproduce** - Here is where your “Reproduce” stage comes in. Provide specific configuration that you ran with. Frontend issue? Provide instructions on what to click or do on the frontend to cause the issue.
 * **Context** - Why is this an issue?
 * **Your environment** - Operating system, `python --version`, `pip --version`, etc.
 
