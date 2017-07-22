@@ -16,8 +16,8 @@ args = get_args()
 try:
     from matplotlib.path import Path
 except ImportError as e:
-    # Pass as this is an optional requirement we are going to check later if it
-    # was properly importe and only use it in that case.
+    # Pass as this is an optional requirement. We're going to check later if it
+    # was properly imported and only use it if it's installed.
     pass
 
 
