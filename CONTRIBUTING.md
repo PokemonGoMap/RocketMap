@@ -24,11 +24,10 @@ Please do not open a GitHub issue for support or questions. They are best answer
 
 ## How do I get started?
 
-RocketMap has two main dependencies to get started.
+RocketMap has two main dependencies to get started:
 
-RocketMap is a Python2 project, therefor, you need [Python 2](https://www.python.org/downloads/)!
-
-RocketMap also requires [NodeJS](https://nodejs.org/en/download/) in order to minify frontend assets.
+1. RocketMap is a Python2 project, therefor, you need [Python 2](https://www.python.org/downloads/)!
+2. RocketMap also requires [NodeJS](https://nodejs.org/en/download/) in order to minify frontend assets.
 
 ### Python Packages
 
