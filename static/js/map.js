@@ -150,8 +150,8 @@ function initMap() { // eslint-disable-line no-unused-vars
 
     // Enable clustering.
     var clusterOptions = {
-        imagePath: clusterImagePath,
-        maxZoom: 10
+        imagePath: 'static/images/cluster/m',
+        maxZoom: 11
     }
 
     markerCluster = new MarkerClusterer(map, [], clusterOptions)
@@ -1461,15 +1461,15 @@ function processPokemons(pokemon) {
 
     $.each(pokemon, function (i, poke) {
         const markers = processPokemon(poke)
-        const oldMarker = markers[0]
-        const newMarker = markers[1]
-
-        if (oldMarker) {
-            oldMarkers.push(oldMarker)
-        }
+        const newMarker = markers[0]
+        const oldMarker = markers[1]
 
         if (newMarker) {
             newMarkers.push(newMarker)
+        }
+
+        if (oldMarker) {
+            oldMarkers.push(oldMarker)
         }
     })
 
@@ -1489,19 +1489,21 @@ function processPokemon(item) {
     if (!(item['encounter_id'] in mapData.pokemons) &&
          !isExcludedPoke && isPokeAlive) {
         // Add marker to map and item to dict.
-        if (item.marker) {
-            oldMarker = item.marker
-        }
-
         if (!item.hidden) {
-            item.marker = setupPokemonMarker(item, map)
-            customizePokemonMarker(item.marker, item)
-            newMarker = item.marker
-            mapData.pokemons[item['encounter_id']] = item
+            if (item.marker) {
+                updatePokemonMarker(item.marker, map)
+            } else {
+                item.marker = setupPokemonMarker(item, map)
+                customizePokemonMarker(item.marker, item)
+                newMarker = item.marker
+                mapData.pokemons[item['encounter_id']] = item
+            }
+        } else {
+            oldMarker = item.marker
         }
     }
 
-    return [oldMarker, newMarker]
+    return [newMarker, oldMarker]
 }
 
 function processPokestop(i, item) {
