@@ -9,7 +9,7 @@ python:
 
 # install steps MUST succeed or will immediately halt the build
 install:
-  - nvm install 4.4.7
+  - nvm install --lts=boron
   - pip install flake8
   - pip install -r requirements.txt
   - npm install
