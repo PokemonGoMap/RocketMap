@@ -151,7 +151,7 @@ function initMap() { // eslint-disable-line no-unused-vars
     // Enable clustering.
     var clusterOptions = {
         imagePath: 'static/images/cluster/m',
-        maxZoom: 11
+        maxZoom: 14
     }
 
     markerCluster = new MarkerClusterer(map, [], clusterOptions)
@@ -1300,7 +1300,7 @@ function clearStaleMarkers() {
         }
     })
 
-    markerCluster.removeMarkers(oldPokeMarkers)
+    markerCluster.removeMarkers(oldPokeMarkers, true)
 
     $.each(mapData.lurePokemons, function (key, value) {
         if (mapData.lurePokemons[key]['lure_expiration'] < new Date().getTime() ||
@@ -1730,6 +1730,10 @@ function updateMap() {
         showInBoundsMarkers(mapData.spawnpoints, 'inbound')
         clearStaleMarkers()
 
+        // We're done with our tasks. Redraw.
+        markerCluster.resetViewport()
+        markerCluster.redraw()
+
         updateScanned()
         updateSpawnPoints()
         updatePokestops()
@@ -1781,8 +1785,7 @@ function redrawPokemon(pokemonList, useMarkerCluster) {
         }
     })
 
-    // Disable instant redraw, we'll repaint ourselves after we've added the
-    // new markers.
+    // We're done processing the list. Redraw.
     if (useMarkerCluster) {
         markerCluster.resetViewport()
         markerCluster.redraw()
