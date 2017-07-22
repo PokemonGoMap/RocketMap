@@ -171,14 +171,15 @@ def get_args():
                         type=float, default=1)
     parser.add_argument('-ignf', '--ignorelist-file',
                         default='', help='File containing a list of '
-                        'File containing a list of Pokemon IDs to ignore, ' +
-                        'one line per ID. Spawnpoints will be saved, but ' +
-                        'ignored Pokemon won\'t be encountered, sent to ' +
-                        'webhooks or saved to the DB.')
+                        'Pokemon IDs to ignore, one line per ID. ' +
+                        'Spawnpoints will be saved, but ignored ' +
+                        'Pokemon won\'t be encountered, sent to ' +
+                        'webhooks or saved to the DB. ' +
+                        'One line per ID.')
     parser.add_argument('-encwf', '--enc-whitelist-file',
                         default='', help='File containing a list of '
                         'Pokemon IDs to encounter for'
-                        ' IV/CP scanning. One line per ID')
+                        ' IV/CP scanning. One line per ID.')
     parser.add_argument('-nostore', '--no-api-store',
                         help=("Don't store the API objects used by the high"
                               + ' level accounts in memory. This will increase'
