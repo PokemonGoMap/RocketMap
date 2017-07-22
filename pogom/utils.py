@@ -170,11 +170,11 @@ def get_args():
                               'in scan threads.'),
                         type=float, default=1)
     parser.add_argument('-ignf', '--ignorelist-file',
-                        default='', help='File containing a list of '
+                        default='', help='File containing a list of ' +
                         'Pokemon IDs to ignore, one line per ID. ' +
                         'Spawnpoints will be saved, but ignored ' +
                         'Pokemon won\'t be encountered, sent to ' +
-                        'webhooks or saved to the DB. ')
+                        'webhooks or saved to the DB.')
     parser.add_argument('-encwf', '--enc-whitelist-file',
                         default='', help='File containing a list of '
                         'Pokemon IDs to encounter for'
