@@ -174,8 +174,7 @@ def get_args():
                         'Pokemon IDs to ignore, one line per ID. ' +
                         'Spawnpoints will be saved, but ignored ' +
                         'Pokemon won\'t be encountered, sent to ' +
-                        'webhooks or saved to the DB. ' +
-                        'One line per ID.')
+                        'webhooks or saved to the DB. ')
     parser.add_argument('-encwf', '--enc-whitelist-file',
                         default='', help='File containing a list of '
                         'Pokemon IDs to encounter for'
