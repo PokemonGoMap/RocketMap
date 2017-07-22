@@ -40,6 +40,7 @@ var reincludedPokemon = []
 var reids = []
 
 var map
+var markerCluster
 var rawDataIsLoading = false
 var locationMarker
 const rangeMarkers = ['pokemon', 'pokestop', 'gym']
@@ -147,6 +148,15 @@ function initMap() { // eslint-disable-line no-unused-vars
         }
     })
 
+    // Enable clustering.
+    var clusterOptions = {
+        imagePath: clusterImagePath,
+        maxZoom: 10
+    }
+
+    markerCluster = new MarkerClusterer(map, [], clusterOptions)
+    window.markerCluster = markerCluster
+
     var styleNoLabels = new google.maps.StyledMapType(noLabelsStyle, {
         name: 'No Labels'
     })
@@ -212,8 +222,8 @@ function initMap() { // eslint-disable-line no-unused-vars
             storeZoom = true
         }
 
-        redrawPokemon(mapData.pokemons)
-        redrawPokemon(mapData.lurePokemons)
+        redrawPokemon(mapData.pokemons, true)
+        redrawPokemon(mapData.lurePokemons, false)
     })
 
     searchMarker = createSearchMarker()
@@ -889,7 +899,7 @@ function repArray(text, find, replace) {
 }
 
 function getTimeUntil(time) {
-    var now = +new Date()
+    var now = Date.now()
     var tdiff = time - now
 
     var sec = Math.floor((tdiff / 1000) % 60)
@@ -912,12 +922,7 @@ function getNotifyText(item) {
     var replace = [((iv) ? iv.toFixed(1) : ''), item['pokemon_name'], item['individual_attack'],
         item['individual_defense'], item['individual_stamina']]
     var ntitle = repArray(((iv) ? notifyIvTitle : notifyNoIvTitle), find, replace)
-    var dist = (new Date(item['disappear_time'])).toLocaleString([], {
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false
-    })
+    var dist = moment().format('HH:mm:ss')
     var until = getTimeUntil(item['disappear_time'])
     var udist = (until.hour > 0) ? until.hour + ':' : ''
     udist += lpad(until.min, 2, 0) + 'm' + lpad(until.sec, 2, 0) + 's'
@@ -1276,17 +1281,26 @@ function addListeners(marker) {
 }
 
 function clearStaleMarkers() {
+    const oldPokeMarkers = []
+
     $.each(mapData.pokemons, function (key, value) {
-        if (mapData.pokemons[key]['disappear_time'] < new Date().getTime() ||
-            excludedPokemon.indexOf(mapData.pokemons[key]['pokemon_id']) >= 0) {
-            if (mapData.pokemons[key].marker.rangeCircle) {
-                mapData.pokemons[key].marker.rangeCircle.setMap(null)
-                delete mapData.pokemons[key].marker.rangeCircle
+        const isPokeAlive = mapData.pokemons[key]['disappear_time'] > Date.now()
+        const isPokeExcluded = excludedPokemon.indexOf(mapData.pokemons[key]['pokemon_id']) !== -1
+
+        if (!isPokeAlive || isPokeExcluded) {
+            const oldMarker = mapData.pokemons[key].marker
+
+            if (oldMarker.rangeCircle) {
+                oldMarker.rangeCircle.setMap(null)
+                delete oldMarker.rangeCircle
             }
-            mapData.pokemons[key].marker.setMap(null)
+
+            oldPokeMarkers.push(oldMarker)
             delete mapData.pokemons[key]
         }
     })
+
+    markerCluster.removeMarkers(oldPokeMarkers)
 
     $.each(mapData.lurePokemons, function (key, value) {
         if (mapData.lurePokemons[key]['lure_expiration'] < new Date().getTime() ||
@@ -1307,9 +1321,11 @@ function clearStaleMarkers() {
 
 function showInBoundsMarkers(markers, type) {
     $.each(markers, function (key, value) {
-        var marker = markers[key].marker
+        const item = markers[key]
+        const marker = item.marker
         var show = false
-        if (!markers[key].hidden) {
+
+        if (!item.hidden) {
             if (typeof marker.getBounds === 'function') {
                 if (map.getBounds().intersects(marker.getBounds())) {
                     show = true
@@ -1320,16 +1336,17 @@ function showInBoundsMarkers(markers, type) {
                 }
             }
         }
-        // marker has an associated range
+
+        // Marker has an associated range.
         if (show && rangeMarkers.indexOf(type) !== -1) {
-            // no range circle yet...let's create one
+            // No range circle yet... let's create one.
             if (!marker.rangeCircle) {
-                // but only if range is active
+                // But only if range is active.
                 if (isRangeActive(map)) {
-                    if (type === 'gym') marker.rangeCircle = addRangeCircle(marker, map, type, markers[key].team_id)
+                    if (type === 'gym') marker.rangeCircle = addRangeCircle(marker, map, type, item.team_id)
                     else marker.rangeCircle = addRangeCircle(marker, map, type)
                 }
-            } else { // there's already a range circle
+            } else { // There's already a range circle.
                 if (isRangeActive(map)) {
                     marker.rangeCircle.setMap(map)
                 } else {
@@ -1434,26 +1451,60 @@ function loadRawData() {
     })
 }
 
-function processPokemons(i, item) {
+function processPokemons(pokemon) {
     if (!Store.get('showPokemon')) {
-        return false // in case the checkbox was unchecked in the meantime.
+        return false // In case the checkbox was unchecked in the meantime.
     }
 
-    if (!(item['encounter_id'] in mapData.pokemons) &&
-        excludedPokemon.indexOf(item['pokemon_id']) < 0 && item['disappear_time'] > Date.now()) {
-        // add marker to map and item to dict
-        if (item.marker) {
-            item.marker.setMap(null)
+    const oldMarkers = []
+    const newMarkers = []
+
+    $.each(pokemon, function (i, poke) {
+        const markers = processPokemon(poke)
+        const oldMarker = markers[0]
+        const newMarker = markers[1]
+
+        if (oldMarker) {
+            oldMarkers.push(oldMarker)
         }
+
+        if (newMarker) {
+            newMarkers.push(newMarker)
+        }
+    })
+
+    // Disable instant redraw, we'll repaint ourselves after we've added the
+    // new markers.
+    markerCluster.removeMarkers(oldMarkers, true)
+    markerCluster.addMarkers(newMarkers)
+}
+
+function processPokemon(item) {
+    const isExcludedPoke = excludedPokemon.indexOf(item['pokemon_id']) !== -1
+    const isPokeAlive = item['disappear_time'] > Date.now()
+
+    var oldMarker = null
+    var newMarker = null
+
+    if (!(item['encounter_id'] in mapData.pokemons) &&
+         !isExcludedPoke && isPokeAlive) {
+        // Add marker to map and item to dict.
+        if (item.marker) {
+            oldMarker = item.marker
+        }
+
         if (!item.hidden) {
             item.marker = setupPokemonMarker(item, map)
             customizePokemonMarker(item.marker, item)
+            newMarker = item.marker
             mapData.pokemons[item['encounter_id']] = item
         }
     }
+
+    return [oldMarker, newMarker]
 }
 
-function processPokestops(i, item) {
+function processPokestop(i, item) {
     if (!Store.get('showPokestops')) {
         return false
     }
@@ -1523,7 +1574,7 @@ function updatePokestops() {
     }
 }
 
-function processGyms(i, item) {
+function processGym(i, item) {
     var gymLevel = getGymLevel(item)
     var raidLevel = getRaidLevel(item.raid)
 
@@ -1630,7 +1681,7 @@ function updateScanned() {
     })
 }
 
-function processSpawnpoints(i, item) {
+function processSpawnpoint(i, item) {
     if (!Store.get('showSpawnpoints')) {
         return false
     }
@@ -1664,12 +1715,12 @@ function updateSpawnPoints() {
 
 function updateMap() {
     loadRawData().done(function (result) {
-        $.each(result.pokemons, processPokemons)
-        $.each(result.pokestops, processPokestops)
-        $.each(result.gyms, processGyms)
+        processPokemons(result.pokemons)
+        $.each(result.pokestops, processPokestop)
+        $.each(result.gyms, processGym)
         $.each(result.scanned, processScanned)
-        $.each(result.spawnpoints, processSpawnpoints)
-        showInBoundsMarkers(mapData.pokemons, 'pokemon')
+        $.each(result.spawnpoints, processSpawnpoint)
+        // showInBoundsMarkers(mapData.pokemons, 'pokemon')
         showInBoundsMarkers(mapData.lurePokemons, 'pokemon')
         showInBoundsMarkers(mapData.gyms, 'gym')
         showInBoundsMarkers(mapData.pokestops, 'pokestop')
@@ -1707,18 +1758,33 @@ function updateMap() {
     })
 }
 
-function redrawPokemon(pokemonList) {
+function redrawPokemon(pokemonList, useMarkerCluster) {
     var skipNotification = true
+
     $.each(pokemonList, function (key, value) {
         var item = pokemonList[key]
+
         if (!item.hidden) {
-            if (item.marker.rangeCircle) item.marker.rangeCircle.setMap(null)
-            var newMarker = setupPokemonMarker(item, map, this.marker.animationDisabled)
-            customizePokemonMarker(newMarker, item, skipNotification)
-            item.marker.setMap(null)
-            pokemonList[key].marker = newMarker
+            if (useMarkerCluster) {
+                updatePokemonMarker(item, map)
+            } else {
+                if (item.marker.rangeCircle) item.marker.rangeCircle.setMap(null)
+                item.marker.setMap(null)
+
+                const newMarker = setupPokemonMarker(item, map, this.marker.animationDisabled)
+                customizePokemonMarker(newMarker, item, skipNotification)
+
+                pokemonList[key].marker = newMarker
+            }
         }
     })
+
+    // Disable instant redraw, we'll repaint ourselves after we've added the
+    // new markers.
+    if (useMarkerCluster) {
+        markerCluster.resetViewport()
+        markerCluster.redraw()
+    }
 }
 
 var updateLabelDiffTime = function () {
@@ -2172,8 +2238,8 @@ $(function () {
 
     $selectIconSize.on('change', function () {
         Store.set('iconSizeModifier', this.value)
-        redrawPokemon(mapData.pokemons)
-        redrawPokemon(mapData.lurePokemons)
+        redrawPokemon(mapData.pokemons, true)
+        redrawPokemon(mapData.lurePokemons, false)
     })
 
     $switchOpenGymsOnly = $('#open-gyms-only-switch')

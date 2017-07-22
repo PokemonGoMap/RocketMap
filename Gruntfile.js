@@ -39,7 +39,8 @@ module.exports = function(grunt) {
           'static/dist/js/stats.built.js': 'static/js/stats.js',
           'static/dist/js/statistics.built.js': 'static/js/statistics.js',
           'static/dist/js/status.built.js': 'static/js/status.js',
-          'static/dist/js/custom.built.js': 'static/js/custom.js'
+          'static/dist/js/custom.built.js': 'static/js/custom.js',
+          'static/dist/js/markerclusterer.built.js': 'static/js/markerclusterer.js'
         }
       }
     },
@@ -60,7 +61,8 @@ module.exports = function(grunt) {
           'static/dist/js/stats.min.js': 'static/dist/js/stats.built.js',
           'static/dist/js/statistics.min.js': 'static/dist/js/statistics.built.js',
           'static/dist/js/status.min.js': 'static/dist/js/status.built.js',
-          'static/dist/js/custom.min.js': 'static/dist/js/custom.built.js'
+          'static/dist/js/custom.min.js': 'static/dist/js/custom.built.js',
+          'static/dist/js/markerclusterer.min.js': 'static/dist/js/markerclusterer.built.js'
         }
       }
     },
@@ -132,5 +134,4 @@ module.exports = function(grunt) {
   grunt.registerTask('build', ['clean', 'js-build', 'css-build', 'json']);
   grunt.registerTask('lint', ['js-lint']);
   grunt.registerTask('default', ['build', 'watch']);
-
 };
