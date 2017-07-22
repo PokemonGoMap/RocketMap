@@ -17,7 +17,7 @@ module.exports = function(grunt) {
       }
     },
     eslint: {
-      src: ['static/js/*.js', '!js/vendor/**/*.js']
+      src: ['static/js/*.js', '!static/js/vendor/**/*.js']
     },
     babel: {
       options: {
@@ -40,7 +40,7 @@ module.exports = function(grunt) {
           'static/dist/js/statistics.built.js': 'static/js/statistics.js',
           'static/dist/js/status.built.js': 'static/js/status.js',
           'static/dist/js/custom.built.js': 'static/js/custom.js',
-          'static/dist/js/markerclusterer.built.js': 'static/js/markerclusterer.js'
+          'static/dist/js/vendor/markerclusterer.built.js': 'static/js/vendor/markerclusterer.js'
         }
       }
     },
@@ -62,7 +62,7 @@ module.exports = function(grunt) {
           'static/dist/js/statistics.min.js': 'static/dist/js/statistics.built.js',
           'static/dist/js/status.min.js': 'static/dist/js/status.built.js',
           'static/dist/js/custom.min.js': 'static/dist/js/custom.built.js',
-          'static/dist/js/markerclusterer.min.js': 'static/dist/js/markerclusterer.built.js'
+          'static/dist/js/vendor/markerclusterer.min.js': 'static/dist/js/vendor/markerclusterer.built.js'
         }
       }
     },
