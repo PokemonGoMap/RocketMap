@@ -2385,6 +2385,7 @@ def encounter_pokemon(args, pokemon, account, api, account_sets, status,
         # API that's already logged in.
         if not hlvl_api:
             hlvl_api = setup_api(args, status, hlvl_account)
+
         # If the already existent API is using a proxy but
         # it's not alive anymore, we need to get a new proxy.
         elif (args.proxy and
@@ -2398,9 +2399,7 @@ def encounter_pokemon(args, pokemon, account, api, account_sets, status,
                     'https': proxy_new})
 
         # Hashing key.
-        # TODO: all of this should be handled properly... all
-        # these useless, inefficient threads passing around all
-        # these single-use variables are making me ill.
+        # TODO: Rework inefficient threading.
         if args.hash_key:
             key = key_scheduler.next()
             log.debug('Using hashing key %s for this encounter.', key)
