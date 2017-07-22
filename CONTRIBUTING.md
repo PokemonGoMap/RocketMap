@@ -51,9 +51,9 @@ NodeJS packages are found in package.json in the project root, and can be easily
 When you begin the process of opening an issue, you will be given a template in the text box that should help guide you through the process.
 
 * **Expected Behavior** - What did you expect to happen? Should the map have handled an exception, or have done something different?
-* **Current Behavior** - What actually happened? Did the map crash? Did a function behave in a way it was not intended?
+* **Current Behavior** - What actually happened? Did the map crash? Did a function behave in a way it was not intended? Include any logs or stack traces here.
 * **Possible Solution** - If you know how this issue is caused, and have a possible solution, please include it. Be as detailed as you can.
-* **Steps to reproduce** - Here is where your “Reproduce” stage comes in. Provide specific configuration that you ran with. Frontend issue? Provide instructions on what to click or do on the frontend to cause the issue.
+* **Steps to reproduce** - Here is where your “Reproduce” stage comes in. Provide specific configuration that you ran with. Frontend issue? Provide instructions on what to click or do on the frontend to cause the issue. Be as detailed as possible.
 * **Context** - Why is this an issue?
 * **Your environment** - Operating system, `python --version`, `pip --version`, etc.
 
