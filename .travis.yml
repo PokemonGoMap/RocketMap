@@ -12,8 +12,8 @@ install:
   - rm -rf ~/.nvm && git clone https://github.com/creationix/nvm.git ~/.nvm && (cd ~/.nvm && git checkout `git describe --abbrev=0 --tags`) && source ~/.nvm/nvm.sh && nvm install --lts=boron
   - pip install flake8
   - pip install -r requirements.txt
-  - rm -rf node_modules/node-sass
   - npm install
+  - npm rebuild node-sass
 
 # Script steps, if erroring, will fail the build but not stop the build process.
 # This is useful because we want to know that linting is broken, but it shouldn't
