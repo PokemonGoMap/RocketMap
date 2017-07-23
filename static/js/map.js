@@ -542,7 +542,7 @@ function isOngoingRaid(raid) {
 function gymLabel(gym, includeMembers = true) {
     const pokemonWithImages = [
         3, 6, 9, 59, 65, 68, 89, 94, 103, 110, 112, 125, 126, 129, 131, 134,
-        135, 136, 143, 153, 156, 159, 248
+        135, 136, 143, 144, 145, 146, 153, 156, 159, 248, 249
     ]
 
     const raid = gym.raid
