@@ -1294,7 +1294,8 @@ function clearStaleMarkers() {
             }
 
             // If it was a Pokémon w/ notification, it won't be in a cluster.
-            if (markerCluster.isMarkerAlreadyAdded(oldMarker)) {
+            const isClusterMarker = (typeof oldMarker.isAdded !== 'undefined')
+            if (isClusterMarker) {
                 oldPokeMarkers.push(oldMarker)
             } else {
                 oldMarker.setMap(null)
