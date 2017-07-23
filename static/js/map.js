@@ -63,7 +63,7 @@ var lastUpdateTime
 const gymTypes = ['Uncontested', 'Mystic', 'Valor', 'Instinct']
 
 const audio = new Audio('static/sounds/ding.mp3')
-const cryFileTypes = ['mp3', 'wav']
+const cryFileTypes = ['wav', 'mp3']
 
 const genderType = ['♂', '♀', '⚲']
 const unownForm = ['unset', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '!', '?']
