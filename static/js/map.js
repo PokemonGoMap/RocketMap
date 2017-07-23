@@ -63,6 +63,7 @@ var selectedStyle = 'light'
 
 var updateWorker
 var lastUpdateTime
+var redrawTimeout = null
 
 const gymTypes = ['Uncontested', 'Mystic', 'Valor', 'Instinct']
 
@@ -222,8 +223,18 @@ function initMap() { // eslint-disable-line no-unused-vars
             storeZoom = true
         }
 
-        redrawPokemon(mapData.pokemons, true)
-        redrawPokemon(mapData.lurePokemons, false)
+        // User scrolled again, reset our timeout.
+        if (redrawTimeout) {
+            clearTimeout(redrawTimeout)
+            redrawTimeout = null
+        }
+
+        // Don't redraw constantly even if the user scrolls multiple times,
+        // just add it on a timer.
+        redrawTimeout = setTimeout(function () {
+            redrawPokemon(mapData.pokemons, true)
+            redrawPokemon(mapData.lurePokemons, false)
+        }, 600)
     })
 
     searchMarker = createSearchMarker()
@@ -1283,10 +1294,10 @@ function clearStaleMarkers() {
     const oldPokeMarkers = []
 
     $.each(mapData.pokemons, function (key, value) {
-        const isPokeAlive = mapData.pokemons[key]['disappear_time'] > Date.now()
+        const isPokeExpired = mapData.pokemons[key]['disappear_time'] < Date.now()
         const isPokeExcluded = excludedPokemon.indexOf(mapData.pokemons[key]['pokemon_id']) !== -1
 
-        if (!isPokeAlive || isPokeExcluded) {
+        if (isPokeExpired || isPokeExcluded) {
             const oldMarker = mapData.pokemons[key].marker
 
             if (oldMarker.rangeCircle) {
@@ -1490,7 +1501,7 @@ function processPokemons(pokemon) {
     // Disable instant redraw, we'll repaint ourselves after we've added the
     // new markers.
     markerCluster.removeMarkers(oldMarkers, true)
-    markerCluster.addMarkers(newMarkers)
+    markerCluster.addMarkers(newMarkers, true)
 }
 
 function processPokemon(item) {
@@ -1507,11 +1518,12 @@ function processPokemon(item) {
             if (item.marker) {
                 updatePokemonMarker(item.marker, map)
             } else {
-                item.marker = setupPokemonMarker(item, map)
-                customizePokemonMarker(item.marker, item)
-                newMarker = item.marker
-                mapData.pokemons[item['encounter_id']] = item
+                newMarker = setupPokemonMarker(item, map)
+                customizePokemonMarker(newMarker, item)
+                item.marker = newMarker
             }
+
+            mapData.pokemons[item['encounter_id']] = item
         } else {
             oldMarker = item.marker
         }
@@ -1731,7 +1743,6 @@ function updateSpawnPoints() {
 
 function updateMap() {
     loadRawData().done(function (result) {
-        clearStaleMarkers()
         processPokemons(result.pokemons)
         $.each(result.pokestops, processPokestop)
         $.each(result.gyms, processGym)
@@ -1743,6 +1754,10 @@ function updateMap() {
         showInBoundsMarkers(mapData.pokestops, 'pokestop')
         showInBoundsMarkers(mapData.scanned, 'scanned')
         showInBoundsMarkers(mapData.spawnpoints, 'inbound')
+        clearStaleMarkers()
+
+        // We're done processing. Redraw.
+        markerCluster.redraw()
 
         updateScanned()
         updateSpawnPoints()
