@@ -964,6 +964,18 @@ function playPokemonSound(pokemonID, cryFileTypes) {
     }
 }
 
+function isNotifyPoke(poke) {
+    const isOnNotifyList = notifiedPokemon.indexOf(poke['pokemon_id']) > -1 || notifiedRarity.indexOf(poke['pokemon_rarity']) > -1
+    var hasHighIV = false
+
+    if (poke['individual_attack'] != null) {
+        const perfection = getIv(poke['individual_attack'], poke['individual_defense'], poke['individual_stamina'])
+        hasHighIV = notifiedMinPerfection > 0 && perfection >= notifiedMinPerfection
+    }
+
+    return isOnNotifyList || hasHighIV
+}
+
 function customizePokemonMarker(marker, item, skipNotification) {
     var notifyText = getNotifyText(item)
     marker.addListener('click', function () {
@@ -980,26 +992,13 @@ function customizePokemonMarker(marker, item, skipNotification) {
         disableAutoPan: true
     })
 
-    if (notifiedPokemon.indexOf(item['pokemon_id']) > -1 || notifiedRarity.indexOf(item['pokemon_rarity']) > -1) {
+    if (isNotifyPoke(item)) {
         if (!skipNotification) {
             playPokemonSound(item['pokemon_id'], cryFileTypes)
             sendNotification(notifyText.fav_title, notifyText.fav_text, 'static/icons/' + item['pokemon_id'] + '.png', item['latitude'], item['longitude'])
         }
         if (marker.animationDisabled !== true) {
             marker.setAnimation(google.maps.Animation.BOUNCE)
-        }
-    }
-
-    if (item['individual_attack'] != null) {
-        var perfection = getIv(item['individual_attack'], item['individual_defense'], item['individual_stamina'])
-        if (notifiedMinPerfection > 0 && perfection >= notifiedMinPerfection) {
-            if (!skipNotification) {
-                playPokemonSound(item['pokemon_id'], cryFileTypes)
-                sendNotification(notifyText.fav_title, notifyText.fav_text, 'static/icons/' + item['pokemon_id'] + '.png', item['latitude'], item['longitude'])
-            }
-            if (marker.animationDisabled !== true) {
-                marker.setAnimation(google.maps.Animation.BOUNCE)
-            }
         }
     }
 
@@ -1294,7 +1293,13 @@ function clearStaleMarkers() {
                 delete oldMarker.rangeCircle
             }
 
-            oldPokeMarkers.push(oldMarker)
+            // If it was a Pokémon w/ notification, it won't be in a cluster.
+            if (markerCluster.isMarkerAlreadyAdded(oldMarker)) {
+                oldPokeMarkers.push(oldMarker)
+            } else {
+                oldMarker.setMap(null)
+            }
+
             delete mapData.pokemons[key]
         }
     })
@@ -1463,12 +1468,23 @@ function processPokemons(pokemon) {
         const newMarker = markers[0]
         const oldMarker = markers[1]
 
-        if (newMarker) {
-            newMarkers.push(newMarker)
-        }
+        // Don't add Pokémon marker to clusters if we're sending a notification.
+        if (!isNotifyPoke(poke)) {
+            if (newMarker) {
+                newMarkers.push(newMarker)
+            }
 
-        if (oldMarker) {
-            oldMarkers.push(oldMarker)
+            if (oldMarker) {
+                oldMarkers.push(oldMarker)
+            }
+        } else {
+            if (newMarker) {
+                newMarker.setMap(map)
+            }
+
+            if (oldMarker) {
+                oldMarker.setMap(null)
+            }
         }
     })
 
@@ -1760,23 +1776,11 @@ function updateMap() {
 }
 
 function redrawPokemon(pokemonList, useMarkerCluster) {
-    var skipNotification = true
-
     $.each(pokemonList, function (key, value) {
         var item = pokemonList[key]
 
         if (!item.hidden) {
-            if (useMarkerCluster) {
-                updatePokemonMarker(item, map)
-            } else {
-                if (item.marker.rangeCircle) item.marker.rangeCircle.setMap(null)
-                item.marker.setMap(null)
-
-                const newMarker = setupPokemonMarker(item, map, this.marker.animationDisabled)
-                customizePokemonMarker(newMarker, item, skipNotification)
-
-                pokemonList[key].marker = newMarker
-            }
+            updatePokemonMarker(item, map)
         }
     })
 
