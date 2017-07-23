@@ -33,7 +33,6 @@
   },
   "scripts": {
     "unzip": "cross-unzip static01.zip static/",
-    "postinstall": "grunt build",
     "build": "npm run unzip && grunt build",
     "watch": "grunt default",
     "lint": "grunt lint",

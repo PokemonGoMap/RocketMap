@@ -27,6 +27,7 @@ from pogom.models import (init_database, create_tables, drop_tables,
 from pogom.webhook import wh_updater
 
 from pogom.proxy import load_proxies, check_proxies, proxies_refresher
+from pogom.search import search_overseer_thread
 from time import strftime
 
 
@@ -59,8 +60,6 @@ log = logging.getLogger()
 log.addHandler(stdout_hdlr)
 log.addHandler(stderr_hdlr)
 
-# This needs to be after logging to be able to log geofences import errors.
-from pogom.search import search_overseer_thread  # noqa
 
 # Assert pgoapi is installed.
 try:
@@ -186,6 +185,11 @@ def main():
     sys.excepthook = handle_exception
 
     args = get_args()
+
+    # Abort if status name is not alphanumeric.
+    if not str(args.status_name).isalnum():
+        log.critical('Status name must be alphanumeric.')
+        sys.exit(1)
 
     set_log_and_verbosity(log)
 

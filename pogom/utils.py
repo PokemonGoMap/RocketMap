@@ -131,10 +131,6 @@ def get_args():
                               'area. Regarded this as inverted geofence. ' +
                               'Can be combined with geofence-file.'),
                         default='')
-    parser.add_argument('-nmpl', '--no-matplotlib',
-                        help=('Prevents the usage of matplotlib when ' +
-                              'running on incompatible hardware.'),
-                        action='store_true', default=False)
     parser.add_argument('-sd', '--scan-delay',
                         help='Time delay between requests in scan threads.',
                         type=float, default=10)
@@ -358,7 +354,7 @@ def get_args():
     parser.add_argument('-pxo', '--proxy-rotation',
                         help=('Enable proxy rotation with account changing ' +
                               'for search threads (none/round/random).'),
-                        type=str, default='none')
+                        type=str, default='round')
     parser.add_argument('--db-type',
                         help='Type of database to be used (default: sqlite).',
                         default='sqlite')
@@ -459,7 +455,7 @@ def get_args():
                         help=('Enables the use of X-FORWARDED-FOR headers ' +
                               'to identify the IP of clients connecting ' +
                               'through these trusted proxies.'))
-    parser.add_argument('--api-version', default='0.67.2',
+    parser.add_argument('--api-version', default='0.69.0',
                         help=('API version currently in use.'))
     verbose = parser.add_mutually_exclusive_group()
     verbose.add_argument('-v',
@@ -1008,7 +1004,18 @@ def gmaps_reverse_geolocate(gmaps_key, locale, location):
 
     try:
         reverse = geolocator.reverse(location)
-        country_code = reverse[-1].raw['address_components'][-1]['short_name']
+        address = reverse[-1].raw['address_components']
+        country_code = 'US'
+
+        # Find country component.
+        for component in address:
+            # Look for country.
+            component_is_country = any([t == 'country'
+                                        for t in component.get('types', [])])
+
+            if component_is_country:
+                country_code = component['short_name']
+                break
 
         try:
             timezone = geolocator.timezone(location)
