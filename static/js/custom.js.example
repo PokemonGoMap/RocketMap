@@ -9,6 +9,7 @@ $(function () {
     const analyticsKey = ''
 
     // MOTD.
+    const motdEnabled = false
     const motdTitle = 'MOTD'
     const motd = 'Hi there! This is an easily customizable MOTD with optional title!'
 
@@ -55,7 +56,7 @@ $(function () {
     }
 
     // Show MOTD.
-    if (motdShowOnPages.indexOf(currentPage) !== -1) {
+    if (motdEnabled && motdShowOnPages.indexOf(currentPage) !== -1) {
         let motdIsUpdated = true
 
         if (hasStorage) {
