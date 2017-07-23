@@ -1294,14 +1294,11 @@ function clearStaleMarkers() {
                 delete oldMarker.rangeCircle
             }
 
-            // If it was a Pokémon w/ notification, it won't be in a cluster.
-            const isClusterMarker = (typeof oldMarker.isAdded !== 'undefined')
-            if (isClusterMarker) {
-                oldPokeMarkers.push(oldMarker)
-            } else {
-                oldMarker.setMap(null)
-            }
-
+            // If it was a Pokémon w/ notification it won't be in a cluster,
+            // but that doesn't matter because the MarkerClusterer will check
+            // for it itself.
+            oldPokeMarkers.push(oldMarker)
+            oldMarker.setMap(null)
             delete mapData.pokemons[key]
         }
     })
