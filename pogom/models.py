@@ -1892,11 +1892,10 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
     # If there are no wild or nearby Pokemon . . .
     if not wild_pokemon and not nearby_pokemon:
         # . . . and there are no gyms/pokestops then it's unusable/bad.
-        if args.no_pokemon:
-            if not forts:
-                log.warning('Bad scan. Parsing found absolutely nothing.')
-                log.info('Common causes: captchas or IP bans.')
-        else:
+        if not forts:
+            log.warning('Bad scan. Parsing found absolutely nothing.')
+            log.info('Common causes: captchas or IP bans.')
+        elif not args.no_pokemon:
             if not forts:
                 log.warning('Bad scan. Parsing found absolutely nothing.')
                 log.info('Common causes: captchas or IP bans.')
