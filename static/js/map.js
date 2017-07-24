@@ -2586,14 +2586,23 @@ $(function () {
                 }
             } else {
                 $.each(dataType, function (d, dType) {
+                    var oldPokeMarkers = []
                     $.each(data[dType], function (key, value) {
                         // for any marker you're turning off, you'll want to wipe off the range
                         if (data[dType][key].marker.rangeCircle) {
                             data[dType][key].marker.rangeCircle.setMap(null)
                             delete data[dType][key].marker.rangeCircle
                         }
-                        if (storageKey !== 'showRanges') data[dType][key].marker.setMap(null)
+                        if (storageKey !== 'showRanges') {
+                            data[dType][key].marker.setMap(null)
+                            if (dType === 'pokemons') {
+                                oldPokeMarkers.push(data[dType][key].marker)
+                            }
+                        }
                     })
+                    if (dType === 'pokemons') {
+                        markerCluster.removeMarkers(oldPokeMarkers)
+                    }
                     if (storageKey !== 'showRanges') data[dType] = {}
                 })
                 if (storageKey === 'showRanges') {
