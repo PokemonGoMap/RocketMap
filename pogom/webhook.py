@@ -10,11 +10,6 @@ from .utils import get_async_requests_session
 
 log = logging.getLogger(__name__)
 
-# How low do we want the queue size to stay?
-wh_warning_threshold = 100
-# How long can it be over the threshold, in seconds?
-# Default: 5 seconds per 100 in threshold.
-wh_threshold_lifetime = int(5 * (wh_warning_threshold / 100.0))
 wh_lock = threading.Lock()
 
 
@@ -68,6 +63,13 @@ def wh_updater(args, queue, key_caches):
     frame_interval_sec = (args.wh_frame_interval / 1000)
     frame_first_message_time_sec = default_timer()
     frame_messages = []
+
+    # How low do we want the queue size to stay?
+    wh_warning_threshold = 100
+    # How long can it be over the threshold, in seconds?
+    # Default: 5 seconds per 100 in threshold + frame_interval_sec.
+    wh_threshold_lifetime = int(5 * (wh_warning_threshold / 100.0))
+    wh_threshold_timer += frame_interval_sec
 
     # The forever loop.
     while True:
