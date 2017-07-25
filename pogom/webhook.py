@@ -97,11 +97,11 @@ def wh_updater(args, queue, key_caches):
                     # so let's just log and send as-is.
                     log.debug(
                         'Queued webhook item of uncached type: %s.', whtype)
-                    frame_messages.push(frame_message)
+                    frame_messages.append(frame_message)
                 elif ident not in key_cache:
                     key_cache[ident] = message
                     log.debug('Queued %s to webhook: %s.', whtype, ident)
-                    frame_messages.push(frame_message)
+                    frame_messages.append(frame_message)
                 else:
                     # Make sure to call key_cache[ident] in all branches so it
                     # updates the LFU usage count.
@@ -110,7 +110,7 @@ def wh_updater(args, queue, key_caches):
                     # data to webhooks.
                     if __wh_object_changed(whtype, key_cache[ident], message):
                         key_cache[ident] = message
-                        frame_messages.push(frame_message)
+                        frame_messages.append(frame_message)
                         log.debug('Queued updated %s to webhook: %s.',
                                   whtype, ident)
                     else:
