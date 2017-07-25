@@ -3,9 +3,9 @@
 
 import logging
 import requests
-from datetime import datetime
-from cachetools import LFUCache
 import threading
+from cachetools import LFUCache
+from timeit import default_timer
 from .utils import get_args, get_async_requests_session
 
 log = logging.getLogger(__name__)
@@ -44,7 +44,7 @@ def send_to_webhook(session, message_type, message):
 
 
 def wh_updater(args, queue, key_caches):
-    wh_threshold_timer = datetime.now()
+    wh_threshold_timer = default_timer()
     wh_over_threshold = False
 
     # Set up one session to use for all requests.
@@ -123,12 +123,12 @@ def wh_updater(args, queue, key_caches):
             if (not wh_over_threshold) and (
                     queue.qsize() > wh_warning_threshold):
                 wh_over_threshold = True
-                wh_threshold_timer = datetime.now()
+                wh_threshold_timer = default_timer()
             elif wh_over_threshold:
                 if queue.qsize() < wh_warning_threshold:
                     wh_over_threshold = False
                 else:
-                    timediff = datetime.now() - wh_threshold_timer
+                    timediff = default_timer() - wh_threshold_timer
 
                     if timediff.total_seconds() > wh_threshold_lifetime:
                         log.warning('Webhook queue has been > %d (@%d);'
