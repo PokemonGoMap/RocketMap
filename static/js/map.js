@@ -148,7 +148,8 @@ function initMap() { // eslint-disable-line no-unused-vars
             ]
         }
     })
-
+    
+// Enable clustering
     var screenSize = window.innerWidth
     var clusterOptions = {
         imagePath: 'static/images/cluster/m',
