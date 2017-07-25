@@ -1876,14 +1876,14 @@ function getPointDistance(pointA, pointB) {
 }
 
 function sendNotification(title, text, icon, lat, lon) {
-    /* The Push library requests the Notification permission automatically */
     if (Push.supported()) {
+        /* Push.js requests the Notification permission automatically if necessary. */
         Push.create(title, {
             icon: icon,
             body: text,
             onClick: function (event) {
-                /* Only run in browsers which support the old Notifications API */
-                /* Browsers supporting the newer Push API are handled by serviceWorker.js */
+                /* This will only run in browsers which support the old Notifications API. */
+                /* Browsers supporting the newer Push API are handled by serviceWorker.js. */
                 if (Push._agents.desktop.isSupported()) {
                     window.focus()
                     event.currentTarget.close()
@@ -1896,7 +1896,30 @@ function sendNotification(title, text, icon, lat, lon) {
             }
         })
     } else {
-        console.log('could not load notifications')
+        /* Fallback for devices which can't display native push notifications (e.g. iOS). */
+        var notification = toastr.info(text, title, {
+            closeButton: true,
+            positionClass: 'toast-top-right',
+            preventDuplicates: true,
+            onclick: function () {
+                centerMap(lat, lon, 20)
+            },
+            showDuration: '300',
+            hideDuration: '500',
+            timeOut: '6000',
+            extendedTimeOut: '1500',
+            showEasing: 'swing',
+            hideEasing: 'linear',
+            showMethod: 'fadeIn',
+            hideMethod: 'fadeOut'
+        })
+        notification.removeClass('toast-info')
+        notification.css({
+            'padding-left': '74px',
+            'background-image': `url('./${icon}')`,
+            'background-size': '48px',
+            'background-color': '#0c5952'
+        })
     }
 }
 
