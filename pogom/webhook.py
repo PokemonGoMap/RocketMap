@@ -6,7 +6,7 @@ import requests
 import threading
 from cachetools import LFUCache
 from timeit import default_timer
-from .utils import get_args, get_async_requests_session
+from .utils import get_async_requests_session
 
 log = logging.getLogger(__name__)
 
@@ -17,10 +17,8 @@ wh_warning_threshold = 100
 wh_threshold_lifetime = int(5 * (wh_warning_threshold / 100.0))
 wh_lock = threading.Lock()
 
-args = get_args()
 
-
-def send_to_webhook(session, message_type, message):
+def send_to_webhooks(args, session, message_frame):
     if not args.webhooks:
         # What are you even doing here...
         log.warning('Called send_to_webhook() without webhooks.')
@@ -28,14 +26,9 @@ def send_to_webhook(session, message_type, message):
 
     req_timeout = args.wh_timeout
 
-    data = {
-        'type': message_type,
-        'message': message
-    }
-
     for w in args.webhooks:
         try:
-            session.post(w, json=data, timeout=(None, req_timeout),
+            session.post(w, json=message_frame, timeout=(None, req_timeout),
                          background_callback=__wh_completed)
         except requests.exceptions.ReadTimeout:
             log.exception('Response timeout on webhook endpoint %s.', w)
@@ -71,11 +64,21 @@ def wh_updater(args, queue, key_caches):
     for key in ident_fields:
         key_caches[key] = LFUCache(maxsize=args.wh_lfu_size)
 
+    # Prepare to send data per timed message frames instead of per object.
+    frame_interval_sec = (args.wh_frame_interval / 1000)
+    frame_last_sent_sec = default_timer()
+    frame_messages = []
+
     # The forever loop.
     while True:
         try:
             # Loop the queue.
             whtype, message = queue.get()
+
+            frame_message = {
+                'type': whtype,
+                'message': message
+            }
 
             # Get the proper cache if this type has one.
             key_cache = None
@@ -93,12 +96,12 @@ def wh_updater(args, queue, key_caches):
                     # We don't know what it is, or it doesn't have a cache,
                     # so let's just log and send as-is.
                     log.debug(
-                        'Sending webhook item of uncached type: %s.', whtype)
-                    send_to_webhook(session, whtype, message)
+                        'Queued webhook item of uncached type: %s.', whtype)
+                    frame_messages.push(frame_message)
                 elif ident not in key_cache:
                     key_cache[ident] = message
-                    log.debug('Sending %s to webhook: %s.', whtype, ident)
-                    send_to_webhook(session, whtype, message)
+                    log.debug('Queued %s to webhook: %s.', whtype, ident)
+                    frame_messages.push(frame_message)
                 else:
                     # Make sure to call key_cache[ident] in all branches so it
                     # updates the LFU usage count.
@@ -107,17 +110,26 @@ def wh_updater(args, queue, key_caches):
                     # data to webhooks.
                     if __wh_object_changed(whtype, key_cache[ident], message):
                         key_cache[ident] = message
-                        send_to_webhook(session, whtype, message)
-                        log.debug('Sending updated %s to webhook: %s.',
+                        frame_messages.push(frame_message)
+                        log.debug('Queued updated %s to webhook: %s.',
                                   whtype, ident)
                     else:
-                        log.debug('Not resending %s to webhook: %s.',
+                        log.debug('Not queuing %s to webhook: %s.',
                                   whtype, ident)
 
-            # Helping out the GC.
-            del whtype
-            del message
-            del ident
+            # If enough time has passed, send the message frame.
+            now = default_timer()
+            time_passed_sec = now - frame_last_sent_sec
+
+            if (time_passed_sec > frame_interval_sec):
+                frame_last_sent_sec = now
+
+                log.debug('Sending %d items to %d webhooks.',
+                          len(frame_messages),
+                          len(args.webhooks))
+                send_to_webhooks(args, session, frame_messages)
+
+                frame_messages = []
 
             # Webhook queue moving too slow.
             if (not wh_over_threshold) and (
