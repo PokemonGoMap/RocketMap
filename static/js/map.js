@@ -150,10 +150,19 @@ function initMap() { // eslint-disable-line no-unused-vars
     })
 
     // Enable clustering.
-    var clusterOptions = {
-        imagePath: 'static/images/cluster/m',
-        maxZoom: Store.get('maxClusterZoomLevel'),
-        zoomOnClick: false
+    var screenSize = window.innerWidth;
+    if (screenSize < 900) {
+    	var clusterOptions = {
+    		imagePath: 'static/images/cluster/m',
+    		maxZoom: Store.get('maxClusterZoomLevel'),
+    		zoomOnClick: true
+    	}
+    } else {
+    	var clusterOptions = {
+    		imagePath: 'static/images/cluster/m',
+    		maxZoom: Store.get('maxClusterZoomLevel'),
+    		zoomOnClick: false
+    	}
     }
 
     markerCluster = new MarkerClusterer(map, [], clusterOptions)
