@@ -133,7 +133,7 @@ def wh_updater(args, queue, key_caches):
 
             if num_messages > 0 and (time_passed_sec >
                                      frame_interval_sec):
-                log.debug('Sending %d items to %d webhooks.',
+                log.debug('Sending %d items to %d webhook(s).',
                           len(frame_messages),
                           len(args.webhooks))
                 send_to_webhooks(args, session, frame_messages)
