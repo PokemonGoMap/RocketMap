@@ -66,7 +66,7 @@ def wh_updater(args, queue, key_caches):
 
     # Prepare to send data per timed message frames instead of per object.
     frame_interval_sec = (args.wh_frame_interval / 1000)
-    frame_last_sent_sec = default_timer()
+    frame_first_message_time_sec = default_timer()
     frame_messages = []
 
     # The forever loop.
@@ -117,14 +117,20 @@ def wh_updater(args, queue, key_caches):
                         log.debug('Not queuing %s to webhook: %s.',
                                   whtype, ident)
 
-            # If enough time has passed, send the message frame.
+            # Store the time when we added the first message instead of the
+            # time when we last cleared the messages, so we more accurately
+            # measure time spent getting messages from our queue.
             now = default_timer()
-            time_passed_sec = now - frame_last_sent_sec
+            num_messages = len(frame_messages)
 
-            if len(frame_messages) > 0 and (time_passed_sec >
-                                            frame_interval_sec):
-                frame_last_sent_sec = now
+            if num_messages == 1:
+                frame_first_message_time_sec = now
 
+            # If enough time has passed, send the message frame.
+            time_passed_sec = now - frame_first_message_time_sec
+
+            if num_messages > 0 and (time_passed_sec >
+                                     frame_interval_sec):
                 log.debug('Sending %d items to %d webhooks.',
                           len(frame_messages),
                           len(args.webhooks))
