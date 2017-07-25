@@ -121,7 +121,8 @@ def wh_updater(args, queue, key_caches):
             now = default_timer()
             time_passed_sec = now - frame_last_sent_sec
 
-            if (time_passed_sec > frame_interval_sec):
+            if len(frame_messages) > 0 and (time_passed_sec >
+                                            frame_interval_sec):
                 frame_last_sent_sec = now
 
                 log.debug('Sending %d items to %d webhooks.',
