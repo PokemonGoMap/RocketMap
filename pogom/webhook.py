@@ -141,9 +141,9 @@ def wh_updater(args, queue, key_caches):
                 if queue.qsize() < wh_warning_threshold:
                     wh_over_threshold = False
                 else:
-                    timediff = default_timer() - wh_threshold_timer
+                    timediff_sec = default_timer() - wh_threshold_timer
 
-                    if timediff.total_seconds() > wh_threshold_lifetime:
+                    if timediff_sec > wh_threshold_lifetime:
                         log.warning('Webhook queue has been > %d (@%d);'
                                     + ' for over %d seconds,'
                                     + ' try increasing --wh-concurrency'
