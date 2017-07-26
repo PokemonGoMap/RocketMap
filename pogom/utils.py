@@ -4,7 +4,6 @@
 import sys
 import configargparse
 import os
-import math
 import json
 import logging
 import random
@@ -21,6 +20,13 @@ from requests.packages.urllib3.util.retry import Retry
 from requests.adapters import HTTPAdapter
 
 from . import config
+
+# Trying to import cHaversine as it is faster for distances.
+try:
+    from cHaversine import haversine
+except ImportError as e:
+    # Pass as this is an optional requirement.
+    pass
 
 log = logging.getLogger(__name__)
 
@@ -803,20 +809,14 @@ def cellid(loc):
     return CellId.from_lat_lng(LatLng.from_degrees(loc[0], loc[1])).to_token()
 
 
-# Return equirectangular approximation distance in km.
-def equi_rect_distance(loc1, loc2):
-    R = 6371  # Radius of the earth in km.
-    lat1 = math.radians(loc1[0])
-    lat2 = math.radians(loc2[0])
-    x = (math.radians(loc2[1]) - math.radians(loc1[1])
-         ) * math.cos(0.5 * (lat2 + lat1))
-    y = lat2 - lat1
-    return R * math.sqrt(x * x + y * y)
+# Return approximate distance in meters.
+def distance(pos1, pos2):
+    return haversine((tuple(pos1))[0:2], (tuple(pos2))[0:2])
 
 
-# Return True if distance between two locs is less than distance in km.
-def in_radius(loc1, loc2, distance):
-    return equi_rect_distance(loc1, loc2) < distance
+# Return True if distance between two locs is less than distance in meters.
+def in_radius(loc1, loc2, radius):
+    return distance(loc1, loc2) < radius
 
 
 def i8ln(word):

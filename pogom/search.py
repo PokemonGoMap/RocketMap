@@ -44,7 +44,7 @@ from pgoapi.hash_server import (HashServer, BadHashRequestException,
                                 HashingOfflineException)
 from .models import (parse_map, GymDetails, parse_gyms, MainWorker,
                      WorkerStatus, HashKeys)
-from .utils import now, clear_dict_response
+from .utils import now, clear_dict_response, distance
 from .transform import get_new_coords, jitter_location
 from .account import (setup_api, check_login, AccountSet,
                       parse_new_timestamp_ms)
@@ -1027,9 +1027,9 @@ def search_worker_thread(args, account_queue, account_sets,
                     gyms_to_update = {}
                     for gym in parsed['gyms'].values():
                         # Can only get gym details within 1km of our position.
-                        distance = calc_distance(
-                            step_location, [gym['latitude'], gym['longitude']])
-                        if distance < 1.0:
+                        if distance(step_location, [
+                                gym['latitude'], gym['longitude']
+                        ]) < 1000:
                             # Check if we already have details on this gym.
                             # Get them if not.
                             try:
@@ -1220,9 +1220,9 @@ def map_request(api, account, position, no_jitter=False):
 
 def gym_request(api, account, position, gym, api_version):
     try:
-        log.info('Getting details for gym @ %f/%f (%fkm away)',
+        log.info('Getting details for gym @ %f/%f (%fm away)',
                  gym['latitude'], gym['longitude'],
-                 calc_distance(position, [gym['latitude'], gym['longitude']]))
+                 distance(position, [gym['latitude'], gym['longitude']]))
         req = api.create_request()
         req.gym_get_info(
             gym_id=gym['gym_id'],
@@ -1244,22 +1244,6 @@ def gym_request(api, account, position, gym, api_version):
     except Exception as e:
         log.exception('Exception while downloading gym details: %s.', repr(e))
         return False
-
-
-def calc_distance(pos1, pos2):
-    R = 6378.1  # KM radius of the earth.
-
-    dLat = math.radians(pos1[0] - pos2[0])
-    dLon = math.radians(pos1[1] - pos2[1])
-
-    a = math.sin(dLat / 2) * math.sin(dLat / 2) + \
-        math.cos(math.radians(pos1[0])) * math.cos(math.radians(pos2[0])) * \
-        math.sin(dLon / 2) * math.sin(dLon / 2)
-
-    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-    d = R * c
-
-    return d
 
 
 # Delay each thread start time so that logins occur after delay.
