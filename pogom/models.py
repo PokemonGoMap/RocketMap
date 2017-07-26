@@ -1896,14 +1896,10 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
             log.warning('Bad scan. Parsing found absolutely nothing.')
             log.info('Common causes: captchas or IP bans.')
         elif not args.no_pokemon:
-            if not forts:
-                log.warning('Bad scan. Parsing found absolutely nothing.')
-                log.info('Common causes: captchas or IP bans.')
-            else:
-                # No wild or nearby Pokemon but there are forts.  It's probably
-                # a speed violation.
-                log.warning('No nearby or wild Pokemon but there are visible '
-                            'gyms or pokestops. Possible speed violation.')
+            # No wild or nearby Pokemon but there are forts.  It's probably
+            # a speed violation.
+            log.warning('No nearby or wild Pokemon but there are visible '
+                        'gyms or pokestops. Possible speed violation.')
 
     scan_loc = ScannedLocation.get_by_loc(step_location)
     done_already = scan_loc['done']
