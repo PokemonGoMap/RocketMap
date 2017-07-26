@@ -327,13 +327,19 @@ def main():
     wh_updates_queue = Queue()
     wh_key_cache = {}
 
-    # Thread to process webhook updates.
-    for i in range(args.wh_threads):
-        log.debug('Starting wh-updater worker thread %d', i)
-        t = Thread(target=wh_updater, name='wh-updater-{}'.format(i),
-                   args=(args, wh_updates_queue, wh_key_cache))
-        t.daemon = True
-        t.start()
+    if len(args.wh_types) == 0:
+        log.info('Webhook disabled')
+    else:
+        log.info('Webhook enabled for events: %s sending to %s',
+                 args.wh_types, args.webhooks)
+
+        # Thread to process webhook updates.
+        for i in range(args.wh_threads):
+            log.debug('Starting wh-updater worker thread %d', i)
+            t = Thread(target=wh_updater, name='wh-updater-{}'.format(i),
+                       args=(args, wh_updates_queue, wh_key_cache))
+            t.daemon = True
+            t.start()
 
     config['ROOT_PATH'] = app.root_path
     config['GMAPS_KEY'] = args.gmaps_key
