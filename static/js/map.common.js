@@ -1056,7 +1056,7 @@ function getGoogleSprite(index, sprite, displayHeight) {
 
 function setupPokemonMarker(item, map, isBounceDisabled) {
     // Scale icon size up with the map exponentially, also size with rarity.
-    var rarityValue = (item['pokemon_rarity'] === 'Legendary') ? 50 : (item['pokemon_rarity'] === 'Ultra Rare') ? 40 : (item['pokemon_rarity'] === 'Very Rare') ? 30 : 2
+    var rarityValue = (item['pokemon_rarity'] === 'Legendary') ? 50 : (item['pokemon_rarity'] === 'Ultra Rare') ? 40 : (item['pokemon_rarity'] === 'Very Rare') ? 30 : (isNotifyPoke(item)) ? 29 : 2
     var iconModify = (map.getZoom() - 3) * (map.getZoom() - 3) * 0.2 + Store.get('iconSizeModifier')
     var iconSize = rarityValue + iconModify
     var pokemonIndex = item['pokemon_id'] - 1
@@ -1078,7 +1078,7 @@ function setupPokemonMarker(item, map, isBounceDisabled) {
 
 function updatePokemonMarker(item, map) {
     // Scale icon size up with the map exponentially, also size with rarity.
-    const rarityValue = (item['pokemon_rarity'] === 'Legendary') ? 50 : (item['pokemon_rarity'] === 'Ultra Rare') ? 40 : (item['pokemon_rarity'] === 'Very Rare') ? 30 : 2
+    const rarityValue = (item['pokemon_rarity'] === 'Legendary') ? 50 : (item['pokemon_rarity'] === 'Ultra Rare') ? 40 : (item['pokemon_rarity'] === 'Very Rare') ? 30 : (isNotifyPoke(item)) ? 29 : 2
     const iconModify = (map.getZoom() - 3) * (map.getZoom() - 3) * 0.2 + Store.get('iconSizeModifier')
     const iconSize = rarityValue + iconModify
     const pokemonIndex = item['pokemon_id'] - 1
