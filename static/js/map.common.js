@@ -998,6 +998,10 @@ var StoreOptions = {
         default: false,
         type: StoreTypes.Boolean
     },
+    'clusterGridSize': {
+        default: 60,
+        type: StoreTypes.Number
+    },
     'processPokemonChunkSize': {
         default: 100,
         type: StoreTypes.Number

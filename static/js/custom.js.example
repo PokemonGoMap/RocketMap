@@ -31,6 +31,8 @@ $(function () {
     const maxClusterZoomLevelMobile = 14 // Default: same as desktop
     const clusterZoomOnClick = false // Default: false
     const clusterZoomOnClickMobile = false // Default: same as desktop
+    const clusterGridSize = 60 // Default: 60
+    const clusterGridSizeMobile = 60 // Default: same as desktop
 
     // Process Pokémon in chunks to improve responsiveness.
     const processPokemonChunkSize = 100 // Default: 100
@@ -59,12 +61,14 @@ $(function () {
     // Set custom Store values.
     Store.set('maxClusterZoomLevel', maxClusterZoomLevel)
     Store.set('clusterZoomOnClick', clusterZoomOnClick)
+    Store.set('clusterGridSize', clusterGridSize)
     Store.set('processPokemonChunkSize', processPokemonChunkSize)
     Store.set('processPokemonIntervalMs', processPokemonIntervalMs)
 
     if (isMobileDevice()) {
         Store.set('maxClusterZoomLevel', maxClusterZoomLevelMobile)
         Store.set('clusterZoomOnClick', clusterZoomOnClickMobile)
+        Store.set('clusterGridSize', clusterGridSizeMobile)
     }
 
     // Google Analytics.
