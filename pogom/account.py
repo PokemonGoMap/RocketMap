@@ -337,7 +337,7 @@ def rpc_login_sequence(args, api, account):
     except Exception as e:
         log.exception('Login for account %s failed.' +
                       ' Exception occurred while fetching store items:' +
-                      ' %s. %s.',
+                      ' %s.',
                       account['username'],
                       e)
         raise LoginSequenceFail('Failed while getting store items in login' +
