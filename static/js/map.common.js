@@ -994,6 +994,10 @@ var StoreOptions = {
         default: 14,
         type: StoreTypes.Number
     },
+    'clusterZoomOnClick': {
+        default: false,
+        type: StoreTypes.Boolean
+    },
     'processPokemonChunkSize': {
         default: 100,
         type: StoreTypes.Number

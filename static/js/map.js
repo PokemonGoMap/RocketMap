@@ -153,7 +153,7 @@ function initMap() { // eslint-disable-line no-unused-vars
     var clusterOptions = {
         imagePath: 'static/images/cluster/m',
         maxZoom: Store.get('maxClusterZoomLevel'),
-        zoomOnClick: false
+        zoomOnClick: Store.get('clusterZoomOnClick')
     }
 
     markerCluster = new MarkerClusterer(map, [], clusterOptions)
