@@ -26,7 +26,6 @@ from cachetools import TTLCache
 from cachetools import cached
 from timeit import default_timer
 
-from . import config
 from .utils import (get_pokemon_name, get_pokemon_rarity, get_pokemon_types,
                     get_args, cellid, in_radius, date_secs, clock_between,
                     get_move_name, get_move_damage, get_move_energy,
@@ -184,9 +183,9 @@ class Pokemon(BaseModel):
         pokemon = []
         for p in list(query):
 
-            p['pokemon_name'] = get_pokemon_name(p['pokemon_id'])
-            p['pokemon_rarity'] = get_pokemon_rarity(p['pokemon_id'])
-            p['pokemon_types'] = get_pokemon_types(p['pokemon_id'])
+            p['pokemon_name'] = get_pokemon_name(args, p['pokemon_id'])
+            p['pokemon_rarity'] = get_pokemon_rarity(args, p['pokemon_id'])
+            p['pokemon_types'] = get_pokemon_types(args, p['pokemon_id'])
             if args.china:
                 p['latitude'], p['longitude'] = \
                     transform_from_wgs_to_gcj(p['latitude'], p['longitude'])
@@ -222,9 +221,9 @@ class Pokemon(BaseModel):
 
         pokemon = []
         for p in query:
-            p['pokemon_name'] = get_pokemon_name(p['pokemon_id'])
-            p['pokemon_rarity'] = get_pokemon_rarity(p['pokemon_id'])
-            p['pokemon_types'] = get_pokemon_types(p['pokemon_id'])
+            p['pokemon_name'] = get_pokemon_name(args, p['pokemon_id'])
+            p['pokemon_rarity'] = get_pokemon_rarity(args, p['pokemon_id'])
+            p['pokemon_types'] = get_pokemon_types(args, p['pokemon_id'])
             if args.china:
                 p['latitude'], p['longitude'] = \
                     transform_from_wgs_to_gcj(p['latitude'], p['longitude'])
@@ -273,7 +272,7 @@ class Pokemon(BaseModel):
         pokemon = []
         total = 0
         for p in query:
-            p['pokemon_name'] = get_pokemon_name(p['pokemon_id'])
+            p['pokemon_name'] = get_pokemon_name(args, p['pokemon_id'])
             pokemon.append(p)
             total += p['count']
 
@@ -520,7 +519,7 @@ class Gym(BaseModel):
                        .dicts())
 
             for p in pokemon:
-                p['pokemon_name'] = get_pokemon_name(p['pokemon_id'])
+                p['pokemon_name'] = get_pokemon_name(args, p['pokemon_id'])
                 gyms[p['gym_id']]['pokemon'].append(p)
 
             details = (GymDetails
@@ -540,8 +539,9 @@ class Gym(BaseModel):
 
             for r in raids:
                 if r['pokemon_id']:
-                    r['pokemon_name'] = get_pokemon_name(r['pokemon_id'])
-                    r['pokemon_types'] = get_pokemon_types(r['pokemon_id'])
+                    r['pokemon_name'] = get_pokemon_name(args, r['pokemon_id'])
+                    r['pokemon_types'] = get_pokemon_types(
+                        args, r['pokemon_id'])
                 gyms[r['gym_id']]['raid'] = r
 
         # Re-enable the GC.
@@ -574,6 +574,7 @@ class Gym(BaseModel):
             return None
 
         result['guard_pokemon_name'] = get_pokemon_name(
+            args,
             result['guard_pokemon_id']) if result['guard_pokemon_id'] else ''
         result['pokemon'] = []
 
@@ -602,25 +603,27 @@ class Gym(BaseModel):
                    .dicts())
 
         for p in pokemon:
-            p['pokemon_name'] = get_pokemon_name(p['pokemon_id'])
+            p['pokemon_name'] = get_pokemon_name(args, p['pokemon_id'])
 
-            p['move_1_name'] = get_move_name(p['move_1'])
-            p['move_1_damage'] = get_move_damage(p['move_1'])
-            p['move_1_energy'] = get_move_energy(p['move_1'])
-            p['move_1_type'] = get_move_type(p['move_1'])
+            p['move_1_name'] = get_move_name(args, p['move_1'])
+            p['move_1_damage'] = get_move_damage(args, p['move_1'])
+            p['move_1_energy'] = get_move_energy(args, p['move_1'])
+            p['move_1_type'] = get_move_type(args, p['move_1'])
 
-            p['move_2_name'] = get_move_name(p['move_2'])
-            p['move_2_damage'] = get_move_damage(p['move_2'])
-            p['move_2_energy'] = get_move_energy(p['move_2'])
-            p['move_2_type'] = get_move_type(p['move_2'])
+            p['move_2_name'] = get_move_name(args, p['move_2'])
+            p['move_2_damage'] = get_move_damage(args, p['move_2'])
+            p['move_2_energy'] = get_move_energy(args, p['move_2'])
+            p['move_2_type'] = get_move_type(args, p['move_2'])
 
             result['pokemon'].append(p)
 
         try:
             raid = Raid.select(Raid).where(Raid.gym_id == id).dicts().get()
             if raid['pokemon_id']:
-                raid['pokemon_name'] = get_pokemon_name(raid['pokemon_id'])
-                raid['pokemon_types'] = get_pokemon_types(raid['pokemon_id'])
+                raid['pokemon_name'] = get_pokemon_name(
+                    args, raid['pokemon_id'])
+                raid['pokemon_types'] = get_pokemon_types(
+                    args, raid['pokemon_id'])
             result['raid'] = raid
         except Raid.DoesNotExist:
             pass
@@ -1880,10 +1883,10 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
         # necessarily need to know *how many* forts/wild/nearby were found but
         # we'd like to know whether or not *any* were found to help determine
         # if a scan was actually bad.
-        if config['parse_pokemon']:
+        if not args.no_pokemon:
             wild_pokemon += cell.wild_pokemons
 
-        if config['parse_pokestops'] or config['parse_gyms']:
+        if not args.no_pokestops or not args.no_gyms:
             forts += cell.forts
 
         wild_pokemon_count += len(cell.wild_pokemons)
@@ -1910,7 +1913,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
     ScannedLocation.update_band(scan_loc, now_date)
     just_completed = not done_already and scan_loc['done']
 
-    if wild_pokemon and config['parse_pokemon']:
+    if wild_pokemon and not args.no_pokemon:
         encounter_ids = [b64encode(str(p.encounter_id))
                          for p in wild_pokemon]
         # For all the wild Pokemon we found check if an active Pokemon is in
@@ -2080,8 +2083,8 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                         })
                     wh_update_queue.put(('pokemon', wh_poke))
 
-    if forts and (config['parse_pokestops'] or config['parse_gyms']):
-        if config['parse_pokestops']:
+    if forts and (not args.no_pokestops or not args.no_gyms):
+        if not args.no_pokestops:
             stop_ids = [f.id for f in forts if f.type == 1]
             if stop_ids:
                 query = (Pokestop
@@ -2093,7 +2096,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                      datetime(1970, 1, 1)).total_seconds())) for f in query]
 
         for f in forts:
-            if config['parse_pokestops'] and f.type == 1:  # Pokestops.
+            if not args.no_pokestops and f.type == 1:  # Pokestops.
                 if len(f.active_fort_modifier) > 0:
                     lure_expiration = (datetime.utcfromtimestamp(
                         f.last_modified_timestamp_ms / 1000.0) +
@@ -2136,7 +2139,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                     wh_update_queue.put(('pokestop', wh_pokestop))
 
             # Currently, there are only stops and gyms.
-            elif config['parse_gyms'] and f.type == 0:
+            elif not args.no_gyms and f.type == 0:
                 b64_gym_id = b64encode(str(f.id))
                 gym_display = f.gym_display
                 raid_info = f.raid_info
@@ -2203,7 +2206,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                             f.last_modified_timestamp_ms / 1000.0),
                 }
 
-                if config['parse_raids'] and f.type == 0:
+                if not args.no_raids and f.type == 0:
                     if f.HasField('raid_info'):
                         raids[f.id] = {
                             'gym_id': f.id,

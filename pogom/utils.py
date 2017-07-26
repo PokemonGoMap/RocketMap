@@ -20,8 +20,6 @@ from requests.packages.urllib3.util.retry import Retry
 from requests.adapters import HTTPAdapter
 from cHaversine import haversine
 
-from . import config
-
 log = logging.getLogger(__name__)
 
 
@@ -237,9 +235,8 @@ def get_args():
     parser.add_argument('-P', '--port', type=int,
                         help='Set web server listening port.', default=5000)
     parser.add_argument('-L', '--locale',
-                        help=('Locale for Pokemon names (default: {}, check ' +
-                              '{} for more).').format(config['LOCALE'],
-                                                      config['LOCALES_DIR']),
+                        help=('Locale for Pokemon names (check' +
+                              ' static/dist/locales for more).'),
                         default='en')
     parser.add_argument('-c', '--china',
                         help='Coordinates transformer for China.',
@@ -773,6 +770,8 @@ def get_args():
         else:
             args.wh_types = frozenset([i for i in args.wh_types])
 
+    args.locales_dir = 'static/dist/locales'
+    args.data_dir = 'static/dist/data'
     return args
 
 
@@ -813,14 +812,14 @@ def in_radius(loc1, loc2, radius):
     return distance(loc1, loc2) < radius
 
 
-def i8ln(word):
-    if config['LOCALE'] == "en":
+def i8ln(args, word):
+    if args.locale == 'en':
         return word
     if not hasattr(i8ln, 'dictionary'):
         file_path = os.path.join(
-            config['ROOT_PATH'],
-            config['LOCALES_DIR'],
-            '{}.min.json'.format(config['LOCALE']))
+            args.root_path,
+            args.locales_dir,
+            '{}.min.json'.format(args.locale))
         if os.path.isfile(file_path):
             with open(file_path, 'r') as f:
                 i8ln.dictionary = json.loads(f.read())
@@ -833,15 +832,15 @@ def i8ln(word):
         return i8ln.dictionary[word]
     else:
         log.debug('Unable to find translation for "%s" in locale %s!',
-                  word, config['LOCALE'])
+                  word, args.locale)
         return word
 
 
-def get_pokemon_data(pokemon_id):
+def get_pokemon_data(args, pokemon_id):
     if not hasattr(get_pokemon_data, 'pokemon'):
         file_path = os.path.join(
-            config['ROOT_PATH'],
-            config['DATA_DIR'],
+            args.root_path,
+            args.data_dir,
             'pokemon.min.json')
 
         with open(file_path, 'r') as f:
@@ -849,38 +848,25 @@ def get_pokemon_data(pokemon_id):
     return get_pokemon_data.pokemon[str(pokemon_id)]
 
 
-def get_pokemon_id(pokemon_name):
-    if not hasattr(get_pokemon_id, 'ids'):
-        if not hasattr(get_pokemon_data, 'pokemon'):
-            # initialize from file
-            get_pokemon_data(1)
-
-        get_pokemon_id.ids = {}
-        for pokemon_id, data in get_pokemon_data.pokemon.iteritems():
-            get_pokemon_id.ids[data['name']] = int(pokemon_id)
-
-    return get_pokemon_id.ids.get(pokemon_name, -1)
+def get_pokemon_name(args, pokemon_id):
+    return i8ln(args, get_pokemon_data(args, pokemon_id)['name'])
 
 
-def get_pokemon_name(pokemon_id):
-    return i8ln(get_pokemon_data(pokemon_id)['name'])
+def get_pokemon_rarity(args, pokemon_id):
+    return i8ln(args, get_pokemon_data(args, pokemon_id)['rarity'])
 
 
-def get_pokemon_rarity(pokemon_id):
-    return i8ln(get_pokemon_data(pokemon_id)['rarity'])
-
-
-def get_pokemon_types(pokemon_id):
-    pokemon_types = get_pokemon_data(pokemon_id)['types']
-    return map(lambda x: {"type": i8ln(x['type']), "color": x['color']},
+def get_pokemon_types(args, pokemon_id):
+    pokemon_types = get_pokemon_data(args, pokemon_id)['types']
+    return map(lambda x: {"type": i8ln(args, x['type']), "color": x['color']},
                pokemon_types)
 
 
-def get_moves_data(move_id):
+def get_moves_data(args, move_id):
     if not hasattr(get_moves_data, 'moves'):
         file_path = os.path.join(
-            config['ROOT_PATH'],
-            config['DATA_DIR'],
+            args.root_path,
+            args.data_dir,
             'moves.min.json')
 
         with open(file_path, 'r') as f:
@@ -888,21 +874,21 @@ def get_moves_data(move_id):
     return get_moves_data.moves[str(move_id)]
 
 
-def get_move_name(move_id):
-    return i8ln(get_moves_data(move_id)['name'])
+def get_move_name(args, move_id):
+    return i8ln(args, get_moves_data(move_id)['name'])
 
 
-def get_move_damage(move_id):
-    return i8ln(get_moves_data(move_id)['damage'])
+def get_move_damage(args, move_id):
+    return i8ln(args, get_moves_data(move_id)['damage'])
 
 
-def get_move_energy(move_id):
-    return i8ln(get_moves_data(move_id)['energy'])
+def get_move_energy(args, move_id):
+    return i8ln(args, get_moves_data(move_id)['energy'])
 
 
-def get_move_type(move_id):
-    move_type = get_moves_data(move_id)['type']
-    return {"type": i8ln(move_type), "type_en": move_type}
+def get_move_type(args, move_id):
+    move_type = get_moves_data(args, move_id)['type']
+    return {'type': i8ln(args, move_type), 'type_en': move_type}
 
 
 def dottedQuadToNum(ip):
