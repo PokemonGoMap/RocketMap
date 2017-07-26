@@ -156,7 +156,7 @@ function initMap() { // eslint-disable-line no-unused-vars
         zoomOnClick: false
     }
 
-    if (screenSize < 900) {
+    if (isMobileDevice() || isTouchDevice()) {
         clusterOptions = {
             imagePath: 'static/images/cluster/m',
             maxZoom: Store.get('maxClusterZoomLevel'),
