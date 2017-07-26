@@ -335,10 +335,14 @@ def rpc_login_sequence(args, api, account):
         total_req += 1
         time.sleep(random.uniform(.6, 1.1))
     except Exception as e:
-        log.exception('Login for account %s failed. Exception in ' +
-                      'retrieving Store Items: %s.', account['username'],
+        log.exception('Login for account %s failed.' +
+                      ' Exception occurred while fetching store items:' +
+                      ' %s. %s.',
+                      account['username'],
                       e)
-        raise LoginSequenceFail('Failed during login sequence.')
+        raise LoginSequenceFail('Failed while getting store items in login' +
+                                ' sequence for account %s.',
+                                account['username'])
 
     # 8 - Check if there are level up rewards to claim.
     log.debug('Checking if there are level up rewards to claim...')
