@@ -1876,51 +1876,61 @@ function getPointDistance(pointA, pointB) {
 }
 
 function sendNotification(title, text, icon, lat, lon) {
-    if (Push.supported()) {
-        /* Push.js requests the Notification permission automatically if necessary. */
-        Push.create(title, {
-            icon: icon,
-            body: text,
-            onClick: function (event) {
-                /* This will only run in browsers which support the old Notifications API. */
-                /* Browsers supporting the newer Push API are handled by serviceWorker.js. */
-                if (Push._agents.desktop.isSupported()) {
-                    window.focus()
-                    event.currentTarget.close()
-                    centerMap(lat, lon, 20)
-                }
-            },
-            data: {
-                lat: lat,
-                lon: lon
-            }
-        })
-    } else {
-        /* Fallback for devices which can't display native push notifications (e.g. iOS). */
-        var notification = toastr.info(text, title, {
-            closeButton: true,
-            positionClass: 'toast-top-right',
-            preventDuplicates: true,
-            onclick: function () {
-                centerMap(lat, lon, 20)
-            },
-            showDuration: '300',
-            hideDuration: '500',
-            timeOut: '6000',
-            extendedTimeOut: '1500',
-            showEasing: 'swing',
-            hideEasing: 'linear',
-            showMethod: 'fadeIn',
-            hideMethod: 'fadeOut'
-        })
-        notification.removeClass('toast-info')
-        notification.css({
-            'padding-left': '74px',
-            'background-image': `url('./${icon}')`,
-            'background-size': '48px',
-            'background-color': '#0c5952'
-        })
+    var notificationDetails = {
+        icon: icon,
+        body: text,
+        data: {
+            lat: lat,
+            lon: lon
+        }
     }
+
+    if (Push._agents.desktop.isSupported()) {
+        /* This will only run in browsers which support the old
+         * Notifications API. Browsers supporting the newer Push API
+         * are handled by serviceWorker.js. */
+        notificationDetails.onClick = function (event) {
+            if (Push._agents.desktop.isSupported()) {
+                window.focus()
+                event.currentTarget.close()
+                centerMap(lat, lon, 20)
+            }
+        }
+    }
+
+    /* Push.js requests the Notification permission automatically if
+     * necessary. */
+    Push.create(title, notificationDetails).catch(function () {
+        /* Push.js doesn't fall back automatically if the user denies the
+         * Notifications permission. */
+        sendToastrPokemonNotification(title, text, icon, lat, lon)
+    })
+}
+
+function sendToastrPokemonNotification(title, text, icon, lat, lon) {
+    var notification = toastr.info(text, title, {
+        closeButton: true,
+        positionClass: 'toast-top-right',
+        preventDuplicates: true,
+        onclick: function () {
+            centerMap(lat, lon, 20)
+        },
+        showDuration: '300',
+        hideDuration: '500',
+        timeOut: '6000',
+        extendedTimeOut: '1500',
+        showEasing: 'swing',
+        hideEasing: 'linear',
+        showMethod: 'fadeIn',
+        hideMethod: 'fadeOut'
+    })
+    notification.removeClass('toast-info')
+    notification.css({
+        'padding-left': '74px',
+        'background-image': `url('./${icon}')`,
+        'background-size': '48px',
+        'background-color': '#0c5952'
+    })
 }
 
 function createMyLocationButton() {
@@ -2267,6 +2277,22 @@ function getParameterByName(name, url) {
 //
 // Page Ready Execution
 //
+
+$(function () {
+    /* If push.js is unsupported or disabled, fall back to toastr
+     * notifications. */
+    Push.config({
+        fallback: function (notification) {
+            sendToastrPokemonNotification(
+                notification.title,
+                notification.body,
+                notification.icon,
+                notification.data.lat,
+                notification.data.lon
+            )
+        }
+    })
+})
 
 $(function () {
     // populate Navbar Style menu
