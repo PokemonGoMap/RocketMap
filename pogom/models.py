@@ -1840,6 +1840,7 @@ def hex_bounds(center, steps=None, radius=None):
     return (n, e, s, w)
 
 
+
 # todo: this probably shouldn't _really_ be in "models" anymore, but w/e.
 def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
               key_scheduler, api, status, now_date, account, account_sets):
@@ -2107,37 +2108,6 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                 else:
                     lure_expiration, active_fort_modifier = None, None
 
-                # Send all pokestops to webhooks.
-                if args.webhooks and not args.webhook_updates_only:
-                    # Explicitly set 'webhook_data', in case we want to change
-                    # the information pushed to webhooks.  Similar to above and
-                    # previous commits.
-                    l_e = None
-
-                    if lure_expiration is not None:
-                        l_e = calendar.timegm(lure_expiration.timetuple())
-
-                    wh_update_queue.put(('pokestop', {
-                        'pokestop_id': b64encode(str(f.id)),
-                        'enabled': f.enabled,
-                        'latitude': f.latitude,
-                        'longitude': f.longitude,
-                        'last_modified_time': f.last_modified_timestamp_ms,
-                        'lure_expiration': l_e,
-                        'active_fort_modifier': active_fort_modifier
-                    }))
-
-                # Spin Pokestop with 50% chance.
-                if args.pokestop_spinning and pokestop_spinnable(
-                        f, step_location):
-                    spin_pokestop(api, account, args, f, step_location)
-                if args.pokestop_spinning and not config[
-                        'parse_pokestops']:
-                    log.error(
-                        'Pokestop can not be spun since parsing Pokestops' +
-                        ' or spining is not active. Check if \'-nk\' flag is' +
-                        'accidentally set.')
-
                 if ((f.id, int(f.last_modified_timestamp_ms / 1000.0))
                         in encountered_pokestops):
                     # If pokestop has been encountered before and hasn't
@@ -2281,8 +2251,6 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                             wh_update_queue.put(('raid', wh_raid))
 
         # Helping out the GC.
-        if 'GET_INVENTORY' in map_dict['responses']:
-            del map_dict['responses']['GET_INVENTORY']
         del forts
 
     log.info('Parsing found Pokemon: %d (%d filtered), nearby: %d, ' +
