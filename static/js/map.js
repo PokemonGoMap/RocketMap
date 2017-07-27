@@ -237,8 +237,9 @@ function initMap() { // eslint-disable-line no-unused-vars
             redrawPokemon(mapData.lurePokemons)
 
             // We're done processing the list. Redraw.
-            markerCluster.repaint()
-        }, 400)
+            markerCluster.resetViewport()
+            markerCluster.redraw()
+        }, 500)
     })
 
     searchMarker = createSearchMarker()
@@ -1797,7 +1798,7 @@ function updateMap() {
         clearStaleMarkers()
 
         // We're done processing. Redraw.
-        markerCluster.redraw()
+        markerCluster.repaint()
 
         updateScanned()
         updateSpawnPoints()
