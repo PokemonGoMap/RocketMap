@@ -2093,11 +2093,6 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                     (f['last_modified'] -
                      datetime(1970, 1, 1)).total_seconds())) for f in query]
 
-            else:
-                log.error(
-                    'Pokestop can not be spun since parsing Pokestops is ' +
-                    'not active. Check if \'-nk\' flag is accidentally set.')
-
         for f in forts:
             if config['parse_pokestops'] and f.type == 1:  # Pokestops.
                 if len(f.active_fort_modifier) > 0:
@@ -2251,6 +2246,8 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                             wh_update_queue.put(('raid', wh_raid))
 
         # Helping out the GC.
+        if 'GET_INVENTORY' in map_dict['responses']:
+            del map_dict['responses']['GET_INVENTORY']
         del forts
 
     log.info('Parsing found Pokemon: %d (%d filtered), nearby: %d, ' +
