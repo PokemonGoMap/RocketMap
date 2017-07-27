@@ -237,8 +237,7 @@ function initMap() { // eslint-disable-line no-unused-vars
             redrawPokemon(mapData.lurePokemons)
 
             // We're done processing the list. Redraw.
-            markerCluster.resetViewport()
-            markerCluster.redraw()
+            markerCluster.repaint()
         }, 400)
     })
 
