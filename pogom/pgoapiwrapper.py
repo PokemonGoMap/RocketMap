@@ -14,7 +14,7 @@ class PGoApiWrapper:
 
     def __getattr__(self, attr):
         log.info('PGoApiWrapper getattr %s.', attr)
-        orig_attr = self.api.__getattribute__(attr)
+        orig_attr = self.api.__dict__[attr]
 
         if callable(orig_attr):
             def hooked(*args, **kwargs):
