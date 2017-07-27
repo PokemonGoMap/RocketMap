@@ -10,10 +10,10 @@ log = logging.getLogger(__name__)
 
 class PGoApiWrapper:
     def __init__(self, api):
+        log.debug('Wrapped PGoApi.')
         self.api = api
 
     def __getattr__(self, attr):
-        log.info('PGoApiWrapper getattr %s.', attr)
         orig_attr = getattr(self.api, attr)
 
         if callable(orig_attr):
