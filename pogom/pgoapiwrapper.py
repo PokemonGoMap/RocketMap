@@ -19,6 +19,9 @@ class PGoApiWrapper:
         if callable(orig_attr):
             def hooked(*args, **kwargs):
                 result = orig_attr(*args, **kwargs)
+                # Prevent wrapped class from becoming unwrapped.
+                if result == self.api:
+                    return self
                 return result
             return hooked
         else:
