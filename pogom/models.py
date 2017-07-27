@@ -1840,7 +1840,6 @@ def hex_bounds(center, steps=None, radius=None):
     return (n, e, s, w)
 
 
-
 # todo: this probably shouldn't _really_ be in "models" anymore, but w/e.
 def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
               key_scheduler, api, status, now_date, account, account_sets):
