@@ -239,7 +239,7 @@ function initMap() { // eslint-disable-line no-unused-vars
             // We're done processing the list. Redraw.
             markerCluster.resetViewport()
             markerCluster.redraw()
-        }, 500)
+        }, 400)
     })
 
     searchMarker = createSearchMarker()
@@ -1830,7 +1830,7 @@ function updateMap() {
     })
 }
 
-function redrawPokemon(pokemonList, useMarkerCluster) {
+function redrawPokemon(pokemonList) {
     $.each(pokemonList, function (key, value) {
         var item = pokemonList[key]
 
