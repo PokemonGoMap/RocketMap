@@ -36,6 +36,7 @@ from .customLog import printPokemon
 
 from .account import (check_login, setup_api, encounter_pokemon_request,
                       pokestop_spinnable, spin_pokestop)
+from .proxy import get_new_proxy
 
 log = logging.getLogger(__name__)
 
@@ -2284,8 +2285,8 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
             del map_dict['responses']['GET_INVENTORY']
         del forts
 
-    log.info('Parsing found Pokemon: %d, nearby: %d, pokestops: %d,' +
-             ' gyms: %d, raids: %d.',
+    log.info('Parsing found Pokemon: %d (%d filtered), nearby: %d, ' +
+             'pokestops: %d, gyms: %d, raids: %d.',
              len(pokemon) + skipped,
              filtered,
              nearby_pokemon,
