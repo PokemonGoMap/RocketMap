@@ -328,10 +328,11 @@ def main():
     wh_key_cache = {}
 
     if len(args.wh_types) == 0:
-        log.info('Webhook disabled')
+        log.info('Webhook disabled.')
     else:
-        log.info('Webhook enabled for events: %s sending to %s',
-                 args.wh_types, args.webhooks)
+        log.info('Webhook enabled for events: sending %s to %s.',
+                 args.wh_types,
+                 args.webhooks)
 
         # Thread to process webhook updates.
         for i in range(args.wh_threads):
