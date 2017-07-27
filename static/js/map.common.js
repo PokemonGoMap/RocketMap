@@ -1054,11 +1054,26 @@ function getGoogleSprite(index, sprite, displayHeight) {
     }
 }
 
+function pokemonRarityValue(item, map) {
+    const rarityValues = {
+        'legendary': 50,
+        'ultra rare': 40,
+        'very rare': 30
+    }
+
+    const pokemonRarity = item['pokemon_rarity'].toLowerCase()
+    var rarityValue = (isNotifyPoke(item)) ? 29 : 2
+
+    if (rarityValues.hasOwnProperty(pokemonRarity)) {
+        rarityValue = rarityValues[pokemonRarity]
+    }
+    return rarityValue
+}
+
 function setupPokemonMarker(item, map, isBounceDisabled) {
     // Scale icon size up with the map exponentially, also size with rarity.
-    var rarityValue = (item['pokemon_rarity'] === 'Legendary') ? 50 : (item['pokemon_rarity'] === 'Ultra Rare') ? 40 : (item['pokemon_rarity'] === 'Very Rare') ? 30 : (isNotifyPoke(item)) ? 29 : 2
-    var iconModify = (map.getZoom() - 3) * (map.getZoom() - 3) * 0.2 + Store.get('iconSizeModifier')
-    var iconSize = rarityValue + iconModify
+    var rarityValue = pokemonRarityValue(item)
+    var iconSize = rarityValue + (map.getZoom() - 3) * (map.getZoom() - 3) * 0.2 + Store.get('iconSizeModifier')
     var pokemonIndex = item['pokemon_id'] - 1
     var sprite = pokemonSprites
     var icon = getGoogleSprite(pokemonIndex, sprite, iconSize)
@@ -1078,9 +1093,8 @@ function setupPokemonMarker(item, map, isBounceDisabled) {
 
 function updatePokemonMarker(item, map) {
     // Scale icon size up with the map exponentially, also size with rarity.
-    const rarityValue = (item['pokemon_rarity'] === 'Legendary') ? 50 : (item['pokemon_rarity'] === 'Ultra Rare') ? 40 : (item['pokemon_rarity'] === 'Very Rare') ? 30 : (isNotifyPoke(item)) ? 29 : 2
-    const iconModify = (map.getZoom() - 3) * (map.getZoom() - 3) * 0.2 + Store.get('iconSizeModifier')
-    const iconSize = rarityValue + iconModify
+    var rarityValue = pokemonRarityValue(item)
+    const iconSize = rarityValue + (map.getZoom() - 3) * (map.getZoom() - 3) * 0.2 + Store.get('iconSizeModifier')
     const pokemonIndex = item['pokemon_id'] - 1
     const sprite = pokemonSprites
     const icon = getGoogleSprite(pokemonIndex, sprite, iconSize)
