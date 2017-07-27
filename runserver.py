@@ -18,7 +18,7 @@ from flask_cache_bust import init_cache_busting
 
 from pogom import config
 from pogom.app import Pogom
-from pogom.utils import get_args, now, extract_sprites, gmaps_reverse_geolocate
+from pogom.utils import get_args, now, gmaps_reverse_geolocate
 from pogom.altitude import get_gmaps_altitude
 
 from pogom.models import (init_database, create_tables, drop_tables,
@@ -27,6 +27,7 @@ from pogom.models import (init_database, create_tables, drop_tables,
 from pogom.webhook import wh_updater
 
 from pogom.proxy import load_proxies, check_proxies, proxies_refresher
+from pogom.search import search_overseer_thread
 from time import strftime
 
 
@@ -59,8 +60,6 @@ log = logging.getLogger()
 log.addHandler(stdout_hdlr)
 log.addHandler(stderr_hdlr)
 
-# This needs to be after logging to be able to log geofences import errors.
-from pogom.search import search_overseer_thread  # noqa
 
 # Assert pgoapi is installed.
 try:
@@ -130,9 +129,8 @@ def validate_assets(args):
     # You need custom image files now.
     if not os.path.isfile(
             os.path.join(root_path, 'static/icons-sprite.png')):
-        log.info('Sprite files not present, extracting bundled ones...')
-        extract_sprites(root_path)
-        log.info('Done!')
+        log.critical(assets_error_log)
+        return False
 
     # Check if custom.css is used otherwise fall back to default.
     if os.path.exists(os.path.join(root_path, 'static/css/custom.css')):
@@ -142,6 +140,15 @@ def validate_assets(args):
     else:
         args.custom_css = False
         log.info('No file \"custom.css\" found, using default settings.')
+
+    # Check if custom.js is used otherwise fall back to default.
+    if os.path.exists(os.path.join(root_path, 'static/js/custom.js')):
+        args.custom_js = True
+        log.info(
+            'File \"custom.js\" found, applying user-defined settings.')
+    else:
+        args.custom_js = False
+        log.info('No file \"custom.js\" found, using default settings.')
 
     return True
 
@@ -186,6 +193,11 @@ def main():
     sys.excepthook = handle_exception
 
     args = get_args()
+
+    # Abort if status name is not alphanumeric.
+    if not str(args.status_name).isalnum():
+        log.critical('Status name must be alphanumeric.')
+        sys.exit(1)
 
     set_log_and_verbosity(log)
 
