@@ -1089,7 +1089,7 @@ function setupPokemonMarker(item, map, isBounceDisabled) {
             lat: item['latitude'],
             lng: item['longitude']
         },
-        zIndex: 9949 + pokemonMarker.rarityValue,
+        zIndex: 9949 + markerDetails.rarityValue,
         icon: icon,
         animationDisabled: isBounceDisabled
     })
