@@ -1054,7 +1054,7 @@ function getGoogleSprite(index, sprite, displayHeight) {
     }
 }
 
-function pokemonRarityValue(item, map) {
+function pokemonMarkerBasics(item, map) {
     const rarityValues = {
         'legendary': 50,
         'ultra rare': 40,
@@ -1067,23 +1067,29 @@ function pokemonRarityValue(item, map) {
     if (rarityValues.hasOwnProperty(pokemonRarity)) {
         rarityValue = rarityValues[pokemonRarity]
     }
-    return rarityValue
+    const iconSize = rarityValue + (map.getZoom() - 3) * (map.getZoom() - 3) * 0.2 + Store.get('iconSizeModifier')
+    const pokemonIndex = item['pokemon_id'] - 1
+    const sprite = pokemonSprites
+    const icon = getGoogleSprite(pokemonIndex, sprite, iconSize)
+    return {
+        rarityValue: rarityValue,
+        iconSize: iconSize,
+        sprite: sprite,
+        icon: icon
+    }
 }
 
 function setupPokemonMarker(item, map, isBounceDisabled) {
     // Scale icon size up with the map exponentially, also size with rarity.
-    var rarityValue = pokemonRarityValue(item)
-    var iconSize = rarityValue + (map.getZoom() - 3) * (map.getZoom() - 3) * 0.2 + Store.get('iconSizeModifier')
-    var pokemonIndex = item['pokemon_id'] - 1
-    var sprite = pokemonSprites
-    var icon = getGoogleSprite(pokemonIndex, sprite, iconSize)
+    var pokemonMarker = pokemonMarkerBasics(item, map)
+    const icon = pokemonMarker.icon
 
     var marker = new google.maps.Marker({
         position: {
             lat: item['latitude'],
             lng: item['longitude']
         },
-        zIndex: 9949 + rarityValue,
+        zIndex: 9949 + pokemonMarker.rarityValue,
         icon: icon,
         animationDisabled: isBounceDisabled
     })
@@ -1093,11 +1099,8 @@ function setupPokemonMarker(item, map, isBounceDisabled) {
 
 function updatePokemonMarker(item, map) {
     // Scale icon size up with the map exponentially, also size with rarity.
-    var rarityValue = pokemonRarityValue(item)
-    const iconSize = rarityValue + (map.getZoom() - 3) * (map.getZoom() - 3) * 0.2 + Store.get('iconSizeModifier')
-    const pokemonIndex = item['pokemon_id'] - 1
-    const sprite = pokemonSprites
-    const icon = getGoogleSprite(pokemonIndex, sprite, iconSize)
+    var pokemonMarker = pokemonMarkerBasics(item, map)
+    const icon = pokemonMarker.icon
     const marker = item.marker
 
     marker.setIcon(icon)
