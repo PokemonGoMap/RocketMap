@@ -2106,12 +2106,6 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                 if args.pokestop_spinning and pokestop_spinnable(
                         f, step_location):
                     spin_pokestop(api, account, args, f, step_location)
-                if args.pokestop_spinning and not config[
-                        'parse_pokestops']:
-                    log.error(
-                        'Pokestop can not be spun since parsing Pokestops' +
-                        ' or spining is not active. Check if \'-nk\' flag is' +
-                        'accidentally set.')
 
                 if ((f.id, int(f.last_modified_timestamp_ms / 1000.0))
                         in encountered_pokestops):

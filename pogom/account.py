@@ -512,6 +512,7 @@ def get_player_level(map_dict):
 
 def reset_account(account):
     account['start_time'] = time.time()
+    hlvl_account['start_time'] = time.time()
     account['warning'] = None
     account['tutorials'] = []
     account['used_pokestops'] = {}
