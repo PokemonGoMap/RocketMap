@@ -36,6 +36,7 @@ class NullTimeException(Exception):
 
 # Create the API object that'll be used to scan.
 def setup_api(args, status, account):
+    reset_account(account)
     # Create the API instance this will use.
     if args.mock != '':
         api = FakePogoApi(args.mock)
@@ -512,10 +513,8 @@ def get_player_level(map_dict):
 
 def reset_account(account):
     account['start_time'] = time.time()
-    hlvl_account['start_time'] = time.time()
     account['warning'] = None
     account['tutorials'] = []
-    account['used_pokestops'] = {}
     account['items'] = {}
     account['pokemons'] = {}
     account['incubators'] = []
@@ -523,11 +522,10 @@ def reset_account(account):
     account['level'] = 0
     account['spins'] = 0
     account['session_spins'] = 0
-    account['hour_spins'] = 0
     account['walked'] = 0.0
 
 
-def cleanup_account_stats(account, pokestop_timeout):
+def can_spin(account, max_h_spins):
     elapsed_time = time.time() - account['start_time']
 
     # Just to prevent division by 0 errors, when needed
@@ -535,16 +533,7 @@ def cleanup_account_stats(account, pokestop_timeout):
     if elapsed_time == 0:
         elapsed_time = 1
 
-    spins_h = account['session_spins'] * 3600.0 / elapsed_time
-    account['hour_spins'] = spins_h
-
-    # Refresh visited pokestops that were on timeout.
-    used_pokestops = dict(account['used_pokestops'])
-    for pokestop_id in account['used_pokestops']:
-        last_attempt = account['used_pokestops'][pokestop_id]
-        if (last_attempt + pokestop_timeout) < time.time():
-            del used_pokestops[pokestop_id]
-    account['used_pokestops'] = used_pokestops
+    return (account['session_spins'] * 3600.0 / elapsed_time) > max_h_spins
 
 
 # Check if Pokestop is spinnable and not on cooldown.
@@ -558,7 +547,7 @@ def pokestop_spinnable(fort, step_location):
 
 
 def spin_pokestop(api, account, args, fort, step_location):
-    if account['hour_spins'] > args.account_max_spins:
+    if can_spin(account, args.account_max_spins):
         log.warning('Account %s has reached its Pokestop spinning limits.',
                     account['username'])
         return False
@@ -584,7 +573,6 @@ def spin_pokestop(api, account, args, fort, step_location):
             parse_level_up_rewards(api, account)
             clear_inventory(api, account)
             account['session_spins'] += 1
-            account['used_pokestops'][fort.id] = time.time()
             incubate_eggs(api, account)
             return True
         elif spin_result is 2:

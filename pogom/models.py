@@ -2102,11 +2102,6 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                 else:
                     lure_expiration, active_fort_modifier = None, None
 
-                # Spin Pokestop with 50% chance.
-                if args.pokestop_spinning and pokestop_spinnable(
-                        f, step_location):
-                    spin_pokestop(api, account, args, f, step_location)
-
                 if ((f.id, int(f.last_modified_timestamp_ms / 1000.0))
                         in encountered_pokestops):
                     # If pokestop has been encountered before and hasn't
@@ -2248,6 +2243,13 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                                 'longitude': f.longitude
                             })
                             wh_update_queue.put(('raid', wh_raid))
+
+        # Let db do it's things while we try to spin.
+        if args.pokestop_spinning:
+            for f in forts:
+                # Spin Pokestop with 50% chance.
+                if f.type == 1 and pokestop_spinnable(f, step_location):
+                    spin_pokestop(api, account, args, f, step_location)
 
         # Helping out the GC.
         del forts
