@@ -581,7 +581,6 @@ def spin_pokestop(api, account, args, fort, step_location):
                      account['username'])
             # Update account stats and clear inventory if necessary.
             parse_level_up_rewards(api, account)
-            parse_inventory(api, account, response)
             clear_inventory(api, account)
             account['session_spins'] += 1
             account['used_pokestops'][fort.id] = time.time()
@@ -827,6 +826,7 @@ def spin_pokestop_request(api, account, fort, step_location):
         req.get_inbox(is_history=True)
         response = req.call(False)
         parse_new_timestamp_ms(account, response)
+        parse_inventory(api, account, response)
         return response
 
     except Exception as e:
