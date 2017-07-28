@@ -49,6 +49,8 @@ class PGoRequestWrapper:
                 # Sleep a minimum to free some RPM and don't use one of our
                 # retries, just retry until we have RPM left.
                 time.sleep(random.uniform(0.75, 1.5))
+                log.debug('Hashing quota exceeded. If this delays requests for'
+                          ' too long, consider adding more RPM. Retrying...')
             except:
                 if retries_left > 0:
                     retries_left -= 1
