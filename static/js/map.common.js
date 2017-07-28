@@ -1054,7 +1054,7 @@ function getGoogleSprite(index, sprite, displayHeight) {
     }
 }
 
-function pokemonMarkerBasics(item, map) {
+function setupPokemonMarkerDetails(item, map) {
     const rarityValues = {
         'legendary': 50,
         'ultra rare': 40,
@@ -1081,8 +1081,8 @@ function pokemonMarkerBasics(item, map) {
 
 function setupPokemonMarker(item, map, isBounceDisabled) {
     // Scale icon size up with the map exponentially, also size with rarity.
-    var pokemonMarker = pokemonMarkerBasics(item, map)
-    const icon = pokemonMarker.icon
+    const markerDetails = setupPokemonMarkerDetails(item, map)
+    const icon = markerDetails.icon
 
     var marker = new google.maps.Marker({
         position: {
@@ -1099,8 +1099,8 @@ function setupPokemonMarker(item, map, isBounceDisabled) {
 
 function updatePokemonMarker(item, map) {
     // Scale icon size up with the map exponentially, also size with rarity.
-    var pokemonMarker = pokemonMarkerBasics(item, map)
-    const icon = pokemonMarker.icon
+    const markerDetails = setupPokemonMarkerDetails(item, map)
+    const icon = markerDetails.icon
     const marker = item.marker
 
     marker.setIcon(icon)
