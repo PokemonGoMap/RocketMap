@@ -957,7 +957,7 @@ def search_worker_thread(args, account_queue, account_sets,
                 status['last_scan_date'] = datetime.utcnow()
 
                 # Perform account data cleanup and update statistics.
-                cleanup_account_stats(account, args.pokestop_refresh_time)
+                cleanup_account_stats(account)
 
                 # Record the time and the place that the worker made the
                 # request.
