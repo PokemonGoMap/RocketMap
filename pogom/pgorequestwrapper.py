@@ -50,7 +50,7 @@ class PGoRequestWrapper:
         # hasn't returned yet.
 
         # Try again if we have retries left.
-        if retries_left > 0:
+        if args.proxy and retries_left > 0:
             # Rotate proxy.
             proxy_idx, proxy_url = get_new_proxy(get_args())
 
