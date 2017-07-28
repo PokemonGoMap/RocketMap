@@ -190,6 +190,7 @@ def rpc_login_sequence(args, api, account):
         parse_inventory(api, account, response)
 
         total_req += 1
+        time.sleep(random.uniform(.53, 1.1))
     except Exception as e:
         log.exception('Error while downloading remote config: %s.', e)
         raise LoginSequenceFail('Failed while getting remote config version in'
@@ -541,7 +542,7 @@ def cleanup_account_stats(account, pokestop_timeout):
         last_attempt = account['used_pokestops'][pokestop_id]
         if (last_attempt + pokestop_timeout) < time.time():
             del used_pokestops[pokestop_id]
-            account['used_pokestops'] = used_pokestops
+        account['used_pokestops'] = used_pokestops
 
 
 # Check if Pokestop is spinnable and not on cooldown.

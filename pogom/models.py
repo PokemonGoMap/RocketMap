@@ -2256,8 +2256,6 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                             wh_update_queue.put(('raid', wh_raid))
 
         # Helping out the GC.
-        if 'GET_INVENTORY' in map_dict['responses']:
-            del map_dict['responses']['GET_INVENTORY']
         del forts
 
     log.info('Parsing found Pokemon: %d (%d filtered), nearby: %d, ' +
