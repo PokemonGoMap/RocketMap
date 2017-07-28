@@ -539,9 +539,9 @@ def cleanup_account_stats(account, pokestop_timeout):
     # Refresh visited pokestops that were on timeout.
     used_pokestops = dict(account['used_pokestops'])
     for pokestop_id in account['used_pokestops']:
-        last_attempt = account['used_pokestops'][fort.id]
+        last_attempt = account['used_pokestops'][pokestop_id]
         if (last_attempt + pokestop_timeout) < time.time():
-            del used_pokestops[fort.id]
+            del used_pokestops[pokestop_id]
     account['used_pokestops'] = used_pokestops
 
 
