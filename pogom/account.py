@@ -538,6 +538,9 @@ def can_spin(account, max_h_spins):
 
 # Check if Pokestop is spinnable and not on cooldown.
 def pokestop_spinnable(fort, step_location):
+    if not fort.enabled:
+        return False
+
     spinning_radius = 0.038
     in_range = in_radius((fort.latitude, fort.longitude),
                          step_location, spinning_radius)
