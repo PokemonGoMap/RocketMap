@@ -135,11 +135,9 @@ class Geofence(BaseModel):
         Geofence.remove_duplicates(geofences)
 
         db_geofences = []
-        id = 0
         for g in geofences:
             coordinates_id = 0
             for c in g['polygon']:
-                id = id + 1
                 db_geofences.append({
                     'excluded': g['excluded'],
                     'name': g['name'],
