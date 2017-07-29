@@ -1095,7 +1095,7 @@ function updateGymMarker(item, marker) {
         }
         marker.setIcon({
             url: markerImage,
-            scaledSize: new google.maps.Size(48, 48)
+            scaledSize: new google.maps.Size(60, 60)
         })
         marker.setZIndex(google.maps.Marker.MAX_ZINDEX + 1)
     } else if (item.raid !== null && item.raid.end > Date.now() && Store.get('showRaids') && !Store.get('showActiveRaidsOnly') && raidLevel >= Store.get('showRaidMinLevel') && raidLevel <= Store.get('showRaidMaxLevel')) {
@@ -1106,7 +1106,7 @@ function updateGymMarker(item, marker) {
     } else {
         marker.setIcon({
             url: 'static/images/gym/' + gymTypes[item.team_id] + '_' + getGymLevel(item) + '.png',
-            scaledSize: new google.maps.Size(48, 48)
+            scaledSize: new google.maps.Size(36, 36)
         })
         marker.setZIndex(1)
     }
