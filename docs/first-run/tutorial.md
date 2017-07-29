@@ -1,4 +1,4 @@
 # Tutorial Completion
 ## RocketMap's tutorial completion for new accounts
-RocketMap now completes the tutorial steps on all accounts on firsr log in, there is no -tut command for completing tutorial anymore.
+RocketMap now completes the tutorial steps on all accounts on first log in, there is no -tut command for completing tutorial anymore.
 It is advised to enanble pokestop spinning in the config to get you accounts to level 2.
