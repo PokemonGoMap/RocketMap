@@ -37,6 +37,14 @@ def send_to_webhooks(args, session, message_frame):
             log.exception(e)
 
 
+def add_extra_info(message, key_caches):
+    msg = message['message']
+    if (message['type'] in ['raid', 'gym'] and
+            msg['gym_id'] in key_caches['gym_details']):
+        msg['gym_details'] = key_caches['gym_details'][msg['gym_id']]
+    return message
+
+
 def wh_updater(args, queue, key_caches):
     wh_threshold_timer = default_timer()
     wh_over_threshold = False
@@ -45,9 +53,7 @@ def wh_updater(args, queue, key_caches):
     # Requests to the same host will reuse the underlying TCP
     # connection, giving a performance increase.
     session = get_async_requests_session(
-        args.wh_retries,
-        args.wh_backoff_factor,
-        args.wh_concurrency)
+        args.wh_retries, args.wh_backoff_factor, args.wh_concurrency)
 
     # Extract the proper identifier. This list also controls which message
     # types are getting cached.
@@ -121,13 +127,15 @@ def wh_updater(args, queue, key_caches):
                         if __wh_object_changed(whtype, key_cache[ident],
                                                message):
                             key_cache[ident] = message
-                            frame_messages.append(frame_message)
+                            frame_messages.append(
+                                add_extra_info(frame_message, key_caches))
                             log.debug('Queued updated %s to webhook: %s.',
                                       whtype, ident)
                         else:
                             log.debug('Not queuing %s to webhook: %s.', whtype,
                                       ident)
                 queue.task_done()
+
             # Store the time when we added the first message instead of the
             # time when we last cleared the messages, so we more accurately
             # measure time spent getting messages from our queue.
@@ -141,8 +149,7 @@ def wh_updater(args, queue, key_caches):
             # If enough time has passed, send the message frame.
             time_passed_sec = now - frame_first_message_time_sec
 
-            if num_messages > 0 and (time_passed_sec >
-                                     frame_interval_sec):
+            if num_messages > 0 and (time_passed_sec > frame_interval_sec):
                 log.debug('Sending %d items to %d webhook(s).',
                           num_messages,
                           len(args.webhooks))
@@ -152,8 +159,8 @@ def wh_updater(args, queue, key_caches):
                 first_message = True
 
             # Webhook queue moving too slow.
-            if (not wh_over_threshold) and (
-                    queue.qsize() > wh_warning_threshold):
+            if (not wh_over_threshold) and (queue.qsize() >
+                                            wh_warning_threshold):
                 wh_over_threshold = True
                 wh_threshold_timer = default_timer()
             elif wh_over_threshold:
@@ -163,13 +170,11 @@ def wh_updater(args, queue, key_caches):
                     timediff_sec = default_timer() - wh_threshold_timer
 
                     if timediff_sec > wh_threshold_lifetime:
-                        log.warning('Webhook queue has been > %d (@%d);'
-                                    + ' for over %d seconds,'
-                                    + ' try increasing --wh-concurrency'
-                                    + ' or --wh-threads.',
-                                    wh_warning_threshold,
-                                    queue.qsize(),
-                                    wh_threshold_lifetime)
+                        log.warning('Webhook queue has been > %d (@%d);' +
+                                    ' for over %d seconds,' +
+                                    ' try increasing --wh-concurrency' +
+                                    ' or --wh-threads.', wh_warning_threshold,
+                                    queue.qsize(), wh_threshold_lifetime)
 
         except Exception as e:
             log.exception('Exception in wh_updater: %s.', e)
