@@ -51,8 +51,7 @@ class PGoRequestWrapper:
             exception_name = ''
 
             try:
-                log.debug('Sending API request w/ %d retries left.',
-                          retries_left)
+                log.debug('Sending wrapped API request.')
                 return self.request.call(*args, **kwargs)
             except HashingQuotaExceededException:
                 # Sleep a minimum to free some RPM and don't use one of our
@@ -80,9 +79,13 @@ class PGoRequestWrapper:
                 exception_name = type(ex).__name__
 
             if reduce_retries and retries_left > 0:
-                retries_left -= 1
+                plural = 'retries' if retries_left > 1 else 'retry'
                 log.debug('API request failed with exception type %s.'
-                          ' Retrying...', exception_name)
+                          ' Retrying w/ %s %s left...',
+                          exception_name,
+                          retries_left,
+                          plural)
+                retries_left -= 1
 
             # Rotate proxy. Not necessary on
             # HashingQuotaExceededException, because it's proof that
