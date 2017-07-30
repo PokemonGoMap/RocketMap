@@ -256,11 +256,11 @@ def main():
     config['LOCALE'] = args.locale
     config['CHINA'] = args.china
 
-    # if we're clearing the db, do not bother with the blacklist
-    if args.clear_db:
-        args.disable_blacklist = True
-    app = Pogom(__name__)
-    app.before_request(app.validate_request)
+    app = None
+    if not args.no_server and not args.clear_db:
+        app = Pogom(__name__)
+        app.before_request(app.validate_request)
+        app.set_current_location(position)
 
     db = init_database(app)
     if args.clear_db:
@@ -281,8 +281,6 @@ def main():
         log.info(
             'Drop and recreate is complete. Now remove -cd and restart.')
         sys.exit()
-
-    app.set_current_location(position)
 
     # Control the search status (running or not) across threads.
     control_flags = {
@@ -327,16 +325,20 @@ def main():
     wh_updates_queue = Queue()
     wh_key_cache = {}
 
-    # Thread to process webhook updates.
-    for i in range(args.wh_threads):
-        log.debug('Starting wh-updater worker thread %d', i)
-        t = Thread(target=wh_updater, name='wh-updater-{}'.format(i),
-                   args=(args, wh_updates_queue, wh_key_cache))
-        t.daemon = True
-        t.start()
+    if len(args.wh_types) == 0:
+        log.info('Webhook disabled.')
+    else:
+        log.info('Webhook enabled for events: sending %s to %s.',
+                 args.wh_types,
+                 args.webhooks)
 
-    config['ROOT_PATH'] = app.root_path
-    config['GMAPS_KEY'] = args.gmaps_key
+        # Thread to process webhook updates.
+        for i in range(args.wh_threads):
+            log.debug('Starting wh-updater worker thread %d', i)
+            t = Thread(target=wh_updater, name='wh-updater-{}'.format(i),
+                       args=(args, wh_updates_queue, wh_key_cache))
+            t.daemon = True
+            t.start()
 
     if not args.only_server:
         # Check if we are able to scan.
@@ -401,22 +403,24 @@ def main():
         search_thread.daemon = True
         search_thread.start()
 
-    if args.cors:
-        CORS(app)
-
-    # No more stale JS.
-    init_cache_busting(app)
-
-    app.set_search_control(control_flags['search_control'])
-    app.set_heartbeat_control(heartbeat)
-    app.set_location_queue(new_location_queue)
-
     if args.no_server:
         # This loop allows for ctrl-c interupts to work since flask won't be
         # holding the program open.
         while search_thread.is_alive():
             time.sleep(60)
     else:
+        config['ROOT_PATH'] = app.root_path
+        config['GMAPS_KEY'] = args.gmaps_key
+
+        if args.cors:
+            CORS(app)
+
+        # No more stale JS.
+        init_cache_busting(app)
+
+        app.set_search_control(control_flags['search_control'])
+        app.set_heartbeat_control(heartbeat)
+        app.set_location_queue(new_location_queue)
         ssl_context = None
         if (args.ssl_certificate and args.ssl_privatekey and
                 os.path.exists(args.ssl_certificate) and
