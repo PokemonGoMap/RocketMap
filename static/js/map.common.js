@@ -1078,7 +1078,7 @@ function setupPokemonMarkerDetails(item, map, scaleByRarity = true) {
         sprite: sprite
     }
 
-    var iconSize = (map.getZoom() - 3) * (map.getZoom() - 3) * 0.2 + Store.get('iconSizeModifier')
+    const iconSize = (map.getZoom() - 3) * (map.getZoom() - 3) * 0.2 + Store.get('iconSizeModifier')
 
     if (scaleByRarity) {
         const rarityValues = {
