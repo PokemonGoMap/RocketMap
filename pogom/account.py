@@ -656,8 +656,8 @@ def parse_inventory(api, account, api_response):
             account['walked'] = stats.km_walked
 
             log.info('Parsed %s player stats: level %d, %f km ' +
-                      'walked, %d spins.', account['username'],
-                      account['level'], account['walked'], account['spins'])
+                     'walked, %d spins.', account['username'],
+                     account['level'], account['walked'], account['spins'])
         elif item_data.HasField('item'):
             item_id = item_data.item.item_id
             item_count = item_data.item.count
