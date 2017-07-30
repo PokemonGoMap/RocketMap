@@ -655,7 +655,7 @@ def parse_inventory(api, account, api_response):
             account['spins'] = stats.poke_stop_visits
             account['walked'] = stats.km_walked
 
-            log.debug('Parsed %s player stats: level %d, %f km ' +
+            log.info('Parsed %s player stats: level %d, %f km ' +
                       'walked, %d spins.', account['username'],
                       account['level'], account['walked'], account['spins'])
         elif item_data.HasField('item'):
