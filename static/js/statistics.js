@@ -434,7 +434,7 @@ function redrawAppearances(appearances) {
         var item = appearances[key]
         if (!item['hidden']) {
             item['marker'].setMap(null)
-            var newMarker = setupPokemonMarker(item, map, true, false)
+            const newMarker = setupPokemonMarker(item, map, true, false)
             newMarker.setMap(map)
             addListeners(newMarker)
             newMarker.spawnpointId = item['spawnpoint_id']
