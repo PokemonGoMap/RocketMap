@@ -978,6 +978,10 @@ var StoreOptions = {
         default: 0,
         type: StoreTypes.Number
     },
+    'disableScaleByRarity': {
+        default: false,
+        type: StoreTypes.Boolean
+    },
     'searchMarkerStyle': {
         default: 'pokesition',
         type: StoreTypes.String
@@ -1080,7 +1084,7 @@ function setupPokemonMarkerDetails(item, map, scaleByRarity = true) {
 
     var iconSize = (map.getZoom() - 3) * (map.getZoom() - 3) * 0.2 + Store.get('iconSizeModifier')
 
-    if (scaleByRarity) {
+    if (scaleByRarity && Store.get('disableScaleByRarity') != true) {
         const rarityValues = {
             'very rare': 30,
             'ultra rare': 40,
