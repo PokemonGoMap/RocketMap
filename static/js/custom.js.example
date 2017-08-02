@@ -4,6 +4,10 @@ $(function () {
 
     /* Settings. */
 
+    //Disable scaling by rarity and notification
+    const disableScaleByRarity = false // Default: false
+    Store.set('disableScaleByRarity', disableScaleByRarity)
+
     // Google Analytics property ID. Leave empty to disable.
     // Looks like 'UA-XXXXX-Y'.
     const analyticsKey = ''
