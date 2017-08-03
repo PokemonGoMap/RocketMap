@@ -23,8 +23,14 @@ def send_to_webhooks(args, session, message_frame):
 
     for w in args.webhooks:
         try:
-            session.post(w, json=message_frame, timeout=(None, req_timeout),
-                         background_callback=__wh_completed)
+            # Disable keep-alive and set streaming to True, so we can skip
+            # the response content.
+            res = session.post(w, json=message_frame,
+                               timeout=(None, req_timeout),
+                               background_callback=__wh_completed,
+                               headers={'Connection': 'close'},
+                               stream=True)
+            res.close()
         except requests.exceptions.ReadTimeout:
             log.exception('Response timeout on webhook endpoint %s.', w)
         except requests.exceptions.RequestException as e:
