@@ -1025,35 +1025,25 @@ def search_worker_thread(args, account_queue, account_sets,
                     # Build a list of gyms to update.
                     gyms_to_update = {}
                     for gym in parsed['gyms'].values():
-                        # Can only get gym details within 1km of our position.
-                        distance = calc_distance(
-                            step_location, [gym['latitude'], gym['longitude']])
-                        if distance < 1.0:
-                            # Check if we already have details on this gym.
-                            # Get them if not.
-                            try:
-                                record = GymDetails.get(gym_id=gym['gym_id'])
-                            except GymDetails.DoesNotExist:
-                                gyms_to_update[gym['gym_id']] = gym
-                                continue
+                        # Check if we already have details on this gym.
+                        # Get them if not.
+                        try:
+                            record = GymDetails.get(gym_id=gym['gym_id'])
+                        except GymDetails.DoesNotExist:
+                            gyms_to_update[gym['gym_id']] = gym
+                            continue
 
-                            # If we have a record of this gym already, check if
-                            # the gym has been updated since our last update.
-                            if record.last_scanned < gym['last_modified']:
-                                gyms_to_update[gym['gym_id']] = gym
-                                continue
-                            else:
-                                log.debug(
-                                    ('Skipping update of gym @ %f/%f, ' +
-                                     'up to date.'),
-                                    gym['latitude'], gym['longitude'])
-                                continue
+                        # If we have a record of this gym already, check if
+                        # the gym has been updated since our last update.
+                        if record.last_scanned < gym['last_modified']:
+                            gyms_to_update[gym['gym_id']] = gym
+                            continue
                         else:
                             log.debug(
-                                ('Skipping update of gym @ %f/%f, too far ' +
-                                 'away from our location at %f/%f (%fkm).'),
-                                gym['latitude'], gym['longitude'],
-                                step_location[0], step_location[1], distance)
+                                ('Skipping update of gym @ %f/%f, ' +
+                                 'up to date.'),
+                                gym['latitude'], gym['longitude'])
+                            continue
 
                     if len(gyms_to_update):
                         gym_responses = {}
@@ -1080,10 +1070,8 @@ def search_worker_thread(args, account_queue, account_sets,
                             if response['responses'][
                                     'GYM_GET_INFO'].result == 2:
                                 log.warning(
-                                    ('Gym @ %f/%f is out of range (%dkm), ' +
-                                     'skipping.'),
-                                    gym['latitude'], gym['longitude'],
-                                    distance)
+                                    ('Gym @ %f/%f is out of range skipping.'),
+                                    gym['latitude'], gym['longitude'])
                             else:
                                 gym_responses[gym['gym_id']] = response[
                                     'responses']['GYM_GET_INFO']
