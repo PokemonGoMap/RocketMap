@@ -4,9 +4,13 @@ $(function () {
 
     /* Settings. */
 
-    //Disable scaling by rarity and notification
-    const disableScaleByRarity = false // Default: false
-    Store.set('disableScaleByRarity', disableScaleByRarity)
+    // Scaling settings
+
+    // Add custom Pokemon to scale bigger
+    const customPokemon = [] // add id of pokemon seperated by comma. eg [1, 2, 3]
+    // Disable scaling by rarity and notification
+    const scaleByRarity = true // Default: true
+
 
     // Google Analytics property ID. Leave empty to disable.
     // Looks like 'UA-XXXXX-Y'.
@@ -69,6 +73,8 @@ $(function () {
     Store.set('clusterGridSize', clusterGridSize)
     Store.set('processPokemonChunkSize', processPokemonChunkSize)
     Store.set('processPokemonIntervalMs', processPokemonIntervalMs)
+    Store.set('scaleByRarity', scaleByRarity)
+    Store.set('customPokemon', (JSON.stringify(customPokemon)))
 
     if (typeof window.orientation !== "undefined" || isMobileDevice()) {
         Store.set('maxClusterZoomLevel', maxClusterZoomLevelMobile)
