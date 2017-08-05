@@ -376,7 +376,9 @@ class SpawnScan(BaseScheduler):
                     self.scan_location, self.args.step_limit)
                 log.debug('Loaded %s spawns from database.' % len(spawns))
 
-        self.locations = gyms + stops + spawns
+        self.locations.extend(gyms)
+        self.locations.extend(stops)
+        self.locations.extend(spawns)
 
         # Geofence spawnpoints.
         if self.geofences.is_enabled():
