@@ -470,10 +470,9 @@ class Gym(BaseModel):
                  .select(Gym.latitude.alias('lat'),
                          Gym.longitude.alias('lng'),
                          Gym.gym_id,
-                         Gym.raid_spawn.alias('start'),
-                         Gym.raid_end.alias('end')
+                         Gym.last_scanned.alias('time')
                          ))
-        query = (Gym
+        query = (query
                  .select()
                  .where((Gym.latitude <= n) &
                         (Gym.latitude >= s) &
@@ -482,7 +481,10 @@ class Gym(BaseModel):
 
         s = list(query.dicts())
         if len(s) > 0:
-            log.debug('Found these in the database: {}'.format(len(s)))
+            log.debug('Found these many gyms in the database: {}'
+                      .format(len(s)))
+
+        return query
 
     @staticmethod
     def get_gyms(swLat, swLng, neLat, neLng, timestamp=0, oSwLat=None,
