@@ -47,7 +47,6 @@ add it to __scheduler_classes
 import itertools
 import logging
 import math
-import json
 import time
 import sys
 from timeit import default_timer
@@ -59,7 +58,7 @@ from queue import Empty
 from operator import itemgetter
 from datetime import datetime, timedelta
 from .transform import get_new_coords
-from .models import (hex_bounds, SpawnPoint, ScannedLocation,
+from .models import (hex_bounds, SpawnPoint, Pokestop, Gym, ScannedLocation,
                      ScanSpawnPoint, HashKeys)
 from .utils import now, cur_sec, cellid, distance
 from .altitude import get_altitude
@@ -357,25 +356,25 @@ class SpawnScan(BaseScheduler):
     # Generate locations is called when the locations list is cleared - the
     # first time it scans or after a location change.
     def _generate_locations(self):
-        # Attempt to load spawns from file.
-        if self.args.spawnpoint_scanning != 'nofile':
-            log.debug('Loading spawn points from json file @ %s',
-                      self.args.spawnpoint_scanning)
-            try:
-                with open(self.args.spawnpoint_scanning) as file:
-                    self.locations = json.load(file)
-            except ValueError as e:
-                log.error('JSON error: %s; will fallback to database', repr(e))
-            except IOError as e:
-                log.error(
-                    'Error opening json file: %s; will fallback to database',
-                    repr(e))
-
+        spawns = []
+        gyms = []
+        stops = []
         # No locations yet? Try the database!
         if not self.locations:
-            log.debug('Loading spawn points from database')
-            self.locations = SpawnPoint.get_spawnpoints_in_hex(
-                self.scan_location, self.args.step_limit)
+            if self.args.no_pokemon:
+                log.debug('Loading gyms from database')
+                if not self.args.no_gyms:
+                    gyms += Gym.get_gyms_in_hex(self.scan_location,
+                                                self.args.step_limit)
+                if not self.args.no_pokestops:
+                    stops += Pokestop.get_stops_in_hex(self.scan_location,
+                                                       self.args.step_limit)
+            else:
+                log.debug('Loading spawn points from database')
+                spawns += SpawnPoint.get_spawnpoints_in_hex(
+                    self.scan_location, self.args.step_limit)
+
+        self.locations = gyms + stops + spawns
 
         # Geofence spawnpoints.
         if self.geofences.is_enabled():
@@ -387,8 +386,8 @@ class SpawnScan(BaseScheduler):
                 sys.exit()
 
         # Well shit...
-        # if not self.locations:
-        #    raise Exception('No availabe spawn points!')
+        if not self.locations:
+            raise Exception('No availabe spawn points!')
 
         # locations[]:
         # {"lat": 37.53079079414139, "lng": -122.28811690874117,
@@ -397,7 +396,6 @@ class SpawnScan(BaseScheduler):
         log.info('Total of %d spawns to track', len(self.locations))
 
         # locations.sort(key=itemgetter('time'))
-
         if self.args.verbose:
             for i in self.locations:
                 sec = i['time'] % 60
@@ -405,7 +403,6 @@ class SpawnScan(BaseScheduler):
                 m = 'Scan [{:02}:{:02}] ({}) @ {},{}'.format(
                     minute, sec, i['time'], i['lat'], i['lng'])
                 log.debug(m)
-
         # 'time' from json and db alike has been munged to appearance time as
         # seconds after the hour.
         # Here we'll convert that to a real timestamp.
