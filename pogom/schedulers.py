@@ -362,8 +362,8 @@ class SpawnScan(BaseScheduler):
         # No locations yet? Try the database!
         if not self.locations:
             if self.args.no_pokemon:
-                log.debug('Loading gyms from database')
                 if not self.args.no_gyms:
+                    log.debug('Loading gyms from database')
                     gyms += Gym.get_gyms_in_hex(self.scan_location,
                                                 self.args.step_limit)
             else:
