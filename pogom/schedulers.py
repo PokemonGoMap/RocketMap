@@ -366,9 +366,6 @@ class SpawnScan(BaseScheduler):
                 if not self.args.no_gyms:
                     gyms += Gym.get_gyms_in_hex(self.scan_location,
                                                 self.args.step_limit)
-                if not self.args.no_pokestops:
-                    stops += Pokestop.get_stops_in_hex(self.scan_location,
-                                                       self.args.step_limit)
             else:
                 log.debug('Loading spawn points from database')
                 spawns += SpawnPoint.get_spawnpoints_in_hex(
