@@ -4,9 +4,8 @@ $(function () {
 
     /* Settings. */
 
-    const upscaledPokemon = [] // Add Pokémon IDs separated by commas (e.g. [1, 2, 3]) to upscale icons.
     const scaleByRarity = true // Disable scaling by rarity and notification. Default: true.
-
+    const upscaledPokemon = [] // Add Pokémon IDs separated by commas (e.g. [1, 2, 3]) to upscale icons.
 
     // Google Analytics property ID. Leave empty to disable.
     // Looks like 'UA-XXXXX-Y'.
