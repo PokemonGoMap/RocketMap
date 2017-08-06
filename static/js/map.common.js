@@ -1095,7 +1095,7 @@ function setupPokemonMarkerDetails(item, map, scaleByRarity = true) {
             'legendary': 50
         }
         const upscaledPokemon = JSON.parse(Store.get('upscaledPokemon'))
-        var rarityValue = isNotifyPoke(item) || (upscaledPokemonData.indexOf(item['pokemon_id']) !== -1) ? 29 : 2
+        var rarityValue = isNotifyPoke(item) || (upscaledPokemon.indexOf(item['pokemon_id']) !== -1) ? 29 : 2
 
         if (item.hasOwnProperty('pokemon_rarity')) {
             const pokemonRarity = item['pokemon_rarity'].toLowerCase()
