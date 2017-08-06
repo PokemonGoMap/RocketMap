@@ -352,7 +352,7 @@ class SpawnScan(BaseScheduler):
             self.step_distance = 0.070
 
         self.step_limit = args.step_limit
-        self.locations = False
+        self.locations = []
 
     # Generate locations is called when the locations list is cleared - the
     # first time it scans or after a location change.
@@ -370,16 +370,14 @@ class SpawnScan(BaseScheduler):
                     log.debug('Loaded %s gyms from database.' % len(gyms))
                     # getting last scanned as secs in hour
                     for gym in gyms:
-                        gym['time'] = gym['time'] % 3600
+                        gym['time'] = int(time.mktime(gym['time'].timetuple()) % 3600.0)
             else:
                 log.debug('Loading spawn points from database.')
                 spawns += SpawnPoint.get_spawnpoints_in_hex(
                     self.scan_location, self.args.step_limit)
                 log.debug('Loaded %s spawns from database.' % len(spawns))
 
-        self.locations.extend(gyms)
-        self.locations.extend(stops)
-        self.locations.extend(spawns)
+        self.locations = gyms + stops + spawns
 
         # Geofence spawnpoints.
         if self.geofences.is_enabled():

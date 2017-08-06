@@ -471,9 +471,7 @@ class Gym(BaseModel):
                          Gym.longitude.alias('lng'),
                          Gym.gym_id,
                          Gym.last_scanned.alias('time')
-                         ))
-        query = (query
-                 .select()
+                         )
                  .where((Gym.latitude <= n) &
                         (Gym.latitude >= s) &
                         (Gym.longitude >= w) &
@@ -484,7 +482,7 @@ class Gym(BaseModel):
             log.debug('Found these many gyms in the database: {}'
                       .format(len(s)))
 
-        return query
+        return s
 
     @staticmethod
     def get_gyms(swLat, swLng, neLat, neLng, timestamp=0, oSwLat=None,
@@ -1335,9 +1333,6 @@ class SpawnPoint(BaseModel):
                              (SpawnPoint.longitude >= w) &
                              (SpawnPoint.longitude <= e)
                              ))
-        if args.spawnpoint_scanning and not args.no_server:
-            query = (query
-                     .where(SpawnPoint.disappear_time.is_null(False)))
 
         # Sqlite doesn't support distinct on columns.
         if args.db_type == 'mysql':
