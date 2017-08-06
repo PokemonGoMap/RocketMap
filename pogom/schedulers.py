@@ -370,7 +370,8 @@ class SpawnScan(BaseScheduler):
                     log.debug('Loaded %s gyms from database.' % len(gyms))
                     # getting last scanned as secs in hour
                     for gym in gyms:
-                        gym['time'] = int(time.mktime(gym['time'].timetuple()) % 3600.0)
+                        gym['time'] = int(time.mktime(gym['time']
+                                                      .timetuple()) % 3600.0)
             else:
                 log.debug('Loading spawn points from database.')
                 spawns += SpawnPoint.get_spawnpoints_in_hex(
