@@ -472,7 +472,7 @@ class SpawnScan(BaseScheduler):
             log.debug("Added location {}".format(location))
 
         # Clear the locations list so it gets regenerated next cycle.
-        self.locations = None
+        self.locations = []
         self.ready = True
 
 
