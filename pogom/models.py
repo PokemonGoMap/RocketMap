@@ -439,24 +439,6 @@ class Pokestop(LatLongModel):
 
         return pokestops
 
-    @classmethod
-    def get_stops_in_hex(cls, center, steps, dist=0.45):
-
-        n, e, s, w = hex_bounds(center, steps, dist)
-
-        query = (Pokestop
-                 .select(Pokestop.latitude.alias('lat'),
-                         Pokestop.longitude.alias('lng'),
-                         Pokestop.pokestop_id,
-                         ))
-        query = (query.where((Pokestop.latitude <= n) &
-                             (Pokestop.latitude >= s) &
-                             (Pokestop.longitude >= w) &
-                             (Pokestop.longitude <= e)
-                             ))
-
-        s = list(query.dicts())
-
 
 class Gym(LatLongModel):
     gym_id = Utf8mb4CharField(primary_key=True, max_length=50)
@@ -472,29 +454,6 @@ class Gym(LatLongModel):
 
     class Meta:
         indexes = ((('latitude', 'longitude'), False),)
-
-    @classmethod
-    def get_gyms_in_hex(cls, center, steps, dist=0.45):
-
-        n, e, s, w = hex_bounds(center, steps, dist)
-
-        query = (Gym
-                 .select(Gym.latitude.alias('lat'),
-                         Gym.longitude.alias('lng'),
-                         Gym.gym_id,
-                         Gym.last_scanned.alias('time')
-                         )
-                 .where((Gym.latitude <= n) &
-                        (Gym.latitude >= s) &
-                        (Gym.longitude >= w) &
-                        (Gym.longitude <= e)))
-
-        s = list(query.dicts())
-        if len(s) > 0:
-            log.debug('Found these many gyms in the database: {}'
-                      .format(len(s)))
-
-        return s
 
     @staticmethod
     def get_gyms(swLat, swLng, neLat, neLng, timestamp=0, oSwLat=None,

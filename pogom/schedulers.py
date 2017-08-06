@@ -357,27 +357,14 @@ class SpawnScan(BaseScheduler):
     # first time it scans or after a location change.
     def _generate_locations(self):
         spawns = []
-        gyms = []
-        stops = []
         # No locations yet? Try the database!
         if not self.locations:
-            if self.args.no_pokemon:
-                if not self.args.no_gyms:
-                    log.debug('Loading gyms from database.')
-                    gyms += Gym.get_gyms_in_hex(self.scan_location,
-                                                self.args.step_limit)
-                    log.debug('Loaded %s gyms from database.' % len(gyms))
-                    # getting last scanned as secs in hour
-                    for gym in gyms:
-                        gym['time'] = int(time.mktime(gym['time']
-                                                      .timetuple()) % 3600.0)
-            else:
-                log.debug('Loading spawn points from database.')
-                spawns += SpawnPoint.get_spawnpoints_in_hex(
-                    self.scan_location, self.args.step_limit)
-                log.debug('Loaded %s spawns from database.' % len(spawns))
+            log.debug('Loading spawn points from database.')
+            spawns += SpawnPoint.get_spawnpoints_in_hex(
+                self.scan_location, self.args.step_limit)
+            log.debug('Loaded %s spawns from database.' % len(spawns))
 
-        self.locations = gyms + stops + spawns
+        self.locations += spawns
 
         # Geofence spawnpoints.
         if self.geofences.is_enabled():
@@ -398,7 +385,6 @@ class SpawnScan(BaseScheduler):
 
         log.info('Total of %d spawns to track', len(self.locations))
 
-        # locations.sort(key=itemgetter('time'))
         if self.args.verbose:
             for i in self.locations:
                 sec = i['time'] % 60
