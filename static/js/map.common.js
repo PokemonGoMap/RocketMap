@@ -982,7 +982,7 @@ var StoreOptions = {
         default: true,
         type: StoreTypes.Boolean
     },
-    'customPokemon': {
+    'upscaledPokemon': {
         default: [],
         type: StoreTypes.JSON
     },
@@ -1094,9 +1094,9 @@ function setupPokemonMarkerDetails(item, map, scaleByRarity = true) {
             'ultra rare': 40,
             'legendary': 50
         }
-        var customPokemon = Store.get('customPokemon')
-        var customPokemonData = JSON.parse(customPokemon)
-        var rarityValue = isNotifyPoke(item) || (customPokemonData.indexOf(item['pokemon_id']) !== -1) ? 29 : 2
+        var upscaledPokemon = Store.get('upscaledPokemon')
+        var upscaledPokemonData = JSON.parse(upscaledPokemon)
+        var rarityValue = isNotifyPoke(item) || (upscaledPokemonData.indexOf(item['pokemon_id']) !== -1) ? 29 : 2
 
         if (item.hasOwnProperty('pokemon_rarity')) {
             const pokemonRarity = item['pokemon_rarity'].toLowerCase()
