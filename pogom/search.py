@@ -46,8 +46,8 @@ from .models import (parse_map, GymDetails, parse_gyms, MainWorker,
                      WorkerStatus, HashKeys)
 from .utils import now, clear_dict_response
 from .transform import get_new_coords, jitter_location
-from .account import (setup_api, check_login, get_tutorial_state,
-                      complete_tutorial, AccountSet, parse_new_timestamp_ms)
+from .account import (setup_api, check_login, AccountSet,
+                      parse_new_timestamp_ms)
 from .captcha import captcha_overseer_thread, handle_captcha
 from .proxy import get_new_proxy
 
@@ -566,7 +566,7 @@ def search_overseer_thread(args, new_location_queue, control_flags, heartb,
         threadStatus['Overseer']['accounts_captcha'] = len(account_captchas)
 
         # Send webhook updates when scheduler status changes.
-        if args.webhook_scheduler_updates:
+        if args.speed_scan and 'tth' in args.wh_types:
             wh_status_update(args, threadStatus['Overseer'], wh_queue,
                              scheduler_array[0])
 
@@ -593,17 +593,16 @@ def get_scheduler_tth_found_pct(scheduler):
 def wh_status_update(args, status, wh_queue, scheduler):
     scheduler_name = status['scheduler']
 
-    if args.speed_scan:
-        tth_found = get_scheduler_tth_found_pct(scheduler)
-        spawns_found = getattr(scheduler, 'spawns_found', 0)
+    tth_found = get_scheduler_tth_found_pct(scheduler)
+    spawns_found = getattr(scheduler, 'spawns_found', 0)
 
-        if (tth_found - status['scheduler_status']['tth_found']) > 0.01:
-            log.debug('Scheduler update is due, sending webhook message.')
-            wh_queue.put(('scheduler', {'name': scheduler_name,
-                                        'instance': args.status_name,
-                                        'tth_found': tth_found,
-                                        'spawns_found': spawns_found}))
-            status['scheduler_status']['tth_found'] = tth_found
+    if (tth_found - status['scheduler_status']['tth_found']) > 0.01:
+        log.debug('Scheduler update is due, sending webhook message.')
+        wh_queue.put(('scheduler', {'name': scheduler_name,
+                                    'instance': args.status_name,
+                                    'tth_found': tth_found,
+                                    'spawns_found': spawns_found}))
+        status['scheduler_status']['tth_found'] = tth_found
 
 
 def get_stats_message(threadStatus, search_items_queue_array, db_updates_queue,
@@ -625,6 +624,7 @@ def get_stats_message(threadStatus, search_items_queue_array, db_updates_queue,
     cph = overseer['captcha_total'] * 3600.0 / elapsed
     ccost = cph * 0.00299
     cmonth = ccost * 730
+
     # Print the queue length.
     search_items_queue_size = 0
     for i in range(0, len(search_items_queue_array)):
@@ -648,7 +648,6 @@ def get_stats_message(threadStatus, search_items_queue_array, db_updates_queue,
              overseer['fail_total'], fph, overseer['empty_total'], eph,
              overseer['skip_total'], skph, overseer['captcha_total'], cph,
              ccost, cmonth)
-
     return message
 
 
@@ -786,6 +785,7 @@ def search_worker_thread(args, account_queue, account_sets,
 
             # Get an account.
             account = account_queue.get()
+            # Reset account statistics tracked per loop.
             status.update(WorkerStatus.get_worker(
                 account['username'], scheduler.scan_location))
             status['message'] = 'Switching to account {}.'.format(
@@ -942,20 +942,6 @@ def search_worker_thread(args, account_queue, account_sets,
                 # check_login().
                 if first_login:
                     first_login = False
-
-                    # Check tutorial completion.
-                    if args.complete_tutorial:
-                        tutorial_state = get_tutorial_state(args, api, account)
-
-                        if not all(x in tutorial_state
-                                   for x in (0, 1, 3, 4, 7)):
-                            log.info('Completing tutorial steps for %s.',
-                                     account['username'])
-                            complete_tutorial(args, api, account,
-                                              tutorial_state)
-                        else:
-                            log.info('Account %s already completed tutorial.',
-                                     account['username'])
 
                 # Putting this message after the check_login so the messages
                 # aren't out of order.
@@ -1158,7 +1144,7 @@ def search_worker_thread(args, account_queue, account_sets,
                     time.strftime(
                         '%H:%M:%S',
                         time.localtime(time.time() + args.scan_delay)))
-                log.info(status['message'])
+                log.debug(status['message'])
                 time.sleep(delay)
 
         # Catch any process exceptions, log them, and continue the thread.

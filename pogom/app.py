@@ -165,12 +165,14 @@ class Pogom(Flask):
             'gyms': not args.no_gyms,
             'pokemons': not args.no_pokemon,
             'pokestops': not args.no_pokestops,
+            'raids': not args.no_raids,
             'gym_info': args.gym_info,
             'encounter': args.encounter,
             'scan_display': scan_display,
             'search_display': search_display,
             'fixed_display': not args.fixed_location,
-            'custom_css': args.custom_css
+            'custom_css': args.custom_css,
+            'custom_js': args.custom_js
         }
 
         map_lat = self.current_location[0]
@@ -450,7 +452,8 @@ class Pogom(Flask):
         pokemon_list = [y[0] for y in sorted(pokemon_list, key=lambda x: x[1])]
         args = get_args()
         visibility_flags = {
-            'custom_css': args.custom_css
+            'custom_css': args.custom_css,
+            'custom_js': args.custom_js
         }
 
         return render_template('mobile_list.html',
@@ -546,7 +549,8 @@ class Pogom(Flask):
     def get_stats(self):
         args = get_args()
         visibility_flags = {
-            'custom_css': args.custom_css
+            'custom_css': args.custom_css,
+            'custom_js': args.custom_js
         }
 
         return render_template('statistics.html',
@@ -566,7 +570,8 @@ class Pogom(Flask):
     def get_status(self):
         args = get_args()
         visibility_flags = {
-            'custom_css': args.custom_css
+            'custom_css': args.custom_css,
+            'custom_js': args.custom_js
         }
         if args.status_page_password is None:
             abort(404)

@@ -18,7 +18,7 @@ from flask_cache_bust import init_cache_busting
 
 from pogom import config
 from pogom.app import Pogom
-from pogom.utils import get_args, now, extract_sprites, gmaps_reverse_geolocate
+from pogom.utils import get_args, now, gmaps_reverse_geolocate
 from pogom.altitude import get_gmaps_altitude
 
 from pogom.models import (init_database, create_tables, drop_tables,
@@ -27,6 +27,7 @@ from pogom.models import (init_database, create_tables, drop_tables,
 from pogom.webhook import wh_updater
 
 from pogom.proxy import load_proxies, check_proxies, proxies_refresher
+from pogom.search import search_overseer_thread
 from time import strftime
 
 
@@ -59,8 +60,6 @@ log = logging.getLogger()
 log.addHandler(stdout_hdlr)
 log.addHandler(stderr_hdlr)
 
-# This needs to be after logging to be able to log geofences import errors.
-from pogom.search import search_overseer_thread  # noqa
 
 # Assert pgoapi is installed.
 try:
@@ -130,9 +129,8 @@ def validate_assets(args):
     # You need custom image files now.
     if not os.path.isfile(
             os.path.join(root_path, 'static/icons-sprite.png')):
-        log.info('Sprite files not present, extracting bundled ones...')
-        extract_sprites(root_path)
-        log.info('Done!')
+        log.critical(assets_error_log)
+        return False
 
     # Check if custom.css is used otherwise fall back to default.
     if os.path.exists(os.path.join(root_path, 'static/css/custom.css')):
@@ -142,6 +140,15 @@ def validate_assets(args):
     else:
         args.custom_css = False
         log.info('No file \"custom.css\" found, using default settings.')
+
+    # Check if custom.js is used otherwise fall back to default.
+    if os.path.exists(os.path.join(root_path, 'static/js/custom.js')):
+        args.custom_js = True
+        log.info(
+            'File \"custom.js\" found, applying user-defined settings.')
+    else:
+        args.custom_js = False
+        log.info('No file \"custom.js\" found, using default settings.')
 
     return True
 
@@ -186,6 +193,11 @@ def main():
     sys.excepthook = handle_exception
 
     args = get_args()
+
+    # Abort if status name is not alphanumeric.
+    if not str(args.status_name).isalnum():
+        log.critical('Status name must be alphanumeric.')
+        sys.exit(1)
 
     set_log_and_verbosity(log)
 
@@ -244,11 +256,11 @@ def main():
     config['LOCALE'] = args.locale
     config['CHINA'] = args.china
 
-    # if we're clearing the db, do not bother with the blacklist
-    if args.clear_db:
-        args.disable_blacklist = True
-    app = Pogom(__name__)
-    app.before_request(app.validate_request)
+    app = None
+    if not args.no_server and not args.clear_db:
+        app = Pogom(__name__)
+        app.before_request(app.validate_request)
+        app.set_current_location(position)
 
     db = init_database(app)
     if args.clear_db:
@@ -269,8 +281,6 @@ def main():
         log.info(
             'Drop and recreate is complete. Now remove -cd and restart.')
         sys.exit()
-
-    app.set_current_location(position)
 
     # Control the search status (running or not) across threads.
     control_flags = {
@@ -315,16 +325,20 @@ def main():
     wh_updates_queue = Queue()
     wh_key_cache = {}
 
-    # Thread to process webhook updates.
-    for i in range(args.wh_threads):
-        log.debug('Starting wh-updater worker thread %d', i)
-        t = Thread(target=wh_updater, name='wh-updater-{}'.format(i),
-                   args=(args, wh_updates_queue, wh_key_cache))
-        t.daemon = True
-        t.start()
+    if len(args.wh_types) == 0:
+        log.info('Webhook disabled.')
+    else:
+        log.info('Webhook enabled for events: sending %s to %s.',
+                 args.wh_types,
+                 args.webhooks)
 
-    config['ROOT_PATH'] = app.root_path
-    config['GMAPS_KEY'] = args.gmaps_key
+        # Thread to process webhook updates.
+        for i in range(args.wh_threads):
+            log.debug('Starting wh-updater worker thread %d', i)
+            t = Thread(target=wh_updater, name='wh-updater-{}'.format(i),
+                       args=(args, wh_updates_queue, wh_key_cache))
+            t.daemon = True
+            t.start()
 
     if not args.only_server:
         # Check if we are able to scan.
@@ -389,22 +403,24 @@ def main():
         search_thread.daemon = True
         search_thread.start()
 
-    if args.cors:
-        CORS(app)
-
-    # No more stale JS.
-    init_cache_busting(app)
-
-    app.set_search_control(control_flags['search_control'])
-    app.set_heartbeat_control(heartbeat)
-    app.set_location_queue(new_location_queue)
-
     if args.no_server:
         # This loop allows for ctrl-c interupts to work since flask won't be
         # holding the program open.
         while search_thread.is_alive():
             time.sleep(60)
     else:
+        config['ROOT_PATH'] = app.root_path
+        config['GMAPS_KEY'] = args.gmaps_key
+
+        if args.cors:
+            CORS(app)
+
+        # No more stale JS.
+        init_cache_busting(app)
+
+        app.set_search_control(control_flags['search_control'])
+        app.set_heartbeat_control(heartbeat)
+        app.set_location_queue(new_location_queue)
         ssl_context = None
         if (args.ssl_certificate and args.ssl_privatekey and
                 os.path.exists(args.ssl_certificate) and

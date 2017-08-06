@@ -11,7 +11,6 @@ import random
 import time
 import socket
 import struct
-import zipfile
 import requests
 import hashlib
 
@@ -131,10 +130,6 @@ def get_args():
                               'area. Regarded this as inverted geofence. ' +
                               'Can be combined with geofence-file.'),
                         default='')
-    parser.add_argument('-nmpl', '--no-matplotlib',
-                        help=('Prevents the usage of matplotlib when ' +
-                              'running on incompatible hardware.'),
-                        action='store_true', default=False)
     parser.add_argument('-sd', '--scan-delay',
                         help='Time delay between requests in scan threads.',
                         type=float, default=10)
@@ -169,16 +164,25 @@ def get_args():
                         help=('Time delay between encounter pokemon ' +
                               'in scan threads.'),
                         type=float, default=1)
+    parser.add_argument('-ignf', '--ignorelist-file',
+                        default='', help='File containing a list of ' +
+                        'Pokemon IDs to ignore, one line per ID. ' +
+                        'Spawnpoints will be saved, but ignored ' +
+                        'Pokemon won\'t be encountered, sent to ' +
+                        'webhooks or saved to the DB.')
     parser.add_argument('-encwf', '--enc-whitelist-file',
                         default='', help='File containing a list of '
                         'Pokemon IDs to encounter for'
-                        ' IV/CP scanning.')
+                        ' IV/CP scanning. One line per ID.')
     parser.add_argument('-nostore', '--no-api-store',
                         help=("Don't store the API objects used by the high"
                               + ' level accounts in memory. This will increase'
                               + ' the number of logins per account, but '
                               + ' decreases memory usage.'),
                         action='store_true', default=False)
+    parser.add_argument('-apir', '--api-retries',
+                        help=('Number of times to retry an API request.'),
+                        type=int, default=3)
     webhook_list = parser.add_mutually_exclusive_group()
     webhook_list.add_argument('-wwht', '--webhook-whitelist',
                               action='append', default=[],
@@ -303,6 +307,12 @@ def get_args():
                         help=('Use speed scanning to identify spawn points ' +
                               'and then scan closest spawns.'),
                         action='store_true', default=False)
+    parser.add_argument('-spin', '--pokestop-spinning',
+                        help=('Spin Pokestops with 50%% probability.'),
+                        action='store_true', default=False)
+    parser.add_argument('-ams', '--account-max-spins',
+                        help='Maximum number of Pokestop spins per hour.',
+                        type=int, default=80)
     parser.add_argument('-kph', '--kph',
                         help=('Set a maximum speed in km/hour for scanner ' +
                               'movement.'),
@@ -358,7 +368,7 @@ def get_args():
     parser.add_argument('-pxo', '--proxy-rotation',
                         help=('Enable proxy rotation with account changing ' +
                               'for search threads (none/round/random).'),
-                        type=str, default='none')
+                        type=str, default='round')
     parser.add_argument('--db-type',
                         help='Type of database to be used (default: sqlite).',
                         default='sqlite')
@@ -384,9 +394,15 @@ def get_args():
                         action='store_true', default=False)
     parser.add_argument('--disable-clean', help='Disable clean db loop.',
                         action='store_true', default=False)
-    parser.add_argument('--webhook-updates-only',
-                        help='Only send updates (Pokemon & lured pokestops).',
-                        action='store_true', default=False)
+    parser.add_argument(
+        '--wh-types',
+        help=('Defines the type of messages to send to webhooks.'),
+        choices=[
+            'pokemon', 'gym', 'raid', 'egg', 'tth', 'gym-info',
+            'pokestop', 'lure'
+        ],
+        action='append',
+        default=[])
     parser.add_argument('--wh-threads',
                         help=('Number of webhook threads; increase if the ' +
                               'webhook queue falls behind.'),
@@ -408,10 +424,10 @@ def get_args():
     parser.add_argument('-whlfu', '--wh-lfu-size',
                         help='Webhook LFU cache max size.', type=int,
                         default=2500)
-    parser.add_argument('-whsu', '--webhook-scheduler-updates',
-                        help=('Send webhook updates with scheduler status ' +
-                              '(use with -wh).'),
-                        action='store_true', default=True)
+    parser.add_argument('-whfi', '--wh-frame-interval',
+                        help=('Minimum time (in ms) to wait before sending the'
+                              + ' next webhook data frame.'), type=int,
+                        default=500)
     parser.add_argument('--ssl-certificate',
                         help='Path to SSL certificate file.')
     parser.add_argument('--ssl-privatekey',
@@ -433,10 +449,6 @@ def get_args():
                         help='Set the status page password.')
     parser.add_argument('-hk', '--hash-key', default=None, action='append',
                         help='Key for hash server')
-    parser.add_argument('-tut', '--complete-tutorial', action='store_true',
-                        help=("Complete ToS and tutorial steps on accounts " +
-                              "if they haven't already."),
-                        default=False)
     parser.add_argument('-novc', '--no-version-check', action='store_true',
                         help='Disable API version check.',
                         default=False)
@@ -459,7 +471,7 @@ def get_args():
                         help=('Enables the use of X-FORWARDED-FOR headers ' +
                               'to identify the IP of clients connecting ' +
                               'through these trusted proxies.'))
-    parser.add_argument('--api-version', default='0.67.2',
+    parser.add_argument('--api-version', default='0.69.0',
                         help=('API version currently in use.'))
     verbose = parser.add_mutually_exclusive_group()
     verbose.add_argument('-v',
@@ -739,6 +751,12 @@ def get_args():
             args.webhook_whitelist = frozenset(
                 [int(i) for i in args.webhook_whitelist])
 
+        # create an empty set
+        args.ignorelist = []
+        if args.ignorelist_file:
+            with open(args.ignorelist_file) as f:
+                args.ignorelist = frozenset([int(l.strip()) for l in f])
+
         # Decide which scanning mode to use.
         if args.spawnpoint_scanning:
             args.scheduler = 'SpawnScan'
@@ -751,7 +769,9 @@ def get_args():
 
         # Disable webhook scheduler updates if webhooks are disabled
         if args.webhooks is None:
-            args.webhook_scheduler_updates = False
+            args.wh_types = frozenset()
+        else:
+            args.wh_types = frozenset([i for i in args.wh_types])
 
     return args
 
@@ -935,11 +955,13 @@ def generate_device_info(identifier):
                    'firmware_brand': 'iPhone OS'}
     devices = tuple(IPHONES.keys())
 
-    ios8 = ('8.0', '8.0.1', '8.0.2', '8.1', '8.1.1',
-            '8.1.2', '8.1.3', '8.2', '8.3', '8.4', '8.4.1')
-    ios9 = ('9.0', '9.0.1', '9.0.2', '9.1', '9.2', '9.2.1',
-            '9.3', '9.3.1', '9.3.2', '9.3.3', '9.3.4', '9.3.5')
-    ios10 = ('10.0', '10.0.1', '10.0.2', '10.0.3', '10.1', '10.1.1')
+    ios8 = ('8.0', '8.0.1', '8.0.2', '8.1', '8.1.1', '8.1.2', '8.1.3', '8.2',
+            '8.3', '8.4', '8.4.1')
+    ios9 = ('9.0', '9.0.1', '9.0.2', '9.1', '9.2', '9.2.1', '9.3', '9.3.1',
+            '9.3.2', '9.3.3', '9.3.4', '9.3.5')
+    # 10.0 was only for iPhone 7 and 7 Plus, and is rare.
+    ios10 = ('10.0.1', '10.0.2', '10.0.3', '10.1', '10.1.1', '10.2', '10.2.1',
+             '10.3', '10.3.1', '10.3.2', '10.3.3')
 
     device_pick = devices[pick_hash % len(devices)]
     device_info['device_model_boot'] = device_pick
@@ -948,26 +970,16 @@ def generate_device_info(identifier):
 
     if device_pick in ('iPhone9,1', 'iPhone9,2', 'iPhone9,3', 'iPhone9,4'):
         ios_pool = ios10
-    elif device_pick in ('iPhone8,1', 'iPhone8,2', 'iPhone8,4'):
+    elif device_pick in ('iPhone8,1', 'iPhone8,2'):
         ios_pool = ios9 + ios10
+    elif device_pick == 'iPhone8,4':
+        # iPhone SE started on 9.3.
+        ios_pool = ('9.3', '9.3.1', '9.3.2', '9.3.3', '9.3.4', '9.3.5') + ios10
     else:
         ios_pool = ios8 + ios9 + ios10
 
     device_info['firmware_type'] = ios_pool[pick_hash % len(ios_pool)]
     return device_info
-
-
-def extract_sprites(root_path):
-    zip_path = os.path.join(
-        root_path,
-        'static01.zip')
-    extract_path = os.path.join(
-        root_path,
-        'static')
-    log.debug('Extracting sprites from "%s" to "%s"', zip_path, extract_path)
-    zip = zipfile.ZipFile(zip_path, 'r')
-    zip.extractall(extract_path)
-    zip.close()
 
 
 def clear_dict_response(response):
@@ -1008,7 +1020,18 @@ def gmaps_reverse_geolocate(gmaps_key, locale, location):
 
     try:
         reverse = geolocator.reverse(location)
-        country_code = reverse[-1].raw['address_components'][-1]['short_name']
+        address = reverse[-1].raw['address_components']
+        country_code = 'US'
+
+        # Find country component.
+        for component in address:
+            # Look for country.
+            component_is_country = any([t == 'country'
+                                        for t in component.get('types', [])])
+
+            if component_is_country:
+                country_code = component['short_name']
+                break
 
         try:
             timezone = geolocator.timezone(location)
