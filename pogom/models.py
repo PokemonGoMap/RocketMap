@@ -33,6 +33,7 @@ from .transform import transform_from_wgs_to_gcj, get_new_coords
 from .customLog import printPokemon
 
 from .account import check_login, setup_api, pokestop_spinnable, spin_pokestop
+from . import cluster
 from .proxy import get_new_proxy
 from .apiRequests import encounter
 
@@ -1329,6 +1330,10 @@ class SpawnPoint(LatLongModel):
             del sp['links']
             sp['spawnpoint_id'] = sp['id']
             del sp['id']
+
+        if args.ss_cluster and args.spawnpoint_scanning:
+            filtered = cluster.main(filtered, 70, args.ss_cluster_time)
+            log.info('Clusters: {}'.format(len(filtered)))
 
         return filtered
 

@@ -359,7 +359,7 @@ class SpawnScan(BaseScheduler):
         spawns = []
         # No locations yet? Try the database!
         if not self.locations:
-            log.debug('Loading spawn points from database.')
+            log.info('Loading spawn points from database.')
             spawns += SpawnPoint.get_spawnpoints_in_hex(
                 self.scan_location, self.args.step_limit)
             log.debug('Loaded %s spawns from database.' % len(spawns))
@@ -392,6 +392,7 @@ class SpawnScan(BaseScheduler):
                 m = 'Scan [{:02}:{:02}] ({}) @ {},{}'.format(
                     minute, sec, i['time'], i['lat'], i['lng'])
                 log.debug(m)
+
         # 'time' from json and db alike has been munged to appearance time as
         # seconds after the hour.
         # Here we'll convert that to a real timestamp.

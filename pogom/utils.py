@@ -305,6 +305,12 @@ def get_args():
                               'grid). Scans in a circle based on step_limit ' +
                               'when on DB.'),
                         nargs='?', const='nofile', default=False)
+    parser.add_argument('-ssc', '--ss-cluster',
+                        help='Cluster spawnpoints before scanning',
+                        action='store_true', default=False)
+    parser.add_argument('-ssct', '--ss-cluster-time',
+                        help='Time threshold for spawnpoint clustering',
+                        type=int, default=240)
     parser.add_argument('-speed', '--speed-scan',
                         help=('Use speed scanning to identify spawn points ' +
                               'and then scan closest spawns.'),
