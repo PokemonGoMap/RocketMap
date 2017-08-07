@@ -59,7 +59,7 @@ from queue import Empty
 from operator import itemgetter
 from datetime import datetime, timedelta
 from .transform import get_new_coords
-from .models import (hex_bounds, SpawnPoint, Gym, ScannedLocation,
+from .models import (hex_bounds, SpawnPoint, ScannedLocation,
                      ScanSpawnPoint, HashKeys)
 from .utils import now, cur_sec, cellid, equi_rect_distance
 from .altitude import get_altitude
@@ -357,28 +357,48 @@ class SpawnScan(BaseScheduler):
     # Generate locations is called when the locations list is cleared - the
     # first time it scans or after a location change.
     def _generate_locations(self):
-        spawns = []
-        gyms = []
-        stops = []
         # No locations yet? Try the database!
-        if not self.locations:
-            if self.args.no_pokemon:
-                if not self.args.no_gyms:
-                    log.debug('Loading gyms from database.')
-                    gyms += Gym.get_gyms_in_hex(self.scan_location,
-                                                self.args.step_limit)
-                    log.debug('Loaded %s gyms from database.' % len(gyms))
-                    # getting last scanned as secs in hour
-                    for gym in gyms:
-                        gym['time'] = int(time.mktime(gym['time']
-                                                      .timetuple()) % 3600.0)
-            else:
-                log.debug('Loading spawn points from database.')
-                spawns += SpawnPoint.get_spawnpoints_in_hex(
-                    self.scan_location, self.args.step_limit)
-                log.debug('Loaded %s spawns from database.' % len(spawns))
+        if not self.locations and not self.args.no_pokemon:
+            log.debug('Loading spawn points from database.')
+            spawns = SpawnPoint.select_in_hex_by_location(
+                self.scan_location, self.args.step_limit)
+            log.debug('Loaded %s spawn points from database.' % len(spawns))
 
-        self.locations = gyms + stops + spawns
+            for sp in spawns:
+                '''
+                # Skip bad spawnpoints.
+                if sp['missed_count'] > 10:
+                    continue
+
+                # Skip spawnpoints without a valid TTH.
+                if not SpawnPoint.tth_found(sp):
+                    continue
+                '''
+                sp['time'], sp['disappear_time'] = SpawnPoint.start_end(sp)
+
+                if sp['time'] > cur_sec():
+                    # Hasn't spawn in the current hour.
+                    from_now = sp['time'] - cur_sec()
+                    sp['appears'] = now() + from_now
+                else:
+                    # Won't spawn till next hour.
+                    late_by = cur_sec() - sp['time']
+                    sp['appears'] = now() + 3600 - late_by
+
+                duration = (sp['disappear_time'] - sp['time']) % 3600
+                sp['leaves'] = sp['appears'] + duration
+
+                del sp['earliest_unseen']
+                del sp['latest_seen']
+                del sp['kind']
+                del sp['links']
+                sp['spawnpoint_id'] = sp['id']
+                del sp['id']
+                sp['lat'] = sp['latitude']
+                del sp['latitude']
+                sp['lng'] = sp['longitude']
+                del sp['longitude']
+                self.locations.append(sp)
 
         # Geofence spawnpoints.
         if self.geofences.is_enabled():
@@ -393,52 +413,7 @@ class SpawnScan(BaseScheduler):
         if not self.locations:
             raise Exception('No availabe spawn points!')
 
-        # locations[]:
-        # {"lat": 37.53079079414139, "lng": -122.28811690874117,
-        #  "spawnpoint_id": "808f9f1601d", "time": 511
-
-        log.info('Total of %d spawns to track', len(self.locations))
-
-        # locations.sort(key=itemgetter('time'))
-        if self.args.verbose:
-            for i in self.locations:
-                sec = i['time'] % 60
-                minute = (i['time'] / 60) % 60
-                m = 'Scan [{:02}:{:02}] ({}) @ {},{}'.format(
-                    minute, sec, i['time'], i['lat'], i['lng'])
-                log.debug(m)
-        # 'time' from json and db alike has been munged to appearance time as
-        # seconds after the hour.
-        # Here we'll convert that to a real timestamp.
-        for location in self.locations:
-            # For a scan which should cover all CURRENT pokemon, we can offset
-            # the comparison time by 15 minutes so that the "appears" time
-            # won't be rolled over to the next hour.
-
-            # TODO: Make it work. The original logic (commented out) was
-            #       producing bogus results if your first scan was in the last
-            #       15 minute of the hour. Wrapping my head around this isn't
-            #       work right now, so I'll just drop the feature for the time
-            #       being. It does need to come back so that
-            #       repositioning/pausing works more nicely, but we can live
-            #       without it too.
-
-            # if sps_scan_current:
-            #     cursec = (location['time'] + 900) % 3600
-            # else:
-            cursec = location['time']
-
-            if cursec > cur_sec():
-                # Hasn't spawn in the current hour.
-                from_now = location['time'] - cur_sec()
-                appears = now() + from_now
-            else:
-                # Won't spawn till next hour.
-                late_by = cur_sec() - location['time']
-                appears = now() + 3600 - late_by
-
-            location['appears'] = appears
-            location['leaves'] = appears + 900
+        log.info('Tracking a total of %d spawn points.', len(self.locations))
 
         # Put the spawn points in order of next appearance time.
         self.locations.sort(key=itemgetter('appears'))
@@ -446,11 +421,10 @@ class SpawnScan(BaseScheduler):
         # Match expected structure:
         # locations = [((lat, lng, alt), ts_appears, ts_leaves),...]
         retset = []
-        for step, location in enumerate(self.locations, 1):
-            altitude = get_altitude(self.args, [location['lat'],
-                                                location['lng']])
-            retset.append((step, (location['lat'], location['lng'], altitude),
-                           location['appears'], location['leaves']))
+        for step, sp in enumerate(self.locations, 1):
+            altitude = get_altitude(self.args, [sp['lat'], sp['lng']])
+            retset.append((step, (sp['lat'], sp['lng'], altitude),
+                           sp['appears'], sp['leaves']))
 
         return retset
 
@@ -458,7 +432,7 @@ class SpawnScan(BaseScheduler):
     def schedule(self):
         if not self.scan_location:
             log.warning(
-                'Cannot schedule work until scan location has been set')
+                'Cannot schedule work until scan location has been set.')
             return
 
         # SpawnScan needs to calculate the list every time, since the times
