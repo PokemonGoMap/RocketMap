@@ -2,10 +2,9 @@ from __future__ import division
 from past.utils import old_div
 from math import acos, atan2, cos, degrees, radians, sin, sqrt
 
-R = 6378137.0
-
 
 def distance(pos1, pos2):
+    R = 6378137.0
     if pos1 == pos2:
         return 0.0
 

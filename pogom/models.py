@@ -1332,7 +1332,7 @@ class SpawnPoint(LatLongModel):
             del sp['id']
 
         if args.ss_cluster and args.spawnpoint_scanning:
-            filtered = cluster.main(filtered, 70, args.ss_cluster_time)
+            filtered = cluster.filtered(filtered, 70, args.ss_cluster_time)
             log.info('Clusters: {}'.format(len(filtered)))
 
         return filtered
