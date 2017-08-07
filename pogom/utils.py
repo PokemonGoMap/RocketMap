@@ -18,15 +18,9 @@ from geopy.geocoders import GoogleV3
 from requests_futures.sessions import FuturesSession
 from requests.packages.urllib3.util.retry import Retry
 from requests.adapters import HTTPAdapter
+from cHaversine import haversine
 
 from . import config
-
-# Trying to import cHaversine as it is faster for distances.
-try:
-    from cHaversine import haversine
-except ImportError as e:
-    # Pass as this is an optional requirement.
-    pass
 
 log = logging.getLogger(__name__)
 
