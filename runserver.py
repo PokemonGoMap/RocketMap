@@ -194,8 +194,9 @@ def main():
 
     args = get_args()
 
-    # Abort if status name is not alphanumeric.
-    if not str(args.status_name).isalnum():
+    # Abort if status name is not valid.
+    regexp = re.compile('^([a-zA-Z0-9\s\-\_\.]+)$')
+    if not regexp.match(args.status_name):
         log.critical('Status name must be alphanumeric.')
         sys.exit(1)
 
