@@ -872,6 +872,20 @@ def get_pokemon_name(pokemon_id):
     return i8ln(get_pokemon_data(pokemon_id)['name'])
 
 
+def get_pokemon_rarity_index(pokemon_id):
+    if not hasattr(get_pokemon_rarity_index, 'rarity_indexes'):
+        get_pokemon_rarity_index.rarity_indexes = {
+            'Common': 0,
+            'Uncommon': 1,
+            'Rare': 2,
+            'Very Rare': 3,
+            'Ultra Rare': 4,
+            'Legendary': 5
+        }
+    pokemon_rarity = get_pokemon_data(pokemon_id)['rarity']
+    return get_pokemon_rarity_index.rarity_indexes[pokemon_rarity]
+
+
 def get_pokemon_rarity(pokemon_id):
     return i8ln(get_pokemon_data(pokemon_id)['rarity'])
 
