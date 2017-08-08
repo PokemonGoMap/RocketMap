@@ -1,8 +1,5 @@
-from __future__ import division
-from __future__ import absolute_import
-from past.utils import old_div
-
-from . import clsmath
+from .utils import equi_rect_distance
+from .transform import intermediate_point
 
 
 class SpawnCluster(object):
@@ -30,8 +27,8 @@ class SpawnCluster(object):
 
     def append(self, spawnpoint):
         # update centroid
-        f = old_div(len(self._spawnpoints), (len(self._spawnpoints) + 1.0))
-        self.centroid = clsmath.intermediate_point(
+        f = len(self._spawnpoints) / (len(self._spawnpoints) + 1.0)
+        self.centroid = intermediate_point(
             (spawnpoint['lat'], spawnpoint['lng']), self.centroid, f)
 
         self._spawnpoints.append(spawnpoint)
@@ -46,8 +43,8 @@ class SpawnCluster(object):
             self.leaves = spawnpoint['leaves']
 
     def simulate_centroid(self, spawnpoint):
-        f = old_div(len(self._spawnpoints), (len(self._spawnpoints) + 1.0))
-        new_centroid = clsmath.intermediate_point(
+        f = len(self._spawnpoints) / (len(self._spawnpoints) + 1.0)
+        new_centroid = intermediate_point(
             (spawnpoint['lat'], spawnpoint['lng']), self.centroid, f)
 
         return new_centroid
@@ -55,7 +52,7 @@ class SpawnCluster(object):
 
 def cost(spawnpoint, cluster, time_threshold):
     sp_position = (spawnpoint['lat'], spawnpoint['lng'])
-    distance = clsmath.distance(sp_position, cluster.centroid)
+    distance = equi_rect_distance(sp_position, cluster.centroid) * 1000
 
     min_time = min(cluster.min_time, spawnpoint['time'])
     max_time = max(cluster.max_time, spawnpoint['time'])
@@ -74,13 +71,13 @@ def check_cluster(spawnpoint, cluster, radius, time_threshold):
     new_centroid = cluster.simulate_centroid(spawnpoint)
 
     # we'd be removing ourselves
-    if clsmath.distance((spawnpoint['lat'], spawnpoint['lng']),
-                        new_centroid) > radius:
+    if equi_rect_distance((spawnpoint['lat'], spawnpoint['lng']),
+                          new_centroid) * 1000 > radius:
         return False
 
     # we'd be removing x
-    if any(clsmath.distance((x['lat'], x['lng']), new_centroid) > radius
-            for x in cluster):
+    if any(equi_rect_distance((x['lat'], x['lng']), new_centroid) * 1000 >
+            radius for x in cluster):
         return False
 
     return True
@@ -107,8 +104,8 @@ def test(cluster, radius, time_threshold):
     assert cluster.max_time - cluster.min_time <= time_threshold
 
     for p in cluster:
-        assert clsmath.distance((p['lat'], p['lng']),
-                                cluster.centroid) <= radius
+        assert equi_rect_distance((p['lat'], p['lng']),
+                                  cluster.centroid) * 1000 <= radius
         assert cluster.min_time <= p['time'] <= cluster.max_time
 
 
