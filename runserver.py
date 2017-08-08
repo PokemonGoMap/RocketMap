@@ -478,8 +478,14 @@ def set_log_and_verbosity(log):
 
     # Web access logs.
     if args.access_logs:
+        if not os.path.exists(args.log_path):
+            os.mkdir(args.log_path)
+        date = strftime('%Y%m%d_%H%M')
+        filename = os.path.join(
+            args.log_path, '{}_{}_access.log'.format(date, args.status_name))
+
         logger = logging.getLogger('werkzeug')
-        handler = logging.FileHandler('access.log')
+        handler = logging.FileHandler(filename)
         logger.setLevel(logging.INFO)
         logger.addHandler(handler)
 
