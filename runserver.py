@@ -441,9 +441,10 @@ def main():
 def set_log_and_verbosity(log):
     # Always write to log file.
     args = get_args()
+    # Create directory for log files.
+    if not os.path.exists(args.log_path):
+        os.mkdir(args.log_path)
     if not args.no_file_logs:
-        if not os.path.exists(args.log_path):
-            os.mkdir(args.log_path)
         date = strftime('%Y%m%d_%H%M')
         filename = os.path.join(
             args.log_path, '{}_{}.log'.format(date, args.status_name))
@@ -478,8 +479,6 @@ def set_log_and_verbosity(log):
 
     # Web access logs.
     if args.access_logs:
-        if not os.path.exists(args.log_path):
-            os.mkdir(args.log_path)
         date = strftime('%Y%m%d_%H%M')
         filename = os.path.join(
             args.log_path, '{}_{}_access.log'.format(date, args.status_name))
