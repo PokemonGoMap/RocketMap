@@ -258,7 +258,7 @@ def main():
 
     app = None
     if not args.no_server and not args.clear_db:
-        app = Pogom(__name__)
+        app = Pogom(__name__, root_path=os.path.dirname(__file__))
         app.before_request(app.validate_request)
         app.set_current_location(position)
 
@@ -308,7 +308,7 @@ def main():
     for i in range(args.db_threads):
         log.debug('Starting db-updater worker thread %d', i)
         t = Thread(target=db_updater, name='db-updater-{}'.format(i),
-                   args=(args, db_updates_queue, db))
+                   args=(db_updates_queue, db))
         t.daemon = True
         t.start()
 
