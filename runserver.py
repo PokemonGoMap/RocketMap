@@ -195,9 +195,9 @@ def main():
     args = get_args()
 
     # Abort if status name is not valid.
-    regexp = re.compile('^([a-zA-Z0-9\s\-\_\.]+)$')
+    regexp = re.compile('^([\w\s\-\.]+)$')
     if not regexp.match(args.status_name):
-        log.critical('Status name must be alphanumeric.')
+        log.critical('Status name contains ilegal characters.')
         sys.exit(1)
 
     set_log_and_verbosity(log)
