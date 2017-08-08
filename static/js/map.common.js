@@ -1082,15 +1082,15 @@ function setupPokemonMarkerDetails(item, map, scaleByRarity = true) {
 
     if (scaleByRarity) {
         const rarityValues = {
-            'very rare': 30,
-            'ultra rare': 40,
-            'legendary': 50
+            3: 30,
+            4: 40,
+            5: 50
         }
 
         var rarityValue = isNotifyPoke(item) ? 29 : 2
 
         if (item.hasOwnProperty('pokemon_rarity')) {
-            const pokemonRarity = item['pokemon_rarity'].toLowerCase()
+            const pokemonRarity = item['pokemon_rarity_index']
 
             if (rarityValues.hasOwnProperty(pokemonRarity)) {
                 rarityValue = rarityValues[pokemonRarity]
