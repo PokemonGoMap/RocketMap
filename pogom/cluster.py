@@ -27,9 +27,7 @@ class SpawnCluster(object):
 
     def append(self, spawnpoint):
         # update centroid
-        f = len(self._spawnpoints) / (len(self._spawnpoints) + 1.0)
-        self.centroid = intermediate_point(
-            (spawnpoint['lat'], spawnpoint['lng']), self.centroid, f)
+        self.centroid = self.new_centroid(spawnpoint)
 
         self._spawnpoints.append(spawnpoint)
 
@@ -42,7 +40,7 @@ class SpawnCluster(object):
             self.appears = spawnpoint['appears']
             self.leaves = spawnpoint['leaves']
 
-    def simulate_centroid(self, spawnpoint):
+    def new_centroid(self, spawnpoint):
         f = len(self._spawnpoints) / (len(self._spawnpoints) + 1.0)
         new_centroid = intermediate_point(
             (spawnpoint['lat'], spawnpoint['lng']), self.centroid, f)
@@ -68,7 +66,7 @@ def check_cluster(spawnpoint, cluster, radius, time_threshold):
     if cost(spawnpoint, cluster, time_threshold) > 2 * radius:
         return False
 
-    new_centroid = cluster.simulate_centroid(spawnpoint)
+    new_centroid = cluster.new_centroid(spawnpoint)
 
     # we'd be removing ourselves
     if equi_rect_distance((spawnpoint['lat'], spawnpoint['lng']),
@@ -118,8 +116,6 @@ def cluster_spawnpoints(spawns, radius=70, time_threshold=240):
             test(c, radius, time_threshold)
     except AssertionError:
         raise
-
-    clusters.sort(key=lambda x: len(x))
 
     result = []  # Clear rows to prevent multiplying spawn points.
     for c in clusters:
