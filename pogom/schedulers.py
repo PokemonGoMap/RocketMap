@@ -63,6 +63,7 @@ from .models import (hex_bounds, SpawnPoint, ScannedLocation,
 from .utils import now, cur_sec, cellid, distance
 from .altitude import get_altitude
 from .geofence import Geofences
+from .cluster import cluster_spawnpoints
 
 log = logging.getLogger(__name__)
 
@@ -360,7 +361,7 @@ class SpawnScan(BaseScheduler):
         if not self.locations and not self.args.no_pokemon:
             log.debug('Loading spawn points from database.')
             spawns = SpawnPoint.select_in_hex_by_location(
-                self.scan_location, self.args.step_limit)
+                self.scan_location, self.step_limit)
             log.debug('Loaded %s spawn points from database.' % len(spawns))
 
             for sp in spawns:
@@ -413,6 +414,13 @@ class SpawnScan(BaseScheduler):
             raise Exception('No availabe spawn points!')
 
         log.info('Tracking a total of %d spawn points.', len(self.locations))
+
+        # Cluster spawnpoints.
+        if self.args.ss_cluster:
+            self.locations = cluster_spawnpoints(
+                self.locations, 70, self.args.ss_cluster_time)
+            log.info('Compressed spawn points into %d clusters.',
+                     len(self.locations))
 
         # Put the spawn points in order of next appearance time.
         self.locations.sort(key=itemgetter('appears'))
