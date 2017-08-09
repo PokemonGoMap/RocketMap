@@ -942,7 +942,7 @@ var StoreOptions = {
         default: false,
         type: StoreTypes.Boolean
     },
-    'sizeUp': {
+    'upScale': {
         default: true,
         type: StoreTypes.Boolean
     },
@@ -1074,7 +1074,7 @@ function getGoogleSprite(index, sprite, displayHeight) {
     }
 }
 
-function setupPokemonMarkerDetails(item, map) {
+function setupPokemonMarkerDetails(item, map, scaleByRarity) {
     const pokemonIndex = item['pokemon_id'] - 1
     const sprite = pokemonSprites
 
@@ -1084,7 +1084,7 @@ function setupPokemonMarkerDetails(item, map) {
 
     var iconSize = (map.getZoom() - 3) * (map.getZoom() - 3) * 0.2 + Store.get('iconSizeModifier')
 
-    if (Store.get('sizeUp')) {
+    if (Store.get('upScale') && scaleByRarity !== false) {
         const rarityValues = {
             'very rare': 30,
             'ultra rare': 40,
@@ -1111,9 +1111,9 @@ function setupPokemonMarkerDetails(item, map) {
     return markerDetails
 }
 
-function setupPokemonMarker(item, map, isBounceDisabled) {
+function setupPokemonMarker(item, map, isBounceDisabled, scaleByRarity) {
     // Scale icon size up with the map exponentially, also size with rarity.
-    const markerDetails = setupPokemonMarkerDetails(item, map)
+    const markerDetails = setupPokemonMarkerDetails(item, map, scaleByRarity)
     const icon = markerDetails.icon
 
     var marker = new google.maps.Marker({
@@ -1129,9 +1129,9 @@ function setupPokemonMarker(item, map, isBounceDisabled) {
     return marker
 }
 
-function updatePokemonMarker(item, map) {
+function updatePokemonMarker(item, map, scaleByRarity) {
     // Scale icon size up with the map exponentially, also size with rarity.
-    const markerDetails = setupPokemonMarkerDetails(item, map)
+    const markerDetails = setupPokemonMarkerDetails(item, map, scaleByRarity)
     const icon = markerDetails.icon
     const marker = item.marker
 
