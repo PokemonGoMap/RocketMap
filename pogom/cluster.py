@@ -26,7 +26,7 @@ class SpawnCluster(object):
         return len(self._spawnpoints)
 
     def append(self, spawnpoint):
-        # update centroid
+        # Update cluster centroid.
         self.centroid = self.new_centroid(spawnpoint)
 
         self._spawnpoints.append(spawnpoint)
@@ -62,18 +62,18 @@ def cost(spawnpoint, cluster, time_threshold):
 
 
 def check_cluster(spawnpoint, cluster, radius, time_threshold):
-    # discard infinite cost or too far away
+    # Discard spawn points with infinite cost or too far away.
     if cost(spawnpoint, cluster, time_threshold) > 2 * radius:
         return False
 
     new_centroid = cluster.new_centroid(spawnpoint)
 
-    # we'd be removing ourselves
+    # Check new centroid is close enough to spawn point.
     if equi_rect_distance((spawnpoint['lat'], spawnpoint['lng']),
                           new_centroid) * 1000 > radius:
         return False
 
-    # we'd be removing x
+    # Check if new centroid is close enough to each spawn points in cluster.
     if any(equi_rect_distance((x['lat'], x['lng']), new_centroid) * 1000 >
             radius for x in cluster):
         return False
@@ -108,7 +108,7 @@ def test(cluster, radius, time_threshold):
 
 
 def cluster_spawnpoints(spawns, radius=70, time_threshold=240):
-    # 4 minutes is alright to grab a pokemon since most times are 30m+
+    # Cluster spawn points close to each other and have similar spawn times.
     clusters = cluster(spawns, radius, time_threshold)
 
     try:
@@ -116,13 +116,13 @@ def cluster_spawnpoints(spawns, radius=70, time_threshold=240):
             test(c, radius, time_threshold)
     except AssertionError:
         raise
-
-    result = []  # Clear rows to prevent multiplying spawn points.
+    # Output list with clustered spawn points.
+    result = []
     for c in clusters:
         sp = dict()
         sp['lat'] = c.centroid[0]
         sp['lng'] = c.centroid[1]
-        # pick the latest time so earlier spawnpoints have already spawned
+        # Pick the latest time so earlier spawn points have already spawned.
         sp['time'] = c.max_time
         sp['spawnpoint_id'] = c.spawnpoint_id
         sp['appears'] = c.appears
