@@ -415,6 +415,7 @@ function initSidebar() {
     $('#sound-switch').prop('checked', Store.get('playSound'))
     $('#pokemoncries').toggle(Store.get('playSound'))
     $('#cries-switch').prop('checked', Store.get('playCries'))
+    $('#size-switch').prop('checked', Store.get('sizeUp'))
 
     // Only create the Autocomplete element if it's enabled in template.
     var elSearchBox = document.getElementById('next-location')
@@ -2730,6 +2731,9 @@ $(function () {
         Store.set('playCries', this.checked)
     })
 
+    $('#size-switch').change(function () {
+        Store.set('sizeUp', this.checked)
+    })
     $('#geoloc-switch').change(function () {
         $('#next-location').prop('disabled', this.checked)
         $('#next-location').css('background-color', this.checked ? '#e0e0e0' : '#ffffff')
