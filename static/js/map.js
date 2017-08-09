@@ -511,10 +511,8 @@ function pokemonLabel(item) {
             <div class='pokemon container content-left'>
               <div>
                 <img class='pokemon sprite' src='static/icons/${id}.png'>
-                <span class='pokemon'>Level: </span><span class='pokemon'>${pokemonLevel}</span>
-                <span class='pokemon links exclude'><a href='javascript:excludePokemon(${id})'>Exclude</a></span>
-                <span class='pokemon links notify'><a href='javascript:notifyAboutPokemon(${id})'>Notify</a></span>
-                <span class='pokemon links remove'><a href='javascript:removePokemonMarker("${encounterId}")'>Remove</a></span>
+				<span class='pokemon'>Level: </span><span class='pokemon'>${pokemonLevel}</span><br>
+				<span class='pokemon navigate'><a href='javascript:void(0);' onclick='javascript:openMapDirections(${latitude},${longitude});' title='Open in Google Maps'>Route</a></span>
               </div>
           </div>
           <div class='pokemon container content-right'>
@@ -522,17 +520,23 @@ function pokemonLabel(item) {
               <div class='pokemon disappear'>
                 <span class='label-countdown' disappears-at='${disappearTime}'>00m00s</span> left
               </div>
+			    <div class='pokemon'>
+                IV: <span class='pokemon encounter'>${iv.toFixed(1)}%</span> (${atk}/${def}/${sta})
+              </div>
               <div class='pokemon'>
-                CP: <span class='pokemon encounter'>${cp}/${iv.toFixed(1)}%</span> (A${atk}/D${def}/S${sta})
+                WP: <span class='pokemon encounter'>${cp}
               </div>
               <div class='pokemon'>
                 Moveset: <span class='pokemon encounter'>${pMove1}/${pMove2}</span>
               </div>
               <div class='pokemon'>
-                Weight: ${weight.toFixed(2)}kg | Height: ${height.toFixed(2)}m
+                Gewicht: ${weight.toFixed(2)}kg | Größe: ${height.toFixed(2)}m
               </div>
+			  	<span class='pokemon links exclude'><a href='javascript:excludePokemon(${id})'>Alle ${name} ausblenden</a></span><br>
+                <span class='pokemon links notify'><a href='javascript:notifyAboutPokemon(${id})'>Alle ${name} Groß & Hüpfen</a></span><br>
+                <span class='pokemon links remove'><a href='javascript:removePokemonMarker("${encounterId}")'>Dieses ${name} ausblenden</a></span><br>
               <div>
-                <span class='pokemon navigate'><a href='javascript:void(0);' onclick='javascript:openMapDirections(${latitude},${longitude});' title='Open in Google Maps'>${latitude.toFixed(6)}, ${longitude.toFixed(7)}</a></span>
+                
               </div>
           </div>
         </div>
@@ -543,10 +547,9 @@ function pokemonLabel(item) {
         <div class='pokemon container content-left'>
           <div>
             <img class='pokemon sprite' src='static/icons/${id}.png'>
-            <span class='pokemon'>Level: </span><span class='pokemon no-encounter'>n/a</span>
-            <span class='pokemon links exclude'><a href='javascript:excludePokemon(${id})'>Exclude</a></span>
-            <span class='pokemon links notify'><a href='javascript:notifyAboutPokemon(${id})'>Notify</a></span>
-            <span class='pokemon links remove'><a href='javascript:removePokemonMarker("${encounterId}")'>Remove</a></span>
+            <span class='pokemon'>Level: </span><span class='pokemon no-encounter'>n/a</span><br>
+			<span class='pokemon navigate'><a href='javascript:void(0);' onclick='javascript:openMapDirections(${latitude},${longitude});' title='Open in Google Maps'>Route</a></span>
+
           </div>
       </div>
       <div class='pokemon container content-right'>
@@ -555,16 +558,20 @@ function pokemonLabel(item) {
             <span class='label-countdown' disappears-at='${disappearTime}'>00m00s</span> left
           </div>
           <div class='pokemon'>
-            CP: <span class='pokemon no-encounter'>No information</span>
+            WP: <span class='pokemon no-encounter'>Nicht gescannt</span>
           </div>
           <div class='pokemon'>
-            Moveset: <span class='pokemon no-encounter'>No information</span>
+            Moveset: <span class='pokemon no-encounter'>Nicht gescannt</span>
           </div>
           <div class='pokemon'>
-            Weight: <span class='pokemon no-encounter'>n/a</span> | Height: <span class='pokemon no-encounter'>n/a</span>
+            Gewicht: <span class='pokemon no-encounter'>n/a</span> | Größe: <span class='pokemon no-encounter'>n/a</span><br><br>
           </div>
           <div>
-            <span class='pokemon navigate'><a href='javascript:void(0);' onclick='javascript:openMapDirections(${latitude},${longitude});' title='Open in Google Maps'>${latitude.toFixed(6)}, ${longitude.toFixed(7)}</a></span>
+			<b>Einstellungen für ${name}</b>:<br>
+			<span class='pokemon links exclude'><a href='javascript:excludePokemon(${id})'>Alle ${name} ausblenden</a></span><br>
+            <span class='pokemon links notify'><a href='javascript:notifyAboutPokemon(${id})'>Alle ${name} Groß & Hüpfen</a></span><br>
+            <span class='pokemon links remove'><a href='javascript:removePokemonMarker("${encounterId}")'>Dieses ${name} ausblenden</a></span>
+            
           </div>
       </div>
     </div>
@@ -1095,7 +1102,7 @@ function updateGymMarker(item, marker) {
         }
         marker.setIcon({
             url: markerImage,
-            scaledSize: new google.maps.Size(48, 48)
+            scaledSize: new google.maps.Size(60, 60)
         })
         marker.setZIndex(google.maps.Marker.MAX_ZINDEX + 1)
     } else if (item.raid !== null && item.raid.end > Date.now() && Store.get('showRaids') && !Store.get('showActiveRaidsOnly') && raidLevel >= Store.get('showRaidMinLevel') && raidLevel <= Store.get('showRaidMaxLevel')) {
@@ -1106,7 +1113,7 @@ function updateGymMarker(item, marker) {
     } else {
         marker.setIcon({
             url: 'static/images/gym/' + gymTypes[item.team_id] + '_' + getGymLevel(item) + '.png',
-            scaledSize: new google.maps.Size(48, 48)
+            scaledSize: new google.maps.Size(36, 36)
         })
         marker.setZIndex(1)
     }
