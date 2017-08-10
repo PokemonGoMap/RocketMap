@@ -2733,7 +2733,25 @@ $(function () {
 
     $('#upscale-switch').change(function () {
         Store.set('upScale', this.checked)
+        // Remove all Pokemon markers from map
+        var oldPokeMarkers = []
+        $.each(mapData['pokemons'], function (key, pkm) {
+            // for any marker you're turning off, you'll want to wipe off the range
+            if (pkm.marker.rangeCircle) {
+                pkm.marker.rangeCircle.setMap(null)
+                delete pkm.marker.rangeCircle
+            }
+            pkm.marker.setMap(null)
+            oldPokeMarkers.push(pkm.marker)
+        })
+        markerCluster.removeMarkers(oldPokeMarkers)
+        mapData['pokemons'] = {}
+
+        // Reload all Pokemon
+        lastpokemon = false
+        updateMap()
     })
+
     $('#geoloc-switch').change(function () {
         $('#next-location').prop('disabled', this.checked)
         $('#next-location').css('background-color', this.checked ? '#e0e0e0' : '#ffffff')
