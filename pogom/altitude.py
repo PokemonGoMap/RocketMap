@@ -27,7 +27,9 @@ def get_gmaps_altitude(lat, lng, gmaps_key):
     except Exception as e:
         log.exception('Unable to retrieve altitude from Google APIs: %s.', e)
         status = 'UNKNOWN_ERROR'
-        altitude = None
+        # Default based on the average elevation of cities around the world.
+        # https://www.wikiwand.com/en/List_of_cities_by_elevation
+        altitude = 507
 
     return (altitude, status)
 
@@ -55,7 +57,7 @@ def get_fallback_altitude(args, loc):
 
     # Failed, don't try again.
     if fallback_altitude is None:
-        fallback_altitude = -1
+        fallback_altitude = 507
 
     return fallback_altitude
 
@@ -67,7 +69,8 @@ def cached_get_altitude(args, loc):
 
     if altitude is None:
         (altitude, status) = get_gmaps_altitude(loc[0], loc[1], args.gmaps_key)
-        if altitude is not None and altitude != -1:
+        if (altitude is not None and altitude != -1 and
+                status != 'UNKNOWN_ERROR'):
             LocationAltitude.save_altitude(loc, altitude)
 
     return altitude
@@ -79,8 +82,5 @@ def get_altitude(args, loc):
         altitude = get_fallback_altitude(args, loc)
     else:
         altitude = cached_get_altitude(args, loc)
-
-    if altitude is None or altitude == -1:
-        altitude = args.altitude
 
     return randomize_altitude(altitude, args.altitude_variance)
