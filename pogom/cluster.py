@@ -98,24 +98,10 @@ def cluster(spawnpoints, radius, time_threshold):
     return clusters
 
 
-def test(cluster, radius, time_threshold):
-    assert cluster.max_time - cluster.min_time <= time_threshold
-
-    for p in cluster:
-        assert equi_rect_distance((p['lat'], p['lng']),
-                                  cluster.centroid) * 1000 <= radius
-        assert cluster.min_time <= p['time'] <= cluster.max_time
-
-
 def cluster_spawnpoints(spawns, radius=70, time_threshold=240):
     # Group spawn points with similar spawn times that are close to each other.
     clusters = cluster(spawns, radius, time_threshold)
 
-    try:
-        for c in clusters:
-            test(c, radius, time_threshold)
-    except AssertionError:
-        raise
     # Output spawn points from generated clusters.
     result = []
     for c in clusters:

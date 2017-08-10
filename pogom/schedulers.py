@@ -354,6 +354,10 @@ class SpawnScan(BaseScheduler):
         self.step_limit = args.step_limit
         self.locations = []
 
+        self.cluster_range = 60
+        if self.args.no_jitter:
+            self.cluster_range = 70
+
     # Generate locations is called when the locations list is cleared - the
     # first time it scans or after a location change.
     def _generate_locations(self):
@@ -416,9 +420,9 @@ class SpawnScan(BaseScheduler):
         log.info('Tracking a total of %d spawn points.', len(self.locations))
 
         # Cluster spawnpoints.
-        if self.args.ss_cluster:
+        if self.args.ss_cluster_time > 0:
             self.locations = cluster_spawnpoints(
-                self.locations, 70, self.args.ss_cluster_time)
+                self.locations, self.cluster_range, self.args.ss_cluster_time)
             log.info('Compressed spawn points into %d clusters.',
                      len(self.locations))
 
