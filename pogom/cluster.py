@@ -68,7 +68,7 @@ def check_cluster(spawnpoint, cluster, radius, time_threshold):
 
     new_centroid = cluster.new_centroid(spawnpoint)
 
-    # Check new centroid is close enough to spawn point.
+    # Check if new centroid is close enough to spawn point.
     if equi_rect_distance((spawnpoint['lat'], spawnpoint['lng']),
                           new_centroid) * 1000 > radius:
         return False
@@ -108,7 +108,7 @@ def test(cluster, radius, time_threshold):
 
 
 def cluster_spawnpoints(spawns, radius=70, time_threshold=240):
-    # Cluster spawn points close to each other and have similar spawn times.
+    # Group spawn points with similar spawn times that are close to each other.
     clusters = cluster(spawns, radius, time_threshold)
 
     try:
@@ -116,7 +116,7 @@ def cluster_spawnpoints(spawns, radius=70, time_threshold=240):
             test(c, radius, time_threshold)
     except AssertionError:
         raise
-    # Output list with clustered spawn points.
+    # Output spawn points from generated clusters.
     result = []
     for c in clusters:
         sp = dict()
