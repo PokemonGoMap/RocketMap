@@ -677,7 +677,8 @@ def clear_inventory(api, account):
     release_count = int(total_pokemon - 5)
     if total_pokemon > random.randint(5, 10):
         release_ids = random.sample(account['pokemons'].keys(), release_count)
-        release_ids.remove(account['buddy'])
+        if account['buddy'] in release_ids:
+            release_ids.remove(account['buddy'])
         # Don't let Niantic throttle.
         time.sleep(random.uniform(2, 4))
         release_p_response = request_release_pokemon(api, account, 0,
