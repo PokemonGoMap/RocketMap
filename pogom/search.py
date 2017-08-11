@@ -958,12 +958,12 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
                     else:
                         status['message'] = (
                             'Skipping {:6f},{:6f}; outside time and speed ' +
-                            'constraints.'
-                            .format(step_location[0], step_location[1]))
-                    log.warning(status['message'])
-                    # No sleep here; we've not done anything worth sleeping
-                    # for. Plus we clearly need to catch up!
-                    continue
+                            'constraints.').format(step_location[0],
+                                                   step_location[1])
+                        log.warning(status['message'])
+                        # No sleep here; we've not done anything worth sleeping
+                        # for. Plus we clearly need to catch up!
+                        continue
 
                 # Too fast?
                 if extra_delay > 0:
