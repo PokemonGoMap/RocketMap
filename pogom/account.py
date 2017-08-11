@@ -1027,6 +1027,8 @@ class AccountSet(object):
                 account['last_coords'] = coords_to_scan
                 account['in_use'] = True
 
+                # Put the account the last one to force some rotation
+                self.sets[set_name].append(self.sets[set_name].pop(i))
                 return account
 
         # TODO: Instead of returning False, return the amount of min. seconds
