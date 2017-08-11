@@ -304,7 +304,7 @@ def get_args():
                         help=('Use spawnpoint scanning (instead of hex ' +
                               'grid). Scans in a circle based on step_limit ' +
                               'when on DB.'),
-                        nargs='?', const='nofile', default=False)
+                        action='store_true', default=False)
     parser.add_argument('-ssct', '--ss-cluster-time',
                         help=('Time threshold for spawn point clustering. ' +
                               '(0 to disable).'),
