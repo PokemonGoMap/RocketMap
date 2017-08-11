@@ -4,13 +4,13 @@ RocketMap now completes the tutorial steps on all accounts on first log in, ther
 
 It's recommended to enable pokestop spinning in the config to get your accounts to level 2.
 
-For this, use -spin in commandline or set in the config file:
+To enable Pokéstop spinning, add pokestop-spinning to your configuration file, or -spin to your cli parameters.
 
 ```
-pokestop-spinning: true
+pokestop-spinning
 ```
 
-You can also set the maximum number of Pokestop spins per hour, which by default is 80, and for example, lower it to 30, putting in the commandline -ams 30 or in the config file:
+To set the maximum number of Pokéstop spins per account per hour (default: 80), add -ams 30 to your cli parameters or edit your configuration file:
 
 ```
 account-max-spins: 30

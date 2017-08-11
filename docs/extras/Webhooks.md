@@ -29,7 +29,7 @@ python runserver.py -a ptc -u [username] -p [password] -l "Location or lat/lon" 
 ```
 
 ## Configuring Webhook filter types
-With `wh-types` argument in your config file you set what types of wh do you want to send.
+Use `wh-types` to configure webhook types that should get sent.
 
 The list of valid types are:
 * `pokemon`
@@ -41,24 +41,22 @@ The list of valid types are:
 * `pokestop`
 * `lure`
 
-Example for send to wh the info of pokemon, gym, raid and gym-info:
+Example to send the webhook messages pokemon, gym, raid and gym-info:
 
 ```
-wh-types:[pokemon, gym, raid, gym-info]
+wh-types: [pokemon, gym, raid, gym-info]
 ```
 
-## Filtering Pokemon
-To not send all the pokemon found by the RocketMap to our wh we can make use of a black/white list depending on if we want to block/allow the sending of a certain pokemon.
+## Filtering Pokémon
+To filter what Pokémon get sent to the webhooks, you can configure a whitelist of Pokémon IDs (one per line).
 
-For example, we can make a white list to send to our wh the information that have been found only dratini, dragonair, dragonite, larvitar, pupitar, tyranitar, etc. in this way:
-
-Add to our config line:
+For example, if we only want to sent data on dratini, dragonair, dragonite, larvitar, pupitar and tyranitar, add this to your configuration:
 
 ```
-webhook-whitelist-file: whitelist
+webhook-whitelist-file: pokemon-whitelist.txt
 ```
 
-And in the file that we put, in the example is the file "whitelist", it has to contain something like that (the Pokémon IDs which you want to send to wh, one per line):
+And add the Pokémon IDs to the pokemon-whitelist.txt file:
 
 ```
 147
