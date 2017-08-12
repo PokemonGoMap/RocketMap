@@ -30,10 +30,7 @@
       {% if show.custom_css %}
     <link rel="stylesheet" type="text/css" href="static/css/custom.css">
       {% endif %}
-    <script src="{{ url_for('static', filename='js/vendor/modernizr.custom.js').lstrip('/') }}"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-polyfill/6.9.1/polyfill.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/skel/3.0.1/skel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/js/select2.min.js"></script>
     <script>
       var centerLat = {{lat}};
@@ -45,7 +42,7 @@
         <!-- Header -->
         <header id="header">
           <a href="#nav"><span class="label">Options</span></a>
-          <h1><a href="./">RocketMap<i class="fa fa-rocket fa-fw"></i></a></h1>
+          <h1><a href="./">RocketMap<img class='rocket icon' src='static/images/rocket.png'></a></h1>
           <a href="status" target="_blank" style="float: right;"><span class="label">Status</span></a>
         </header>
         <nav id="nav">
@@ -81,5 +78,9 @@
         </div>
     <script src="{{ url_for('static', filename='dist/js/app.min.js').lstrip('/') }}"></script>
     <script src="{{ url_for('static', filename='dist/js/statistics.min.js').lstrip('/') }}"></script>
+    <!-- Custom JS -->
+      {% if show.custom_js %}
+    <script src="{{ url_for('static', filename='dist/js/custom.min.js').lstrip('/') }}"></script>
+      {% endif %}
 </body>
 </html>

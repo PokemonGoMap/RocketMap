@@ -41,11 +41,11 @@ def get_proxy_test_status(proxy, future_ptc, future_niantic):
     try:
         ptc_response = future_ptc.result()
         niantic_response = future_niantic.result()
-    except requests.ConnectTimeout:
+    except requests.exceptions.ConnectTimeout:
         proxy_error = ('Connection timeout for'
                        + ' proxy {}.').format(proxy)
         check_result = check_result_timeout
-    except requests.ConnectionError:
+    except requests.exceptions.ConnectionError:
         proxy_error = 'Failed to connect to proxy {}.'.format(proxy)
         check_result = check_result_failed
     except Exception as e:
@@ -79,6 +79,11 @@ def get_proxy_test_status(proxy, future_ptc, future_niantic):
                                                  niantic_status)
         check_result = check_result_wrong
 
+    # Explicitly release connection back to the pool, because we don't need
+    # or want to consume the content.
+    ptc_response.close()
+    niantic_response.close()
+
     return (proxy_error, check_result)
 
 
@@ -98,15 +103,14 @@ def start_request_futures(ptc_session, niantic_session, proxy, timeout):
         proxy_test_ptc_url,
         proxies={'http': proxy, 'https': proxy},
         timeout=timeout,
-        headers={'User-Agent':
-                 'pokemongo/1 '
-                 'CFNetwork/811.4.18 '
-                 'Darwin/16.5.0',
-                 'Host':
-                 'sso.pokemon.com',
-                 'X-Unity-Version':
-                 '5.5.1f1'},
-        background_callback=__proxy_check_completed)
+        headers={'User-Agent': ('pokemongo/1 '
+                                'CFNetwork/811.4.18 '
+                                'Darwin/16.5.0'),
+                 'Host': 'sso.pokemon.com',
+                 'X-Unity-Version': '5.5.1f1',
+                 'Connection': 'close'},
+        background_callback=__proxy_check_completed,
+        stream=True)
 
     # Send request to nianticlabs.com.
     future_niantic = niantic_session.post(
@@ -114,7 +118,9 @@ def start_request_futures(ptc_session, niantic_session, proxy, timeout):
         '',
         proxies={'http': proxy, 'https': proxy},
         timeout=timeout,
-        background_callback=__proxy_check_completed)
+        headers={'Connection': 'close'},
+        background_callback=__proxy_check_completed,
+        stream=True)
 
     # Return futures.
     return (future_ptc, future_niantic)
@@ -275,9 +281,8 @@ def proxies_refresher(args):
 def get_new_proxy(args):
     global last_proxy
 
-    # If none/round - simply get next proxy.
-    if ((args.proxy_rotation is None) or (args.proxy_rotation == 'none') or
-            (args.proxy_rotation == 'round')):
+    # If round - simply get next proxy.
+    if (args.proxy_rotation == 'round'):
         if last_proxy >= len(args.proxy) - 1:
             last_proxy = 0
         else:

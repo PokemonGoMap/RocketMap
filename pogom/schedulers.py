@@ -64,6 +64,7 @@ from .models import (hex_bounds, SpawnPoint, ScannedLocation,
                      ScanSpawnPoint, HashKeys)
 from .utils import now, cur_sec, cellid, equi_rect_distance
 from .altitude import get_altitude
+from .geofence import Geofences
 
 log = logging.getLogger(__name__)
 
@@ -76,6 +77,7 @@ class BaseScheduler(object):
     def __init__(self, queues, status, args):
         self.queues = queues
         self.status = status
+        self.geofences = Geofences()
         self.args = args
         self.scan_location = False
         self.ready = False
@@ -271,6 +273,14 @@ class HexSearch(BaseScheduler):
             else:
                 results = results[-7:] + results[:-7]
 
+        # Geofence results.
+        if self.geofences.is_enabled():
+            results = self.geofences.get_geofenced_coordinates(results)
+            if not results:
+                log.error('No cells regarded as valid for desired scan area. '
+                          'Check your provided geofences. Aborting.')
+                sys.exit()
+
         # Add the required appear and disappear times.
         locationsZeroed = []
         for step, location in enumerate(results, 1):
@@ -368,6 +378,15 @@ class SpawnScan(BaseScheduler):
             self.locations = SpawnPoint.get_spawnpoints_in_hex(
                 self.scan_location, self.args.step_limit)
 
+        # Geofence spawnpoints.
+        if self.geofences.is_enabled():
+            self.locations = self.geofences.get_geofenced_coordinates(
+                self.locations)
+            if not self.locations:
+                log.error('No cells regarded as valid for desired scan area. '
+                          'Check your provided geofences. Aborting.')
+                sys.exit()
+
         # Well shit...
         # if not self.locations:
         #    raise Exception('No availabe spawn points!')
@@ -380,7 +399,7 @@ class SpawnScan(BaseScheduler):
 
         # locations.sort(key=itemgetter('time'))
 
-        if self.args.very_verbose:
+        if self.args.verbose:
             for i in self.locations:
                 sec = i['time'] % 60
                 minute = (i['time'] / 60) % 60
@@ -574,6 +593,14 @@ class SpeedScan(HexSearch):
                     loc = get_new_coords(star_loc, xdist * (j), 210 + 60 * i)
                     results.append((loc[0], loc[1], 0))
 
+        # Geofence results.
+        if self.geofences.is_enabled():
+            results = self.geofences.get_geofenced_coordinates(results)
+            if not results:
+                log.error('No cells regarded as valid for desired scan area. '
+                          'Check your provided geofences. Aborting.')
+                sys.exit()
+
         generated_locations = []
         for step, location in enumerate(results):
             altitude = get_altitude(self.args, location)
@@ -723,7 +750,6 @@ class SpeedScan(HexSearch):
                 self.tth_found = 0
                 self.active_sp = 0
                 found_percent = 100.0
-                good_percent = 100.0
                 spawns_reached = 100.0
                 spawnpoints = SpawnPoint.select_in_hex_by_cellids(
                     self.scans.keys(), self.location_change_date)
@@ -999,7 +1025,6 @@ class SpeedScan(HexSearch):
                 'invalid': ('Invalid response at step {}, abandoning ' +
                             'location.').format(step)
             }
-
             try:
                 item = q[i]
             except IndexError:
@@ -1077,7 +1102,6 @@ class SpeedScan(HexSearch):
                 log.info('Step item has changed since queue refresh')
                 return
             item = self.queues[0][status['index_of_queue_item']]
-            safety_buffer = item['end'] - scan_secs
             start_secs = item['start']
             if item['kind'] == 'spawn':
                 start_secs -= self.args.spawn_delay

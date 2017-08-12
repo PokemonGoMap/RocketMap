@@ -10,6 +10,7 @@ import gc
 import time
 import geopy
 import math
+
 from peewee import (InsertQuery, Check, CompositeKey, ForeignKeyField,
                     SmallIntegerField, IntegerField, CharField, DoubleField,
                     BooleanField, DateTimeField, fn, DeleteQuery, FloatField,
@@ -29,12 +30,13 @@ from . import config
 from .utils import (get_pokemon_name, get_pokemon_rarity, get_pokemon_types,
                     get_args, cellid, in_radius, date_secs, clock_between,
                     get_move_name, get_move_damage, get_move_energy,
-                    get_move_type, clear_dict_response, calc_pokemon_level)
+                    get_move_type, calc_pokemon_level)
 from .transform import transform_from_wgs_to_gcj, get_new_coords
 from .customLog import printPokemon
 
-from .account import (tutorial_pokestop_spin, check_login,
-                      setup_api, encounter_pokemon_request)
+from .account import (check_login, setup_api, encounter_pokemon_request,
+                      pokestop_spinnable, spin_pokestop)
+from .proxy import get_new_proxy
 
 log = logging.getLogger(__name__)
 
@@ -81,9 +83,11 @@ def init_database(app):
                                    ('cache_size', 10000),
                                    ('journal_size_limit', 1024 * 1024 * 4),))
 
-    app.config['DATABASE'] = db
-    flaskDb.init_app(app)
-
+    # Using internal method as the other way would be using internal var, we
+    # could use initializer but db is initialized later
+    flaskDb._load_database(app, db)
+    if app is not None:
+        flaskDb._register_handlers(app)
     return db
 
 
@@ -1844,6 +1848,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
     gyms = {}
     raids = {}
     skipped = 0
+    filtered = 0
     stopsskipped = 0
     forts = []
     forts_count = 0
@@ -1855,7 +1860,6 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
     sightings = {}
     new_spawn_points = []
     sp_id_list = []
-    captcha_url = ''
 
     # Consolidate the individual lists in each cell into two lists of Pokemon
     # and a list of forts.
@@ -1996,130 +2000,23 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                 timedelta(seconds=seconds_until_despawn)
 
             pokemon_id = p.pokemon_data.pokemon_id
+
+            # If this is an ignored pokemon, skip this whole section.
+            # We want the stuff above or we will impact spawn detection
+            # but we don't want to insert it, or send it to webhooks.
+            if args.ignorelist_file and pokemon_id in args.ignorelist:
+                log.debug('Ignoring Pokemon id: %i.', pokemon_id)
+                filtered += 1
+                continue
+
             printPokemon(pokemon_id, p.latitude, p.longitude,
                          disappear_time)
 
             # Scan for IVs/CP and moves.
-            encounter_result = None
+            pokemon_info = False
             if args.encounter and (pokemon_id in args.enc_whitelist):
-                time.sleep(args.encounter_delay)
-
-                hlvl_account = None
-                hlvl_api = None
-                using_accountset = False
-
-                scan_location = [p.latitude, p.longitude]
-
-                # If the host has L30s in the regular account pool, we
-                # can just use the current account.
-                if level >= 30:
-                    hlvl_account = account
-                    hlvl_api = api
-                else:
-                    # Get account to use for IV and CP scanning.
-                    hlvl_account = account_sets.next('30', scan_location)
-
-                # If we don't have an API object yet, it means we didn't re-use
-                # an old one, so we're using AccountSet.
-                using_accountset = not hlvl_api
-
-                # If we didn't get an account, we can't encounter.
-                if hlvl_account:
-                    # Logging.
-                    log.debug('Encountering Pokémon ID %s with account %s'
-                              + ' at %s, %s.',
-                              pokemon_id,
-                              hlvl_account['username'],
-                              scan_location[0],
-                              scan_location[1])
-
-                    # If not args.no_api_store is enabled, we need to
-                    # re-use an old API object if it's stored and we're
-                    # using an account from the AccountSet.
-                    if not args.no_api_store and using_accountset:
-                        hlvl_api = hlvl_account.get('api', None)
-
-                    # Make new API for this account if we're not using an
-                    # API that's already logged in.
-                    if not hlvl_api:
-                        hlvl_api = setup_api(args, status, account)
-
-                        # Hashing key.
-                        # TODO: all of this should be handled properly... all
-                        # these useless, inefficient threads passing around all
-                        # these single-use variables are making me ill.
-                        if args.hash_key:
-                            key = key_scheduler.next()
-                            log.debug('Using hashing key %s for this'
-                                      + ' encounter.', key)
-                            hlvl_api.activate_hash_server(key)
-
-                    # We have an API object now. If necessary, store it.
-                    if using_accountset and not args.no_api_store:
-                        hlvl_account['api'] = hlvl_api
-
-                    # Set location.
-                    hlvl_api.set_position(*scan_location)
-
-                    # Log in.
-                    check_login(args, hlvl_account, hlvl_api, scan_location,
-                                status['proxy_url'])
-
-                    # Encounter Pokémon.
-                    encounter_result = encounter_pokemon_request(
-                        hlvl_api,
-                        account,
-                        p.encounter_id,
-                        p.spawn_point_id,
-                        scan_location)
-
-                    # Handle errors.
-                    if encounter_result:
-                        # Readability.
-                        responses = encounter_result['responses']
-
-                        # Check for captcha.
-                        captcha_url = responses[
-                            'CHECK_CHALLENGE'].challenge_url
-
-                        # Throw warning but finish parsing.
-                        if len(captcha_url) > 1:
-                            # Flag account.
-                            hlvl_account['captcha'] = True
-                            log.error('Account %s encountered a captcha.'
-                                      + ' Account will not be used.',
-                                      hlvl_account['username'])
-                        else:
-                            # Update level indicator before we clear the
-                            # response.
-                            encounter_level = hlvl_account['level']
-
-                            # User error?
-                            if encounter_level < 30:
-                                raise Exception('Expected account of level 30'
-                                                + ' or higher, but account '
-                                                + hlvl_account['username']
-                                                + ' is only level '
-                                                + str(encounter_level) + '.')
-
-                        # We're done with the encounter. If it's from an
-                        # AccountSet, release account back to the pool.
-                        if using_accountset:
-                            account_sets.release(hlvl_account)
-
-                        # Clear the response for memory management.
-                        encounter_result = clear_dict_response(
-                            encounter_result)
-                    else:
-                        # Something happened. Clean up.
-
-                        # We're done with the encounter. If it's from an
-                        # AccountSet, release account back to the pool.
-                        if using_accountset:
-                            account_sets.release(hlvl_account)
-                else:
-                    log.error('No L30 accounts are available, please'
-                              + ' consider adding more. Skipping encounter.')
+                pokemon_info = encounter_pokemon(
+                    args, p, account, api, account_sets, status, key_scheduler)
 
             pokemon[p.encounter_id] = {
                 'encounter_id': b64encode(str(p.encounter_id)),
@@ -2147,46 +2044,20 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                                                     .pokemon_display.form)
 
             # We need to check if exist and is not false due to a request error
-            if encounter_result and (encounter_result['responses'][
-                    'ENCOUNTER']):
-                pokemon_info = encounter_result['responses'][
-                    'ENCOUNTER'].wild_pokemon.pokemon_data
-
-                # IVs.
-                individual_attack = pokemon_info.individual_attack
-                individual_defense = pokemon_info.individual_defense
-                individual_stamina = pokemon_info.individual_stamina
-                cp = pokemon_info.cp
-
-                # Logging: let the user know we succeeded.
-                log.debug('Encounter for Pokémon ID %s'
-                          + ' at %s, %s successful: '
-                          + ' %s/%s/%s, %s CP.',
-                          pokemon_id,
-                          p.latitude,
-                          p.longitude,
-                          individual_attack,
-                          individual_defense,
-                          individual_stamina,
-                          cp)
-
+            if pokemon_info:
                 pokemon[p.encounter_id].update({
-                    'individual_attack': individual_attack,
-                    'individual_defense': individual_defense,
-                    'individual_stamina': individual_stamina,
+                    'individual_attack': pokemon_info.individual_attack,
+                    'individual_defense': pokemon_info.individual_defense,
+                    'individual_stamina': pokemon_info.individual_stamina,
                     'move_1': pokemon_info.move_1,
                     'move_2': pokemon_info.move_2,
                     'height': pokemon_info.height_m,
                     'weight': pokemon_info.weight_kg,
+                    'cp': pokemon_info.cp,
+                    'cp_multiplier': pokemon_info.cp_multiplier
                 })
 
-                # Only add CP if we're level 30+.
-                if encounter_level >= 30:
-                    pokemon[p.encounter_id]['cp'] = cp
-                    pokemon[p.encounter_id][
-                        'cp_multiplier'] = pokemon_info.cp_multiplier
-
-            if args.webhooks:
+            if 'pokemon' in args.wh_types:
                 if (pokemon_id in args.webhook_whitelist or
                     (not args.webhook_whitelist and pokemon_id
                      not in args.webhook_blacklist)):
@@ -2221,16 +2092,6 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                     (f['last_modified'] -
                      datetime(1970, 1, 1)).total_seconds())) for f in query]
 
-        # Complete tutorial with a Pokestop spin
-        if args.complete_tutorial and not (len(captcha_url) > 1):
-            if config['parse_pokestops']:
-                tutorial_pokestop_spin(
-                    api, level, forts, step_location, account)
-            else:
-                log.error(
-                    'Pokestop can not be spun since parsing Pokestops is ' +
-                    'not active. Check if \'-nk\' flag is accidentally set.')
-
         for f in forts:
             if config['parse_pokestops'] and f.type == 1:  # Pokestops.
                 if len(f.active_fort_modifier) > 0:
@@ -2238,39 +2099,8 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                         f.last_modified_timestamp_ms / 1000.0) +
                         timedelta(minutes=args.lure_duration))
                     active_fort_modifier = f.active_fort_modifier[0]
-                    if args.webhooks and args.webhook_updates_only:
-                        wh_update_queue.put(('pokestop', {
-                            'pokestop_id': b64encode(str(f.id)),
-                            'enabled': f.enabled,
-                            'latitude': f.latitude,
-                            'longitude': f.longitude,
-                            'last_modified_time': f.last_modified_timestamp_ms,
-                            'lure_expiration': calendar.timegm(
-                                lure_expiration.timetuple()),
-                            'active_fort_modifier': active_fort_modifier
-                        }))
                 else:
                     lure_expiration, active_fort_modifier = None, None
-
-                # Send all pokestops to webhooks.
-                if args.webhooks and not args.webhook_updates_only:
-                    # Explicitly set 'webhook_data', in case we want to change
-                    # the information pushed to webhooks.  Similar to above and
-                    # previous commits.
-                    l_e = None
-
-                    if lure_expiration is not None:
-                        l_e = calendar.timegm(lure_expiration.timetuple())
-
-                    wh_update_queue.put(('pokestop', {
-                        'pokestop_id': b64encode(str(f.id)),
-                        'enabled': f.enabled,
-                        'latitude': f.latitude,
-                        'longitude': f.longitude,
-                        'last_modified_time': f.last_modified_timestamp_ms,
-                        'lure_expiration': l_e,
-                        'active_fort_modifier': active_fort_modifier
-                    }))
 
                 if ((f.id, int(f.last_modified_timestamp_ms / 1000.0))
                         in encountered_pokestops):
@@ -2290,13 +2120,28 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                     'active_fort_modifier': active_fort_modifier
                 }
 
+                # Send all pokestops to webhooks.
+                if 'pokestop' in args.wh_types or (
+                        'lure' in args.wh_types and
+                        lure_expiration is not None):
+                    l_e = None
+                    if lure_expiration is not None:
+                        l_e = calendar.timegm(lure_expiration.timetuple())
+                    wh_pokestop = pokestops[f.id].copy()
+                    wh_pokestop.update({
+                        'pokestop_id': b64encode(str(f.id)),
+                        'last_modified_time': f.last_modified_timestamp_ms,
+                        'lure_expiration': l_e,
+                    })
+                    wh_update_queue.put(('pokestop', wh_pokestop))
+
             # Currently, there are only stops and gyms.
             elif config['parse_gyms'] and f.type == 0:
                 b64_gym_id = b64encode(str(f.id))
                 gym_display = f.gym_display
                 raid_info = f.raid_info
                 # Send gyms to webhooks.
-                if args.webhooks and not args.webhook_updates_only:
+                if 'gym' in args.wh_types:
                     raid_active_until = 0
                     raid_battle_ms = raid_info.raid_battle_ms
                     raid_end_ms = raid_info.raid_end_ms
@@ -2359,7 +2204,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                 }
 
                 if config['parse_raids'] and f.type == 0:
-                    if raid_info:
+                    if f.HasField('raid_info'):
                         raids[f.id] = {
                             'gym_id': f.id,
                             'level': raid_info.raid_level,
@@ -2384,7 +2229,10 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                                 'move_2': raid_pokemon.move_2
                             })
 
-                        if args.webhooks and not args.webhook_updates_only:
+                        if ('egg' in args.wh_types and
+                                raids[f.id]['pokemon_id'] is None) or (
+                                    'raid' in args.wh_types and
+                                    raids[f.id]['pokemon_id'] is not None):
                             wh_raid = raids[f.id].copy()
                             wh_raid.update({
                                 'gym_id': b64_gym_id,
@@ -2396,12 +2244,20 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                             })
                             wh_update_queue.put(('raid', wh_raid))
 
+        # Let db do it's things while we try to spin.
+        if args.pokestop_spinning:
+            for f in forts:
+                # Spin Pokestop with 50% chance.
+                if f.type == 1 and pokestop_spinnable(f, step_location):
+                    spin_pokestop(api, account, args, f, step_location)
+
         # Helping out the GC.
         del forts
 
-    log.info('Parsing found Pokemon: %d, nearby: %d, pokestops: %d,' +
-             ' gyms: %d, raids: %d.',
+    log.info('Parsing found Pokemon: %d (%d filtered), nearby: %d, ' +
+             'pokestops: %d, gyms: %d, raids: %d.',
              len(pokemon) + skipped,
+             filtered,
              nearby_pokemon,
              len(pokestops) + stopsskipped,
              len(gyms),
@@ -2485,6 +2341,140 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
     }
 
 
+def encounter_pokemon(args, pokemon, account, api, account_sets, status,
+                      key_scheduler):
+    using_accountset = False
+    hlvl_account = None
+    pokemon_id = None
+    result = False
+    try:
+        hlvl_api = None
+        pokemon_id = pokemon.pokemon_data.pokemon_id
+        scan_location = [pokemon.latitude, pokemon.longitude]
+        # If the host has L30s in the regular account pool, we
+        # can just use the current account.
+        if account['level'] >= 30:
+            hlvl_account = account
+            hlvl_api = api
+        else:
+            # Get account to use for IV and CP scanning.
+            hlvl_account = account_sets.next('30', scan_location)
+            using_accountset = True
+
+        time.sleep(args.encounter_delay)
+
+        # If we didn't get an account, we can't encounter.
+        if not hlvl_account:
+            log.error('No L30 accounts are available, please' +
+                      ' consider adding more. Skipping encounter.')
+            return False
+
+        # Logging.
+        log.info('Encountering Pokemon ID %s with account %s at %s, %s.',
+                 pokemon_id, hlvl_account['username'], scan_location[0],
+                 scan_location[1])
+
+        # If not args.no_api_store is enabled, we need to
+        # re-use an old API object if it's stored and we're
+        # using an account from the AccountSet.
+        if not args.no_api_store and using_accountset:
+            hlvl_api = hlvl_account.get('api', None)
+
+        # Make new API for this account if we're not using an
+        # API that's already logged in.
+        if not hlvl_api:
+            hlvl_api = setup_api(args, status, hlvl_account)
+
+        # If the already existent API is using a proxy but
+        # it's not alive anymore, we need to get a new proxy.
+        elif (args.proxy and
+              (hlvl_api._session.proxies['http'] not in args.proxy)):
+            proxy_idx, proxy_new = get_new_proxy(args)
+            hlvl_api.set_proxy({
+                'http': proxy_new,
+                'https': proxy_new})
+            hlvl_api._auth_provider.set_proxy({
+                'http': proxy_new,
+                'https': proxy_new})
+
+        # Hashing key.
+        # TODO: Rework inefficient threading.
+        if args.hash_key:
+            key = key_scheduler.next()
+            log.debug('Using hashing key %s for this encounter.', key)
+            hlvl_api.activate_hash_server(key)
+
+        # We have an API object now. If necessary, store it.
+        if using_accountset and not args.no_api_store:
+            hlvl_account['api'] = hlvl_api
+
+        # Set location.
+        hlvl_api.set_position(*scan_location)
+
+        # Log in.
+        check_login(args, hlvl_account, hlvl_api, status['proxy_url'])
+        encounter_level = hlvl_account['level']
+
+        # User error -> we skip freeing the account.
+        if encounter_level < 30:
+            log.warning('Expected account of level 30 or higher, ' +
+                        'but account %s is only level %d',
+                        hlvl_account['username'], encounter_level)
+            return False
+
+        # Encounter Pokémon.
+        encounter_result = encounter_pokemon_request(
+            hlvl_api, hlvl_account, pokemon.encounter_id,
+            pokemon.spawn_point_id, scan_location)
+
+        # Handle errors.
+        if encounter_result:
+            enc_responses = encounter_result['responses']
+            # Check for captcha.
+            captcha_url = enc_responses['CHECK_CHALLENGE'].challenge_url
+
+            # Throw warning but finish parsing.
+            if len(captcha_url) > 1:
+                # Flag account.
+                hlvl_account['captcha'] = True
+                log.error('Account %s encountered a captcha.' +
+                          ' Account will not be used.',
+                          hlvl_account['username'])
+
+            if ('ENCOUNTER' in enc_responses and
+                    enc_responses['ENCOUNTER'].status != 1):
+                log.error('There was an error encountering Pokemon ID %s with '
+                          + 'account %s: %d.', pokemon_id,
+                          hlvl_account['username'],
+                          enc_responses['ENCOUNTER'].status)
+            else:
+                pokemon_info = enc_responses[
+                    'ENCOUNTER'].wild_pokemon.pokemon_data
+                # Logging: let the user know we succeeded.
+                log.info('Encounter for Pokemon ID %s at %s, %s ' +
+                         'successful: %s/%s/%s, %s CP.', pokemon_id,
+                         pokemon.latitude, pokemon.longitude,
+                         pokemon_info.individual_attack,
+                         pokemon_info.individual_defense,
+                         pokemon_info.individual_stamina, pokemon_info.cp)
+
+                result = pokemon_info
+
+    except Exception as e:
+        log.exception('There was an error encountering Pokemon ID %s with ' +
+                      'account %s: %s.',
+                      pokemon_id,
+                      hlvl_account['username'],
+                      e)
+
+    # We're done with the encounter. If it's from an
+    # AccountSet, release account back to the pool.
+    if using_accountset:
+        account_sets.release(hlvl_account)
+
+    return result
+
+
 def parse_gyms(args, gym_responses, wh_update_queue, db_update_queue):
     gym_details = {}
     gym_members = {}
@@ -2502,7 +2492,7 @@ def parse_gyms(args, gym_responses, wh_update_queue, db_update_queue):
             'url': g.url
         }
 
-        if args.webhooks:
+        if 'gym-info' in args.wh_types:
             webhook_data = {
                 'id': b64encode(str(gym_id)),
                 'latitude': gym_state.pokemon_fort_proto.latitude,
@@ -2555,7 +2545,7 @@ def parse_gyms(args, gym_responses, wh_update_queue, db_update_queue):
                 'last_seen': datetime.utcnow(),
             }
 
-            if args.webhooks:
+            if 'gym-info' in args.wh_types:
                 wh_pokemon = gym_pokemon[i].copy()
                 del wh_pokemon['last_seen']
                 wh_pokemon.update({
@@ -2569,7 +2559,7 @@ def parse_gyms(args, gym_responses, wh_update_queue, db_update_queue):
                 webhook_data['pokemon'].append(wh_pokemon)
 
             i += 1
-        if args.webhooks:
+        if 'gym-info' in args.wh_types:
             wh_update_queue.put(('gym_details', webhook_data))
 
     # All this database stuff is synchronous (not using the upsert queue) on
@@ -2607,7 +2597,7 @@ def parse_gyms(args, gym_responses, wh_update_queue, db_update_queue):
              len(gym_members))
 
 
-def db_updater(args, q, db):
+def db_updater(q, db):
     # The forever loop.
     while True:
         try:
@@ -2859,7 +2849,6 @@ def database_migrate(db, old_ver):
              old_ver, db_schema_version)
 
     # Perform migrations here.
-    migrator = None
     if args.db_type == 'mysql':
         migrator = MySQLMigrator(db)
     else:

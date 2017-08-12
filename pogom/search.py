@@ -24,7 +24,6 @@ import sys
 import traceback
 import random
 import time
-import copy
 import requests
 import schedulers
 import terminalsize
@@ -47,8 +46,8 @@ from .models import (parse_map, GymDetails, parse_gyms, MainWorker,
                      WorkerStatus, HashKeys)
 from .utils import now, clear_dict_response
 from .transform import get_new_coords, jitter_location
-from .account import (setup_api, check_login, get_tutorial_state,
-                      complete_tutorial, AccountSet, parse_new_timestamp_ms)
+from .account import (setup_api, check_login, AccountSet,
+                      parse_new_timestamp_ms)
 from .captcha import captcha_overseer_thread, handle_captcha
 from .proxy import get_new_proxy
 
@@ -458,9 +457,9 @@ def search_overseer_thread(args, new_location_queue, control_flags, heartb,
                    name='search-worker-{}'.format(i),
                    args=(args, account_queue, account_sets,
                          account_failures, account_captchas,
-                         search_items_queue, control_flags,
-                         threadStatus[workerId], db_updates_queue,
-                         wh_queue, scheduler, key_scheduler))
+                         control_flags, threadStatus[workerId],
+                         db_updates_queue, wh_queue,
+                         scheduler, key_scheduler))
         t.daemon = True
         t.start()
 
@@ -567,7 +566,7 @@ def search_overseer_thread(args, new_location_queue, control_flags, heartb,
         threadStatus['Overseer']['accounts_captcha'] = len(account_captchas)
 
         # Send webhook updates when scheduler status changes.
-        if args.webhook_scheduler_updates:
+        if args.speed_scan and 'tth' in args.wh_types:
             wh_status_update(args, threadStatus['Overseer'], wh_queue,
                              scheduler_array[0])
 
@@ -594,17 +593,16 @@ def get_scheduler_tth_found_pct(scheduler):
 def wh_status_update(args, status, wh_queue, scheduler):
     scheduler_name = status['scheduler']
 
-    if args.speed_scan:
-        tth_found = get_scheduler_tth_found_pct(scheduler)
-        spawns_found = getattr(scheduler, 'spawns_found', 0)
+    tth_found = get_scheduler_tth_found_pct(scheduler)
+    spawns_found = getattr(scheduler, 'spawns_found', 0)
 
-        if (tth_found - status['scheduler_status']['tth_found']) > 0.01:
-            log.debug('Scheduler update is due, sending webhook message.')
-            wh_queue.put(('scheduler', {'name': scheduler_name,
-                                        'instance': args.status_name,
-                                        'tth_found': tth_found,
-                                        'spawns_found': spawns_found}))
-            status['scheduler_status']['tth_found'] = tth_found
+    if (tth_found - status['scheduler_status']['tth_found']) > 0.01:
+        log.debug('Scheduler update is due, sending webhook message.')
+        wh_queue.put(('scheduler', {'name': scheduler_name,
+                                    'instance': args.status_name,
+                                    'tth_found': tth_found,
+                                    'spawns_found': spawns_found}))
+        status['scheduler_status']['tth_found'] = tth_found
 
 
 def get_stats_message(threadStatus, search_items_queue_array, db_updates_queue,
@@ -626,6 +624,7 @@ def get_stats_message(threadStatus, search_items_queue_array, db_updates_queue,
     cph = overseer['captcha_total'] * 3600.0 / elapsed
     ccost = cph * 0.00299
     cmonth = ccost * 730
+
     # Print the queue length.
     search_items_queue_size = 0
     for i in range(0, len(search_items_queue_array)):
@@ -649,13 +648,11 @@ def get_stats_message(threadStatus, search_items_queue_array, db_updates_queue,
              overseer['fail_total'], fph, overseer['empty_total'], eph,
              overseer['skip_total'], skph, overseer['captcha_total'], cph,
              ccost, cmonth)
-
     return message
 
 
 def update_total_stats(threadStatus, last_account_status):
     overseer = threadStatus['Overseer']
-
     # Calculate totals.
     active_count = 0
     current_accounts = Set()
@@ -668,14 +665,20 @@ def update_total_stats(threadStatus, last_account_status):
             current_accounts.add(username)
             last_status = last_account_status.get(username, {})
             overseer['skip_total'] += stat_delta(tstatus, last_status, 'skip')
-            overseer[
-                'captcha_total'] += stat_delta(tstatus, last_status, 'captcha')
-            overseer[
-                'empty_total'] += stat_delta(tstatus, last_status, 'noitems')
+            overseer['captcha_total'] += stat_delta(tstatus, last_status,
+                                                    'captcha')
+            overseer['empty_total'] += stat_delta(tstatus, last_status,
+                                                  'noitems')
             overseer['fail_total'] += stat_delta(tstatus, last_status, 'fail')
-            overseer[
-                'success_total'] += stat_delta(tstatus, last_status, 'success')
-            last_account_status[username] = copy.deepcopy(tstatus)
+            overseer['success_total'] += stat_delta(tstatus, last_status,
+                                                    'success')
+            last_account_status[username] = {
+                'skip': tstatus['skip'],
+                'captcha': tstatus['captcha'],
+                'noitems': tstatus['noitems'],
+                'fail': tstatus['fail'],
+                'success': tstatus['success']
+            }
 
     overseer['active_accounts'] = active_count
 
@@ -751,7 +754,7 @@ def generate_hive_locations(current_location, step_distance,
 
 def search_worker_thread(args, account_queue, account_sets,
                          account_failures, account_captchas,
-                         search_items_queue, control_flags, status, dbq, whq,
+                         control_flags, status, dbq, whq,
                          scheduler, key_scheduler):
 
     log.debug('Search worker thread starting...')
@@ -782,6 +785,7 @@ def search_worker_thread(args, account_queue, account_sets,
 
             # Get an account.
             account = account_queue.get()
+            # Reset account statistics tracked per loop.
             status.update(WorkerStatus.get_worker(
                 account['username'], scheduler.scan_location))
             status['message'] = 'Switching to account {}.'.format(
@@ -931,27 +935,12 @@ def search_worker_thread(args, account_queue, account_sets,
 
                 # Ok, let's get started -- check our login status.
                 status['message'] = 'Logging in...'
-                check_login(args, account, api, step_location,
-                            status['proxy_url'])
+                check_login(args, account, api, status['proxy_url'])
 
                 # Only run this when it's the account's first login, after
                 # check_login().
                 if first_login:
                     first_login = False
-
-                    # Check tutorial completion.
-                    if args.complete_tutorial:
-                        tutorial_state = get_tutorial_state(args, api, account)
-
-                        if not all(x in tutorial_state
-                                   for x in (0, 1, 3, 4, 7)):
-                            log.info('Completing tutorial steps for %s.',
-                                     account['username'])
-                            complete_tutorial(args, api, account,
-                                              tutorial_state)
-                        else:
-                            log.info('Account %s already completed tutorial.',
-                                     account['username'])
 
                 # Putting this message after the check_login so the messages
                 # aren't out of order.
@@ -1044,7 +1033,7 @@ def search_worker_thread(args, account_queue, account_sets,
                             # Get them if not.
                             try:
                                 record = GymDetails.get(gym_id=gym['gym_id'])
-                            except GymDetails.DoesNotExist as e:
+                            except GymDetails.DoesNotExist:
                                 gyms_to_update[gym['gym_id']] = gym
                                 continue
 
@@ -1083,7 +1072,7 @@ def search_worker_thread(args, account_queue, account_sets,
                                     step_location[0], step_location[1])
                             time.sleep(random.random() + 2)
                             response = gym_request(api, account, step_location,
-                                                   gym, args.api_version)
+                                                   gym)
 
                             # Make sure the gym was in range. (Sometimes the
                             # API gets cranky about gyms that are ALMOST 1km
@@ -1154,7 +1143,7 @@ def search_worker_thread(args, account_queue, account_sets,
                     time.strftime(
                         '%H:%M:%S',
                         time.localtime(time.time() + args.scan_delay)))
-                log.info(status['message'])
+                log.debug(status['message'])
                 time.sleep(delay)
 
         # Catch any process exceptions, log them, and continue the thread.
@@ -1218,9 +1207,9 @@ def map_request(api, account, position, no_jitter=False):
         response = clear_dict_response(response)
         return response
 
-    except HashingOfflineException as e:
+    except HashingOfflineException:
         log.error('Hashing server is unreachable, it might be offline.')
-    except BadHashRequestException as e:
+    except BadHashRequestException:
         log.error('Invalid or expired hashing key: %s.',
                   api._hash_server_token)
     except Exception as e:
@@ -1228,7 +1217,7 @@ def map_request(api, account, position, no_jitter=False):
         return False
 
 
-def gym_request(api, account, position, gym, api_version):
+def gym_request(api, account, position, gym):
     try:
         log.info('Getting details for gym @ %f/%f (%fkm away)',
                  gym['latitude'], gym['longitude'],
@@ -1317,7 +1306,7 @@ def check_forced_version(args, api_check_time, api_watchdog_flag):
                 log.debug("API check was successful. Continue scanning.")
                 api_watchdog_flag.clear()
 
-        except ValueError as e:
+        except ValueError:
             # Unknown version format. Pause scanning as well.
             api_watchdog_flag.set()
             log.warning('Niantic forced unknown API version format: %s.',
