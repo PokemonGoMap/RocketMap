@@ -556,7 +556,7 @@ function pokemonLabel(item) {
         </div>
       </div>
       </div>
-      <div class='pokemon links container'>
+      <div class='pokemon links'>
         Options:
         <span class='pokemon links no encounter exclude'><a href='javascript:excludePokemon(${id})'>Exclude</a></span>
         <span class='pokemon links no encounter notify'><a href='javascript:notifyAboutPokemon(${id})'>Notify</a></span>

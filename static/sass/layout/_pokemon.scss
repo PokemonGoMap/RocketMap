@@ -55,10 +55,6 @@
   &.links {
     color: rgb(93,109,126);
 
-    &.container {
-      float: right;
-    }
-
     &.exclude:before {
       content: '\f056';
       font-family: FontAwesome;
