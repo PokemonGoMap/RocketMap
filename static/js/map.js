@@ -543,32 +543,25 @@ function pokemonLabel(item) {
         <div class='pokemon container content-left'>
           <div>
             <img class='pokemon sprite' src='static/icons/${id}.png'>
-            <span class='pokemon'>Level: </span><span class='pokemon no-encounter'>n/a</span>
-            <span class='pokemon links exclude'><a href='javascript:excludePokemon(${id})'>Exclude</a></span>
-            <span class='pokemon links notify'><a href='javascript:notifyAboutPokemon(${id})'>Notify</a></span>
-            <span class='pokemon links remove'><a href='javascript:removePokemonMarker("${encounterId}")'>Remove</a></span>
           </div>
-      </div>
+        </div>
       <div class='pokemon container content-right'>
         <div>
-          <div class='pokemon disappear'>
+          <div class='pokemon disappear no encounter'>
             <span class='label-countdown' disappears-at='${disappearTime}'>00m00s</span> left
           </div>
-          <div class='pokemon'>
-            CP: <span class='pokemon no-encounter'>No information</span>
-          </div>
-          <div class='pokemon'>
-            Moveset: <span class='pokemon no-encounter'>No information</span>
-          </div>
-          <div class='pokemon'>
-            Weight: <span class='pokemon no-encounter'>n/a</span> | Height: <span class='pokemon no-encounter'>n/a</span>
-          </div>
           <div>
-            <span class='pokemon navigate'><a href='javascript:void(0);' onclick='javascript:openMapDirections(${latitude},${longitude});' title='Open in Google Maps'>${latitude.toFixed(6)}, ${longitude.toFixed(7)}</a></span>
+            <span class='pokemon navigate no encounter'><a href='javascript:void(0);' onclick='javascript:openMapDirections(${latitude},${longitude});' title='Open in Google Maps'>${latitude.toFixed(6)}, ${longitude.toFixed(7)}</a></span>
           </div>
+        </div>
       </div>
-    </div>
-  </div>`
+      </div>
+      <div class='pokemon links container'>
+        Options:
+        <span class='pokemon links no encounter exclude'><a href='javascript:excludePokemon(${id})'>Exclude</a></span>
+        <span class='pokemon links no encounter notify'><a href='javascript:notifyAboutPokemon(${id})'>Notify</a></span>
+        <span class='pokemon links no encounter remove'><a href='javascript:removePokemonMarker("${encounterId}")'>Remove</a></span>
+      </div>`
     }
 
     contentstring += `
