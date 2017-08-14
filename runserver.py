@@ -467,17 +467,20 @@ def set_log_and_verbosity(log):
     logging.getLogger('pgoapi.pgoapi').setLevel(logging.WARNING)
     logging.getLogger('pgoapi.rpc_api').setLevel(logging.INFO)
     logging.getLogger('werkzeug').setLevel(logging.ERROR)
+    logging.getLogger('pogom.apiRequests.resp').setLevel(logging.INFO)
 
     # Turn these back up if debugging.
-    if args.verbose == 2:
+    if args.verbose >= 2:
         logging.getLogger('pgoapi').setLevel(logging.DEBUG)
         logging.getLogger('pgoapi.pgoapi').setLevel(logging.DEBUG)
         logging.getLogger('requests').setLevel(logging.DEBUG)
-    elif args.verbose >= 3:
+
+    if args.verbose >= 3:
         logging.getLogger('peewee').setLevel(logging.DEBUG)
         logging.getLogger('rpc_api').setLevel(logging.DEBUG)
         logging.getLogger('pgoapi.rpc_api').setLevel(logging.DEBUG)
         logging.getLogger('werkzeug').setLevel(logging.DEBUG)
+        logging.getLogger('pogom.apiRequests.resp').setLevel(logging.DEBUG)
 
     # Web access logs.
     if args.access_logs:
