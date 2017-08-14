@@ -414,6 +414,7 @@ function initSidebar() {
     $('#sound-switch').prop('checked', Store.get('playSound'))
     $('#pokemoncries').toggle(Store.get('playSound'))
     $('#cries-switch').prop('checked', Store.get('playCries'))
+    $('#upscale-switch').prop('checked', Store.get('upScale'))
 
     // Only create the Autocomplete element if it's enabled in template.
     var elSearchBox = document.getElementById('next-location')
@@ -2728,6 +2729,27 @@ $(function () {
 
     $('#cries-switch').change(function () {
         Store.set('playCries', this.checked)
+    })
+
+    $('#upscale-switch').change(function () {
+        Store.set('upScale', this.checked)
+        // Remove all Pokemon markers from map
+        var oldPokeMarkers = []
+        $.each(mapData['pokemons'], function (key, pkm) {
+            // for any marker you're turning off, you'll want to wipe off the range
+            if (pkm.marker.rangeCircle) {
+                pkm.marker.rangeCircle.setMap(null)
+                delete pkm.marker.rangeCircle
+            }
+            pkm.marker.setMap(null)
+            oldPokeMarkers.push(pkm.marker)
+        })
+        markerCluster.removeMarkers(oldPokeMarkers)
+        mapData['pokemons'] = {}
+
+        // Reload all Pokemon
+        lastpokemon = false
+        updateMap()
     })
 
     $('#geoloc-switch').change(function () {
