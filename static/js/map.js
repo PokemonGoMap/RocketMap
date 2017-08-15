@@ -551,7 +551,7 @@ function pokemonLabel(item) {
       <div class='pokemon container content-right'>
         <div>
           <div class='pokemon disappear'>
-            <span class='label-countdown' disappears-at='${disappearTime}'>00m00s</span> left
+            <span class='label-countdown' disappears-at='${disappearTime}'>00m00s</span> left (${moment(disappearTime).format('h:mm a')})
           </div>
           <div class='pokemon'>
             CP: <span class='pokemon no-encounter'>No information</span>
@@ -658,7 +658,7 @@ function gymLabel(gym, includeMembers = true) {
                 <span style='color:rgb(${raidColor[Math.floor((raid.level - 1) / 2)]})'>
                 ${levelStr}
                 </span>
-                <span class='raid countdown label-countdown' disappears-at='${raid.end}'></span> left
+                <span class='raid countdown label-countdown' disappears-at='${raid.end}'></span> left (${moment(raid.end).format('h:mm a')})
                 </div>
             `
             // Use Pokémon-specific image if we have one.
@@ -683,7 +683,7 @@ function gymLabel(gym, includeMembers = true) {
                     <span style='color:rgb(${raidColor[Math.floor((raid.level - 1) / 2)]})'>
                     ${levelStr}
                     </span>
-                    <span class='raid countdown label-countdown' disappears-at='${raid.end}'></span> left
+                    <span class='raid countdown label-countdown' disappears-at='${raid.end}'></span> left (${moment(raid.end).format('h:mm a')})
                     </div>
                 `
             }
@@ -697,7 +697,7 @@ function gymLabel(gym, includeMembers = true) {
                   <span style='color:rgb(${raidColor[Math.floor((raid.level - 1) / 2)]})'>
                   ${levelStr}
                   </span>
-                  Raid in <span class='raid countdown label-countdown' disappears-at='${raid.start}'></span>
+                  Raid in <span class='raid countdown label-countdown' disappears-at='${raid.start}'> (${moment(raid.start).format('h:mm a')})</span>
                 </div>`
         }
     } else {
@@ -1853,11 +1853,11 @@ var updateLabelDiffTime = function () {
         } else {
             timestring = ''
             if (hours > 0) {
-                timestring = hours + 'hour '
+                timestring = hours + 'h'
             }
 
-            timestring += lpad(minutes, 2, 0) + 'min '
-            timestring += lpad(seconds, 2, 0) + 'sec '
+            timestring += lpad(minutes, 2, 0) + 'm'
+            timestring += lpad(seconds, 2, 0) + 's'
             timestring += ''
         }
 
