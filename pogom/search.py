@@ -1051,8 +1051,8 @@ def search_worker_thread(args, account_queue, account_sets,
                                 continue
                         else:
                             log.debug(
-                                ('Skipping update of gym @ %f/%f, too far ' +
-                                 'away from our location at %f/%f (%fkm).'),
+                                'Skipping update of gym @ %f/%f, too far ' +
+                                'away from our location at %f/%f (%.0fm).',
                                 gym['latitude'], gym['longitude'],
                                 step_location[0], step_location[1], distance)
 
@@ -1081,10 +1081,9 @@ def search_worker_thread(args, account_queue, account_sets,
                             if response['responses'][
                                     'GYM_GET_INFO'].result == 2:
                                 log.warning(
-                                    ('Gym @ %f/%f is out of range (%dkm), ' +
-                                     'skipping.'),
-                                    gym['latitude'], gym['longitude'],
-                                    distance)
+                                    'Gym @ %f/%f is out of range (%.0fm), ' +
+                                    'skipping.', gym['latitude'],
+                                    gym['longitude'], distance)
                             else:
                                 gym_responses[gym['gym_id']] = response[
                                     'responses']['GYM_GET_INFO']
