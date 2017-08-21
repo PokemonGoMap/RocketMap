@@ -8,9 +8,7 @@ $(function () {
     const upscaledPokemon = [] // Add Pokémon IDs separated by commas (e.g. [1, 2, 3]) to upscale icons.
 
     const map_style = 'roadmap' //  default: 'roadmap'. Options - look at https://github.com/RocketMap/RocketMap/blob/develop/static/data/mapstyle.json
-    const remember_select_exclude = [] // Add Pokémon IDs separated by commas (e.g. [1, 2, 3])
-    const remember_select_notify = [] //  Add Pokémon IDs separated by commas (e.g. [1, 2, 3])
-    const remember_select_rarity_notify = [] // Options - 'Common', 'Uncommon', 'Rare', 'Very Rare', 'Ultra Rare'
+    const excluded_Pokemon = [] // Add Pokémon IDs separated by commas (e.g. [1, 2, 3])
     const showRaids = false // Default: false.
     const showActiveRaidsOnly = false // Default: false.
     const showGyms = false // Default: false.
@@ -87,9 +85,9 @@ $(function () {
     Store.set('scaleByRarity', scaleByRarity)
     Store.set('upscaledPokemon', upscaledPokemon)
     Store.set('map_style', map_style)
-    Store.set('remember_select_exclude', remember_select_exclude)
-    Store.set('remember_select_notify', remember_select_notify)
-    Store.set('remember_select_rarity_notify', remember_select_rarity_notify)
+	const remember_select_exclude = Store.get('remember_select_exclude')
+	const new_Exclude_List = remember_select_exclude.concat( excluded_Pokemon )
+    Store.set('remember_select_exclude', new_Exclude_List )
     Store.set('showRaids', showRaids)
     Store.set('showActiveRaidsOnly', showActiveRaidsOnly)
     Store.set('showGyms', showGyms)
