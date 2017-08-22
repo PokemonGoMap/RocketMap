@@ -5,6 +5,7 @@ $(function () {
     /* Settings. */
 
     const scaleByRarity = true // Disable scaling by rarity and notification. Default: true.
+	const upscale_Pokemon = false // Enable Upscaling selected Pokemon and notification. Default: false
     const upscaledPokemon = [] // Add Pokémon IDs separated by commas (e.g. [1, 2, 3]) to upscale icons.
 
     // Google Analytics property ID. Leave empty to disable.
@@ -69,6 +70,7 @@ $(function () {
     Store.set('processPokemonChunkSize', processPokemonChunkSize)
     Store.set('processPokemonIntervalMs', processPokemonIntervalMs)
     Store.set('scaleByRarity', scaleByRarity)
+    Store.set('upscale_Pokemon', upscale_Pokemon)
     Store.set('upscaledPokemon', upscaledPokemon)
 
     if (typeof window.orientation !== "undefined" || isMobileDevice()) {
