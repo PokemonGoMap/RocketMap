@@ -761,6 +761,7 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
                          account_captchas, control_flags, status, dbq, whq,
                          scheduler, key_scheduler, gym_cache):
 
+    step_location = []
     log.debug('Search worker thread starting...')
 
     # The outer forever loop restarts only when the inner one is
@@ -828,6 +829,8 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
             # Sleep when consecutive_noitems reaches max_empty, overall noitems
             # for stat purposes.
             consecutive_noitems = 0
+
+            first_run = True
 
             api = setup_api(args, status, account)
 
@@ -899,12 +902,29 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
                         break
 
                 # Grab the next thing to search (when available).
-                step, scan_coords, appears, leaves, messages, wait = (
+                step, next_location, appears, leaves, messages, wait = (
                     scheduler.next_item(status))
+
+                # We dont need to check distance during login.
+                if not first_run:
+                    randomizer = random.uniform(0.7, 1)
+                    # Basic Distance Formula:
+                    # time = distance divided by velocity (im km/h)
+                    # Also it randomizes between 70-100% Speed.
+                    sdelay = (distance(scan_coords, next_location) /
+                              (args.kph / 3.6) * randomizer)
+                    status['message'] += ', sleeping {}s until {}'.format(
+                        max(sdelay, args.scan_delay), time.strftime(
+                            '%H:%M:%S', time.localtime(time.time() + max(
+                                sdelay, args.scan_delay)))
+                    )
+                    # Sleep here for Scan Delay or Speed limit.
+                    time.sleep(max(sdelay, args.scan_delay))
+                scan_coords = next_location
 
                 status['message'] = messages['wait']
                 # The next_item will return the value telling us how long
-                # to sleep. This way the status can be updated
+                # to sleep. This way the status can be updated.
                 time.sleep(wait)
 
                 # Using step as a flag for no valid next location returned.
@@ -940,40 +960,15 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
                         continue
 
                 # Too late?
-                extra_delay = 0
-                # Speed scan does it's own speed calculation as part of the
-                # scheduler so we don't want the worker to do it again.
-                if not args.speed_scan:
-                    extra_delay = check_speed_limit(args.kph,
-                                                    [status['latitude'],
-                                                     status['longitude']],
-                                                    step_location,
-                                                    status['last_scan_date'])
-                continue_time = time.time() + extra_delay
-                if leaves and continue_time > (leaves - args.min_seconds_left):
+                if leaves and now() > (leaves - args.min_seconds_left):
                     scheduler.task_done(status)
                     status['skip'] += 1
                     if time.time() > (leaves - args.min_seconds_left):
                         status['message'] = messages['late']
-                    else:
-                        status['message'] = (
-                            'Skipping {:6f},{:6f}; outside time and speed ' +
-                            'constraints.').format(step_location[0],
-                                                   step_location[1])
-                        log.warning(status['message'])
+                        log.info(status['message'])
                         # No sleep here; we've not done anything worth sleeping
                         # for. Plus we clearly need to catch up!
                         continue
-
-                # Too fast?
-                if extra_delay > 0:
-                    status['message'] = (
-                        'Too fast for {:6f},{:6f}; waiting {}s...'
-                        .format(step_location[0], step_location[1],
-                                extra_delay))
-                    log.info(status['message'])
-                    # Wait here until it's safe. to proceed with scan.
-                    time.sleep(extra_delay)
 
                 status['message'] = messages['search']
                 log.debug(status['message'])
@@ -1012,6 +1007,9 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
                 status['latitude'] = scan_coords[0]
                 status['longitude'] = scan_coords[1]
                 dbq.put((WorkerStatus, {0: WorkerStatus.db_format(status)}))
+
+                # Finished our first run.
+                first_run = False
 
                 # Nothing back. Mark it up, sleep, carry on.
                 if not response_dict:
@@ -1264,24 +1262,6 @@ def calc_distance(pos1, pos2):
     d = R * c
 
     return d
-
-
-def check_speed_limit(kph, previous_location, next_location, last_scan_date):
-    if kph > 0:
-        move_distance = calc_distance(previous_location, next_location)
-        time_elapsed = (datetime.utcnow() - last_scan_date).total_seconds()
-
-        if time_elapsed <= 0:
-            time_elapsed = 0.001
-
-        projected_speed = 3600.0 * move_distance / time_elapsed
-        log.info('Move distance: %s k; time elapsed: %s s; Projected speed: '
-                 '%s kph', move_distance, time_elapsed, projected_speed)
-        if projected_speed > kph:
-            extra_delay = int(move_distance / kph * 3600.0 - time_elapsed) + 1
-            return extra_delay
-
-    return 0
 
 
 # Delay each thread start time so that logins occur after delay.
