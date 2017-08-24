@@ -1851,14 +1851,7 @@ var updateLabelDiffTime = function () {
         if (disappearsAt.ttime < disappearsAt.now) {
             timestring = '(expired)'
         } else {
-            timestring = ''
-            if (hours > 0) {
-                timestring = hours + 'h'
-            }
-
-            timestring += lpad(minutes, 2, 0) + 'm'
-            timestring += lpad(seconds, 2, 0) + 's'
-            timestring += ''
+            timestring = lpad(hours, 2, 0) + ':' + lpad(minutes, 2, 0) + ":" + lpad(seconds, 2, 0)
         }
 
         $(element).text(timestring)
