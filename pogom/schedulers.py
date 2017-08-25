@@ -1135,10 +1135,11 @@ class SpeedScan(HexSearch):
                     # Did we find the spawn?
                     if sp_id in parsed['sp_id_list']:
                         self.spawns_found += 1
-                    elif start_delay > 0:   # not sure why this could be
-                        # negative, but sometimes it is
+                    elif start_delay > 0:
+                        # Not sure why this could be negative,
+                        # but sometimes it is.
 
-                        # if not, record ID and put back in queue
+                        # If not, record ID and put back in queue.
                         self.spawns_missed_delay[
                             sp_id] = self.spawns_missed_delay.get(sp_id, [])
                         self.spawns_missed_delay[sp_id].append(start_delay)

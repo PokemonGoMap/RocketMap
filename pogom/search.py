@@ -1027,9 +1027,9 @@ def search_worker_thread(args, account_queue, account_sets,
                     gyms_to_update = {}
                     for gym in parsed['gyms'].values():
                         # Can only get gym details within 1km of our position.
-                        if distance(step_location, [
-                                gym['latitude'], gym['longitude']
-                        ]) < 1000:
+                        gym_distance = distance(
+                            step_location, [gym['latitude'], gym['longitude']])
+                        if gym_distance < 1000:
                             # Check if we already have details on this gym.
                             # Get them if not.
                             try:
@@ -1054,7 +1054,8 @@ def search_worker_thread(args, account_queue, account_sets,
                                 'Skipping update of gym @ %f/%f, too far ' +
                                 'away from our location at %f/%f (%.0fm).',
                                 gym['latitude'], gym['longitude'],
-                                step_location[0], step_location[1], distance)
+                                step_location[0], step_location[1],
+                                gym_distance)
 
                     if len(gyms_to_update):
                         gym_responses = {}
