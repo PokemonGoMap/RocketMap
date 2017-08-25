@@ -43,7 +43,7 @@ from pgoapi import utilities as util
 from pgoapi.hash_server import (HashServer, BadHashRequestException,
                                 HashingOfflineException)
 from .models import (parse_map, GymDetails, parse_gyms, MainWorker,
-                     WorkerStatus, HashKeys)
+                     WorkerStatus, HashKeys, Shadowbanned)
 from .utils import now, clear_dict_response
 from .transform import get_new_coords, jitter_location
 from .account import (setup_api, check_login, AccountSet,
@@ -375,6 +375,7 @@ def search_overseer_thread(args, new_location_queue, control_flags, heartb,
         'success_total': 0,
         'fail_total': 0,
         'empty_total': 0,
+        'nonrares_total': 0,
         'scheduler': args.scheduler,
         'scheduler_status': {'tth_found': 0}
     }
@@ -448,6 +449,7 @@ def search_overseer_thread(args, new_location_queue, control_flags, heartb,
             'noitems': 0,
             'skip': 0,
             'captcha': 0,
+            'nonrares': 0,
             'username': '',
             'proxy_display': proxy_display,
             'proxy_url': proxy_url,
@@ -622,6 +624,7 @@ def get_stats_message(threadStatus, search_items_queue_array, db_updates_queue,
     eph = overseer['empty_total'] * 3600.0 / elapsed
     skph = overseer['skip_total'] * 3600.0 / elapsed
     cph = overseer['captcha_total'] * 3600.0 / elapsed
+    nrph = overseer['nonrares_total'] * 3600 / elapsed
     ccost = cph * 0.00299
     cmonth = ccost * 730
 
@@ -643,11 +646,13 @@ def get_stats_message(threadStatus, search_items_queue_array, db_updates_queue,
     message += (
         'Total active: {}  |  Success: {} ({:.1f}/hr) | ' +
         'Fails: {} ({:.1f}/hr) | Empties: {} ({:.1f}/hr) | ' +
-        'Skips {} ({:.1f}/hr) | Captchas: {} ({:.1f}/hr)|${:.5f}/hr|${:.3f}/mo'
+        'Skips {} ({:.1f}/hr) | ' +
+        'Captchas: {} ({:.1f}/hr)|${:.5f}/hr|${:.3f}/mo | ' +
+        'Nonrares {} ({:.1f}/hr)'
     ).format(overseer['active_accounts'], overseer['success_total'], sph,
              overseer['fail_total'], fph, overseer['empty_total'], eph,
              overseer['skip_total'], skph, overseer['captcha_total'], cph,
-             ccost, cmonth)
+             ccost, cmonth, overseer['nonrares_total'], nrph)
     return message
 
 
@@ -660,7 +665,6 @@ def update_total_stats(threadStatus, last_account_status):
         if tstatus.get('type', '') == 'Worker':
             if tstatus.get('active', False):
                 active_count += 1
-
             username = tstatus.get('username', '')
             current_accounts.add(username)
             last_status = last_account_status.get(username, {})
@@ -672,12 +676,15 @@ def update_total_stats(threadStatus, last_account_status):
             overseer['fail_total'] += stat_delta(tstatus, last_status, 'fail')
             overseer['success_total'] += stat_delta(tstatus, last_status,
                                                     'success')
+            overseer['nonrares_total'] += stat_delta(tstatus, last_status,
+                                                     'nonrares')
             last_account_status[username] = {
                 'skip': tstatus['skip'],
                 'captcha': tstatus['captcha'],
                 'noitems': tstatus['noitems'],
                 'fail': tstatus['fail'],
-                'success': tstatus['success']
+                'success': tstatus['success'],
+                'nonrares': tstatus['nonrares']
             }
 
     overseer['active_accounts'] = active_count
@@ -798,6 +805,7 @@ def search_worker_thread(args, account_queue, account_sets,
             status['noitems'] = 0
             status['skip'] = 0
             status['captcha'] = 0
+            status['nonrares'] = 0
 
             stagger_thread(args)
 
@@ -1004,6 +1012,42 @@ def search_worker_thread(args, account_queue, account_sets,
                         step_location[0], step_location[1],
                         parsed['count'])
                     log.debug(status['message'])
+
+                except Shadowbanned as e:
+                    if e.missed_ids:
+                        log.warning(
+                            'Account %s could not find pokemon ID: %s. ' +
+                            'Shadowbanned, switching accounts... ',
+                            e.account['username'], e.missed_ids)
+                    else:
+                        log.warning(
+                            'Account %s could not find rare pokemons ' +
+                            '%s times in a row. Possibly shadowbanned, ' +
+                            'switching accounts... ',
+                            e.account['username'], status['nonrares'])
+
+                    sb_time = now()
+                    # Write into file if we are 100% sure of shadowban
+                    if e.final:
+                        with open('acc_shadowbanned.csv', 'a+') as sb_file:
+                            if not any(account['username'] in x.rstrip('\n')
+                                       for x in sb_file):
+                                sb_file.write('{},{},{},{}\n'.format(
+                                    account['auth_service'],
+                                    account['username'],
+                                    account['password'],
+                                    datetime.now()))
+                        # Add 3 days to sleep time if definitely shadowbanned
+                        sb_time += 3600*24*3
+
+                    account_failures.append({'account': account,
+                                             'last_fail_time': sb_time,
+                                             'reason': 'shadowbanned'})
+
+                    # Exit this loop to get a new account and have the API
+                    # recreated.
+                    break
+
                 except Exception as e:
                     parsed = False
                     status['fail'] += 1
