@@ -31,7 +31,6 @@
                     [--db-name DB_NAME] [--db-user DB_USER]
                     [--db-pass DB_PASS] [--db-host DB_HOST]
                     [--db-port DB_PORT]
-                    [--db-max_connections DB_MAX_CONNECTIONS]
                     [--db-threads DB_THREADS] [-wh WEBHOOKS] [-gi]
                     [--disable-clean]
                     [--wh-types {pokemon,gym,raid,egg,tth,gym-info,pokestop,lure}]
@@ -57,7 +56,7 @@
     ConfigArgParse documentation. If an arg is specified in more than one place,
     then commandline values override environment variables which override config
     file values which override defaults.
-    
+
     optional arguments:
       -h, --help            show this help message and exit [env var:
                             POGOMAP_HELP]
@@ -322,9 +321,6 @@
       --db-host DB_HOST     IP or hostname for the database. [env var:
                             POGOMAP_DB_HOST]
       --db-port DB_PORT     Port for the database. [env var: POGOMAP_DB_PORT]
-      --db-max_connections DB_MAX_CONNECTIONS
-                            Max connections (per thread) for the database. [env
-                            var: POGOMAP_DB_MAX_CONNECTIONS]
       --db-threads DB_THREADS
                             Number of db threads; increase if the db queue falls
                             behind. [env var: POGOMAP_DB_THREADS]
@@ -413,4 +409,3 @@
                             logs. [env var: POGOMAP_NO_FILE_LOGS]
       --log-path LOG_PATH   Defines directory to save log files to. [env var:
                             POGOMAP_LOG_PATH]
-    
