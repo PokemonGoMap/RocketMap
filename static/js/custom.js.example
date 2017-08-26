@@ -4,8 +4,8 @@ $(function () {
 
     /* Settings. */
 
-    const scaleByRarity = true // Set false to disable scaling by rarity. Default: true.
-    const upscalePokemon = false // Enable Upscaling selected Pokemon and notification. Default: false.
+    const scaleByRarity = true // Enable scaling by rarity. Default: true.
+    const upscalePokemon = false // Enable upscaling of certain Pokemon (upscaledPokemon and notify list). Default: false.
     const upscaledPokemon = [] // Add Pokémon IDs separated by commas (e.g. [1, 2, 3]) to upscale icons.
 
     // Google Analytics property ID. Leave empty to disable.
