@@ -29,10 +29,6 @@
     font-weight: 900;
   }
 
-  &.no-encounter {
-    font-weight: 300;
-  }
-
   &.gender.rarity {
     font-size: 11px;
   }
@@ -49,6 +45,10 @@
       height: 16px;
       width: 16px;
       -webkit-font-smoothing: antialiased;
+    }
+
+    &.no-encounter {
+      margin: 5px 0px 0px 0px;
     }
   }
 
@@ -75,6 +75,10 @@
       margin-right: 3px;
       -webkit-font-smoothing: antialiased;
     }
+
+    &.no-encounter {
+      margin-left: 3px;
+    }
   }
 
   &.navigate {
@@ -88,6 +92,10 @@
       height: 16px;
       width: 16px;
       -webkit-font-smoothing: antialiased;
+    }
+
+    &.navigate.encounter:before {
+      margin: 10px 0px 0px 0px;
     }
   }
 
