@@ -183,9 +183,9 @@ class Pokemon(BaseModel):
         pokemon = []
         for p in list(query):
 
-            p['pokemon_name'] = get_pokemon_name(args, p['pokemon_id'])
-            p['pokemon_rarity'] = get_pokemon_rarity(args, p['pokemon_id'])
-            p['pokemon_types'] = get_pokemon_types(args, p['pokemon_id'])
+            p['pokemon_name'] = get_pokemon_name(p['pokemon_id'])
+            p['pokemon_rarity'] = get_pokemon_rarity(p['pokemon_id'])
+            p['pokemon_types'] = get_pokemon_types(p['pokemon_id'])
             if args.china:
                 p['latitude'], p['longitude'] = \
                     transform_from_wgs_to_gcj(p['latitude'], p['longitude'])
@@ -221,9 +221,9 @@ class Pokemon(BaseModel):
 
         pokemon = []
         for p in query:
-            p['pokemon_name'] = get_pokemon_name(args, p['pokemon_id'])
-            p['pokemon_rarity'] = get_pokemon_rarity(args, p['pokemon_id'])
-            p['pokemon_types'] = get_pokemon_types(args, p['pokemon_id'])
+            p['pokemon_name'] = get_pokemon_name(p['pokemon_id'])
+            p['pokemon_rarity'] = get_pokemon_rarity(p['pokemon_id'])
+            p['pokemon_types'] = get_pokemon_types(p['pokemon_id'])
             if args.china:
                 p['latitude'], p['longitude'] = \
                     transform_from_wgs_to_gcj(p['latitude'], p['longitude'])
@@ -272,7 +272,7 @@ class Pokemon(BaseModel):
         pokemon = []
         total = 0
         for p in query:
-            p['pokemon_name'] = get_pokemon_name(args, p['pokemon_id'])
+            p['pokemon_name'] = get_pokemon_name(p['pokemon_id'])
             pokemon.append(p)
             total += p['count']
 
@@ -519,7 +519,7 @@ class Gym(BaseModel):
                        .dicts())
 
             for p in pokemon:
-                p['pokemon_name'] = get_pokemon_name(args, p['pokemon_id'])
+                p['pokemon_name'] = get_pokemon_name(p['pokemon_id'])
                 gyms[p['gym_id']]['pokemon'].append(p)
 
             details = (GymDetails
@@ -539,9 +539,8 @@ class Gym(BaseModel):
 
             for r in raids:
                 if r['pokemon_id']:
-                    r['pokemon_name'] = get_pokemon_name(args, r['pokemon_id'])
-                    r['pokemon_types'] = get_pokemon_types(
-                        args, r['pokemon_id'])
+                    r['pokemon_name'] = get_pokemon_name(r['pokemon_id'])
+                    r['pokemon_types'] = get_pokemon_types(r['pokemon_id'])
                 gyms[r['gym_id']]['raid'] = r
 
         # Re-enable the GC.
@@ -574,7 +573,6 @@ class Gym(BaseModel):
             return None
 
         result['guard_pokemon_name'] = get_pokemon_name(
-            args,
             result['guard_pokemon_id']) if result['guard_pokemon_id'] else ''
         result['pokemon'] = []
 
@@ -603,27 +601,25 @@ class Gym(BaseModel):
                    .dicts())
 
         for p in pokemon:
-            p['pokemon_name'] = get_pokemon_name(args, p['pokemon_id'])
+            p['pokemon_name'] = get_pokemon_name(p['pokemon_id'])
 
-            p['move_1_name'] = get_move_name(args, p['move_1'])
-            p['move_1_damage'] = get_move_damage(args, p['move_1'])
-            p['move_1_energy'] = get_move_energy(args, p['move_1'])
-            p['move_1_type'] = get_move_type(args, p['move_1'])
+            p['move_1_name'] = get_move_name(p['move_1'])
+            p['move_1_damage'] = get_move_damage(p['move_1'])
+            p['move_1_energy'] = get_move_energy(p['move_1'])
+            p['move_1_type'] = get_move_type(p['move_1'])
 
-            p['move_2_name'] = get_move_name(args, p['move_2'])
-            p['move_2_damage'] = get_move_damage(args, p['move_2'])
-            p['move_2_energy'] = get_move_energy(args, p['move_2'])
-            p['move_2_type'] = get_move_type(args, p['move_2'])
+            p['move_2_name'] = get_move_name(p['move_2'])
+            p['move_2_damage'] = get_move_damage(p['move_2'])
+            p['move_2_energy'] = get_move_energy(p['move_2'])
+            p['move_2_type'] = get_move_type(p['move_2'])
 
             result['pokemon'].append(p)
 
         try:
             raid = Raid.select(Raid).where(Raid.gym_id == id).dicts().get()
             if raid['pokemon_id']:
-                raid['pokemon_name'] = get_pokemon_name(
-                    args, raid['pokemon_id'])
-                raid['pokemon_types'] = get_pokemon_types(
-                    args, raid['pokemon_id'])
+                raid['pokemon_name'] = get_pokemon_name(raid['pokemon_id'])
+                raid['pokemon_types'] = get_pokemon_types(raid['pokemon_id'])
             result['raid'] = raid
         except Raid.DoesNotExist:
             pass

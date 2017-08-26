@@ -812,10 +812,9 @@ def in_radius(loc1, loc2, radius):
     return distance(loc1, loc2) < radius
 
 
-def i8ln(args, word):
-    if args.locale == 'en':
-        return word
+def i8ln(word):
     if not hasattr(i8ln, 'dictionary'):
+        args = get_args()
         file_path = os.path.join(
             args.root_path,
             args.locales_dir,
@@ -824,20 +823,23 @@ def i8ln(args, word):
             with open(file_path, 'r') as f:
                 i8ln.dictionary = json.loads(f.read())
         else:
-            log.warning(
-                'Skipping translations - unable to find locale file: %s',
-                file_path)
-            return word
+            # If locale file is not found we set an empty dict to avoid
+            # checking thefile every time, we skip the warning for english as
+            # it is not expected to exist.
+            if not args.locale == 'en':
+                log.warning(
+                    'Skipping translations - unable to find locale file: %s',
+                    file_path)
+            i8ln.dictionary = {}
     if word in i8ln.dictionary:
         return i8ln.dictionary[word]
     else:
-        log.debug('Unable to find translation for "%s" in locale %s!',
-                  word, args.locale)
         return word
 
 
-def get_pokemon_data(args, pokemon_id):
+def get_pokemon_data(pokemon_id):
     if not hasattr(get_pokemon_data, 'pokemon'):
+        args = get_args()
         file_path = os.path.join(
             args.root_path,
             args.data_dir,
@@ -848,22 +850,23 @@ def get_pokemon_data(args, pokemon_id):
     return get_pokemon_data.pokemon[str(pokemon_id)]
 
 
-def get_pokemon_name(args, pokemon_id):
-    return i8ln(args, get_pokemon_data(args, pokemon_id)['name'])
+def get_pokemon_name(pokemon_id):
+    return i8ln(get_pokemon_data(pokemon_id)['name'])
 
 
-def get_pokemon_rarity(args, pokemon_id):
-    return i8ln(args, get_pokemon_data(args, pokemon_id)['rarity'])
+def get_pokemon_rarity(pokemon_id):
+    return i8ln(get_pokemon_data(pokemon_id)['rarity'])
 
 
-def get_pokemon_types(args, pokemon_id):
-    pokemon_types = get_pokemon_data(args, pokemon_id)['types']
-    return map(lambda x: {"type": i8ln(args, x['type']), "color": x['color']},
+def get_pokemon_types(pokemon_id):
+    pokemon_types = get_pokemon_data(pokemon_id)['types']
+    return map(lambda x: {"type": i8ln(x['type']), "color": x['color']},
                pokemon_types)
 
 
-def get_moves_data(args, move_id):
+def get_moves_data(move_id):
     if not hasattr(get_moves_data, 'moves'):
+        args = get_args()
         file_path = os.path.join(
             args.root_path,
             args.data_dir,
@@ -874,21 +877,21 @@ def get_moves_data(args, move_id):
     return get_moves_data.moves[str(move_id)]
 
 
-def get_move_name(args, move_id):
-    return i8ln(args, get_moves_data(move_id)['name'])
+def get_move_name(move_id):
+    return i8ln(get_moves_data(move_id)['name'])
 
 
-def get_move_damage(args, move_id):
-    return i8ln(args, get_moves_data(move_id)['damage'])
+def get_move_damage(move_id):
+    return i8ln(get_moves_data(move_id)['damage'])
 
 
-def get_move_energy(args, move_id):
-    return i8ln(args, get_moves_data(move_id)['energy'])
+def get_move_energy(move_id):
+    return i8ln(get_moves_data(move_id)['energy'])
 
 
-def get_move_type(args, move_id):
-    move_type = get_moves_data(args, move_id)['type']
-    return {'type': i8ln(args, move_type), 'type_en': move_type}
+def get_move_type(move_id):
+    move_type = get_moves_data(move_id)['type']
+    return {'type': i8ln(move_type), 'type_en': move_type}
 
 
 def dottedQuadToNum(ip):
