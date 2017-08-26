@@ -77,14 +77,14 @@ def wh_updater(args, queue, key_caches):
     # Default: 5 seconds per 100 in threshold + frame_interval_sec.
     wh_threshold_lifetime = int(5 * (wh_warning_threshold / 100.0))
     wh_threshold_timer += frame_interval_sec
-    num_messages = 0
 
     # The forever loop.
     while True:
         try:
             # Loop the queue.
             try:
-                timeout = frame_interval_sec if num_messages > 0 else None
+                timeout = frame_interval_sec if len(
+                    frame_messages) > 0 else None
                 whtype, message = queue.get(True, timeout)
             except Empty:
                 pass
