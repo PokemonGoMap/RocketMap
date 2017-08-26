@@ -18,7 +18,7 @@ First we set a variable for it and pick which style we want as default.
 ```
 const map_style = 'satellite'
 ```
-Next we have to tell the script to store the value to set it
+Next we have to tell the script to store the value to set it.
 ```
 Store.set('map_style', map_style)
 ```
