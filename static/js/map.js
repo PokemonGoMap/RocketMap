@@ -2649,11 +2649,41 @@ $(function () {
             }
         }
     }
+
+    function resetGymFilter() {
+        Store.set('showTeamGymsOnly', 0)
+        Store.set('minGymLevel', 0)
+        Store.set('maxGymLevel', 6)
+        Store.set('showOpenGymsOnly', false)
+        $('#team-gyms-only-switch').val(Store.get('showTeamGymsOnly'))
+        $('#open-gyms-only-switch').prop('checked', Store.get('showOpenGymsOnly'))
+        $('#min-level-gyms-filter-switch').val(Store.get('minGymLevel'))
+        $('#max-level-gyms-filter-switch').val(Store.get('maxGymLevel'))
+        $selectTeamGymsOnly = $('#team-gyms-only-switch')
+        $selectTeamGymsOnly.select2({
+            placeholder: 'Only Show Gyms For Team',
+            minimumResultsForSearch: Infinity
+        })
+
+        $selectMinGymLevel = $('#min-level-gyms-filter-switch')
+        $selectMinGymLevel.select2({
+            placeholder: 'Minimum Gym Level',
+            minimumResultsForSearch: Infinity
+        })
+
+        $selectMaxGymLevel = $('#max-level-gyms-filter-switch')
+        $selectMaxGymLevel.select2({
+            placeholder: 'Maximum Gym Level',
+            minimumResultsForSearch: Infinity
+        })
+    }
+
     // Setup UI element interactions
     $('#gyms-switch').change(function () {
         var options = {
             'duration': 500
         }
+        resetGymFilter()
         var wrapper = $('#gym-sidebar-wrapper')
         if (this.checked) {
             lastgyms = false
