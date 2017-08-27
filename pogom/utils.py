@@ -824,7 +824,7 @@ def i8ln(word):
                 i8ln.dictionary = json.loads(f.read())
         else:
             # If locale file is not found we set an empty dict to avoid
-            # checking thefile every time, we skip the warning for english as
+            # checking the file every time, we skip the warning for English as
             # it is not expected to exist.
             if not args.locale == 'en':
                 log.warning(
