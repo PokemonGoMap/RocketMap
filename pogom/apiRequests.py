@@ -9,7 +9,6 @@ from pgoapi.hash_server import BadHashRequestException, HashingOfflineException
 from .transform import jitter_location
 
 log = logging.getLogger(__name__)
-logResp = logging.getLogger(__name__+'.resp')
 
 
 class AccountBannedException(Exception):
@@ -60,7 +59,7 @@ def send_generic_request(req, account, settings=False, buddy=True, inbox=True):
         if item in resp['responses']:
             del resp['responses'][item]
 
-    logResp.debug('Response: %s', resp)
+    log.log(5, 'Response: \n%s', resp)
     return resp
 
 
