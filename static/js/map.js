@@ -2655,11 +2655,14 @@ $(function () {
         Store.set('minGymLevel', 0)
         Store.set('maxGymLevel', 6)
         Store.set('showOpenGymsOnly', false)
+        
         $('#team-gyms-only-switch').val(Store.get('showTeamGymsOnly'))
         $('#open-gyms-only-switch').prop('checked', Store.get('showOpenGymsOnly'))
         $('#min-level-gyms-filter-switch').val(Store.get('minGymLevel'))
         $('#max-level-gyms-filter-switch').val(Store.get('maxGymLevel'))
+        
         $selectTeamGymsOnly = $('#team-gyms-only-switch')
+
         $selectTeamGymsOnly.select2({
             placeholder: 'Only Show Gyms For Team',
             minimumResultsForSearch: Infinity
