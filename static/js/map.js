@@ -2655,30 +2655,15 @@ $(function () {
         Store.set('minGymLevel', 0)
         Store.set('maxGymLevel', 6)
         Store.set('showOpenGymsOnly', false)
-        
+
         $('#team-gyms-only-switch').val(Store.get('showTeamGymsOnly'))
         $('#open-gyms-only-switch').prop('checked', Store.get('showOpenGymsOnly'))
         $('#min-level-gyms-filter-switch').val(Store.get('minGymLevel'))
         $('#max-level-gyms-filter-switch').val(Store.get('maxGymLevel'))
-        
-        $selectTeamGymsOnly = $('#team-gyms-only-switch')
 
-        $selectTeamGymsOnly.select2({
-            placeholder: 'Only Show Gyms For Team',
-            minimumResultsForSearch: Infinity
-        })
-
-        $selectMinGymLevel = $('#min-level-gyms-filter-switch')
-        $selectMinGymLevel.select2({
-            placeholder: 'Minimum Gym Level',
-            minimumResultsForSearch: Infinity
-        })
-
-        $selectMaxGymLevel = $('#max-level-gyms-filter-switch')
-        $selectMaxGymLevel.select2({
-            placeholder: 'Maximum Gym Level',
-            minimumResultsForSearch: Infinity
-        })
+        $('#team-gyms-only-switch').trigger('change')
+        $('#min-level-gyms-filter-switch').trigger('change')
+        $('#max-level-gyms-filter-switch').trigger('change')
     }
 
     // Setup UI element interactions
