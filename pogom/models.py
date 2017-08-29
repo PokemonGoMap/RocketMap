@@ -349,9 +349,9 @@ class Pokemon(BaseModel):
         elif spawn_rate > 0.03 and spawn_rate < 0.5 :
             spawn_group = 'Rare'
         elif spawn_rate > 0.01 and spawn_rate < 0.03 :
-            spawn_group = 'Very rare'
+            spawn_group = 'Very Rare'
         elif spawn_rate < 0.01 :
-            spawn_group = 'Ultra rare'
+            spawn_group = 'Ultra Rare'
 
         return spawn_group
 
