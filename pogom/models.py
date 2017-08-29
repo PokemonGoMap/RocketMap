@@ -2654,6 +2654,20 @@ def clean_db_loop(args):
                              (datetime.utcnow() - timedelta(minutes=30)))))
             query.execute()
 
+            # Remove old gym Details.
+            query = (GymDetails
+                     .delete()
+                     .where(GymDetails.last_scanned <
+                            (datetime.now() - timedelta(days=1))))
+            query.execute()
+
+            # Remove old gym locations.
+            query = (Gym
+                     .delete()
+                     .where(Gym.last_scanned <
+                            (datetime.now() - timedelta(days=1))))
+            query.execute()
+
             # Remove active modifier from expired lured pokestops.
             query = (Pokestop
                      .update(lure_expiration=None, active_fort_modifier=None)
