@@ -761,7 +761,6 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
                          account_captchas, control_flags, status, dbq, whq,
                          scheduler, key_scheduler, gym_cache):
 
-    step_location = []
     log.debug('Search worker thread starting...')
 
     # The outer forever loop restarts only when the inner one is
@@ -829,8 +828,6 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
             # Sleep when consecutive_noitems reaches max_empty, overall noitems
             # for stat purposes.
             consecutive_noitems = 0
-
-            first_run = True
 
             api = setup_api(args, status, account)
 
@@ -902,25 +899,8 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
                         break
 
                 # Grab the next thing to search (when available).
-                step, next_location, appears, leaves, messages, wait = (
+                step, scan_coords, appears, leaves, messages, wait = (
                     scheduler.next_item(status))
-
-                # We dont need to check distance during login.
-                if not first_run:
-                    randomizer = random.uniform(0.7, 1)
-                    # Basic Distance Formula:
-                    # time = distance divided by velocity (im km/h)
-                    # Also it randomizes between 70-100% Speed.
-                    sdelay = (distance(scan_coords, next_location) /
-                              (args.kph / 3.6) * randomizer)
-                    status['message'] += ', sleeping {}s until {}'.format(
-                        max(sdelay, args.scan_delay), time.strftime(
-                            '%H:%M:%S', time.localtime(time.time() + max(
-                                sdelay, args.scan_delay)))
-                    )
-                    # Sleep here for Scan Delay or Speed limit.
-                    time.sleep(max(sdelay, args.scan_delay))
-                scan_coords = next_location
 
                 status['message'] = messages['wait']
                 # The next_item will return the value telling us how long
@@ -1007,9 +987,6 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
                 status['latitude'] = scan_coords[0]
                 status['longitude'] = scan_coords[1]
                 dbq.put((WorkerStatus, {0: WorkerStatus.db_format(status)}))
-
-                # Finished our first run.
-                first_run = False
 
                 # Nothing back. Mark it up, sleep, carry on.
                 if not response_dict:

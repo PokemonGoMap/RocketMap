@@ -460,6 +460,39 @@ class SpawnScan(BaseScheduler):
         self.locations = []
         self.ready = True
 
+    def next_item(self, status):
+        step, step_location, appears, leaves = self.queues[0].get()
+
+        wait = 0
+        wait_msg = 'Waiting for item from queue.'
+
+        last_action = status.get('last_scan_date', False)
+        if last_action and self.args.kph:
+            now_date = datetime.utcnow()
+            worker_loc = [status['latitude'], status['longitude']]
+            meters = distance(step_location, worker_loc)
+            wait = int(max(meters / self.args.kph * 3.6
+                           - (now_date - last_action).total_seconds(), 0))
+            if wait > 0:
+                wait_msg = 'Moving {}m to step {}, arriving in {}s.'.format(
+                    int(meters), step, wait)
+
+        remain = appears - now() - wait + 10
+        messages = {
+            'wait': wait_msg,
+            'early': 'Early for {:6f},{:6f}; waiting {}s...'.format(
+                step_location[0], step_location[1], remain),
+            'late': 'Too late for location {:6f},{:6f}; skipping.'.format(
+                step_location[0], step_location[1]),
+            'search': 'Searching at {:6f},{:6f},{:6f}.'.format(
+                step_location[0], step_location[1], step_location[2]),
+            'invalid': ('Invalid response at {:6f},{:6f}, ' +
+                        'abandoning location.').format(step_location[0],
+                                                       step_location[1])
+        }
+
+        return step, step_location, appears, leaves, messages, wait
+
 
 # SpeedScan is a complete search method that initially does a spawnpoint
 # search in each scan location by scanning five two-minute bands within
