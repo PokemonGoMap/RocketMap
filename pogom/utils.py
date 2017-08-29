@@ -865,11 +865,6 @@ def get_pokemon_id(pokemon_name):
 def get_pokemon_name(pokemon_id):
     return i8ln(get_pokemon_data(pokemon_id)['name'])
 
-
-def get_pokemon_rarity(pokemon_id):
-    return i8ln(get_pokemon_data(pokemon_id)['rarity'])
-
-
 def get_pokemon_types(pokemon_id):
     pokemon_types = get_pokemon_data(pokemon_id)['types']
     return map(lambda x: {"type": i8ln(x['type']), "color": x['color']},
