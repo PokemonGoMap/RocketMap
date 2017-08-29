@@ -344,16 +344,17 @@ class Pokemon(BaseModel):
         spawn_rate = round(100 * pokemon_count / float(total), 4)
         if spawn_rate > 1:
             spawn_group = 'Common'
-        elif spawn_rate > 0.5 and spawn_rate < 1 :
+        elif spawn_rate > 0.5 and spawn_rate < 1:
             spawn_group = 'Uncommon'
-        elif spawn_rate > 0.03 and spawn_rate < 0.5 :
+        elif spawn_rate > 0.03 and spawn_rate < 0.5:
             spawn_group = 'Rare'
-        elif spawn_rate > 0.01 and spawn_rate < 0.03 :
+        elif spawn_rate > 0.01 and spawn_rate < 0.03:
             spawn_group = 'Very Rare'
-        elif spawn_rate < 0.01 :
+        elif spawn_rate < 0.01:
             spawn_group = 'Ultra Rare'
 
         return spawn_group
+
 
 class Pokestop(BaseModel):
     pokestop_id = Utf8mb4CharField(primary_key=True, max_length=50)
