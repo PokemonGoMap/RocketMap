@@ -27,7 +27,7 @@ from cachetools import cached
 from timeit import default_timer
 
 from . import config
-from .utils import (get_pokemon_name, get_pokemon_rarity, get_pokemon_types,
+from .utils import (get_pokemon_name, get_pokemon_types,
                     get_args, cellid, in_radius, date_secs, clock_between,
                     get_move_name, get_move_damage, get_move_energy,
                     get_move_type, calc_pokemon_level)
