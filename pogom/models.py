@@ -185,7 +185,7 @@ class Pokemon(BaseModel):
         for p in list(query):
 
             p['pokemon_name'] = get_pokemon_name(p['pokemon_id'])
-            p['pokemon_rarity'] = get_pokemon_rarity(p['pokemon_id'])
+            p['pokemon_rarity'] = Pokemon.get_rarity(p['pokemon_id'])
             p['pokemon_types'] = get_pokemon_types(p['pokemon_id'])
             if args.china:
                 p['latitude'], p['longitude'] = \
@@ -223,7 +223,7 @@ class Pokemon(BaseModel):
         pokemon = []
         for p in query:
             p['pokemon_name'] = get_pokemon_name(p['pokemon_id'])
-            p['pokemon_rarity'] = get_pokemon_rarity(p['pokemon_id'])
+            p['pokemon_rarity'] = Pokemon.get_rarity(p['pokemon_id'])
             p['pokemon_types'] = get_pokemon_types(p['pokemon_id'])
             if args.china:
                 p['latitude'], p['longitude'] = \
@@ -329,6 +329,31 @@ class Pokemon(BaseModel):
 
         return list(itertools.chain(*query))
 
+    @staticmethod
+    def get_rarity(pokemon_id):
+        seen = Pokemon.get_seen(0)
+        total = seen['total']
+        found = 0
+        spawn_group = ''
+        for pokemon in seen['pokemon']:
+                if pokemon['pokemon_id'] == pokemon_id:
+                    found = 1
+                    pokemon_count = pokemon['count']
+        if found == 0:
+            pokemon_count = 0
+        spawn_rate = round(100 * pokemon_count / float(total), 4)
+        if spawn_rate > 1:
+            spawn_group = 'Common'
+        elif spawn_rate > 0.5 and spawn_rate < 1 :
+            spawn_group = 'Uncommon'
+        elif spawn_rate > 0.03 and spawn_rate < 0.5 :
+            spawn_group = 'Rare'
+        elif spawn_rate > 0.01 and spawn_rate < 0.03 :
+            spawn_group = 'Very rare'
+        elif spawn_rate < 0.01 :
+            spawn_group = 'Ultra rare'
+
+        return spawn_group
 
 class Pokestop(BaseModel):
     pokestop_id = Utf8mb4CharField(primary_key=True, max_length=50)
