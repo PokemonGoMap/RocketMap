@@ -30,6 +30,7 @@
     "ga": true,
     "google": true,
     "moment": false,
+    "randomColor": false,
     "MarkerClusterer": true,
     "isNotifyPoke": true,
     "isTouchDevice": true,

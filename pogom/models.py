@@ -104,6 +104,77 @@ class BaseModel(flaskDb.Model):
         return results
 
 
+# Geofence DB Model
+class Geofence(BaseModel):
+    name = Utf8mb4CharField(max_length=50)
+    excluded = BooleanField()
+    coordinates_id = SmallIntegerField()
+    latitude = DoubleField()
+    longitude = DoubleField()
+
+    class Meta:
+        primary_key = False
+
+    @staticmethod
+    def clear_all():
+        # Remove all geofences without interfering with other threads.
+        with flaskDb.database.transaction():
+            DeleteQuery(Geofence).execute()
+
+    @staticmethod
+    def remove_duplicates(geofences):
+        # Remove old geofences without interfering with other DB threads.
+        with flaskDb.database.transaction():
+            for g in geofences:
+                (DeleteQuery(Geofence)
+                 .where(Geofence.name == g['name'])
+                 .execute())
+
+    @staticmethod
+    def push_geofences(geofences):
+        Geofence.remove_duplicates(geofences)
+
+        db_geofences = []
+        for g in geofences:
+            coordinates_id = 0
+            for c in g['polygon']:
+                db_geofences.append({
+                    'excluded': g['excluded'],
+                    'name': g['name'],
+                    'coordinates_id': coordinates_id,
+                    'latitude': c['lat'],
+                    'longitude': c['lon']
+                })
+                coordinates_id = coordinates_id + 1
+
+        # Make a DB save.
+        with flaskDb.database.transaction():
+            Geofence.insert_many(db_geofences).execute()
+
+        return db_geofences
+
+    @staticmethod
+    def get_geofences():
+        query = Geofence.select().dicts()
+
+        # Performance:  disable the garbage collector prior to creating a
+        # (potentially) large dict with append().
+        gc.disable()
+
+        geofences = []
+        for g in query:
+            if args.china:
+                g['polygon']['latitude'], g['polygon']['longitude'] = \
+                    transform_from_wgs_to_gcj(g['polygon']['latitude'],
+                                              g['polygon']['longitude'])
+            geofences.append(g)
+
+        # Re-enable the GC.
+        gc.enable()
+
+        return geofences
+
+
 class Pokemon(BaseModel):
     # We are base64 encoding the ids delivered by the api
     # because they are too big for sqlite to handle.
@@ -2747,10 +2818,11 @@ def bulk_upsert(cls, data, db):
 
 def create_tables(db):
     db.connect()
-    tables = [Pokemon, Pokestop, Gym, Raid, ScannedLocation, GymDetails,
-              GymMember, GymPokemon, Trainer, MainWorker, WorkerStatus,
-              SpawnPoint, ScanSpawnPoint, SpawnpointDetectionData,
-              Token, LocationAltitude, PlayerLocale, HashKeys]
+    tables = [Geofence, Pokemon, Pokestop, Gym, Raid, ScannedLocation,
+              GymDetails, GymMember, GymPokemon, Trainer, MainWorker,
+              WorkerStatus,  SpawnPoint, ScanSpawnPoint,
+              SpawnpointDetectionData, Token, LocationAltitude, PlayerLocale,
+              HashKeys]
     for table in tables:
         if not table.table_exists():
             log.info('Creating table: %s', table.__name__)
@@ -2761,8 +2833,8 @@ def create_tables(db):
 
 
 def drop_tables(db):
-    tables = [Pokemon, Pokestop, Gym, Raid, ScannedLocation, Versions,
-              GymDetails, GymMember, GymPokemon, Trainer, MainWorker,
+    tables = [Geofence, Pokemon, Pokestop, Gym, Raid, ScannedLocation,
+              Versions, GymDetails, GymMember, GymPokemon, Trainer, MainWorker,
               WorkerStatus, SpawnPoint, ScanSpawnPoint,
               SpawnpointDetectionData, LocationAltitude, PlayerLocale,
               Token, HashKeys]

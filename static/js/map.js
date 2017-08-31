@@ -59,6 +59,9 @@ var lastpokemon
 var lastslocs
 var lastspawns
 
+var polygons = []
+var geofencesSet = false
+
 var selectedStyle = 'light'
 
 var updateWorker
@@ -414,6 +417,7 @@ function initSidebar() {
     $('#sound-switch').prop('checked', Store.get('playSound'))
     $('#pokemoncries').toggle(Store.get('playSound'))
     $('#cries-switch').prop('checked', Store.get('playCries'))
+    $('#geofences-switch').prop('checked', Store.get('showGeofences'))
 
     // Only create the Autocomplete element if it's enabled in template.
     var elSearchBox = document.getElementById('next-location')
@@ -825,6 +829,28 @@ function spawnpointLabel(item) {
                 Every hour from ${formatSpawnTime(item.appear_time)} to ${formatSpawnTime(item.disappear_time)}
             </div>`
     }
+    return str
+}
+
+function geofenceLabel(item) {
+    var str
+    if (item.excluded) {
+        str = `
+            <div>
+                <b>Excluded Area</b>
+            </div>`
+    } else {
+        str = `
+            <div>
+                <b>Geofence</b>
+            </div>`
+    }
+
+    str += `
+        <div>
+            ${item.name}
+        </div>`
+
     return str
 }
 
@@ -1256,6 +1282,62 @@ function setupSpawnpointMarker(item) {
     return marker
 }
 
+function setupGeofencePolygon(item) {
+    var randomcolor = randomColor()
+    // Random with color seed randomColor({hue: 'pink'})
+    // Total random '#'+Math.floor(Math.random()*16777215).toString(16);
+    if (item.excluded === true) {
+        randomcolor = randomColor({hue: 'red'})
+    } else {
+        randomcolor = randomColor({hue: 'green'})
+    }
+
+    var polygon = new google.maps.Polygon({
+        map: map,
+        paths: item['coordinates'],
+        strokeColor: randomcolor,
+        strokeOpacity: 0.8,
+        strokeWeight: 2,
+        fillColor: randomcolor,
+        fillOpacity: 0.5
+    })
+
+    var markerPosition = polygonCenter(polygon)
+
+    polygon.infoWindow = new google.maps.InfoWindow({
+        content: geofenceLabel(item),
+        disableAutoPan: true,
+        position: markerPosition
+    })
+
+    addListeners(polygon)
+
+    return polygon
+}
+
+function polygonCenter(polygon) {
+    var hyp, Lat, Lng
+
+    var X = 0
+    var Y = 0
+    var Z = 0
+    polygon.getPath().forEach(function (vertex, inex) {
+        var lat
+        var lng
+        lat = vertex.lat() * Math.PI / 180
+        lng = vertex.lng() * Math.PI / 180
+        X += Math.cos(lat) * Math.cos(lng)
+        Y += Math.cos(lat) * Math.sin(lng)
+        Z += Math.sin(lat)
+    })
+
+    hyp = Math.sqrt(X * X + Y * Y)
+    Lat = Math.atan2(Z, hyp) * 180 / Math.PI
+    Lng = Math.atan2(Y, X) * 180 / Math.PI
+
+    return new google.maps.LatLng(Lat, Lng)
+}
+
 function clearSelection() {
     if (document.selection) {
         document.selection.empty()
@@ -1405,6 +1487,7 @@ function loadRawData() {
     var loadScanned = Store.get('showScanned')
     var loadSpawnpoints = Store.get('showSpawnpoints')
     var loadLuredOnly = Boolean(Store.get('showLuredPokestopsOnly'))
+    var loadGeofences = Store.get('showGeofences')
 
     var bounds = map.getBounds()
     var swPoint = bounds.getSouthWest()
@@ -1429,6 +1512,7 @@ function loadRawData() {
             'scanned': loadScanned,
             'lastslocs': lastslocs,
             'spawnpoints': loadSpawnpoints,
+            'geofences': loadGeofences,
             'lastspawns': lastspawns,
             'swLat': swLat,
             'swLng': swLng,
@@ -1781,6 +1865,26 @@ function updateSpawnPoints() {
     })
 }
 
+function updateGeofences(geofences) {
+    var i
+    if (!Store.get('showGeofences') && geofencesSet === true) {
+        for (i = 0; i < polygons.length; i++) {
+            polygons[i].setMap(null)
+        }
+        polygons = []
+        geofencesSet = false
+        return false
+    } else if (Store.get('showGeofences') && geofencesSet === false) {
+        var key
+        i = 0
+        for (key in geofences) {
+            polygons[i] = setupGeofencePolygon(geofences[key])
+            i++
+        }
+        geofencesSet = true
+    }
+}
+
 function updateMap() {
     loadRawData().done(function (result) {
         processPokemons(result.pokemons)
@@ -1802,6 +1906,7 @@ function updateMap() {
         updateScanned()
         updateSpawnPoints()
         updatePokestops()
+        updateGeofences(result.geofences)
 
         if ($('#stats').hasClass('visible')) {
             countMarkers(map)
@@ -2738,6 +2843,11 @@ $(function () {
         } else {
             Store.set('geoLocate', this.checked)
         }
+    })
+
+    $('#geofences-switch').change(function () {
+        Store.set('showGeofences', this.checked)
+        updateMap()
     })
 
     $('#lock-marker-switch').change(function () {
