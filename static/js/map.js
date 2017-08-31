@@ -773,7 +773,7 @@ function pokestopLabel(expireTime, latitude, longitude) {
                 Lured Pokéstop
               </div>
               <div class='pokestop-expire'>
-                  <span class='label-countdown' disappears-at='${expireTime}'>00m00s</span> left
+                  <span class='label-countdown' disappears-at='${expireTime}'>00m00s</span> left (${moment(expireTime).format('HH:mm')})
               </div>
               <div>
                 <img class='pokestop sprite' src='static/images/pokestop//PokestopLured.png'>
