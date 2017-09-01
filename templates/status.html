@@ -83,6 +83,9 @@
         </form>
     </div>
 </div>
+<script>
+    var hidecols = {{ hide_columns | tojson }}
+</script>
 <script src="{{ url_for('static', filename='dist/js/status.min.js').lstrip('/') }}"></script>
 <script src="{{ url_for('static', filename='dist/js/app.min.js').lstrip('/') }}"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.18.1/moment-with-locales.min.js"></script>

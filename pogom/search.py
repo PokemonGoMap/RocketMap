@@ -94,9 +94,19 @@ def switch_status_printer(display_type, current_page, mainlog,
             display_type[0] = 'hashstatus'
 
 
+def hide_columns(message, colsToHide):
+    if not colsToHide:
+        return message
+    msgs = message.split(' | ')
+    for item in colsToHide:
+        if ((item-1) < len(msgs)) and ((item-1) >= 0):
+            del msgs[item-1]
+    return ' | '.join(msgs)
+
+
 # Thread to print out the status of each worker.
 def status_printer(threadStatus, account_failures, logmode, hash_key,
-                   key_scheduler):
+                   key_scheduler, hide_cols):
 
     if (logmode == 'logs'):
         display_type = ['logs']
@@ -114,6 +124,9 @@ def status_printer(threadStatus, account_failures, logmode, hash_key,
                args=(display_type, current_page, mainlog, loglevel, logmode))
     t.daemon = True
     t.start()
+
+    if hide_cols:
+        hide_cols.sort(reverse=True)
 
     while True:
         time.sleep(1)
@@ -177,10 +190,13 @@ def status_printer(threadStatus, account_failures, logmode, hash_key,
                 proxylen) + '} | {:7} | {:6} | {:5} | {:7} | {:8} | {:10}'
 
             # Print the worker status.
-            status_text.append(status.format('Worker ID', 'Start', 'User',
-                                             'Proxy', 'Success', 'Failed',
-                                             'Empty', 'Skipped', 'Captchas',
-                                             'Message'))
+            status_message = status.format('Worker ID', 'Start', 'User',
+                                           'Proxy', 'Success', 'Failed',
+                                           'Empty', 'Skipped', 'Captchas',
+                                           'Message')
+
+            status_text.append(hide_columns(status_message, hide_cols))
+
             for item in sorted(threadStatus):
                 if(threadStatus[item]['type'] == 'Worker'):
                     current_line += 1
@@ -191,7 +207,7 @@ def status_printer(threadStatus, account_failures, logmode, hash_key,
                     if current_line > end_line:
                         break
 
-                    status_text.append(status.format(
+                    status_message = status.format(
                         item,
                         time.strftime('%H:%M',
                                       time.localtime(
@@ -203,7 +219,9 @@ def status_printer(threadStatus, account_failures, logmode, hash_key,
                         threadStatus[item]['noitems'],
                         threadStatus[item]['skip'],
                         threadStatus[item]['captcha'],
-                        threadStatus[item]['message']))
+                        threadStatus[item]['message'])
+
+                    status_text.append(hide_columns(status_message, hide_cols))
 
         elif display_type[0] == 'failedaccounts':
             status_text.append('-----------------------------------------')
@@ -391,7 +409,7 @@ def search_overseer_thread(args, new_location_queue, control_flags, heartb,
             target=status_printer,
             name='status_printer',
             args=(threadStatus, account_failures, args.print_status,
-                  args.hash_key, key_scheduler))
+                  args.hash_key, key_scheduler, args.hide_column_ps))
         t.daemon = True
         t.start()
 

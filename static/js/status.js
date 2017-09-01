@@ -1,3 +1,5 @@
+/*global hidecols*/
+
 /* Main stats page */
 var rawDataIsLoading = false
 var statusPagePassword = false
@@ -45,8 +47,7 @@ function processMainWorker(i, worker) {
 }
 
 function addWorker(mainWorkerHash, workerHash) {
-    var row = `
-     <div id="row_${workerHash}" class="status_row">
+    var columns = `
        <div id="username_${workerHash}" class="status_cell"/>
        <div id="success_${workerHash}"  class="status_cell"/>
        <div id="fail_${workerHash}"     class="status_cell"/>
@@ -55,6 +56,11 @@ function addWorker(mainWorkerHash, workerHash) {
        <div id="captchas_${workerHash}" class="status_cell"/>
        <div id="lastmod_${workerHash}"  class="status_cell"/>
        <div id="message_${workerHash}"  class="status_cell"/>
+   `
+    columns = hideColumns(columns, hidecols, '>')
+
+    var row = `
+     <div id="row_${workerHash}" class="status_row">` + columns + `
      </div>
    `
     $(row).appendTo('#table_' + mainWorkerHash)
@@ -153,6 +159,9 @@ function processHashKeys(i, hashkey) {
 }
 
 function parseResult(result) {
+    if (hidecols !== 0) {
+        hidecols.sort(function (a, b) { return b - a })      /* sort high to low */
+    }
     if (groupByWorker && showWorkersTable) {
         $.each(result.main_workers, processMainWorker)
     }
@@ -219,9 +228,7 @@ function getHashtableValue(hashrow, index) {
 }
 
 function addTable(hash) {
-    var table = `
-     <div class="status_table" id="table_${hash}">
-       <div class="status_row header">
+    var columns = `
          <div class="status_cell">
            Username
          </div>
@@ -246,6 +253,12 @@ function addTable(hash) {
          <div class="status_cell">
            Message
          </div>
+   `
+    columns = hideColumns(columns, hidecols, '</div>')
+
+    var table = `
+     <div class="status_table" id="table_${hash}">
+       <div class="status_row header">` + columns + `
        </div>
      </div>`
 
@@ -271,6 +284,20 @@ function tableSort() {
 
 function getCellValue(row, index) {
     return $(row).children('.status_cell').eq(index).html()
+}
+
+function hideColumns(message, colsToHide, delimiter) {
+    if (colsToHide.length === 0) {
+        return message
+    }
+    var msgs = message.split(delimiter)
+    var numcols = msgs.length
+    for (var i = 0; i < numcols; i++) {
+        if (((colsToHide[i] - 1) < numcols) && ((colsToHide[i] - 1) >= 0)) {
+            msgs.splice(colsToHide[i] - 1, 1)
+        }
+    }
+    return msgs.join(delimiter)
 }
 
 /*

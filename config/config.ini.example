@@ -166,6 +166,8 @@
 
 #stats-log-timer                # In log view, list per hr stats every X seconds
 #status-name:                   # Enables writing status updates to the database - if you use multiple processes, each needs a unique value. (default=None)
+#hide-column-ps:                # Column number to hide on -ps status screen.  Use a list for multiple columns e.g. [2,3,4]. (1 = first column)
+#hide-column-status:            # Column number to hide on /status web page.   Use a list for multiple columns e.g. [2,3,4]. (1 = first column)
 
 
 # Captcha Solving

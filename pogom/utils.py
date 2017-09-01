@@ -460,6 +460,14 @@ def get_args():
                         help=('Pause searching while web UI is inactive ' +
                               'for this timeout (in seconds).'),
                         type=int, default=0)
+    parser.add_argument('-hcps', '--hide-column-ps',
+                        help='Hide column(s) on -ps status screen.  Use one ' +
+                             '-hcps per column to hide. (1 = first column)',
+                        default=None, type=int, action='append')
+    parser.add_argument('-hcs', '--hide-column-status',
+                        help='Hide column(s) on /status web page.  Use one ' +
+                             '-hcs per column to hide. (1 = first column)',
+                        default=None, type=int, action='append')
     parser.add_argument('--disable-blacklist',
                         help=('Disable the global anti-scraper IP blacklist.'),
                         action='store_true', default=False)
