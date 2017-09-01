@@ -26,10 +26,10 @@ from cachetools import TTLCache
 from cachetools import cached
 from timeit import default_timer
 
-from .utils import (get_pokemon_name, get_pokemon_rarity, i8ln, get_pokemon_types,
+from .utils import (get_pokemon_name, get_pokemon_rarity, get_pokemon_types,
                     get_args, cellid, in_radius, date_secs, clock_between,
                     get_move_name, get_move_damage, get_move_energy,
-                    get_move_type, calc_pokemon_level)
+                    get_move_type, calc_pokemon_level, i8ln)
 from .transform import transform_from_wgs_to_gcj, get_new_coords
 from .customLog import printPokemon
 
