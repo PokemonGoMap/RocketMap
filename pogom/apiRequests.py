@@ -151,20 +151,13 @@ def parse_inventory(account, api_response):
                     'km_target': p_data.egg_km_walked_target
                 })
                 parsed_eggs += 1
-    if log.isEnabledFor(logging.DEBUG):
         log.debug(
             'Parsed %s player inventory: %d items, %d pokemons, %d available' +
             ' eggs and %d available incubators.', account['username'],
             parsed_items, parsed_pokemons, parsed_eggs, parsed_incubators)
-        total_items = reduce(lambda x, value: x + value,
-                             account['items'].itervalues(), 0)
-        log.debug('Total amount in Inventory: %d Items, %d pokemon, %d eggs,' +
-                  ' %d Incubator', total_items,
-                  len(account['pokemons']),
-                  len(account['eggs']), len(account['incubators']))
 
 
-def catchException(task):
+def catchRequestException(task):
 
     def _catch(function):
 
@@ -181,7 +174,7 @@ def catchException(task):
     return _catch
 
 
-@catchException('spinning Pokestop')
+@catchRequestException('spinning Pokestop')
 def fort_search(api, account, fort, step_location):
     req = api.create_request()
     req.fort_search(
@@ -193,7 +186,7 @@ def fort_search(api, account, fort, step_location):
     return send_generic_request(req, account)
 
 
-@catchException('getting Pokestop details')
+@catchRequestException('getting Pokestop details')
 def fort_details(api, account, fort):
     req = api.create_request()
     req.fort_details(
@@ -201,7 +194,7 @@ def fort_details(api, account, fort):
     return send_generic_request(req, account)
 
 
-@catchException('encountering Pokémon')
+@catchRequestException('encountering Pokémon')
 def encounter(api, account, encounter_id, spawnpoint_id, scan_location):
     req = api.create_request()
     req.encounter(
@@ -212,21 +205,21 @@ def encounter(api, account, encounter_id, spawnpoint_id, scan_location):
     return send_generic_request(req, account)
 
 
-@catchException('clearing Inventory')
+@catchRequestException('clearing Inventory')
 def recycle_inventory_item(api, account, item_id, drop_count):
     req = api.create_request()
     req.recycle_inventory_item(item_id=item_id, count=drop_count)
     return send_generic_request(req, account)
 
 
-@catchException('putting an egg in incubator')
+@catchRequestException('putting an egg in incubator')
 def use_item_egg_incubator(api, account, incubator_id, egg_id):
     req = api.create_request()
     req.use_item_egg_incubator(item_id=incubator_id, pokemon_id=egg_id)
     return send_generic_request(req, account)
 
 
-@catchException('releasing Pokemon')
+@catchRequestException('releasing Pokemon')
 def release_pokemon(api, account, pokemon_id, release_ids=None):
     if release_ids is None:
         return False
@@ -236,14 +229,14 @@ def release_pokemon(api, account, pokemon_id, release_ids=None):
     return send_generic_request(req, account)
 
 
-@catchException('getting Rewards')
+@catchRequestException('getting Rewards')
 def level_up_rewards(api, account):
     req = api.create_request()
     req.level_up_rewards(level=account['level'])
     return send_generic_request(req, account)
 
 
-@catchException('downloading map')
+@catchRequestException('downloading map')
 def get_map_objects(api, account, position, no_jitter=False):
     # Create scan_location to send to the api based off of position
     # because tuples aren't mutable.
@@ -267,7 +260,7 @@ def get_map_objects(api, account, position, no_jitter=False):
     return send_generic_request(req, account)
 
 
-@catchException('getting gym details')
+@catchRequestException('getting gym details')
 def gym_get_info(api, account, position, gym):
     req = api.create_request()
     req.gym_get_info(

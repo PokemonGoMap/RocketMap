@@ -624,17 +624,17 @@ def incubate_eggs(api, account):
 
 
 def parse_level_up_rewards(api, account):
-    try:
-        resp = level_up_rewards(api, account)
-
-        if resp['responses']['LEVEL_UP_REWARDS'].result is 1:
-            log.info('Account %s collected its level up rewards.',
-                     account['username'])
-        else:
-            log.debug('Account %s already collected its level up rewards.',
-                      account['username'])
-    except Exception as e:
-        log.exception('Error during getting Level Up Rewards %s.', e)
+    resp = level_up_rewards(api, account)
+    result = resp['responses']['LEVEL_UP_REWARDS'].result
+    if result is 1:
+        log.info('Account %s collected its level up rewards.',
+                 account['username'])
+    elif result is 2:
+        log.debug('Account %s already collected its level up rewards.',
+                  account['username'])
+    else:
+        log.error('Error collecting rewards of account %s.',
+                  account['username'])
 
 
 # The AccountSet returns a scheduler that cycles through different
