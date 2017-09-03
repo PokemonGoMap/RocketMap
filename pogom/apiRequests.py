@@ -151,10 +151,10 @@ def parse_inventory(account, api_response):
                     'km_target': p_data.egg_km_walked_target
                 })
                 parsed_eggs += 1
-        log.debug(
-            'Parsed %s player inventory: %d items, %d pokemons, %d available' +
-            ' eggs and %d available incubators.', account['username'],
-            parsed_items, parsed_pokemons, parsed_eggs, parsed_incubators)
+    log.debug(
+        'Parsed %s player inventory: %d items, %d pokemons, %d available' +
+        ' eggs and %d available incubators.', account['username'],
+        parsed_items, parsed_pokemons, parsed_eggs, parsed_incubators)
 
 
 def catchRequestException(task):

@@ -1070,7 +1070,7 @@ def search_worker_thread(args, account_queue, account_sets,
                                     len(gyms_to_update), step_location[0],
                                     step_location[1])
                             log.info('Getting details for gym @ %f/%f ' +
-                                     '(%.0fkm away)', gym['latitude'],
+                                     '(%.0fm away)', gym['latitude'],
                                      gym['longitude'],
                                      distance(step_location, [
                                          gym['latitude'], gym['longitude']
