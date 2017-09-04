@@ -557,7 +557,7 @@ function pokemonLabel(item) {
             <span class='label-countdown' disappears-at='${disappearTime}'>00m00s</span> left (${moment(disappearTime).format('HH:mm')})
           </div>
           <div class='pokemon'>
-            WP: <span class='pokemon no-encounter'>Nicht gescannt</span>
+            IV/WP: <span class='pokemon no-encounter'>Nicht gescannt</span>
           </div>
           <div class='pokemon'>
             Moveset: <span class='pokemon no-encounter'>Nicht gescannt</span>
