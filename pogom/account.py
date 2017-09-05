@@ -626,10 +626,10 @@ def incubate_eggs(api, account):
 def parse_level_up_rewards(api, account):
     resp = level_up_rewards(api, account)
     result = resp['responses']['LEVEL_UP_REWARDS'].result
-    if result is 1:
+    if result == 1:
         log.info('Account %s collected its level up rewards.',
                  account['username'])
-    elif result is 2:
+    elif result == 2:
         log.debug('Account %s already collected its level up rewards.',
                   account['username'])
     else:
