@@ -502,7 +502,7 @@ def spin_pokestop(api, account, args, fort, step_location):
             return False
 
         spin_result = response['responses']['FORT_SEARCH'].result
-        if spin_result is 1:
+        if spin_result == 1:
             log.info('Successful Pokestop spin with %s.',
                      account['username'])
             # Update account stats and clear inventory if necessary.
@@ -511,14 +511,14 @@ def spin_pokestop(api, account, args, fort, step_location):
             account['session_spins'] += 1
             incubate_eggs(api, account)
             return True
-        elif spin_result is 2:
+        elif spin_result == 2:
             log.debug('Pokestop was not in range to spin.')
-        elif spin_result is 3:
+        elif spin_result == 3:
             log.debug('Failed to spin Pokestop. Has recently been spun.')
-        elif spin_result is 4:
+        elif spin_result == 4:
             log.debug('Failed to spin Pokestop. Inventory is full.')
             clear_inventory(api, account)
-        elif spin_result is 5:
+        elif spin_result == 5:
             log.debug('Maximum number of Pokestops spun for this day.')
         else:
             log.debug(
@@ -565,11 +565,11 @@ def clear_inventory(api, account):
         release_response = release_p_response['responses']['RELEASE_POKEMON']
         release_result = release_response.result
 
-        if release_result is 1:
+        if release_result == 1:
             log.info('Sucessfully Released %s Pokemon', len(release_ids))
             for p_id in release_ids:
                 account['pokemons'].pop(p_id, None)
-        elif release_result != 1:
+        else:
             log.error('Failed to release Pokemon.')
 
     for item_id, item_name in items:
@@ -589,12 +589,12 @@ def clear_inventory(api, account):
 
             clear_response = resp['responses']['RECYCLE_INVENTORY_ITEM']
             clear_result = clear_response.result
-            if clear_result is 1:
+            if clear_result == 1:
                 log.info('Clearing %s %ss succeeded.', item_count,
                          item_name)
-            elif clear_result is 2:
+            elif clear_result == 2:
                 log.debug('Not enough items to clear, parsing failed.')
-            elif clear_result is 3:
+            elif clear_result == 3:
                 log.debug('Tried to recycle incubator, parsing failed.')
             else:
                 log.warning('Failed to clear inventory.')
