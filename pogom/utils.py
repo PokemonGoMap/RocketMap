@@ -333,6 +333,9 @@ def get_args():
     parser.add_argument('-px', '--proxy',
                         help='Proxy url (e.g. socks5://127.0.0.1:9050)',
                         action='append')
+    parser.add_argument('-pxa', '--proxyauth',
+                        help='Proxy auth url (e.g. socks5://127.0.0.1:9050)',
+                        action='append')
     parser.add_argument('-pxsc', '--proxy-skip-check',
                         help='Disable checking of proxies before start.',
                         action='store_true', default=False)
@@ -357,6 +360,9 @@ def get_args():
     parser.add_argument('-pxf', '--proxy-file',
                         help=('Load proxy list from text file (one proxy ' +
                               'per line), overrides -px/--proxy.'))
+    parser.add_argument('-pxaf', '--proxyauth-file',
+                        help=('Load proxy auth list from text file (one ' +
+                              'proxy per line), overrides -pxa/--proxyauth.'))
     parser.add_argument('-pxr', '--proxy-refresh',
                         help=('Period of proxy file reloading, in seconds. ' +
                               'Works only with -pxf/--proxy-file. ' +

@@ -13,7 +13,7 @@ from pgoapi.exceptions import AuthException
 from .fakePogoApi import FakePogoApi
 from .pgoapiwrapper import PGoApiWrapper
 from .utils import in_radius, generate_device_info, distance
-from .proxy import get_new_proxy
+from .proxy import get_new_proxy, get_new_proxyauth
 from .apiRequests import (send_generic_request, fort_details,
                           recycle_inventory_item, use_item_egg_incubator,
                           release_pokemon, level_up_rewards, fort_search)
@@ -53,6 +53,14 @@ def setup_api(args, status, account):
             else:
                 status['proxy_display'] = status['proxy_url']
 
+    if args.proxyauth:
+        # If proxy is not assigned yet or if proxy-rotation is defined
+        # - query for new proxy.
+        if ((not status['proxyauth_url']) or
+                (args.proxy_rotation != 'none')):
+
+            proxyauth_num, status['proxyauth_url'] = get_new_proxyauth(args)
+
     if status['proxy_url']:
         log.debug('Using proxy %s', status['proxy_url'])
         api.set_proxy({
@@ -69,7 +77,7 @@ def setup_api(args, status, account):
 
 
 # Use API to check the login status, and retry the login if possible.
-def check_login(args, account, api, proxy_url):
+def check_login(args, account, api, proxyauth_url):
     # Logged in? Enough time left? Cool!
     if api._auth_provider and api._auth_provider._ticket_expire:
         remaining_time = api._auth_provider._ticket_expire / 1000 - time.time()
@@ -86,12 +94,13 @@ def check_login(args, account, api, proxy_url):
     # One initial try + login_retries.
     while num_tries < (args.login_retries + 1):
         try:
-            if proxy_url:
+            if proxyauth_url:
                 api.set_authentication(
                     provider=account['auth_service'],
                     username=account['username'],
                     password=account['password'],
-                    proxy_config={'http': proxy_url, 'https': proxy_url})
+                    proxy_config={'http': proxyauth_url,
+                                  'https': proxyauth_url})
             else:
                 api.set_authentication(
                     provider=account['auth_service'],

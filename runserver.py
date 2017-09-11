@@ -25,7 +25,9 @@ from pogom.models import (init_database, create_tables, drop_tables,
                           verify_table_encoding, verify_database_schema)
 from pogom.webhook import wh_updater
 
-from pogom.proxy import load_proxies, check_proxies, proxies_refresher
+from pogom.proxy import (load_proxies, check_proxies, proxies_refresher,
+                         load_proxiesauth, check_proxiesauth,
+                         proxiesauth_refresher)
 from pogom.search import search_overseer_thread
 from time import strftime
 
@@ -344,9 +346,12 @@ def main():
         # Processing proxies if set (load from file, check and overwrite old
         # args.proxy with new working list).
         args.proxy = load_proxies(args)
+        args.proxyauth = load_proxiesauth(args)
 
         if args.proxy and not args.proxy_skip_check:
             args.proxy = check_proxies(args, args.proxy)
+        if args.proxyauth and not args.proxy_skip_check:
+            args.proxyauth = check_proxiesauth(args, args.proxyauth)
 
         # Run periodical proxy refresh thread.
         if (args.proxy_file is not None) and (args.proxy_refresh > 0):
@@ -356,6 +361,14 @@ def main():
             t.start()
         else:
             log.info('Periodical proxies refresh disabled.')
+        # Run periodical proxy auth refresh thread.
+        if (args.proxyauth_file is not None) and (args.proxy_refresh > 0):
+            t = Thread(target=proxiesauth_refresher,
+                       name='proxyauth-refresh', args=(args,))
+            t.daemon = True
+            t.start()
+        else:
+            log.info('Periodical auth proxies refresh disabled.')
 
         # Update player locale if not set correctly, yet.
         args.player_locale = PlayerLocale.get_locale(args.location)
