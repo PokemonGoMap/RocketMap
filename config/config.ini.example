@@ -134,6 +134,8 @@
 
 #proxy:                         # Proxy URL e.g. socks5://127.0.0.1:9050 or a list of proxies
                                 # e.g. [socks5://127.0.0.1:9050,socks5://127.0.0.1:9050]
+#proxyauth:                     # Proxy Authentication URL e.g. socks5://127.0.0.1:9050 or a list of proxies
+                                # e.g. [socks5://127.0.0.1:9050,socks5://127.0.0.1:9050]
 #proxy-skip-check               # Disable checking of proxies before start.
 #proxy-test-timeout:            # Timeout before proceeding with next proxy while checking if the proxy works. (default=5)
 #proxy-test-retries:            # Number of times to retry sending proxy test requests on failure. (default=0)
@@ -141,6 +143,7 @@
 #proxy-test-concurrency:        # Async requests pool size. (default=0 for automatic optimal sizing)
 #proxy-display:                 # Used with -ps, full = display complete proxy address. Index = displays just the index for that proxy. (default='index')
 #proxy-file:                    # Load proxy list from text file (one proxy per line), overrides #proxy.
+#proxyauth-file:                # Load authentication proxy list from text file (one proxy per line), overrides #proxy.
 #proxy-refresh:                 # Period of proxy file reloading, in seconds. Works only with proxy-file. (default=0, 0 to disable)
 #proxy-rotation:                # Enable proxy rotation with account changing for search threads (none/round/random). (default='none')
 

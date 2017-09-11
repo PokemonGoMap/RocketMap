@@ -22,11 +22,12 @@
                     [-nr] [-nk] [-ss [SPAWNPOINT_SCANNING]] [-speed] [-spin]
                     [-ams ACCOUNT_MAX_SPINS] [-kph KPH] [-hkph HLVL_KPH]
                     [-ldur LURE_DURATION] [--dump-spawnpoints]
-                    [-pd PURGE_DATA] [-px PROXY] [-pxsc]
+                    [-pd PURGE_DATA] [-px PROXY] [-pxa PROXYAUTH] [-pxsc]
                     [-pxt PROXY_TEST_TIMEOUT] [-pxre PROXY_TEST_RETRIES]
                     [-pxbf PROXY_TEST_BACKOFF_FACTOR]
                     [-pxc PROXY_TEST_CONCURRENCY] [-pxd PROXY_DISPLAY]
-                    [-pxf PROXY_FILE] [-pxr PROXY_REFRESH]
+                    [-pxf PROXY_FILE] [-pxaf PROXYAUTH_FILE] 
+					[-pxr PROXY_REFRESH]
                     [-pxo PROXY_ROTATION] [--db-type DB_TYPE]
                     [--db-name DB_NAME] [--db-user DB_USER]
                     [--db-pass DB_PASS] [--db-host DB_HOST]
@@ -282,6 +283,9 @@
       -px PROXY, --proxy PROXY
                             Proxy url (e.g. socks5://127.0.0.1:9050) [env var:
                             POGOMAP_PROXY]
+      -pxa PROXY, --proxyauth PROXY
+                            Proxy auth url (e.g. socks5://127.0.0.1:9050) [env var:
+                            POGOMAP_PROXY]
       -pxsc, --proxy-skip-check
                             Disable checking of proxies before start. [env var:
                             POGOMAP_PROXY_SKIP_CHECK]
@@ -304,6 +308,9 @@
                             POGOMAP_PROXY_DISPLAY]
       -pxf PROXY_FILE, --proxy-file PROXY_FILE
                             Load proxy list from text file (one proxy per line),
+                            overrides -px/--proxy. [env var: POGOMAP_PROXY_FILE]
+      -pxaf PROXYAUTH_FILE, --proxyauth-file PROXYAUTH_FILE
+                            Load auth proxy list from text file (one proxy per line),
                             overrides -px/--proxy. [env var: POGOMAP_PROXY_FILE]
       -pxr PROXY_REFRESH, --proxy-refresh PROXY_REFRESH
                             Period of proxy file reloading, in seconds. Works only
