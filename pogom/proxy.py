@@ -109,11 +109,9 @@ def get_proxy_test_status(proxy, future_niantic):
     # Evaluate response status code.
     niantic_status = niantic_response.status_code
 
-    banned_status_codes = [403, 409]
-
     if niantic_status == 200:
         log.debug('Proxy %s is ok.', proxy)
-    elif niantic_status in banned_status_codes:
+    elif niantic_status == 403:
         proxy_error = ('Proxy {} is banned - got Niantic status'
                        + ' code: {}.').format(proxy,
                                               niantic_status)
