@@ -435,7 +435,6 @@ def search_overseer_thread(args, new_location_queue, control_flags, heartb,
         # Set proxy for each worker, using round robin.
         proxy_display = 'No'
         proxy_url = False    # Will be assigned inside a search thread.
-        proxyauth_url = False    # Will be assigned inside a search thread.
 
         workerId = 'Worker {:03}'.format(i)
         threadStatus[workerId] = {
@@ -448,8 +447,7 @@ def search_overseer_thread(args, new_location_queue, control_flags, heartb,
             'captcha': 0,
             'username': '',
             'proxy_display': proxy_display,
-            'proxy_url': proxy_url,
-            'proxyauth_url': proxyauth_url
+            'proxy_url': proxy_url
         }
 
         t = Thread(target=search_worker_thread,
@@ -934,7 +932,7 @@ def search_worker_thread(args, account_queue, account_sets,
 
                 # Ok, let's get started -- check our login status.
                 status['message'] = 'Logging in...'
-                check_login(args, account, api, status['proxyauth_url'])
+                check_login(args, account, api)
 
                 # Only run this when it's the account's first login, after
                 # check_login().

@@ -53,14 +53,6 @@ def setup_api(args, status, account):
             else:
                 status['proxy_display'] = status['proxy_url']
 
-    if args.proxyauth:
-        # If proxy is not assigned yet or if proxy-rotation is defined
-        # - query for new proxy.
-        if ((not status['proxyauth_url']) or
-                (args.proxy_rotation != 'none')):
-
-            proxyauth_num, status['proxyauth_url'] = get_new_proxyauth(args)
-
     if status['proxy_url']:
         log.debug('Using proxy %s', status['proxy_url'])
         api.set_proxy({
@@ -77,7 +69,7 @@ def setup_api(args, status, account):
 
 
 # Use API to check the login status, and retry the login if possible.
-def check_login(args, account, api, proxyauth_url):
+def check_login(args, account, api):
     # Logged in? Enough time left? Cool!
     if api._auth_provider and api._auth_provider._ticket_expire:
         remaining_time = api._auth_provider._ticket_expire / 1000 - time.time()
@@ -94,7 +86,9 @@ def check_login(args, account, api, proxyauth_url):
     # One initial try + login_retries.
     while num_tries < (args.login_retries + 1):
         try:
-            if proxyauth_url:
+            if args.proxyauth:
+                # If auth proxy configured, we use new proxy each login attempt
+                proxyauth_idx, proxyauth_url = get_new_proxyauth(args)
                 api.set_authentication(
                     provider=account['auth_service'],
                     username=account['username'],
