@@ -342,6 +342,7 @@ def search_overseer_thread(args, new_location_queue, control_flags, heartb,
     hashkeys_last_upsert = timeit.default_timer()
     hashkeys_upsert_min_delay = 5.0
     gym_cache = None
+
     if args.gym_info:
         gym_cache = TTLCache(maxsize=10000, ttl=60)
 
@@ -1038,6 +1039,8 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
                                     gym['latitude'], gym['longitude'])
                                 continue
                             else:
+                                # Set the gym as in progress it will just be
+                                # locked for 60 seconds due to TTL eviction
                                 gym_cache[gym['gym_id']] = True
 
                         # Can only get gym details within 1km of our position.
