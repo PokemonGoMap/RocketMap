@@ -73,7 +73,6 @@ def check_login(args, account, api):
     # Logged in? Enough time left? Cool!
     if api._auth_provider and api._auth_provider._access_token:
         remaining_time = api._auth_provider._access_token_expiry - time.time()
-
         if remaining_time > 60:
             log.debug(
                 'Credentials remain valid for another %f seconds.',
@@ -94,11 +93,12 @@ def check_login(args, account, api):
                     proxyauth_idx, proxyauth_url = get_new_proxyauth(args)
                 elif api._auth_provider:
                     proxyauth_url = api._auth_provider._session.proxies['http']
-                    log.warning(
-                        'Tried replacing proxy %s with a new proxy, but ' +
-                        'proxy rotation is disabled ("none"). If this ' +
-                        'isn\'t intentional, enable proxy rotation.',
-                        proxyauth_url)
+                    if proxyauth_url not in args.proxyauth:
+                        log.warning(
+                            'Tried replacing proxy %s with a new proxy, but ' +
+                            'proxy rotation is disabled ("none"). If this ' +
+                            'isn\'t intentional, enable proxy rotation.',
+                            proxyauth_url)
                 api.set_authentication(
                     provider=account['auth_service'],
                     username=account['username'],
