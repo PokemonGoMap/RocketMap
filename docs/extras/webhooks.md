@@ -4,6 +4,32 @@ RocketMap can send map information such as Pokémon spawns, gym details, raid ap
 
 Every time a webhook-enabled event occurs (for example a new Pokémon appearing) a web request will be sent to a provided URL containing information about that event.
 
+## Table of Contents
+
+- [What Do Webhooks Do?](#what-do-webhooks-do)
+- [Setting Up a Webhook](#setting-up-a-webhook)
+  - [Setting webhook urls](#setting-webhook-urls)
+    - [Using the command line](#using-the-command-line)
+    - [Using a config file](#using-a-config-file)
+  - [Setting webhook types](#setting-webhook-types)
+    - [Using the command line](#using-the-command-line)
+    - [Using a config file](#using-a-config-file)
+  - [Filtering Pokémon](#filtering-pokemon)
+    - [Whitelisting Pokémon](#whitelisting-pokemon)
+    - [Blacklisting Pokémon](#blacklisting-pokemon)
+- [Webhook Types](#webhook-types)
+  - [`pokemon`](#pokemon)
+  - [`pokestop`](#pokestop)
+  - [`lure`](#lure)
+  - [`gym`](#gym)
+  - [`gym-info`](#gym-info)
+  - [`egg`](#egg)
+  - [`raid`](#raid)
+  - [`tth`](#tth)
+  - [`captcha`](#captcha)
+- [PokeAlarm](#pokealarm)
+- [RocketMap Public Webhook](#rocketmap-public-webhook)
+
 ## What Do Webhooks Do?
 
 Webhooks allow developers to send data from RocketMap to other applications.
@@ -174,9 +200,11 @@ For example:
 ]
 ```
 
-The sections below outline the different webhook types and the data that gets sent for each event. Please note that as RocketMap evolves more webhook types may be added.
+RocketMap currently provides the following webhook types: [`pokemon`](#pokemon), [`pokestop`](#pokestop), [`lure`](#lure), [`gym`](#gym), [`gym-info`](#gym-info), [`egg`](#egg), [`raid`](#raid), [`tth`](#tth), [`captcha`](#captcha). Please note that as RocketMap evolves more webhook types may be added.
 
 If you are a developer please feel free to contribute new webhook types through the usual [RocketMap development process](https://github.com/RocketMap/RocketMap/blob/develop/CONTRIBUTING.md#contributing-code).
+
+The sections below outline the different webhook types and the data that gets sent for each event.
 
 ### `pokemon`
 
