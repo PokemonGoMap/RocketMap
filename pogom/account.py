@@ -76,7 +76,7 @@ def check_login(args, account, api):
 
         if remaining_time > 60:
             log.debug(
-                Credentials remain valid for another %f seconds.',
+                'Credentials remain valid for another %f seconds.',
                 remaining_time)
             return
 
