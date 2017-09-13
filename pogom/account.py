@@ -87,8 +87,18 @@ def check_login(args, account, api):
     while num_tries < (args.login_retries + 1):
         try:
             if args.proxyauth:
-                # If auth proxy configured, we use new proxy each login attempt
-                proxyauth_idx, proxyauth_url = get_new_proxyauth(args)
+                # If we still dont have any auth proxy configured or
+                # proxy rotation set, we change the proxy
+                if (not api._auth_provider or
+                        api._auth_provider and args.proxy_rotation != 'none'):
+                    proxyauth_idx, proxyauth_url = get_new_proxyauth(args)
+                elif api._auth_provider:
+                    proxyauth_url = api._auth_provider._session.proxies['http']
+                    log.warning(
+                        'Tried replacing proxy %s with a new proxy, but ' +
+                        'proxy rotation is disabled ("none"). If this ' +
+                        'isn\'t intentional, enable proxy rotation.',
+                        proxyauth_url)
                 api.set_authentication(
                     provider=account['auth_service'],
                     username=account['username'],
