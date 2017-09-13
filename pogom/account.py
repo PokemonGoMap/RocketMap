@@ -73,6 +73,7 @@ def check_login(args, account, api):
     # Logged in? Enough time left? Cool!
     if api._auth_provider and api._auth_provider._access_token:
         remaining_time = api._auth_provider._access_token_expiry - time.time()
+
         if remaining_time > 60:
             log.debug(
                 'Credentials remain valid for another %f seconds.',
