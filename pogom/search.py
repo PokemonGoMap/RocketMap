@@ -447,7 +447,7 @@ def search_overseer_thread(args, new_location_queue, control_flags, heartb,
             'captcha': 0,
             'username': '',
             'proxy_display': proxy_display,
-            'proxy_url': proxy_url,
+            'proxy_url': proxy_url
         }
 
         t = Thread(target=search_worker_thread,
@@ -932,7 +932,7 @@ def search_worker_thread(args, account_queue, account_sets,
 
                 # Ok, let's get started -- check our login status.
                 status['message'] = 'Logging in...'
-                check_login(args, account, api, status['proxy_url'])
+                check_login(args, account, api)
 
                 # Only run this when it's the account's first login, after
                 # check_login().

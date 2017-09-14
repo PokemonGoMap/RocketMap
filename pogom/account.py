@@ -13,7 +13,7 @@ from pgoapi.exceptions import AuthException
 from .fakePogoApi import FakePogoApi
 from .pgoapiwrapper import PGoApiWrapper
 from .utils import in_radius, generate_device_info, distance
-from .proxy import get_new_proxy
+from .proxy import get_new_proxy, get_new_proxyauth
 from .apiRequests import (send_generic_request, fort_details,
                           recycle_inventory_item, use_item_egg_incubator,
                           release_pokemon, level_up_rewards, fort_search)
@@ -69,10 +69,10 @@ def setup_api(args, status, account):
 
 
 # Use API to check the login status, and retry the login if possible.
-def check_login(args, account, api, proxy_url):
+def check_login(args, account, api):
     # Logged in? Enough time left? Cool!
-    if api._auth_provider and api._auth_provider._ticket_expire:
-        remaining_time = api._auth_provider._ticket_expire / 1000 - time.time()
+    if api._auth_provider and api._auth_provider._access_token:
+        remaining_time = api._auth_provider._access_token_expiry - time.time()
 
         if remaining_time > 60:
             log.debug(
@@ -86,12 +86,26 @@ def check_login(args, account, api, proxy_url):
     # One initial try + login_retries.
     while num_tries < (args.login_retries + 1):
         try:
-            if proxy_url:
+            if args.proxyauth:
+                # If we still dont have any auth proxy configured or
+                # proxy rotation set, we change the proxy
+                if (not api._auth_provider or
+                        api._auth_provider and args.proxy_rotation != 'none'):
+                    proxyauth_idx, proxyauth_url = get_new_proxyauth(args)
+                elif api._auth_provider:
+                    proxyauth_url = api._auth_provider._session.proxies['http']
+                    if proxyauth_url not in args.proxyauth:
+                        log.warning(
+                            'Tried replacing proxy %s with a new proxy, but ' +
+                            'proxy rotation is disabled ("none"). If this ' +
+                            'isn\'t intentional, enable proxy rotation.',
+                            proxyauth_url)
                 api.set_authentication(
                     provider=account['auth_service'],
                     username=account['username'],
                     password=account['password'],
-                    proxy_config={'http': proxy_url, 'https': proxy_url})
+                    proxy_config={'http': proxyauth_url,
+                                  'https': proxyauth_url})
             else:
                 api.set_authentication(
                     provider=account['auth_service'],

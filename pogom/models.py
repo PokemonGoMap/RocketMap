@@ -2392,9 +2392,6 @@ def encounter_pokemon(args, pokemon, account, api, account_sets, status,
             hlvl_api.set_proxy({
                 'http': proxy_new,
                 'https': proxy_new})
-            hlvl_api._auth_provider.set_proxy({
-                'http': proxy_new,
-                'https': proxy_new})
 
         # Hashing key.
         # TODO: Rework inefficient threading.
@@ -2411,7 +2408,7 @@ def encounter_pokemon(args, pokemon, account, api, account_sets, status,
         hlvl_api.set_position(*scan_location)
 
         # Log in.
-        check_login(args, hlvl_account, hlvl_api, status['proxy_url'])
+        check_login(args, hlvl_account, hlvl_api)
         encounter_level = hlvl_account['level']
 
         # User error -> we skip freeing the account.

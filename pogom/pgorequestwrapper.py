@@ -103,7 +103,6 @@ class PGoRequestWrapper:
                     }
                     parent = self.request.__parent__
                     parent.set_proxy(proxy_config)
-                    parent._auth_provider.set_proxy(proxy_config)
 
         # If we've reached here, we have no retries left and an exception
         # still occurred.
