@@ -92,7 +92,8 @@ class PGoRequestWrapper:
             # the proxy worked. The variable "rotate_proxy" may seem
             # unnecessary, but it's here for readability and avoiding problems
             # in the future.
-            if rotate_proxy and self.args.proxy:
+            if (rotate_proxy and self.args.proxy and
+                    self.args.proxy_usage != 'ptc'):
                 proxy_idx, proxy_url = get_new_proxy(get_args())
 
                 if proxy_url:
@@ -103,7 +104,6 @@ class PGoRequestWrapper:
                     }
                     parent = self.request.__parent__
                     parent.set_proxy(proxy_config)
-                    parent._auth_provider.set_proxy(proxy_config)
 
         # If we've reached here, we have no retries left and an exception
         # still occurred.

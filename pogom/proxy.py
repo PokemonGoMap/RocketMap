@@ -28,7 +28,7 @@ check_result_max = 6  # Should be equal to maximal return code.
 # Evaluates the status of PTC and Niantic request futures, and returns the
 # result (optionally with an error).
 # Warning: blocking! Can only get status code if request has finished.
-def get_proxy_test_status(proxy, future_ptc, future_niantic):
+def get_proxy_test_status(proxy, args, future_ptc, future_niantic):
     # Start by assuming everything is OK.
     check_result = check_result_ok
     proxy_error = None
@@ -39,8 +39,10 @@ def get_proxy_test_status(proxy, future_ptc, future_niantic):
 
     # Make sure both requests are completed.
     try:
-        ptc_response = future_ptc.result()
-        niantic_response = future_niantic.result()
+        if args.proxy_usage != 'niantic':
+            ptc_response = future_ptc.result()
+        if args.proxy_usage != 'ptc':
+            niantic_response = future_niantic.result()
     except requests.exceptions.ConnectTimeout:
         proxy_error = ('Connection timeout for'
                        + ' proxy {}.').format(proxy)
@@ -57,8 +59,15 @@ def get_proxy_test_status(proxy, future_ptc, future_niantic):
         return (proxy_error, check_result)
 
     # Evaluate response status code.
-    ptc_status = ptc_response.status_code
-    niantic_status = niantic_response.status_code
+    if args.proxy_usage == 'niantic':
+        ptc_status = 200
+        niantic_status = niantic_response.status_code
+    elif args.proxy_usage == 'ptc':
+        ptc_status = ptc_response.status_code
+        niantic_status = 200
+    else:
+        ptc_status = ptc_response.status_code
+        niantic_status = niantic_response.status_code
 
     banned_status_codes = [403, 409]
 
@@ -81,8 +90,10 @@ def get_proxy_test_status(proxy, future_ptc, future_niantic):
 
     # Explicitly release connection back to the pool, because we don't need
     # or want to consume the content.
-    ptc_response.close()
-    niantic_response.close()
+    if args.proxy_usage != 'niantic':
+        ptc_response.close()
+    if args.proxy_usage != 'ptc':
+        niantic_response.close()
 
     return (proxy_error, check_result)
 
@@ -220,6 +231,7 @@ def check_proxies(args, proxies):
     # blocking to wait for one. The double loop is intentional.
     for proxy, future_ptc, future_niantic in proxy_queue:
         error, result = get_proxy_test_status(proxy,
+                                              args,
                                               future_ptc,
                                               future_niantic)
 

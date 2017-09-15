@@ -333,6 +333,10 @@ def get_args():
     parser.add_argument('-px', '--proxy',
                         help='Proxy url (e.g. socks5://127.0.0.1:9050)',
                         action='append')
+    parser.add_argument('-pxu', '--proxy-usage',
+                        help=('Select which connections use proxy ' +
+                              '(all/ptc/niantic).'),
+                        type=str, default='all')
     parser.add_argument('-pxsc', '--proxy-skip-check',
                         help='Disable checking of proxies before start.',
                         action='store_true', default=False)

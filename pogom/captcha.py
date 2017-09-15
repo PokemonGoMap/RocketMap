@@ -123,7 +123,7 @@ def captcha_solver_thread(args, account_queue, account_captchas, hash_key,
         api.activate_hash_server(hash_key)
 
     proxy_url = False
-    if args.proxy:
+    if args.proxy and args.proxy_usage != 'ptc':
         # Try to fetch a new proxy
         proxy_num, proxy_url = get_new_proxy(args)
 
@@ -138,7 +138,7 @@ def captcha_solver_thread(args, account_queue, account_captchas, hash_key,
         location = jitter_location(location)
 
     api.set_position(*location)
-    check_login(args, account, api, proxy_url)
+    check_login(args, account, api)
 
     wh_message = {'status_name': args.status_name,
                   'status': 'error',
