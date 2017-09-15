@@ -638,6 +638,7 @@ class Raid(BaseModel):
     move_1 = SmallIntegerField(null=True)
     move_2 = SmallIntegerField(null=True)
     last_scanned = DateTimeField(default=datetime.utcnow, index=True)
+    exclusive = BooleanField(null=True)
 
 
 class LocationAltitude(BaseModel):
@@ -2216,7 +2217,8 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                             'pokemon_id': None,
                             'cp': None,
                             'move_1': None,
-                            'move_2': None
+                            'move_2': None,
+                            'exclusive': raid.is_exclusive
                         }
 
                         if raid_info.HasField('raid_pokemon'):
