@@ -2218,7 +2218,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
                             'cp': None,
                             'move_1': None,
                             'move_2': None,
-                            'exclusive': raid.is_exclusive
+                            'exclusive': raid_info.is_exclusive
                         }
 
                         if raid_info.HasField('raid_pokemon'):
