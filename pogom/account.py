@@ -44,8 +44,7 @@ def setup_api(args, status, account):
     if args.proxy and args.proxy_usage != 'ptc':
         # If proxy is not assigned yet or if proxy-rotation is defined
         # - query for new proxy.
-        if ((not status['proxy_url']) or
-                (args.proxy_rotation != 'none')):
+        if not status['proxy_url'] or args.proxy_rotation != 'none':
 
             proxy_num, status['proxy_url'] = get_new_proxy(args)
             if args.proxy_display.upper() != 'FULL':
@@ -88,17 +87,16 @@ def check_login(args, account, api):
         try:
             if args.proxy and args.proxy_usage != 'niantic':
                 # If we still dont have any auth proxy configured or
-                # proxy rotation set, we change the proxy
-                if (not api._auth_provider or
-                        api._auth_provider and args.proxy_rotation != 'none'):
+                # proxy rotation is set, we change the proxy
+                if not api._auth_provider or args.proxy_rotation != 'none':
                     proxy_idx, proxy_url = get_new_proxy(args)
                 elif api._auth_provider:
                     proxy_url = api._auth_provider._session.proxies['http']
                     if proxy_url not in args.proxy:
                         log.warning(
                             'Tried replacing auth proxy %s with a new ' +
-                            'proxy, but proxy rotation is disabled ' +
-                            '("none". If this isn\'t intentional, enable ' +
+                            'proxy, but proxy rotation is disabled  ' +
+                            '("none"). If this isn\'t intentional, enable ' +
                             'proxy rotation.',
                             proxy_url)
                 api.set_authentication(
