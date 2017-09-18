@@ -1040,7 +1040,7 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
                                 continue
                             else:
                                 # Set the gym as in progress it will just be
-                                # locked for 60 seconds due to TTL eviction
+                                # locked for 60 seconds due to TTL eviction.
                                 gym_cache[gym['gym_id']] = True
 
                         # Can only get gym details within 1km of our position.
