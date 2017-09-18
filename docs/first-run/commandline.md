@@ -22,7 +22,7 @@
                     [-nr] [-nk] [-ss [SPAWNPOINT_SCANNING]] [-speed] [-spin]
                     [-ams ACCOUNT_MAX_SPINS] [-kph KPH] [-hkph HLVL_KPH]
                     [-ldur LURE_DURATION] [--dump-spawnpoints]
-                    [-pd PURGE_DATA] [-px PROXY] [-pxsc]
+                    [-pd PURGE_DATA] [-px PROXY] [-pxsc] [-pxu PROXY_USAGE]
                     [-pxt PROXY_TEST_TIMEOUT] [-pxre PROXY_TEST_RETRIES]
                     [-pxbf PROXY_TEST_BACKOFF_FACTOR]
                     [-pxc PROXY_TEST_CONCURRENCY] [-pxd PROXY_DISPLAY]
@@ -57,7 +57,7 @@
     ConfigArgParse documentation. If an arg is specified in more than one place,
     then commandline values override environment variables which override config
     file values which override defaults.
-    
+
     optional arguments:
       -h, --help            show this help message and exit [env var:
                             POGOMAP_HELP]
@@ -285,6 +285,9 @@
       -pxsc, --proxy-skip-check
                             Disable checking of proxies before start. [env var:
                             POGOMAP_PROXY_SKIP_CHECK]
+      -pxu PROXY_USAGE, --proxy-usage PROXY_USAGE
+                            Select which connections use proxy: ptc, niantic
+                            or all.  [env var: POGOMAP_PROXY_USAGE]
       -pxt PROXY_TEST_TIMEOUT, --proxy-test-timeout PROXY_TEST_TIMEOUT
                             Timeout settings for proxy checker in seconds. [env
                             var: POGOMAP_PROXY_TEST_TIMEOUT]
@@ -413,4 +416,3 @@
                             logs. [env var: POGOMAP_NO_FILE_LOGS]
       --log-path LOG_PATH   Defines directory to save log files to. [env var:
                             POGOMAP_LOG_PATH]
-    
