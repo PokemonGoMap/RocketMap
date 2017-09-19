@@ -48,6 +48,12 @@ The default configuration file is *config/config.ini* underneath the project hom
 
      python runserver.py -u randomjoe -p password1 -u bob -p password2 -l "seattle, wa" -st 5 -k MyGmapsKeyGoesHereSomeLongString -ps
 
+## Shared config
+
+You may now add settings to a shared config file rather than edit each config individually. This is useful in situations where you run multiple instances and have to change the hash key in each config every month. Add the shared settings to your shared-config.ini and call the shared config from the command line using the `-scf` flag when you start your instance ` python runserver.py -cf myconfig.ini -scf shared-config.ini`
+
+Remember to remove old keys and any other settings from your normal configs that may cause conflicts
+
 ## Running multiple configs
 
    One common way of running multiple locations is to use two configuration files each with common or default database values, but with different location specs. The first configuration running as both a scanner and a server, and in the second configuration file, use the *no-server* flag to not start the web interface for the second configuration.   In the config file, this would mean including a line like:
