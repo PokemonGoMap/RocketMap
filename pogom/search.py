@@ -1065,7 +1065,7 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
                             except GymDetails.DoesNotExist:
                                 gyms_to_update[gym['gym_id']] = gym
                                 continue
-                            GymDetails._meta.database.close()
+                            GymDetails.database().close()
 
                             # If we have a record of this gym already, check if
                             # the gym has been updated since our last update.
