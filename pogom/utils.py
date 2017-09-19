@@ -55,6 +55,8 @@ def get_args():
         auto_env_var_prefix='POGOMAP_')
     parser.add_argument('-cf', '--config',
                         is_config_file=True, help='Set configuration file')
+    parser.add_argument('-ckf', '--commonkeyfile',
+                        is_config_file=True, help='Set common keys')
     parser.add_argument('-a', '--auth-service', type=str.lower,
                         action='append', default=[],
                         help=('Auth Services, either one for all accounts ' +
