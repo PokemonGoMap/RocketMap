@@ -333,7 +333,7 @@
                             var: POGOMAP_WEBHOOK]
       -gi, --gym-info       Get all details about gyms (causes an additional API
                             hit for every gym). [env var: POGOMAP_GYM_INFO]
-      -DC, --enable-clean   Enable DB cleaner. [env var: POGOMAP_DISABLE_CLEAN]
+      -DC, --enable-clean   Enable DB cleaner. [env var: POGOMAP_ENABLE_CLEAN]
       --wh-types {pokemon,gym,raid,egg,tth,gym-info,pokestop,lure}
                             Defines the type of messages to send to webhooks. [env
                             var: POGOMAP_WH_TYPES]
