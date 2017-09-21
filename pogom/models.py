@@ -2658,14 +2658,35 @@ def clean_db_loop(args):
             query = (GymDetails
                      .delete()
                      .where(GymDetails.last_scanned <
-                            (datetime.now() - timedelta(days=1))))
+                            (datetime.utcnow() - timedelta(days=7))))
             query.execute()
 
             # Remove old gym locations.
             query = (Gym
                      .delete()
                      .where(Gym.last_scanned <
-                            (datetime.now() - timedelta(days=1))))
+                            (datetime.utcnow() - timedelta(days=7))))
+            query.execute()
+
+            # Remove old raid Details.
+            query = (Raid
+                     .delete()
+                     .where(Raid.end <
+                            (datetime.utcnow() - timedelta(days=7))))
+            query.execute()
+
+            # Remove old gym members.
+            query = (GymMember
+                     .delete()
+                     .where(GymMember.last_scanned <
+                            (datetime.utcnow() - timedelta(days=7))))
+            query.execute()
+
+            # Remove old gym Pokemon.
+            query = (GymPokemon
+                     .delete()
+                     .where(GymPokemon.last_seen <
+                            (datetime.utcnow() - timedelta(days=7))))
             query.execute()
 
             # Remove active modifier from expired lured pokestops.
