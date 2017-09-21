@@ -2256,14 +2256,23 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue,
         # Helping out the GC.
         del forts
 
-    log.info('Parsing found Pokemon: %d (%d filtered), nearby: %d, ' +
-             'pokestops: %d, gyms: %d, raids: %d.',
-             len(pokemon) + skipped,
-             filtered,
-             nearby_pokemon,
-             len(pokestops) + stopsskipped,
-             len(gyms),
-             len(raids))
+    if not filtered:
+        log.info('Parsing found Pokemon: %d, nearby: %d, ' +
+                 'pokestops: %d, gyms: %d, raids: %d.',
+                 len(pokemon) + skipped,
+                 nearby_pokemon,
+                 len(pokestops) + stopsskipped,
+                 len(gyms),
+                 len(raids))
+    elif filtered:
+        log.info('Parsing found Pokemon: %d (%d filtered), nearby: %d, ' +
+                 'pokestops: %d, gyms: %d, raids: %d.',
+                 len(pokemon) + skipped,
+                 filtered,
+                 nearby_pokemon,
+                 len(pokestops) + stopsskipped,
+                 len(gyms),
+                 len(raids))
 
     log.debug('Skipped Pokemon: %d, pokestops: %d.', skipped, stopsskipped)
 
