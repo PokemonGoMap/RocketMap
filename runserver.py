@@ -88,7 +88,10 @@ def install_thread_excepthook():
             run_old(*args, **kwargs)
         except (KeyboardInterrupt, SystemExit):
             raise
-        except:
+        except Exception as ex:
+            exception_type = e.__class__.__name__
+            log.critical('Unhandled patched exception (%s): "%s".', 
+                          exception_type, ex.message)
             sys.excepthook(*sys.exc_info())
     Thread.run = run
 
