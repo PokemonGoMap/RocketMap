@@ -45,7 +45,7 @@ To start sending data to a webhook:
 
 **If no webhook types are set, no webhook data will be sent.**
 
-### Setting webhook urls
+### Setting webhook URLs
 
 #### Using the command line
 
@@ -246,7 +246,7 @@ A `pokemon` event is sent every time RocketMap detects that a Pokémon has spawn
 | `2`     | Female     |
 | `3`     | Genderless |
 
-2. These fields will be empty unless the Pokémon has been [encountered](https://rocketmap.readthedocs.io/en/develop/extras/encounters.html)
+2. These fields will be empty unless the Pokémon has been [encountered](https://rocketmap.readthedocs.io/en/develop/extras/encounters.html).
 
 ### `pokestop`
 
@@ -270,7 +270,7 @@ A `lure` event is sent whenever RocketMap scans a pokestop **if that pokestop ha
 
 Note: if you add `lure` events to your `wh_types` you will receive them even if you have not enabled `pokestop` events.
                                                        
-Lure events contain the same fields as `pokestop` events (decribed above).
+Lure events contain the same fields as `pokestop` events (described above).
 
 ### `gym`
 
@@ -288,7 +288,7 @@ A `gym` event is sent whenever RocketMap scans a gym.
 | `guard_pokemon_id`          | The ID of the Pokémon which is displayed on top of the gym |               `149` |
 | `total_cp`                  | The total of the defending Pokémons' CPs                   |              `3853` |
 | `slots_available`           | The number of spaces available                             |                 `4` |
-| `lowest_pokemon_motivation` | The lowest of the defending Pokémons' motivtations         | `0.892739474773407` |
+| `lowest_pokemon_motivation` | The lowest of the defending Pokémons' motivations         | `0.892739474773407` |
 | `raid_active_until`         | The time at which the current raid finishes<sup>3</sup>    |                 `0` |
 
 
@@ -302,7 +302,7 @@ A `gym` event is sent whenever RocketMap scans a gym.
 | `3`     | Instinct    |
 
 2. Gym changes include: Pokémon being added, Pokémon being knocked out, gym control changing etc.
-3. If there is no raid at the gym this value will be `0`
+3. If there is no raid at the gym this value will be `0`.
 
 ### `gym-info`
 
@@ -346,7 +346,7 @@ A `gym-info` event is sent whenever RocketMap fetches a gym's details.
 | `num_upgrades`             | The number of times that the Pokémon has been powered up |         `31` |
 | `deployment_time`          | The time at which the Pokémon was added to the gym       | `1504361277` |
 
-1. The trainer's level at the time that they added their Pokémon to the gym
+1. The trainer's level at the time that they added their Pokémon to the gym.
 
 ### `egg`
 
@@ -427,7 +427,7 @@ Note: at present it is not possible to disable `captcha` events: they will be se
 | `"encounter"` | A captcha has been detected                |
 | `"success"`   | The captcha has been solved                |
 | `"failure"`   | The captcha has not been solved            |
-| `"error"`     | An error occured while solving the captcha |
+| `"error"`     | An error occurred while solving the captcha |
 
 ## PokeAlarm
 
