@@ -114,6 +114,7 @@ function removePokemonMarker(encounterId) { // eslint-disable-line no-unused-var
         delete mapData.pokemons[encounterId].marker.rangeCircle
     }
     mapData.pokemons[encounterId].marker.setMap(null)
+    mapData.pokemons[encounterId].marker.hidden = true
     mapData.pokemons[encounterId].hidden = true
 }
 

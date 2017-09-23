@@ -984,13 +984,16 @@ Cluster.prototype.addMarker = function(marker) {
         }
     }
 
-    marker.isAdded = true;
-    this.markers_.push(marker);
+    // First check if this marker should be visible at all.
+    if(!marker.hidden) {
+        marker.isAdded = true;
+        this.markers_.push(marker);
 
-    var len = this.markers_.length;
-    if (len < this.minClusterSize_ && marker.getMap() != this.map_) {
-        // Min cluster size not reached so show the marker.
-        marker.setMap(this.map_);
+        var len = this.markers_.length;
+        if (len < this.minClusterSize_ && marker.getMap() != this.map_) {
+            // Min cluster size not reached so show the marker.
+            marker.setMap(this.map_);
+        }
     }
 
     if (len == this.minClusterSize_) {
@@ -1116,7 +1119,10 @@ Cluster.prototype.updateIcon = function() {
     if (mz && zoom > mz) {
         // The zoom is greater than our max zoom so show all the markers in cluster.
         for (var i = 0, marker; marker = this.markers_[i]; i++) {
-            marker.setMap(this.map_);
+            // But first check of this marker should be visible at all.
+            if(!marker.hidden) {
+                marker.setMap(this.map_);
+            }
         }
         return;
     }
