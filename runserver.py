@@ -93,7 +93,7 @@ def install_thread_excepthook():
 
             # Handle Flask's broken pipe when a client prematurely ends
             # the connection.
-            if exc_value == '[Errno 32] Broken pipe':
+            if str(exc_value) == '[Errno 32] Broken pipe':
                 pass
             else:
                 log.critical('Unhandled patched exception (%s): "%s".',
