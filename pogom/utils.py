@@ -1127,7 +1127,7 @@ def periodic_loop(f, loop_delay_ms):
 # Periodically log resource usage every 'loop_delay_ms' ms.
 def log_resource_usage_loop(loop_delay_ms=60000):
     # Helper method to log to specific log level.
-    def log_resource_usage_to_info():
-        log_resource_usage(log.info)
+    def log_resource_usage_to_debug():
+        log_resource_usage(log.debug)
 
     periodic_loop(log_resource_usage_to_info, loop_delay_ms)
