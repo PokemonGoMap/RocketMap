@@ -851,11 +851,11 @@ var StoreOptions = {
         type: StoreTypes.String
     },
     'remember_select_exclude': {
-        default: [],
+        default: [10, 11, 13, 14, 16, 17, 19, 21, 22, 41, 46, 48, 90, 92, 96, 98, 116, 120, 161, 162, 163, 165, 166, 167, 168, 177, 178, 183, 198, 220, 221],
         type: StoreTypes.JSON
     },
     'remember_select_notify': {
-        default: [],
+        default: [3, 6, 9, 57, 59, 62, 65, 71, 76, 78, 83, 89, 103, 106, 107, 112, 113, 115, 128, 130, 131, 134, 137, 139, 141, 143, 148, 149, 154, 157, 160, 176,179, 180, 181, 186, 192, 192, 196, 197, 201, 208, 210, 212, 222, 230, 237, 241, 242, 246, 247, 248],
         type: StoreTypes.JSON
     },
     'remember_select_rarity_notify': {
@@ -915,7 +915,7 @@ var StoreOptions = {
         type: StoreTypes.Boolean
     },
     'showPokestops': {
-        default: true,
+        default: false,
         type: StoreTypes.Boolean
     },
     'showLuredPokestopsOnly': {
@@ -975,7 +975,7 @@ var StoreOptions = {
         type: StoreTypes.String
     },
     'iconSizeModifier': {
-        default: 0,
+        default: 10,
         type: StoreTypes.Number
     },
     'scaleByRarity': {
@@ -999,11 +999,11 @@ var StoreOptions = {
         type: StoreTypes.String
     },
     'zoomLevel': {
-        default: 16,
+        default: 14,
         type: StoreTypes.Number
     },
     'maxClusterZoomLevel': {
-        default: 14,
+        default: 12,
         type: StoreTypes.Number
     },
     'clusterZoomOnClick': {
