@@ -1071,12 +1071,14 @@ def resource_usage():
                 'available': mem_usage.available,
                 'used': mem_usage.used,
                 'free': mem_usage.free,
-                'percent_used': mem_usage.percent
+                'percent_used': mem_usage.percent,
+                'process_percent_used': proc.memory_percent()
             },
             'CPU': {
                 'user': cpu_usage.user,
                 'system': cpu_usage.system,
-                'idle': cpu_usage.idle
+                'idle': cpu_usage.idle,
+                'process_percent_used': proc.cpu_percent(interval=1)
             },
             'NET': {
                 'bytes_sent': net_usage.bytes_sent,
@@ -1103,6 +1105,9 @@ def resource_usage():
                 'fans': psutil.sensors_fans()
             }
             usage['connections']['unix'] = len(proc.connections('unix'))
+            usage['num_handles'] = proc.num_fds()
+        elif platform == 'win32':
+            usage['num_handles'] = proc.num_handles()
 
     return usage
 
