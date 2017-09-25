@@ -1065,7 +1065,7 @@ def resource_usage():
 
         usage = {
             'platform': platform,
-            'PID': os.getpid(),
+            'PID': proc.pid,
             'MEM': {
                 'total': mem_usage.total,
                 'available': mem_usage.available,
