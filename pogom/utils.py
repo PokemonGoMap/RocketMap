@@ -1129,4 +1129,5 @@ def log_resource_usage_loop(loop_delay_ms=60000):
     # Helper method to log to specific log level.
     def log_resource_usage_to_info():
         log_resource_usage(log.info)
+
     periodic_loop(log_resource_usage_to_info, loop_delay_ms)
