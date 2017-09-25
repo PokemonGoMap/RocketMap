@@ -324,11 +324,6 @@ def main():
         t.daemon = True
         t.start()
 
-    # Let's log some periodic resource usage stats.
-    t = Thread(target=log_resource_usage_loop, name='res-usage')
-    t.daemon = True
-    t.start()
-
     # WH updates queue & WH unique key LFU caches.
     # The LFU caches will stop the server from resending the same data an
     # infinite number of times. The caches will be instantiated in the
@@ -464,6 +459,11 @@ def set_log_and_verbosity(log):
 
     if args.verbose:
         log.setLevel(logging.DEBUG)
+
+        # Let's log some periodic resource usage stats.
+        t = Thread(target=log_resource_usage_loop, name='res-usage')
+        t.daemon = True
+        t.start()
     else:
         log.setLevel(logging.INFO)
 
