@@ -420,7 +420,7 @@ function processAppearance(i, item) {
         if (item['marker']) {
             item['marker'].setMap(null)
         }
-        item['marker'] = setupPokemonMarker(item, map, true, false)
+        item['marker'] = setupPokemonMarker(item, map, true, false, false)
         item['marker'].setMap(map)
         addListeners(item['marker'])
         item['marker'].spawnpointId = spawnpointId
@@ -434,7 +434,7 @@ function redrawAppearances(appearances) {
         var item = appearances[key]
         if (!item['hidden']) {
             item['marker'].setMap(null)
-            const newMarker = setupPokemonMarker(item, map, true, false)
+            const newMarker = setupPokemonMarker(item, map, true, false, false)
             newMarker.setMap(map)
             addListeners(newMarker)
             newMarker.spawnpointId = item['spawnpoint_id']
