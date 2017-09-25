@@ -17,7 +17,8 @@ from flask_cors import CORS
 from flask_cache_bust import init_cache_busting
 
 from pogom.app import Pogom
-from pogom.utils import get_args, now, gmaps_reverse_geolocate
+from pogom.utils import (get_args, now, gmaps_reverse_geolocate,
+                         log_resource_usage_loop)
 from pogom.altitude import get_gmaps_altitude
 
 from pogom.models import (init_database, create_tables, drop_tables,
@@ -277,7 +278,7 @@ def main():
 
     create_tables(db)
 
-    # fixing encoding on present and future tables
+    # Fix encoding on present and future tables.
     verify_table_encoding(db)
 
     if args.clear_db:
@@ -317,11 +318,16 @@ def main():
         t.daemon = True
         t.start()
 
-    # db cleaner; really only need one ever.
+    # Database cleaner; really only need one ever.
     if args.enable_clean:
         t = Thread(target=clean_db_loop, name='db-cleaner', args=(args,))
         t.daemon = True
         t.start()
+
+    # Let's log some periodic resource usage stats.
+    t = Thread(target=log_resource_usage_loop, name='res-usage')
+    t.daemon = True
+    t.start()
 
     # WH updates queue & WH unique key LFU caches.
     # The LFU caches will stop the server from resending the same data an
