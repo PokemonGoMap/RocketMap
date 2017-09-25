@@ -1130,4 +1130,4 @@ def log_resource_usage_loop(loop_delay_ms=60000):
     def log_resource_usage_to_debug():
         log_resource_usage(log.debug)
 
-    periodic_loop(log_resource_usage_to_info, loop_delay_ms)
+    periodic_loop(log_resource_usage_to_debug, loop_delay_ms)
