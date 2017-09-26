@@ -492,6 +492,7 @@ def set_log_and_verbosity(log):
         logging.getLogger('pgoapi').setLevel(logging.DEBUG)
         logging.getLogger('pgoapi.pgoapi').setLevel(logging.DEBUG)
         logging.getLogger('requests').setLevel(logging.DEBUG)
+        urllib3_logger.setLevel(logging.INFO)
 
     if args.verbose >= 3:
         logging.getLogger('peewee').setLevel(logging.DEBUG)
