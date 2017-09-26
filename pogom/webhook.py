@@ -180,13 +180,16 @@ def wh_updater(args, queue, key_caches):
 
 # Helpers
 
-# Background handler for complete webhook futures.
+# Background handler for completed webhook futures.
 def __wh_future_completed(future):
     # Handle any exceptions that might've occurred.
     try:
-        future.exception(timeout=0)
+        exc = future.exception(timeout=0)
+
+        if exc:
+            log.exception("Something's wrong with your webhook: %s.", exc)
     except Exception as ex:
-        log.exception("Something's wrong with your webhook: %s.", ex)
+        log.exception('Unexpected exception in exception info: %s.', ex)
 
 
 # Background handler for completed webhook requests from requests lib.
