@@ -8,7 +8,6 @@ import threading
 from queue import Empty
 from cachetools import LFUCache
 from timeit import default_timer
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from .utils import get_async_requests_session
 
