@@ -117,7 +117,7 @@ function removePokemonMarker(encounterId) { // eslint-disable-line no-unused-var
         mapData.pokemons[encounterId].marker.persist = null
         mapData.pokemons[encounterId].marker.infoWindow.close()
         mapData.pokemons[encounterId].marker.infoWindowIsOpen = false
-	}
+    }
     mapData.pokemons[encounterId].marker.setMap(null)
     mapData.pokemons[encounterId].marker.setVisible(false)
     mapData.pokemons[encounterId].hidden = true
