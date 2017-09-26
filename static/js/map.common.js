@@ -1025,6 +1025,10 @@ var StoreOptions = {
     'mapServiceProvider': {
         default: 'googlemaps',
         type: StoreTypes.String
+    },
+    'isBounceDisabled': {
+        default: false,
+        type: StoreTypes.Boolean
     }
 }
 
@@ -1094,7 +1098,6 @@ function setupPokemonMarkerDetails(item, map, scaleByRarity = true, isNotifyPkmn
         sprite: sprite
     }
     var iconSize = (map.getZoom() - 3) * (map.getZoom() - 3) * 0.2 + Store.get('iconSizeModifier')
-    scaleByRarity = scaleByRarity && Store.get('scaleByRarity')
     rarityValue = 2
 
     if (Store.get('upscalePokemon')) {

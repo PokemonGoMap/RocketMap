@@ -1576,8 +1576,8 @@ function processPokemon(item) {
          !isExcludedPoke && isPokeAlive) {
         // Add marker to map and item to dict.
         if (!item.hidden) {
-            const isBounceDisabled = false
-            const scaleByRarity = true
+            const isBounceDisabled = Store.get('isBounceDisabled')
+            const scaleByRarity = Store.get('scaleByRarity')
             const isNotifyPkmn = isNotifyPoke(item)
 
             if (item.marker) {
@@ -1859,7 +1859,7 @@ function redrawPokemon(pokemonList) {
         var item = pokemonList[key]
 
         if (!item.hidden) {
-            const scaleByRarity = true
+            const scaleByRarity = Store.get('scaleByRarity')
             const isNotifyPkmn = isNotifyPoke(item)
 
             updatePokemonMarker(item, map, scaleByRarity, isNotifyPkmn)
