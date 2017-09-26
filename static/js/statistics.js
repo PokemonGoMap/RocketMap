@@ -417,8 +417,8 @@ function closeOverlay() { // eslint-disable-line no-unused-vars
 function processAppearance(i, item) {
     var spawnpointId = item['spawnpoint_id']
     if (!((spawnpointId) in mapData.appearances)) {
-        const isBounceDisabled = true // we don't need this functionality in our heatmap..
-        const scaleByRarity = false   // ..neither this..
+        const isBounceDisabled = true // We don't need this functionality in our heatmap..
+        const scaleByRarity = false   // ..nor this..
         const isNotifyPkmn = false    // ..and especially not this
 
         if (item['marker']) {
@@ -437,8 +437,8 @@ function redrawAppearances(appearances) {
     $.each(appearances, function (key, value) {
         var item = appearances[key]
         if (!item['hidden']) {
-            const isBounceDisabled = true // we don't need this functionality in our heatmap..
-            const scaleByRarity = false   // ..neither this..
+            const isBounceDisabled = true // We don't need this functionality in our heatmap..
+            const scaleByRarity = false   // ..nor this..
             const isNotifyPkmn = false    // ..and especially not this
 
             item['marker'].setMap(null)
