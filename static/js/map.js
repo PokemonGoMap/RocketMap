@@ -113,8 +113,13 @@ function removePokemonMarker(encounterId) { // eslint-disable-line no-unused-var
         mapData.pokemons[encounterId].marker.rangeCircle.setMap(null)
         delete mapData.pokemons[encounterId].marker.rangeCircle
     }
+    if(mapData.pokemons[encounterId].marker.infoWindowIsOpen) {
+        mapData.pokemons[encounterId].marker.persist = null
+        mapData.pokemons[encounterId].marker.infoWindow.close()
+        mapData.pokemons[encounterId].marker.infoWindowIsOpen = false
+	}
     mapData.pokemons[encounterId].marker.setMap(null)
-    mapData.pokemons[encounterId].marker.hidden = true
+    mapData.pokemons[encounterId].marker.setVisible(false)
     mapData.pokemons[encounterId].hidden = true
 }
 
