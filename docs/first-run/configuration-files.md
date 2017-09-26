@@ -54,7 +54,7 @@ If you run multiple instances you can add settings to a shared config file rathe
 
 ` python runserver.py -cf myconfig.ini -scf shared-config.ini`
 
-Remember to remove old keys and any other settings from your normal configs that may cause conflicts.
+Remember to remove old keys and any other settings from your normal configs that may cause conflicts. If you set a value like google map key in both configs, since it can only have one value the one set in -cf config takes precedence.
 
 ## Running multiple configs
 
