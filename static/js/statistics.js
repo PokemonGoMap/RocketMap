@@ -419,7 +419,7 @@ function processAppearance(i, item) {
     if (!((spawnpointId) in mapData.appearances)) {
         const isBounceDisabled = true // We don't need this functionality in our heatmap..
         const scaleByRarity = false   // ..nor this..
-        const isNotifyPkmn = false    // ..and especially not this
+        const isNotifyPkmn = false    // ..and especially not this.
 
         if (item['marker']) {
             item['marker'].setMap(null)
@@ -439,7 +439,7 @@ function redrawAppearances(appearances) {
         if (!item['hidden']) {
             const isBounceDisabled = true // We don't need this functionality in our heatmap..
             const scaleByRarity = false   // ..nor this..
-            const isNotifyPkmn = false    // ..and especially not this
+            const isNotifyPkmn = false    // ..and especially not this.
 
             item['marker'].setMap(null)
             const newMarker = setupPokemonMarker(item, map, isBounceDisabled, scaleByRarity, isNotifyPkmn)
