@@ -18,7 +18,8 @@ from bisect import bisect_left
 from .models import (Pokemon, Gym, Pokestop, ScannedLocation,
                      MainWorker, WorkerStatus, Token, HashKeys,
                      SpawnPoint)
-from .utils import now, dottedQuadToNum, get_blacklist
+from .utils import now, dottedQuadToNum
+from .blacklist import fingerprints, get_blacklist
 log = logging.getLogger(__name__)
 compress = Compress()
 
@@ -108,11 +109,20 @@ class Pogom(Flask):
 
     def validate_request(self):
         args = get_args()
+
+        # Get real IP behind trusted reverse proxy.
         ip_addr = request.remote_addr
         if ip_addr in args.trusted_proxies:
             ip_addr = request.headers.get('X-Forwarded-For', ip_addr)
+
+        # Make sure IP isn't blacklisted.
         if self._ip_is_blacklisted(ip_addr):
-            log.debug('Denied access to %s.', ip_addr)
+            log.debug('Denied access to %s: blacklisted IP.', ip_addr)
+            abort(403)
+
+        # Make sure fingerprint isn't blacklisted.
+        if self._fingerprint_is_blacklisted(request):
+            log.debug('Denied access to %s: blacklisted fingerprint.', ip_addr)
             abort(403)
 
     def _ip_is_blacklisted(self, ip):
@@ -127,6 +137,9 @@ class Pogom(Flask):
         end = dottedQuadToNum(ip_range[1])
 
         return start <= dottedQuadToNum(ip) <= end
+
+    def _fingerprint_is_blacklisted(self, request):
+        return any(f(request) for f in fingerprints)
 
     def set_control_flags(self, control):
         self.control_flags = control
