@@ -120,11 +120,6 @@ class Pogom(Flask):
             log.debug('Denied access to %s: blacklisted IP.', ip_addr)
             abort(403)
 
-        # Make sure fingerprint isn't blacklisted.
-        if self._fingerprint_is_blacklisted(request):
-            log.debug('Denied access to %s: blacklisted fingerprint.', ip_addr)
-            abort(403)
-
     def _ip_is_blacklisted(self, ip):
         if not self.blacklist:
             return False
@@ -137,9 +132,6 @@ class Pogom(Flask):
         end = dottedQuadToNum(ip_range[1])
 
         return start <= dottedQuadToNum(ip) <= end
-
-    def _fingerprint_is_blacklisted(self, request):
-        return any(f(request) for f in fingerprints)
 
     def set_control_flags(self, control):
         self.control_flags = control
@@ -210,6 +202,17 @@ class Pogom(Flask):
                                )
 
     def raw_data(self):
+        # Make sure fingerprint isn't blacklisted.
+        fingerprint_blacklisted = any([
+            fingerprints.no_origin(request),
+            fingerprints.no_referrer(request),
+            fingerprints.iPokeGo(request)
+        ])
+
+        if fingerprint_blacklisted:
+            log.debug('Denied access to %s: blacklisted fingerprint.', ip_addr)
+            abort(403)
+
         self.heartbeat[0] = now()
         args = get_args()
         if args.on_demand_timeout > 0:
