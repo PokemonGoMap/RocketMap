@@ -8,7 +8,7 @@ log = logging.getLogger(__name__)
 
 
 # Global IP blacklist.
-def get_blacklist():
+def get_ip_blacklist():
     try:
         url = 'https://blist.devkat.org/blacklist.json'
         blacklist = requests.get(url, timeout=5).json()
