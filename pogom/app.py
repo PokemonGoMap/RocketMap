@@ -3,6 +3,7 @@
 
 import calendar
 import logging
+import pogom.blacklist
 
 from flask import Flask, abort, jsonify, render_template, request,\
     make_response, send_from_directory
@@ -19,7 +20,7 @@ from .models import (Pokemon, Gym, Pokestop, ScannedLocation,
                      MainWorker, WorkerStatus, Token, HashKeys,
                      SpawnPoint)
 from .utils import now, dottedQuadToNum
-from .blacklist import fingerprints, get_ip_blacklist
+
 log = logging.getLogger(__name__)
 compress = Compress()
 
@@ -35,7 +36,7 @@ class Pogom(Flask):
         # Global blist
         if not args.disable_blacklist:
             log.info('Retrieving blacklist...')
-            self.blacklist = get_ip_blacklist()
+            self.blacklist = blacklist.get_ip_blacklist()
             # Sort & index for binary search
             self.blacklist.sort(key=lambda r: r[0])
             self.blacklist_keys = [
@@ -204,13 +205,13 @@ class Pogom(Flask):
     def raw_data(self):
         # Make sure fingerprint isn't blacklisted.
         fingerprint_blacklisted = any([
-            fingerprints.no_origin(request),
-            fingerprints.no_referrer(request),
-            fingerprints.iPokeGo(request)
+            blacklist.no_origin(request),
+            blacklist.no_referrer(request),
+            blacklist.iPokeGo(request)
         ])
 
         if fingerprint_blacklisted:
-            log.debug('Denied access to %s: blacklisted fingerprint.', ip_addr)
+            log.debug('User denied access: blacklisted fingerprint.')
             abort(403)
 
         self.heartbeat[0] = now()
