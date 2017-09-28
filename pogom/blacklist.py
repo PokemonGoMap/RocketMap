@@ -1,6 +1,11 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+import logging
+import requests
+
+log = logging.getLogger(__name__)
+
 
 # Global IP blacklist.
 def get_blacklist():

@@ -10,7 +10,6 @@ import random
 import time
 import socket
 import struct
-import requests
 import hashlib
 import psutil
 
