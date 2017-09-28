@@ -22,6 +22,11 @@ def get_blacklist():
 # Fingerprinting methods. They receive Flask's request object as
 # argument.
 
+# jQuery includes Origin.
+def _no_origin(request):
+    return 'Origin' not in request.headers
+
+
 # No referrer = request w/o being on a website.
 def _no_referrer(request):
     return not request.referrer
@@ -29,10 +34,12 @@ def _no_referrer(request):
 
 # iPokeGo.
 def _iPokeGo(request):
-    if not request.referrer:
+    user_agent = request.headers.get('User-Agent', False)
+
+    if not user_agent:
         return False
 
-    return 'ipokego' in request.referrer.lower()
+    return 'ipokego' in user_agent.lower()
 
 
 # Prepare blacklisted fingerprints. A list of functions that
@@ -40,5 +47,6 @@ def _iPokeGo(request):
 # receives Flask's request object as argument.
 fingerprints = [
     _no_referrer,
+    _no_origin,
     _iPokeGo
 ]
