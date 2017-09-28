@@ -23,21 +23,24 @@ def get_ip_blacklist():
 # argument and return True when a blacklisted fingerprint
 # matches.
 
-# jQuery includes Origin.
-def no_origin(request):
-    return 'Origin' not in request.headers
-
 
 # No referrer = request w/o being on a website.
-def no_referrer(request):
+def _no_referrer(request):
     return not request.referrer
 
 
 # iPokeGo.
-def iPokeGo(request):
+def _iPokeGo(request):
     user_agent = request.headers.get('User-Agent', False)
 
     if not user_agent:
         return False
 
     return 'ipokego' in user_agent.lower()
+
+
+# Fingerprints dict for easy scoping on imports.
+fingerprints = {
+    'no_referrer': _no_referrer,
+    'iPokeGo': _iPokeGo
+}
