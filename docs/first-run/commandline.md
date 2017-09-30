@@ -405,7 +405,8 @@
       --log-path LOG_PATH   Defines directory to save log files to. [env var:
                             POGOMAP_LOG_PATH]
       --needful             Dump censored debug info about the environment and
-                            auto-upload to hasteb.in. [env var: POGOMAP_NEEDFUL]
+                            auto-upload to hastebin.com. [env var:
+                            POGOMAP_NEEDFUL]
       -v                    Show debug messages from RocketMap and pgoapi. Can be
                             repeated up to 3 times.
       --verbosity VERBOSE   Show debug messages from RocketMap and pgoapi. [env

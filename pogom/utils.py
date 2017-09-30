@@ -482,7 +482,7 @@ def get_args():
     parser.add_argument('--needful',
                         help=('Dump censored debug info about the ' +
                               'environment and auto-upload to ' +
-                              'hasteb.in.'),
+                              'hastebin.com.'),
                         action='store_true', default=False)
     verbose = parser.add_mutually_exclusive_group()
     verbose.add_argument('-v',
