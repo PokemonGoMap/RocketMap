@@ -487,7 +487,7 @@ def get_args():
 
     args = parser.parse_args()
 
-    if (args.only_server and args.no_server):
+    if args.only_server and args.no_server:
         print("Error: You can't use no-server and only-server at the same "
               "time, silly.")
         sys.exit(1)
