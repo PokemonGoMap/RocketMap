@@ -1146,64 +1146,70 @@ def check_output_catch(command):
         return result.strip()
 
 
+# Automatically censor all necessary fields. Lists will return
+# their length, all other items will return 'censored_tag'.
+def _censor_args_namespace(args, censored_tag):
+    fields_to_censor = [
+        'accounts',
+        'accounts_L30',
+        'username',
+        'password',
+        'auth_service',
+        'proxy',
+        'webhooks',
+        'webhook_blacklist',
+        'webhook_whitelist',
+        'config',
+        'accountcsv',
+        'high_lvl_accounts',
+        'geofence_file',
+        'geofence_excluded_file',
+        'ignorelist_file',
+        'enc_whitelist_file',
+        'webhook_whitelist_file',
+        'webhook_blacklist_file',
+        'db',
+        'proxy_file',
+        'log_path',
+        'encrypt_lib',
+        'ssl_certificate',
+        'ssl_privatekey',
+        'location',
+        'captcha_key',
+        'captcha_dsk',
+        'manual_captcha_domain',
+        'host',
+        'port',
+        'gmaps_key',
+        'db_name',
+        'db_user',
+        'db_pass',
+        'db_host',
+        'db_port',
+        'status_name',
+        'status_page_password',
+        'hash_key',
+        'trusted_proxies'
+    ]
+
+    for field in fields_to_censor:
+        # Do we have the field?
+        if field in args:
+            value = args[field]
+
+            # Replace with length of list or censored tag.
+            if isinstance(value, list):
+                args[field] = len(value)
+            else:
+                args[field] = censored_tag
+
+    return args
+
+
 # Get censored debug info about the environment we're running in.
 def get_censored_debug_info():
-    args = get_args()
-
     CENSORED_TAG = '<censored>'
-
-    # Remove or replace sensitive information in args.
-    if args.accounts:
-        args.accounts = len(args.accounts)
-    if args.username:
-        args.username = len(args.username)
-    if args.password:
-        args.password = len(args.password)
-    if args.auth_service:
-        args.auth_service = len(args.auth_service)
-    if args.proxy:
-        args.proxy = len(args.proxy)
-    if args.webhooks:
-        args.webhooks = len(args.webhooks)
-    if args.webhook_blacklist:
-        args.webhook_blacklist = len(args.webhook_blacklist)
-    if args.webhook_whitelist:
-        args.webhook_whitelist = len(args.webhook_whitelist)
-
-    # Filepaths.
-    args.config = CENSORED_TAG
-    args.accountcsv = CENSORED_TAG
-    args.high_lvl_accounts = CENSORED_TAG
-    args.geofence_file = CENSORED_TAG
-    args.geofence_excluded_file = CENSORED_TAG
-    args.ignorelist_file = CENSORED_TAG
-    args.enc_whitelist_file = CENSORED_TAG
-    args.webhook_whitelist_file = CENSORED_TAG
-    args.webhook_blacklist_file = CENSORED_TAG
-    args.db = CENSORED_TAG
-    args.proxy_file = CENSORED_TAG
-    args.log_path = CENSORED_TAG
-    args.encrypt_lib = CENSORED_TAG
-    args.ssl_certificate = CENSORED_TAG
-    args.ssl_privatekey = CENSORED_TAG
-
-    # Individual fields.
-    args.location = CENSORED_TAG
-    args.captcha_key = CENSORED_TAG
-    args.captcha_dsk = CENSORED_TAG
-    args.manual_captcha_domain = CENSORED_TAG
-    args.host = CENSORED_TAG
-    args.port = CENSORED_TAG
-    args.gmaps_key = CENSORED_TAG
-    args.db_name = CENSORED_TAG
-    args.db_user = CENSORED_TAG
-    args.db_pass = CENSORED_TAG
-    args.db_host = CENSORED_TAG
-    args.db_port = CENSORED_TAG
-    args.status_name = CENSORED_TAG
-    args.status_page_password = CENSORED_TAG
-    args.hash_key = CENSORED_TAG
-    args.trusted_proxies = CENSORED_TAG
+    args = _censor_args_namespace(vars(get_args()), CENSORED_TAG)
 
     # Get git status.
     status = check_output_catch('git status')
@@ -1211,13 +1217,13 @@ def get_censored_debug_info():
     remotes = check_output_catch('git remote -v')
 
     # Python, pip, node, npm.
-    python = sys.version
+    python = sys.version.replace(os.linesep, ' ').strip()
     pip = check_output_catch('pip -V')
     node = check_output_catch('node -v')
     npm = check_output_catch('npm -v')
 
     return {
-        'args': vars(args),
+        'args': args,
         'git': {
             'status': status,
             'log': log,
@@ -1267,7 +1273,7 @@ def get_needful_link():
     result += '\n\n' + git['log'] + '\n'
 
     # And finally, our censored args.
-    result += '\n' + '## Settings:' + '\n'
+    result += '\n\n' + '## Settings:' + '\n'
     result += pformat(args, width=1)
 
     # Upload to hasteb.in.
