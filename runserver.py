@@ -222,7 +222,8 @@ def main():
     if args.needful:
         log.info('Retrieving environment info...')
         hastebin = get_needful_link()
-        log.info('Done! Your debug link: https://hastebin.com/%s.txt', hastebin)
+        log.info('Done! Your debug link: https://hastebin.com/%s.txt',
+                 hastebin)
         sys.exit(1)
 
     # Let's not forget to run Grunt / Only needed when running with webserver.

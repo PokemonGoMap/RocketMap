@@ -1153,7 +1153,6 @@ def get_censored_debug_info():
     CENSORED_TAG = '<censored>'
 
     # Remove or replace sensitive information in args.
-    
     if args.accounts:
         args.accounts = len(args.accounts)
     if args.username:
@@ -1170,8 +1169,8 @@ def get_censored_debug_info():
         args.webhook_blacklist = len(args.webhook_blacklist)
     if args.webhook_whitelist:
         args.webhook_whitelist = len(args.webhook_whitelist)
-    
-    # Files paths.
+
+    # Filepaths.
     args.config = CENSORED_TAG
     args.accountcsv = CENSORED_TAG
     args.high_lvl_accounts = CENSORED_TAG
