@@ -45,7 +45,7 @@
                     [-vci VERSION_CHECK_INTERVAL] [-el ENCRYPT_LIB]
                     [-odt ON_DEMAND_TIMEOUT] [--disable-blacklist]
                     [-tp TRUSTED_PROXIES] [--api-version API_VERSION]
-                    [--no-file-logs] [--log-path LOG_PATH] [--needful]
+                    [--no-file-logs] [--log-path LOG_PATH] [--dump]
                     [-v | --verbosity VERBOSE]
 
     Args that start with '--' (eg. -a) can also be set in a config file
@@ -404,9 +404,8 @@
                             logs. [env var: POGOMAP_NO_FILE_LOGS]
       --log-path LOG_PATH   Defines directory to save log files to. [env var:
                             POGOMAP_LOG_PATH]
-      --needful             Dump censored debug info about the environment and
-                            auto-upload to hastebin.com. [env var:
-                            POGOMAP_NEEDFUL]
+      --dump                Dump censored debug info about the environment and
+                            auto-upload to hastebin.com. [env var: POGOMAP_DUMP]
       -v                    Show debug messages from RocketMap and pgoapi. Can be
                             repeated up to 3 times.
       --verbosity VERBOSE   Show debug messages from RocketMap and pgoapi. [env

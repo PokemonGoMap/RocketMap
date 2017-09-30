@@ -19,7 +19,7 @@ from flask_cache_bust import init_cache_busting
 
 from pogom.app import Pogom
 from pogom.utils import (get_args, now, gmaps_reverse_geolocate,
-                         log_resource_usage_loop, get_needful_link)
+                         log_resource_usage_loop, get_debug_dump_link)
 from pogom.altitude import get_gmaps_altitude
 
 from pogom.models import (init_database, create_tables, drop_tables,
@@ -219,9 +219,9 @@ def main():
         sys.exit(1)
 
     # Stop if we're just looking for a debug dump.
-    if args.needful:
+    if args.dump:
         log.info('Retrieving environment info...')
-        hastebin = get_needful_link()
+        hastebin = get_debug_dump_link()
         log.info('Done! Your debug link: https://hastebin.com/%s.txt',
                  hastebin)
         sys.exit(1)

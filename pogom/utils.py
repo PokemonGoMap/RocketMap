@@ -479,7 +479,7 @@ def get_args():
     parser.add_argument('--log-path',
                         help=('Defines directory to save log files to.'),
                         default='logs/')
-    parser.add_argument('--needful',
+    parser.add_argument('--dump',
                         help=('Dump censored debug info about the ' +
                               'environment and auto-upload to ' +
                               'hastebin.com.'),
@@ -1246,7 +1246,7 @@ def upload_to_hastebin(text):
 
 
 # Get censored debug info & auto-upload to hasteb.in.
-def get_needful_link():
+def get_debug_dump_link():
     debug = get_censored_debug_info()
     args = debug['args']
     git = debug['git']
