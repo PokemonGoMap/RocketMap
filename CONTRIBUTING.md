@@ -17,6 +17,7 @@
 * [Styleguides](#styleguides)
 * [Submitting a helpful pull request](#submitting-a-helpful-pull-request)
 * [Collaborating with other contributors](#collaborating-with-other-contributors)
+* [Third Party Applications](#third-party-applications)
 
 ## I just have a question/need help.
 
@@ -89,7 +90,7 @@ To check if your Python code conforms to the eslint rules, you can run `npm run 
 
 When you have an open pull request and wish to collaborate with other contributors, you may request access to the #pr channel in the [RocketMap Discord](https://discord.gg/rocketmap). To request access, you may send a message to Seb or Thunderfox. Please provide a link to your open pull request with your message.
 
-### Third-Party Applications
+### Third Party Applications
 
 We welcome third parties to create tools to extend the functionality of RocketMap beyond the base code, for example, mobile clients for RocketMap, provided they follow the 3rd party project policies:
 
