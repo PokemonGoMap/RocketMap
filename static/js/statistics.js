@@ -118,7 +118,8 @@ function updateStats() {
                 ]
             })
     }).fail(function () {
-        updateStats()
+        // Wait for next retry.
+        setTimeout(updateStats, 1000)
     })
 }
 
@@ -459,7 +460,8 @@ function updateDetails() {
             radius: 50
         })
     }).fail(function () {
-        updateDetails()
+        // Wait for next retry.
+        setTimeout(updateDetails, 1000)
     })
 }
 
