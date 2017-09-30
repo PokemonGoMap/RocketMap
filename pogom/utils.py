@@ -1164,7 +1164,7 @@ def get_censored_debug_info():
     if args.proxy:
         args.proxy = len(args.proxy)
     if args.webhooks:
-        args.webhooks = len(args.webhook)
+        args.webhooks = len(args.webhooks)
     if args.webhook_blacklist:
         args.webhook_blacklist = len(args.webhook_blacklist)
     if args.webhook_whitelist:
