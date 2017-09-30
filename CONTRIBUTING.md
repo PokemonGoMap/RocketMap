@@ -4,6 +4,8 @@
 
 [I just have a question/need help](#i-just-have-a-questionneed-help)
 
+[I just have a question/need help](#project-managers)
+
 [How do I get started?](#how-do-i-get-started)
 * [Python Packages](#python-packages)
 * [NodeJS Packages](#nodejs-packages)
@@ -25,7 +27,7 @@ Please do not open a GitHub issue for support or questions. They are best answer
 
 ## Project Managers
 
-The managers of the RocketMap project are Seb and Thunderfox, and can be reached in [Discord](https://discord.gg/RocketMap) should there be any questions regarding the contribution guidelines for RocketMap.
+Management of the RocketMap project is handled by Seb (@sebastienvercammen) and Thunderfox (@FrostTheFox) and can be reached via [Discord](https://discord.gg/RocketMap) should there be any questions regarding the contribution guidelines or RocketMap.
 
 ## How do I get started?
 
@@ -92,9 +94,9 @@ When you have an open pull request and wish to collaborate with other contributo
 
 ### Third Party Applications
 
-We welcome third parties to create tools to extend the functionality of RocketMap beyond the base code, for example, mobile clients for RocketMap, provided they follow the 3rd party project policies:
+We welcome third parties to create tools to extend the functionality and user experience of RocketMap (e.g. mobile clients, extended platforms like [PokéAlarm](https://github.com/RocketMap/PokeAlarm)), provided they follow the 3rd party project policies:
 
 * 3rd party projects that wish to use RocketMap or any RM-hosted websites need to contact the RM project managers before release of their tool in order to be approved. We love innovation and improvement of RM, but we need to protect the interests of the RM community. If your project isn't doing anything shady and isn't violating the privacy of others, you'll likely be approved without hassle.
-* Any 3rd party project that uses RM-hosted websites needs to be opt-in for the operator. Any map operator that hasn't explicitly opted-in should be blocked in your project. In exchange for your cooperation, and to help with growth, RM-approved projects may receive their own Thunderbot command (eg, !pokealarm), have your GitHub link excluded from link filtering, and receive a 3rd Party role in the [RM Discord](https://discord.gg/RocketMap).
-* Unapproved projects will not be supported on RM's Discord, and links to the project will be automatically removed. 
-* Projects that do not provide an opt-in method (where applicable), may find themselves blocked from all RM instances at discretion of the project managers.
+* Any 3rd party project that uses RM-hosted websites needs to be opt-in for the website's owner. Any website that hasn't explicitly opted in should be blocked in your project. In exchange for your cooperation, and to help with growth, RM-approved projects may receive their own Thunderbot command (e.g. !pokealarm), have your GitHub link excluded from link filtering, and receive a "3rd party" role in the [RM Discord](https://discord.gg/RocketMap). A common way of adding an opt-in is to host a file "myProjectName.txt" similar to [robots.txt](http://www.robotstxt.org/) that explicitly allows the website to be used in the project.
+* Unapproved projects will not be supported on RM's Discord and links to the project will automatically be removed. 
+* Projects that do not provide an opt-in method (where applicable) may find themselves blocked from all RM instances at discretion of the project managers.
