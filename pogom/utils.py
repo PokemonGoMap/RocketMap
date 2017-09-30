@@ -12,6 +12,8 @@ import socket
 import struct
 import hashlib
 import psutil
+import subprocess
+import requests
 
 from s2sphere import CellId, LatLng
 from geopy.geocoders import GoogleV3
@@ -19,6 +21,7 @@ from requests_futures.sessions import FuturesSession
 from requests.packages.urllib3.util.retry import Retry
 from requests.adapters import HTTPAdapter
 from cHaversine import haversine
+from pprint import pformat
 
 log = logging.getLogger(__name__)
 
@@ -476,6 +479,11 @@ def get_args():
     parser.add_argument('--log-path',
                         help=('Defines directory to save log files to.'),
                         default='logs/')
+    parser.add_argument('--needful',
+                        help=('Dump censored debug info about the ' +
+                              'environment and auto-upload to ' +
+                              'hasteb.in.'),
+                        action='store_true', default=False)
     verbose = parser.add_mutually_exclusive_group()
     verbose.add_argument('-v',
                          help=('Show debug messages from RocketMap ' +
@@ -1123,3 +1131,145 @@ def log_resource_usage_loop(loop_delay_ms=60000):
         log_resource_usage(log.debug)
 
     periodic_loop(log_resource_usage_to_debug, loop_delay_ms)
+
+
+# Return shell call output as string, replacing any errors with the
+# error's string representation.
+def check_output_catch(command):
+    try:
+        result = subprocess.check_output(command,
+                                         stderr=subprocess.STDOUT,
+                                         shell=True)
+    except Exception as ex:
+        result = 'ERROR: ' + ex.output.replace(os.linesep, ' ')
+    finally:
+        return result.strip()
+
+
+# Get censored debug info about the environment we're running in.
+def get_censored_debug_info():
+    args = get_args()
+
+    CENSORED_TAG = '<censored>'
+
+    # Remove or replace sensitive information in args.
+    
+    if args.accounts:
+        args.accounts = len(args.accounts)
+    if args.username:
+        args.username = len(args.username)
+    if args.password:
+        args.password = len(args.password)
+    if args.auth_service:
+        args.auth_service = len(args.auth_service)
+    if args.proxy:
+        args.proxy = len(args.proxy)
+    if args.webhooks:
+        args.webhooks = len(args.webhook)
+    if args.webhook_blacklist:
+        args.webhook_blacklist = len(args.webhook_blacklist)
+    if args.webhook_whitelist:
+        args.webhook_whitelist = len(args.webhook_whitelist)
+    
+    # Files paths.
+    args.config = CENSORED_TAG
+    args.accountcsv = CENSORED_TAG
+    args.high_lvl_accounts = CENSORED_TAG
+    args.geofence_file = CENSORED_TAG
+    args.geofence_excluded_file = CENSORED_TAG
+    args.ignorelist_file = CENSORED_TAG
+    args.enc_whitelist_file = CENSORED_TAG
+    args.webhook_whitelist_file = CENSORED_TAG
+    args.webhook_blacklist_file = CENSORED_TAG
+    args.db = CENSORED_TAG
+    args.proxy_file = CENSORED_TAG
+    args.log_path = CENSORED_TAG
+    args.encrypt_lib = CENSORED_TAG
+    args.ssl_certificate = CENSORED_TAG
+    args.ssl_privatekey = CENSORED_TAG
+
+    # Individual fields.
+    args.location = CENSORED_TAG
+    args.captcha_key = CENSORED_TAG
+    args.captcha_dsk = CENSORED_TAG
+    args.manual_captcha_domain = CENSORED_TAG
+    args.host = CENSORED_TAG
+    args.port = CENSORED_TAG
+    args.gmaps_key = CENSORED_TAG
+    args.db_name = CENSORED_TAG
+    args.db_user = CENSORED_TAG
+    args.db_pass = CENSORED_TAG
+    args.db_host = CENSORED_TAG
+    args.db_port = CENSORED_TAG
+    args.status_name = CENSORED_TAG
+    args.status_page_password = CENSORED_TAG
+    args.hash_key = CENSORED_TAG
+    args.trusted_proxies = CENSORED_TAG
+
+    # Get git status.
+    status = check_output_catch('git status')
+    log = check_output_catch('git log -1')
+    remotes = check_output_catch('git remote -v')
+
+    # Python, pip, node, npm.
+    python = sys.version
+    pip = check_output_catch('pip -V')
+    node = check_output_catch('node -v')
+    npm = check_output_catch('npm -v')
+
+    return {
+        'args': vars(args),
+        'git': {
+            'status': status,
+            'log': log,
+            'remotes': remotes
+        },
+        'versions': {
+            'python': python,
+            'pip': pip,
+            'node': node,
+            'npm': npm
+        }
+    }
+
+
+# Post a string of text to a hasteb.in and retrieve the URL.
+def upload_to_hastebin(text):
+    log.info('Uploading info to hastebin.com...')
+    response = requests.post('https://hastebin.com/documents', data=text)
+    return response.json()['key']
+
+
+# Get censored debug info & auto-upload to hasteb.in.
+def get_needful_link():
+    debug = get_censored_debug_info()
+    args = debug['args']
+    git = debug['git']
+    versions = debug['versions']
+
+    # Format debug info for text upload.
+    result = '''#######################
+### RocketMap debug ###
+#######################
+
+## Versions:
+'''
+
+    # Versions first, for readability.
+    result += '- Python: ' + versions['python'] + '\n'
+    result += '- pip: ' + versions['pip'] + '\n'
+    result += '- Node.js: ' + versions['node'] + '\n'
+    result += '- npm: ' + versions['npm'] + '\n'
+
+    # Next up is git.
+    result += '\n\n' + '## Git:' + '\n'
+    result += git['status'] + '\n'
+    result += '\n\n' + git['remotes'] + '\n'
+    result += '\n\n' + git['log'] + '\n'
+
+    # And finally, our censored args.
+    result += '\n' + '## Settings:' + '\n'
+    result += pformat(args, width=1)
+
+    # Upload to hasteb.in.
+    return upload_to_hastebin(result)
