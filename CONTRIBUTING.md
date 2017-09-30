@@ -27,7 +27,7 @@ Please do not open a GitHub issue for support or questions. They are best answer
 
 ## Project Managers
 
-Management of the RocketMap project is handled by Seb ([@sebastienvercammen](https://github.com/sebastienvercammen)) and Thunderfox ([@FrostTheFox](https://github.com/FrostTheFox)) and can be reached via [Discord](https://discord.gg/RocketMap) should there be any questions regarding the contribution guidelines or RocketMap.
+Management of the RocketMap project is handled by Seb ([@sebastienvercammen](https://github.com/sebastienvercammen)) and Thunderfox ([@FrostTheFox](https://github.com/FrostTheFox)) and can be reached via [Discord](https://discord.gg/RocketMap) should there be any questions regarding the contribution guidelines or RocketMap development.
 
 ## How do I get started?
 
@@ -78,7 +78,7 @@ RocketMap follows and adheres to the [pep8 standards](https://www.python.org/dev
 
 To check if your Python code conforms to PEP8, you can use the flake8 package (`pip install flake8`). After making changes, open a terminal in the project root and run `flake8 --statistics --show-source --disable-noqa`.
 
-To check if your Python code conforms to the eslint rules, you can run `npm run lint`.
+To check if your JavaScript code conforms to the eslint rules, you can run `npm run lint`.
 
 ### Submitting a helpful pull request
 
