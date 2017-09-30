@@ -23,6 +23,27 @@ function loadRawData() {
         },
         complete: function () {
             rawDataIsLoading = false
+        },
+        error: function () {
+            // Display error toast
+            toastr['error']('Request failed while getting data. Retrying...', 'Error getting data')
+            toastr.options = {
+                'closeButton': true,
+                'debug': false,
+                'newestOnTop': true,
+                'progressBar': false,
+                'positionClass': 'toast-top-right',
+                'preventDuplicates': true,
+                'onclick': null,
+                'showDuration': '300',
+                'hideDuration': '1000',
+                'timeOut': '25000',
+                'extendedTimeOut': '1000',
+                'showEasing': 'swing',
+                'hideEasing': 'linear',
+                'showMethod': 'fadeIn',
+                'hideMethod': 'fadeOut'
+            }
         }
     })
 }
@@ -97,25 +118,6 @@ function updateStats() {
                 ]
             })
     }).fail(function () {
-        // Display error toast
-        toastr['error']('Request failed while getting data. Retrying...', 'Error getting data')
-        toastr.options = {
-            'closeButton': true,
-            'debug': false,
-            'newestOnTop': true,
-            'progressBar': false,
-            'positionClass': 'toast-top-right',
-            'preventDuplicates': true,
-            'onclick': null,
-            'showDuration': '300',
-            'hideDuration': '1000',
-            'timeOut': '25000',
-            'extendedTimeOut': '1000',
-            'showEasing': 'swing',
-            'hideEasing': 'linear',
-            'showMethod': 'fadeIn',
-            'hideMethod': 'fadeOut'
-        }
         updateStats()
     })
 }
@@ -165,6 +167,27 @@ function loadDetails() {
         },
         complete: function () {
             detailsLoading = false
+        },
+        error: function () {
+            // Display error toast
+            toastr['error']('Request failed while getting data. Retrying...', 'Error getting data')
+            toastr.options = {
+                'closeButton': true,
+                'debug': false,
+                'newestOnTop': true,
+                'progressBar': false,
+                'positionClass': 'toast-top-right',
+                'preventDuplicates': true,
+                'onclick': null,
+                'showDuration': '300',
+                'hideDuration': '1000',
+                'timeOut': '25000',
+                'extendedTimeOut': '1000',
+                'showEasing': 'swing',
+                'hideEasing': 'linear',
+                'showMethod': 'fadeIn',
+                'hideMethod': 'fadeOut'
+            }
         }
     })
 }
@@ -436,25 +459,6 @@ function updateDetails() {
             radius: 50
         })
     }).fail(function () {
-        // Display error toast
-        toastr['error']('Request failed while getting data. Retrying...', 'Error getting data')
-        toastr.options = {
-            'closeButton': true,
-            'debug': false,
-            'newestOnTop': true,
-            'progressBar': false,
-            'positionClass': 'toast-top-right',
-            'preventDuplicates': true,
-            'onclick': null,
-            'showDuration': '300',
-            'hideDuration': '1000',
-            'timeOut': '25000',
-            'extendedTimeOut': '1000',
-            'showEasing': 'swing',
-            'hideEasing': 'linear',
-            'showMethod': 'fadeIn',
-            'hideMethod': 'fadeOut'
-        }
         updateDetails()
     })
 }
