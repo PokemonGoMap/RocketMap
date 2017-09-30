@@ -4,7 +4,7 @@
 
 [I just have a question/need help](#i-just-have-a-questionneed-help)
 
-[I just have a question/need help](#project-managers)
+[Project Managers](#project-managers)
 
 [How do I get started?](#how-do-i-get-started)
 * [Python Packages](#python-packages)
