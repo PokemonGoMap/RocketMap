@@ -22,6 +22,10 @@
 
 Please do not open a GitHub issue for support or questions. They are best answered via [Discord](https://discord.gg/RocketMap). GitHub issues are for RocketMap code issues *only*.
 
+## Project Managers
+
+The managers of the RocketMap project are Seb and Thunderfox, and can be reached in [Discord](https://discord.gg/RocketMap) should there be any questions regarding the contribution guidelines for RocketMap.
+
 ## How do I get started?
 
 RocketMap has two main dependencies to get started:
@@ -84,3 +88,12 @@ To check if your Python code conforms to the eslint rules, you can run `npm run 
 ### Collaborating with other contributors
 
 When you have an open pull request and wish to collaborate with other contributors, you may request access to the #pr channel in the [RocketMap Discord](https://discord.gg/rocketmap). To request access, you may send a message to Seb or Thunderfox. Please provide a link to your open pull request with your message.
+
+### Third-Party Applications
+
+We welcome third parties to create tools to extend the functionality of RocketMap beyond the base code, for example, mobile clients for RocketMap, provided they follow the 3rd party project policies:
+
+* 3rd party projects that wish to use RocketMap or any RM-hosted websites need to contact the RM project managers before release of their tool in order to be approved. We love innovation and improvement of RM, but we need to protect the interests of the RM community. If your project isn't doing anything shady and isn't violating the privacy of others, you'll likely be approved without hassle.
+* Any 3rd party project that uses RM-hosted websites needs to be opt-in for the operator. Any map operator that hasn't explicitly opted-in should be blocked in your project. In exchange for your cooperation, and to help with growth, RM-approved projects may receive their own Thunderbot command (eg, !pokealarm), have your GitHub link excluded from link filtering, and receive a 3rd Party role in the [RM Discord](https://discord.gg/RocketMap).
+* Unapproved projects will not be supported on RM's Discord, and links to the project will be automatically removed. 
+* Projects that do not provide an opt-in method (where applicable), may find themselves blocked from all RM instances at discretion of the project managers.
