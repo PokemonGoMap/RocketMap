@@ -50,11 +50,13 @@ The default configuration file is *config/config.ini* underneath the project hom
 
 ## Shared config
 
-If you run multiple instances you can add settings to a shared config file rather than add it to each config individually. This is useful for settings that are always the same such as google map key, hash key, etc. It also makes managing multiple instances easier, instead of changing the hash key in each config every month you only need to change it in the shared config file. Add the shared settings to your shared-config.ini and call the shared config from the command line using the `-scf` flag when you start your instance.
+If you run multiple instances, you can add settings to a shared configuration file rather than adding it to each unique instance configuration file individually. This is useful for settings that are always the same such as Google Maps API key, hashing key, etc. It makes managing multiple instances easier: instead of having to change the hashing key in every configuration file every month, you only need to change it in the shared config file. Add the shared settings to your shared-config.ini and call the shared config from the command line using the `-scf` flag when you start your instance.
 
 ` python runserver.py -cf myconfig.ini -scf shared-config.ini`
 
-Remember to remove old keys and any other settings from your normal configs that may cause conflicts. If you set a value like google map key in both configs, since it can only have one value the one set in -cf config takes precedence.
+Using `--shared-config` in a configuration file does not work.
+
+Remember to remove old keys and any other settings from your normal configs that may cause conflicts. If you set a value like the Google Maps API key in both configuration files, the value set in the regular `-cf` configuration file takes precedence.
 
 ## Running multiple configs
 
