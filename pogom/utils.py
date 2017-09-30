@@ -489,7 +489,7 @@ def get_args():
 
     if (args.only_server and args.no_server):
         print("Error: You can't use no-server and only-server at the same "
-              "time silly.")
+              "time, silly.")
         sys.exit(1)
 
     if args.only_server:
