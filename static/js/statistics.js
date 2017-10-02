@@ -67,7 +67,7 @@ function processSeen(seen) {
                                 ${pokemonItem.pokemon_name}
                             </a>
                         </td>
-                        <td class="status_cell">
+                        <td class="status_cell" data-sort="${pokemonItem.count}">
                             ${pokemonItem.count.toLocaleString()}
                         </td>
                         <td class="status_cell">
