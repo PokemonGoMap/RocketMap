@@ -133,7 +133,5 @@ def intermediate_point(pos1, pos2, f):
     lat3 = math.atan2(z, math.sqrt(x**2 + y**2))
     lon3 = math.atan2(y, x)
 
-    def normalize(pos):
-        return ((pos[0] + 540) % 360) - 180, ((pos[1] + 540) % 360) - 180
-
-    return normalize((math.degrees(lat3), math.degrees(lon3)))
+    return (((math.degrees(lat3) + 540) % 360) - 180,
+            ((math.degrees(lon3) + 540) % 360) - 180)

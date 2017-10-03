@@ -943,12 +943,11 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
                 if leaves and now() > (leaves - args.min_seconds_left):
                     scheduler.task_done(status)
                     status['skip'] += 1
-                    if time.time() > (leaves - args.min_seconds_left):
-                        status['message'] = messages['late']
-                        log.info(status['message'])
-                        # No sleep here; we've not done anything worth sleeping
-                        # for. Plus we clearly need to catch up!
-                        continue
+                    status['message'] = messages['late']
+                    log.info(status['message'])
+                    # No sleep here; we've not done anything worth sleeping
+                    # for. Plus we clearly need to catch up!
+                    continue
 
                 status['message'] = messages['search']
                 log.debug(status['message'])

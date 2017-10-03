@@ -364,8 +364,10 @@ class SpawnScan(BaseScheduler):
         # No locations yet? Try the database!
         if not self.locations and not self.args.no_pokemon:
             log.debug('Loading spawn points from database.')
+
             spawns = SpawnPoint.select_in_hex_by_location(
                 self.scan_location, self.step_limit)
+
             log.debug('Loaded %s spawn points from database.' % len(spawns))
 
             for sp in spawns:
@@ -378,31 +380,28 @@ class SpawnScan(BaseScheduler):
                 if not SpawnPoint.tth_found(sp):
                     continue
                 '''
-                sp['time'], sp['disappear_time'] = SpawnPoint.start_end(sp)
+                time, disappear_time = SpawnPoint.start_end(sp)
 
-                if sp['time'] > cur_sec():
+                if time > cur_sec():
                     # Hasn't spawn in the current hour.
-                    from_now = sp['time'] - cur_sec()
-                    sp['appears'] = now() + from_now
+                    from_now = time - cur_sec()
+                    appears = now() + from_now
                 else:
                     # Won't spawn till next hour.
-                    late_by = cur_sec() - sp['time']
-                    sp['appears'] = now() + 3600 - late_by
+                    late_by = cur_sec() - time
+                    appears = now() + 3600 - late_by
 
-                duration = (sp['disappear_time'] - sp['time']) % 3600
-                sp['leaves'] = sp['appears'] + duration
+                duration = (disappear_time - time) % 3600
+                leaves = appears + duration
 
-                del sp['earliest_unseen']
-                del sp['latest_seen']
-                del sp['kind']
-                del sp['links']
-                sp['spawnpoint_id'] = sp['id']
-                del sp['id']
-                sp['lat'] = sp['latitude']
-                del sp['latitude']
-                sp['lng'] = sp['longitude']
-                del sp['longitude']
-                self.locations.append(sp)
+                self.locations.append({
+                    'spawnpoint_id': sp['id'],
+                    'lat': sp['latitude'],
+                    'lng': sp['longitude'],
+                    'time': time,
+                    'appears': appears,
+                    'leaves': leaves
+                })
 
         # Geofence spawnpoints.
         if self.geofences.is_enabled():
@@ -415,7 +414,7 @@ class SpawnScan(BaseScheduler):
 
         # Well shit...
         if not self.locations:
-            raise Exception('No availabe spawn points!')
+            raise Exception('No available spawn points!')
 
         log.info('Tracking a total of %d spawn points.', len(self.locations))
 

@@ -1,4 +1,4 @@
-from .utils import equi_rect_distance
+from .utils import distance
 from .transform import intermediate_point
 
 
@@ -26,7 +26,6 @@ class SpawnCluster(object):
         return len(self._spawnpoints)
 
     def append(self, spawnpoint):
-        # Update cluster centroid.
         self.centroid = self.new_centroid(spawnpoint)
 
         self._spawnpoints.append(spawnpoint)
@@ -40,79 +39,69 @@ class SpawnCluster(object):
             self.appears = spawnpoint['appears']
             self.leaves = spawnpoint['leaves']
 
+    def get_score(self, spawnpoint, time_threshold):
+        min_time = min(self.min_time, spawnpoint['time'])
+        max_time = max(self.max_time, spawnpoint['time'])
+        sp_position = (spawnpoint['lat'], spawnpoint['lng'])
+
+        if max_time - min_time > time_threshold:
+            return float('inf')
+        else:
+            return distance(sp_position, self.centroid)
+
     def new_centroid(self, spawnpoint):
-        f = len(self._spawnpoints) / (len(self._spawnpoints) + 1.0)
+        sp_count = len(self._spawnpoints)
+        f = sp_count / (sp_count + 1.0)
         new_centroid = intermediate_point(
             (spawnpoint['lat'], spawnpoint['lng']), self.centroid, f)
 
         return new_centroid
 
+    def test_spawnpoint(self, spawnpoint, radius, time_threshold):
+        # Discard spawn points outside the time frame or too far away.
+        if self.get_score(spawnpoint, time_threshold) > 2 * radius:
+            return False
 
-def cost(spawnpoint, cluster, time_threshold):
-    sp_position = (spawnpoint['lat'], spawnpoint['lng'])
-    distance = equi_rect_distance(sp_position, cluster.centroid) * 1000
+        new_centroid = self.new_centroid(spawnpoint)
 
-    min_time = min(cluster.min_time, spawnpoint['time'])
-    max_time = max(cluster.max_time, spawnpoint['time'])
+        # Check if spawn point is within range of the new centroid.
+        if (distance((spawnpoint['lat'], spawnpoint['lng']), new_centroid) >
+                radius):
+            return False
 
-    if max_time - min_time > time_threshold:
-        return float('inf')
+        # Check if cluster's spawn points remain in range of the new centroid.
+        if any(distance((x['lat'], x['lng']), new_centroid) >
+                radius for x in self._spawnpoints):
+            return False
 
-    return distance
-
-
-def check_cluster(spawnpoint, cluster, radius, time_threshold):
-    # Discard spawn points with infinite cost or too far away.
-    if cost(spawnpoint, cluster, time_threshold) > 2 * radius:
-        return False
-
-    new_centroid = cluster.new_centroid(spawnpoint)
-
-    # Check if new centroid is close enough to spawn point.
-    if equi_rect_distance((spawnpoint['lat'], spawnpoint['lng']),
-                          new_centroid) * 1000 > radius:
-        return False
-
-    # Check if new centroid is close enough to each spawn points in cluster.
-    if any(equi_rect_distance((x['lat'], x['lng']), new_centroid) * 1000 >
-            radius for x in cluster):
-        return False
-
-    return True
+        return True
 
 
-def cluster(spawnpoints, radius, time_threshold):
-    clusters = []
+# Group spawn points with similar spawn times that are close to each other.
+def cluster_spawnpoints(spawnpoints, radius=70, time_threshold=240):
+    # Initialize cluster list with the first spawn point available.
+    clusters = [SpawnCluster(spawnpoints.pop())]
+    for sp in spawnpoints:
+        # Pick the closest cluster compatible to current spawn point.
+        c = min(clusters, key=lambda x: x.get_score(sp, time_threshold))
 
-    for p in spawnpoints:
-        if len(clusters) == 0:
-            clusters.append(SpawnCluster(p))
+        if c.test_spawnpoint(sp, radius, time_threshold):
+            c.append(sp)
         else:
-            c = min(clusters, key=lambda x: cost(p, x, time_threshold))
+            c = SpawnCluster(sp)
+            clusters.append(c)
 
-            if check_cluster(p, c, radius, time_threshold):
-                c.append(p)
-            else:
-                c = SpawnCluster(p)
-                clusters.append(c)
-    return clusters
-
-
-def cluster_spawnpoints(spawns, radius=70, time_threshold=240):
-    # Group spawn points with similar spawn times that are close to each other.
-    clusters = cluster(spawns, radius, time_threshold)
-
-    # Output spawn points from generated clusters.
+    # Output new spawn points from generated clusters. Use the latest time
+    # to be sure that every spawn point in the cluster has already spawned.
     result = []
     for c in clusters:
-        sp = dict()
-        sp['lat'] = c.centroid[0]
-        sp['lng'] = c.centroid[1]
-        # Pick the latest time so earlier spawn points have already spawned.
-        sp['time'] = c.max_time
-        sp['spawnpoint_id'] = c.spawnpoint_id
-        sp['appears'] = c.appears
-        sp['leaves'] = c.leaves
-        result.append(sp)
+        result.append({
+            'spawnpoint_id': c.spawnpoint_id,
+            'lat': c.centroid[0],
+            'lng': c.centroid[1],
+            'time': c.max_time,
+            'appears': c.appears,
+            'leaves': c.leaves
+        })
 
     return result
