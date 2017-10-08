@@ -341,16 +341,17 @@ class Pokemon(BaseModel):
         if found == 0:
             pokemon_count = 0
         spawn_rate = round(100 * pokemon_count / float(total), 4)
-        if spawn_rate > 1:
-            spawn_group = 'Common'
-        elif spawn_rate > 0.5 and spawn_rate < 1:
-            spawn_group = 'Uncommon'
-        elif spawn_rate > 0.03 and spawn_rate < 0.5:
-            spawn_group = 'Rare'
-        elif spawn_rate > 0.01 and spawn_rate < 0.03:
-            spawn_group = 'Very Rare'
-        elif spawn_rate < 0.01:
+
+        if spawn_rate < 0.01:
             spawn_group = 'Ultra Rare'
+        elif spawn_rate < 0.03:
+            spawn_group = 'Very Rare'
+        elif spawn_rate < 0.5:
+            spawn_group = 'Rare'
+        elif spawn_rate < 1:
+            spawn_group = 'Uncommon'
+        else:
+            spawn_group = 'Common'
 
         return i8ln(spawn_group)
 
