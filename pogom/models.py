@@ -42,7 +42,7 @@ args = get_args()
 flaskDb = FlaskDB()
 cache = TTLCache(maxsize=100, ttl=60 * 5)
 
-db_schema_version = 20
+db_schema_version = 21
 
 
 class MyRetryDB(RetryOperationalError, PooledMySQLDatabase):
@@ -303,7 +303,8 @@ class Pokemon(LatLongModel):
         if timediff:
             timediff = datetime.utcnow() - timedelta(hours=timediff)
         query = (Pokemon
-                 .select(Pokemon.latitude, Pokemon.longitude,
+                 .select(Pokemon.latitude,
+                         Pokemon.longitude,
                          Pokemon.pokemon_id,
                          fn.Count(Pokemon.spawnpoint_id).alias('count'),
                          Pokemon.spawnpoint_id)
@@ -519,6 +520,7 @@ class Gym(LatLongModel):
                            GymMember.deployment_time,
                            GymMember.last_scanned,
                            GymPokemon.pokemon_id,
+                           GymPokemon.form,
                            Trainer.name.alias('trainer_name'),
                            Trainer.level.alias('trainer_level'))
                        .join(Gym, on=(GymMember.gym_id == Gym.gym_id))
@@ -601,6 +603,7 @@ class Gym(LatLongModel):
                            GymPokemon.iv_attack,
                            GymPokemon.iv_defense,
                            GymPokemon.iv_stamina,
+                           GymPokemon.form,
                            Trainer.name.alias('trainer_name'),
                            Trainer.level.alias('trainer_level'))
                    .join(Gym, on=(GymMember.gym_id == Gym.gym_id))
@@ -1742,6 +1745,7 @@ class GymPokemon(BaseModel):
     iv_defense = SmallIntegerField(null=True)
     iv_stamina = SmallIntegerField(null=True)
     iv_attack = SmallIntegerField(null=True)
+    form = SmallIntegerField(null=True)
     last_seen = DateTimeField(default=datetime.utcnow)
 
 
@@ -3067,6 +3071,11 @@ def database_migrate(db, old_ver):
                                     null=False, default=datetime.utcnow())),
             migrator.add_column('gym', 'total_cp',
                                 SmallIntegerField(null=False, default=0)))
+
+    if old_ver < 21:
+        migrate(
+            migrator.add_column('gympokemon', 'form',
+                                SmallIntegerField(null=True, default=0)))
 
     # Always log that we're done.
     log.info('Schema upgrade complete.')
