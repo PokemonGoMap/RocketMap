@@ -463,7 +463,7 @@ def get_args():
     parser.add_argument('-el', '--encrypt-lib',
                         help=('Path to encrypt lib to be used instead of ' +
                               'the shipped ones.'))
-    parser.add_argument('-odt', '--on-demand_timeout',
+    parser.add_argument('-odt', '--on-demand-timeout',
                         help=('Pause searching while web UI is inactive ' +
                               'for this timeout (in seconds).'),
                         type=int, default=0)

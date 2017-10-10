@@ -387,7 +387,7 @@ class SpawnScan(BaseScheduler):
                     from_now = time - cur_sec()
                     appears = now() + from_now
                 else:
-                    # Won't spawn till next hour.
+                    # Won't spawn until next hour.
                     late_by = cur_sec() - time
                     appears = now() + 3600 - late_by
 
@@ -465,10 +465,10 @@ class SpawnScan(BaseScheduler):
         wait = 0
         wait_msg = 'Waiting for item from queue.'
 
-        last_action = status.get('last_scan_date', False)
-        if last_action and self.args.kph:
+        worker_loc = (status['latitude'], status['longitude'])
+        if worker_loc[0] and worker_loc[1] and self.args.kph:
             now_date = datetime.utcnow()
-            worker_loc = [status['latitude'], status['longitude']]
+            last_action = status['last_scan_date']
             meters = distance(step_location, worker_loc)
             wait = int(max(meters / self.args.kph * 3.6
                            - (now_date - last_action).total_seconds(), 0))
@@ -489,6 +489,14 @@ class SpawnScan(BaseScheduler):
                         'abandoning location.').format(step_location[0],
                                                        step_location[1])
         }
+
+        if remain < self.args.min_seconds_left:
+            messages['wait'] = ('Unable to reach {:6f},{:6f}, under the ' +
+                                'speed limit.').format(step_location[0],
+                                                       step_location[1])
+            # Future improvement: insert the item back into the queue, hoping
+            # that another worker may reach the scan location in time.
+            return -1, 0, 0, 0, messages, 0
 
         return step, step_location, appears, leaves, messages, wait
 
