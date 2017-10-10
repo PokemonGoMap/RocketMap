@@ -13,6 +13,7 @@
 #auth-service:                  # ptc (default) or google
 #username:                      # Usernames, one per account. (default=[])
 #password:                      # Passwords, either single one for all accounts or one per account. (default=[])
+#hash-key:                      # Key for hash server (default=None)
 
 
 # Common settings
@@ -20,7 +21,6 @@
 
 #host:                          # Address to listen on (default='127.0.0.1')
 #port:                          # Port to listen on (default=5000)
-#hash-key:                      # Key for hash server (default=None)
 #accountcsv:                    # Load accounts instead from a CSV file containing "auth-service,username,password" lines.
 #speed-scan                     # Use speed-scan as the search scheduler.
 #location:                      # Location, can be an address or coordinates.
@@ -46,7 +46,6 @@
 #db-user:                       # Required for mysql
 #db-pass:                       # Required for mysql
 #db-port:                       # Required for mysql (default=3306)
-#db-max_connections:            # Max connections (per thread) for the database. (default=5)
 #db-threads:                    # Number of db threads; increase if the db queue falls behind. (default=1)
 
 
@@ -59,6 +58,13 @@
                                 # Scans in a circle based on step_limit when on DB.
                                 # A spawnpoint-file can be added optinal as value for "spawnpoint-scanning".
 #dump-spawnpoints               # Dump the spawnpoints from the db to json (only for use with -ss).
+
+
+# Geofence settings
+###################
+
+#geofence-file:                 # Geofence file to define outer borders of the scan area.
+#geofence-excluded-file:        # File to define forbidden areas inside scan area. Regarded this as inverted geofence. Can be combined with geofence-file.
 
 
 # Search settings
@@ -78,7 +84,8 @@
 #skip-empty                     # Enables skipping of empty cells in normal scans - requires previously populated database. (not to be used with -ss)
 #min-seconds-left:              # Time that must be left on a spawn before considering it too late and skipping it. (default=0)
 #gym-info                       # Enables detailed gym info collection. (default=False)
-#complete-tutorial              # Complete ToS and tutorial steps on accounts if they haven't already.
+#pokestop-spinning              # Spin Pokestops with "50%" Chance (default=False)
+#account-max-spins              # Maximum number of Pokestop spins per hour (default=80)
 #on-demand_timeout:             # Pause searching while web UI is inactive for this timeout (in seconds). (default=0)
 
 
@@ -127,12 +134,14 @@
 #proxy:                         # Proxy URL e.g. socks5://127.0.0.1:9050 or a list of proxies
                                 # e.g. [socks5://127.0.0.1:9050,socks5://127.0.0.1:9050]
 #proxy-skip-check               # Disable checking of proxies before start.
-#proxy-timeout:                 # Timeout before proceeding with next proxy while checking if the proxy works. (default=5)
+#proxy-test-timeout:            # Timeout before proceeding with next proxy while checking if the proxy works. (default=5)
+#proxy-test-retries:            # Number of times to retry sending proxy test requests on failure. (default=0)
+#proxy-test-backoff-factor:     # Factor (in seconds) by which the delay until next retry will increase. (default=0.25)
+#proxy-test-concurrency:        # Async requests pool size. (default=0 for automatic optimal sizing)
 #proxy-display:                 # Used with -ps, full = display complete proxy address. Index = displays just the index for that proxy. (default='index')
 #proxy-file:                    # Load proxy list from text file (one proxy per line), overrides #proxy.
 #proxy-refresh:                 # Period of proxy file reloading, in seconds. Works only with proxy-file. (default=0, 0 to disable)
 #proxy-rotation:                # Enable proxy rotation with account changing for search threads (none/round/random). (default='none')
-
 
 
 # Webhook settings
@@ -140,14 +149,15 @@
 
 #webhook:                       # Webhook URL e.g. http://127.0.0.1:12345 or a list for multiple webhooks
                                 # [http://127.0.0.1:1345,http://127.0.0.1:12346] (default=None)
+#wh-types:[]                    # List of events to be sent: pokemon, gym, raid, egg, tth, gym-info, pokestop, lure, captcha. (default= nothing)
 #wh-threads:                    # Number of webhook threads; increase if the webhook queue falls behind. (default=1)
-#webhook-updates-only           # Only send updates to webhooks (excludes gyms & non-lured pokéstops). (default=False)
-#webhook-scheduler-updates      # Send webhook updates with scheduler status (use with -wh). (default=True)
 #wh-retries:                    # Number of times to retry sending webhook data on failure (default=5)
 #wh-timeout:                    # Timeout (in seconds) for webhook requests (default=2).
 #wh-concurrency:                # Async requests pool size. (default=25)
 #wh-backoff-factor:             # Factor (in seconds) by which the delay until next retry will increase. (default=0.25).
 #wh-lfu-size:                   # Webhook LFU cache max size (default=1000).
+#wh-frame-interval:             # Time to wait for wh message grouping (msecs) (default=500)
+
 
 
 # Status and logs
@@ -173,10 +183,9 @@
 # Misc
 ######
 
-#verbose                        # Show debug messages from PokemonGo-Map and pgoapi.
-                                # Optionally specify file to log to by adding ": PATH/FILENAME.log". (default=False)
-#very-verbose                   # Like verbose, but show debug messages from all modules as well.
-                                # Optionally specify file to log to like above mentioned. (default=False)
+#verbosity						          # Show debug messages from RocketMap and PGoApi. Values are 1,2,3 (default=0)
+#no-file-logs					          # Disables logging to files except for access.log. (default=False)
+#log-path						            # Defines the path logs are saved at. (default=logs/)
 #no-version-check               # Disable API version check. (default=False)
 #version-check-interval:        # Interval to check API version in seconds (Default: in range [60, 300]).
 #mock:                          # Mock mode - point to a fpgo endpoint instead of using the real PogoApi,

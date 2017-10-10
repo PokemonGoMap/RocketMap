@@ -47,7 +47,6 @@ add it to __scheduler_classes
 import itertools
 import logging
 import math
-import geopy
 import json
 import time
 import sys
@@ -62,8 +61,9 @@ from datetime import datetime, timedelta
 from .transform import get_new_coords
 from .models import (hex_bounds, SpawnPoint, ScannedLocation,
                      ScanSpawnPoint, HashKeys)
-from .utils import now, cur_sec, cellid, equi_rect_distance
+from .utils import now, cur_sec, cellid, distance
 from .altitude import get_altitude
+from .geofence import Geofences
 
 log = logging.getLogger(__name__)
 
@@ -76,6 +76,7 @@ class BaseScheduler(object):
     def __init__(self, queues, status, args):
         self.queues = queues
         self.status = status
+        self.geofences = Geofences()
         self.args = args
         self.scan_location = False
         self.ready = False
@@ -271,6 +272,14 @@ class HexSearch(BaseScheduler):
             else:
                 results = results[-7:] + results[:-7]
 
+        # Geofence results.
+        if self.geofences.is_enabled():
+            results = self.geofences.get_geofenced_coordinates(results)
+            if not results:
+                log.error('No cells regarded as valid for desired scan area. '
+                          'Check your provided geofences. Aborting.')
+                sys.exit()
+
         # Add the required appear and disappear times.
         locationsZeroed = []
         for step, location in enumerate(results, 1):
@@ -305,7 +314,7 @@ class HexSearchSpawnpoint(HexSearch):
 
     def _any_spawnpoints_in_range(self, coords, spawnpoints):
         return any(
-            geopy.distance.distance(coords, x).meters <= 70
+            distance(coords, x) <= 70
             for x in spawnpoints)
 
     # Extend the generate_locations function to remove locations with no
@@ -368,6 +377,15 @@ class SpawnScan(BaseScheduler):
             self.locations = SpawnPoint.get_spawnpoints_in_hex(
                 self.scan_location, self.args.step_limit)
 
+        # Geofence spawnpoints.
+        if self.geofences.is_enabled():
+            self.locations = self.geofences.get_geofenced_coordinates(
+                self.locations)
+            if not self.locations:
+                log.error('No cells regarded as valid for desired scan area. '
+                          'Check your provided geofences. Aborting.')
+                sys.exit()
+
         # Well shit...
         # if not self.locations:
         #    raise Exception('No availabe spawn points!')
@@ -380,7 +398,7 @@ class SpawnScan(BaseScheduler):
 
         # locations.sort(key=itemgetter('time'))
 
-        if self.args.very_verbose:
+        if self.args.verbose:
             for i in self.locations:
                 sec = i['time'] % 60
                 minute = (i['time'] / 60) % 60
@@ -574,6 +592,14 @@ class SpeedScan(HexSearch):
                     loc = get_new_coords(star_loc, xdist * (j), 210 + 60 * i)
                     results.append((loc[0], loc[1], 0))
 
+        # Geofence results.
+        if self.geofences.is_enabled():
+            results = self.geofences.get_geofenced_coordinates(results)
+            if not results:
+                log.error('No cells regarded as valid for desired scan area. '
+                          'Check your provided geofences. Aborting.')
+                sys.exit()
+
         generated_locations = []
         for step, location in enumerate(results):
             altitude = get_altitude(self.args, location)
@@ -723,7 +749,6 @@ class SpeedScan(HexSearch):
                 self.tth_found = 0
                 self.active_sp = 0
                 found_percent = 100.0
-                good_percent = 100.0
                 spawns_reached = 100.0
                 spawnpoints = SpawnPoint.select_in_hex_by_cellids(
                     self.scans.keys(), self.location_change_date)
@@ -850,7 +875,10 @@ class SpeedScan(HexSearch):
             ms = ((now_date - self.refresh_date).total_seconds() +
                   self.refresh_ms)
             best = {}
-            worker_loc = [status['latitude'], status['longitude']]
+            if not status['latitude']:
+                worker_loc = None
+            else:
+                worker_loc = [status['latitude'], status['longitude']]
             last_action = status['last_scan_date']
 
             # Logging.
@@ -929,10 +957,14 @@ class SpeedScan(HexSearch):
 
                 # If we are going to get there before it starts then ignore.
                 loc = item['loc']
-                distance = equi_rect_distance(loc, worker_loc)
-                secs_to_arrival = distance / self.args.kph * 3600
-                secs_waited = (now_date - last_action).total_seconds()
-                secs_to_arrival = max(secs_to_arrival - secs_waited, 0)
+                if worker_loc:
+                    meters = distance(loc, worker_loc)
+                    secs_to_arrival = meters / self.args.kph * 3.6
+                    secs_waited = (now_date - last_action).total_seconds()
+                    secs_to_arrival = max(secs_to_arrival - secs_waited, 0)
+                else:
+                    meters = 0
+                    secs_to_arrival = 0
                 if ms + secs_to_arrival < item['start']:
                     count_early += 1
                     continue
@@ -949,7 +981,7 @@ class SpeedScan(HexSearch):
 
                 # For spawns, score is purely based on how close they are to
                 # last worker position
-                score = score / (distance + .01)
+                score = score / (meters + 10.0)
 
                 if score > best.get('score', 0):
                     best = {'score': score, 'i': i,
@@ -999,7 +1031,6 @@ class SpeedScan(HexSearch):
                 'invalid': ('Invalid response at step {}, abandoning ' +
                             'location.').format(step)
             }
-
             try:
                 item = q[i]
             except IndexError:
@@ -1013,10 +1044,9 @@ class SpeedScan(HexSearch):
                                         + ' under the speed limit.')
                 return -1, 0, 0, 0, messages, 0
 
-            distance = equi_rect_distance(loc, worker_loc)
-            if (distance >
-                    (now_date - last_action).total_seconds() *
-                    self.args.kph / 3600):
+            meters = distance(loc, worker_loc) if worker_loc else 0
+            if (meters > (now_date - last_action).total_seconds() *
+                    self.args.kph / 3.6):
                 # Flag item as "parked" by a specific thread, because
                 # we're waiting for it. This will avoid all threads "walking"
                 # to the same item.
@@ -1027,8 +1057,7 @@ class SpeedScan(HexSearch):
                 item['parked_last_update'] = default_timer()
 
                 messages['wait'] = 'Moving {}m to step {} for a {}.'.format(
-                    int(distance * 1000), step,
-                    best['kind'])
+                    int(meters), step, best['kind'])
                 # So we wait while the worker arrives at the destination
                 # But we don't want to sleep too long or the item might get
                 # taken by another worker
@@ -1077,7 +1106,6 @@ class SpeedScan(HexSearch):
                 log.info('Step item has changed since queue refresh')
                 return
             item = self.queues[0][status['index_of_queue_item']]
-            safety_buffer = item['end'] - scan_secs
             start_secs = item['start']
             if item['kind'] == 'spawn':
                 start_secs -= self.args.spawn_delay
@@ -1112,10 +1140,11 @@ class SpeedScan(HexSearch):
                     # Did we find the spawn?
                     if sp_id in parsed['sp_id_list']:
                         self.spawns_found += 1
-                    elif start_delay > 0:   # not sure why this could be
-                                            # negative, but sometimes it is
+                    elif start_delay > 0:
+                        # Not sure why this could be negative,
+                        # but sometimes it is.
 
-                        # if not, record ID and put back in queue
+                        # If not, record ID and put back in queue.
                         self.spawns_missed_delay[
                             sp_id] = self.spawns_missed_delay.get(sp_id, [])
                         self.spawns_missed_delay[sp_id].append(start_delay)

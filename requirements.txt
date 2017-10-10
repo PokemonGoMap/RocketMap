@@ -1,5 +1,5 @@
 six==1.10.0
-Flask==0.11.1
+Flask==0.12.2
 Jinja2==2.8
 MarkupSafe==0.23
 Werkzeug==0.11.10
@@ -14,14 +14,16 @@ PyMySQL==0.7.5
 flask-cors==2.1.2
 flask-compress==1.3.0
 LatLon==1.0.1
-git+https://github.com/pogodevorg/pgoapi.git@46d6e326cdcd471e1f2dca987239a5506049a711#egg=pgoapi
+git+https://github.com/sebastienvercammen/pgoapi.git@8d1a37ca7ef5d55f09f0284867031aded39648f4#egg=pgoapi
 xxhash
 sphinx==1.4.5
 sphinx-autobuild==0.6.0
 recommonmark==0.4.0
 sphinx_rtd_theme==0.1.9
-requests==2.13.0
+requests[security]==2.18.4
 requests-futures==0.9.7
 PySocks==1.5.6
 git+https://github.com/maddhatter/Flask-CacheBust.git@38d940cc4f18b5fcb5687746294e0360640a107e#egg=flask_cachebust
 cachetools==2.0.0
+cHaversine==0.3.0
+psutil==5.3.1

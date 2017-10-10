@@ -8,6 +8,7 @@ import time
 import re
 import ssl
 import json
+import requests
 
 from distutils.version import StrictVersion
 
@@ -16,24 +17,50 @@ from queue import Queue
 from flask_cors import CORS
 from flask_cache_bust import init_cache_busting
 
-from pogom import config
 from pogom.app import Pogom
-from pogom.utils import get_args, now, extract_sprites, gmaps_reverse_geolocate
+from pogom.utils import (get_args, now, gmaps_reverse_geolocate,
+                         log_resource_usage_loop, get_debug_dump_link)
 from pogom.altitude import get_gmaps_altitude
 
-from pogom.search import search_overseer_thread
 from pogom.models import (init_database, create_tables, drop_tables,
                           PlayerLocale, SpawnPoint, db_updater, clean_db_loop,
                           verify_table_encoding, verify_database_schema)
 from pogom.webhook import wh_updater
 
-from pogom.proxy import check_proxies, proxies_refresher
+from pogom.proxy import load_proxies, check_proxies, proxies_refresher
+from pogom.search import search_overseer_thread
+from time import strftime
+
+
+class LogFilter(logging.Filter):
+
+    def __init__(self, level):
+        self.level = level
+
+    def filter(self, record):
+        return record.levelno < self.level
+
 
 # Moved here so logger is configured at load time.
-logging.basicConfig(
-    format='%(asctime)s [%(threadName)18s][%(module)14s][%(levelname)8s] ' +
-    '%(message)s')
+formatter = logging.Formatter(
+    '%(asctime)s [%(threadName)18s][%(module)14s][%(levelname)8s] %(message)s')
+
+# Redirect messages lower than WARNING to stdout
+stdout_hdlr = logging.StreamHandler(sys.stdout)
+stdout_hdlr.setFormatter(formatter)
+log_filter = LogFilter(logging.WARNING)
+stdout_hdlr.addFilter(log_filter)
+stdout_hdlr.setLevel(5)
+
+# Redirect messages equal or higher than WARNING to stderr
+stderr_hdlr = logging.StreamHandler(sys.stderr)
+stderr_hdlr.setFormatter(formatter)
+stderr_hdlr.setLevel(logging.WARNING)
+
 log = logging.getLogger()
+log.addHandler(stdout_hdlr)
+log.addHandler(stderr_hdlr)
+
 
 # Assert pgoapi is installed.
 try:
@@ -64,7 +91,16 @@ def install_thread_excepthook():
         except (KeyboardInterrupt, SystemExit):
             raise
         except:
-            sys.excepthook(*sys.exc_info())
+            exc_type, exc_value, exc_trace = sys.exc_info()
+
+            # Handle Flask's broken pipe when a client prematurely ends
+            # the connection.
+            if str(exc_value) == '[Errno 32] Broken pipe':
+                pass
+            else:
+                log.critical('Unhandled patched exception (%s): "%s".',
+                             exc_type, exc_value)
+                sys.excepthook(exc_type, exc_value, exc_trace)
     Thread.run = run
 
 
@@ -103,9 +139,8 @@ def validate_assets(args):
     # You need custom image files now.
     if not os.path.isfile(
             os.path.join(root_path, 'static/icons-sprite.png')):
-        log.info('Sprite files not present, extracting bundled ones...')
-        extract_sprites(root_path)
-        log.info('Done!')
+        log.critical(assets_error_log)
+        return False
 
     # Check if custom.css is used otherwise fall back to default.
     if os.path.exists(os.path.join(root_path, 'static/css/custom.css')):
@@ -116,6 +151,15 @@ def validate_assets(args):
         args.custom_css = False
         log.info('No file \"custom.css\" found, using default settings.')
 
+    # Check if custom.js is used otherwise fall back to default.
+    if os.path.exists(os.path.join(root_path, 'static/js/custom.js')):
+        args.custom_js = True
+        log.info(
+            'File \"custom.js\" found, applying user-defined settings.')
+    else:
+        args.custom_js = False
+        log.info('No file \"custom.js\" found, using default settings.')
+
     return True
 
 
@@ -125,7 +169,7 @@ def can_start_scanning(args):
     api_version_error = (
         'The installed pgoapi is out of date. Please refer to ' +
         'http://rocketmap.readthedocs.io/en/develop/common-issues/' +
-        'faq.html#i-get-an-error-about-pgooapi-version'
+        'faq.html#i-get-an-error-about-pgoapi-version'
     )
 
     # Assert pgoapi >= pgoapi_version.
@@ -160,58 +204,31 @@ def main():
 
     args = get_args()
 
-    # Add file logging if enabled.
-    if args.verbose and args.verbose != 'nofile':
-        filelog = logging.FileHandler(args.verbose)
-        filelog.setFormatter(logging.Formatter(
-            '%(asctime)s [%(threadName)16s][%(module)14s][%(levelname)8s] ' +
-            '%(message)s'))
-        logging.getLogger('').addHandler(filelog)
-    if args.very_verbose and args.very_verbose != 'nofile':
-        filelog = logging.FileHandler(args.very_verbose)
-        filelog.setFormatter(logging.Formatter(
-            '%(asctime)s [%(threadName)16s][%(module)14s][%(levelname)8s] ' +
-            '%(message)s'))
-        logging.getLogger('').addHandler(filelog)
+    set_log_and_verbosity(log)
 
-    if args.verbose or args.very_verbose:
-        log.setLevel(logging.DEBUG)
-    else:
-        log.setLevel(logging.INFO)
+    # Abort if only-server and no-server are used together
+    if args.only_server and args.no_server:
+        log.critical(
+            "You can't use no-server and only-server at the same time, silly.")
+        sys.exit(1)
+
+    # Abort if status name is not valid.
+    regexp = re.compile('^([\w\s\-.]+)$')
+    if not regexp.match(args.status_name):
+        log.critical('Status name contains illegal characters.')
+        sys.exit(1)
+
+    # Stop if we're just looking for a debug dump.
+    if args.dump:
+        log.info('Retrieving environment info...')
+        hastebin = get_debug_dump_link()
+        log.info('Done! Your debug link: https://hastebin.com/%s.txt',
+                 hastebin)
+        sys.exit(1)
 
     # Let's not forget to run Grunt / Only needed when running with webserver.
     if not args.no_server and not validate_assets(args):
         sys.exit(1)
-
-    # These are very noisy, let's shush them up a bit.
-    logging.getLogger('peewee').setLevel(logging.INFO)
-    logging.getLogger('requests').setLevel(logging.WARNING)
-    logging.getLogger('pgoapi.pgoapi').setLevel(logging.WARNING)
-    logging.getLogger('pgoapi.rpc_api').setLevel(logging.INFO)
-    logging.getLogger('werkzeug').setLevel(logging.ERROR)
-
-    config['parse_pokemon'] = not args.no_pokemon
-    config['parse_pokestops'] = not args.no_pokestops
-    config['parse_gyms'] = not args.no_gyms
-    config['parse_raids'] = not args.no_raids
-
-    # Turn these back up if debugging.
-    if args.verbose or args.very_verbose:
-        logging.getLogger('pgoapi').setLevel(logging.DEBUG)
-    if args.very_verbose:
-        logging.getLogger('peewee').setLevel(logging.DEBUG)
-        logging.getLogger('requests').setLevel(logging.DEBUG)
-        logging.getLogger('pgoapi.pgoapi').setLevel(logging.DEBUG)
-        logging.getLogger('pgoapi.rpc_api').setLevel(logging.DEBUG)
-        logging.getLogger('rpc_api').setLevel(logging.DEBUG)
-        logging.getLogger('werkzeug').setLevel(logging.DEBUG)
-
-    # Web access logs.
-    if args.access_logs:
-        logger = logging.getLogger('werkzeug')
-        handler = logging.FileHandler('access.log')
-        logger.setLevel(logging.INFO)
-        logger.addHandler(handler)
 
     # Use lat/lng directly if matches such a pattern.
     prog = re.compile("^(\-?\d+\.\d+),?\s?(\-?\d+\.\d+)$")
@@ -256,14 +273,13 @@ def main():
     if args.encounter:
         log.info('Encountering pokemon enabled.')
 
-    config['LOCALE'] = args.locale
-    config['CHINA'] = args.china
-
-    # if we're clearing the db, do not bother with the blacklist
-    if args.clear_db:
-        args.disable_blacklist = True
-    app = Pogom(__name__)
-    app.before_request(app.validate_request)
+    app = None
+    if not args.no_server and not args.clear_db:
+        app = Pogom(__name__,
+                    root_path=os.path.dirname(
+                              os.path.abspath(__file__)).decode('utf8'))
+        app.before_request(app.validate_request)
+        app.set_current_location(position)
 
     db = init_database(app)
     if args.clear_db:
@@ -277,20 +293,28 @@ def main():
 
     create_tables(db)
 
-    # fixing encoding on present and future tables
+    # Fix encoding on present and future tables.
     verify_table_encoding(db)
 
     if args.clear_db:
-        log.info("Drop and recreate is complete. Now remove -cd and restart.")
+        log.info(
+            'Drop and recreate is complete. Now remove -cd and restart.')
         sys.exit()
 
-    app.set_current_location(position)
+    args.root_path = os.path.dirname(os.path.abspath(__file__))
 
     # Control the search status (running or not) across threads.
-    pause_bit = Event()
-    pause_bit.clear()
+    control_flags = {
+      'on_demand': Event(),
+      'api_watchdog': Event(),
+      'search_control': Event()
+    }
+
+    for flag in control_flags.values():
+        flag.clear()
+
     if args.on_demand_timeout > 0:
-        pause_bit.set()
+        control_flags['on_demand'].set()
 
     heartbeat = [now()]
 
@@ -305,12 +329,12 @@ def main():
     for i in range(args.db_threads):
         log.debug('Starting db-updater worker thread %d', i)
         t = Thread(target=db_updater, name='db-updater-{}'.format(i),
-                   args=(args, db_updates_queue, db))
+                   args=(db_updates_queue, db))
         t.daemon = True
         t.start()
 
-    # db cleaner; really only need one ever.
-    if not args.disable_clean:
+    # Database cleaner; really only need one ever.
+    if args.enable_clean:
         t = Thread(target=clean_db_loop, name='db-cleaner', args=(args,))
         t.daemon = True
         t.start()
@@ -322,16 +346,20 @@ def main():
     wh_updates_queue = Queue()
     wh_key_cache = {}
 
-    # Thread to process webhook updates.
-    for i in range(args.wh_threads):
-        log.debug('Starting wh-updater worker thread %d', i)
-        t = Thread(target=wh_updater, name='wh-updater-{}'.format(i),
-                   args=(args, wh_updates_queue, wh_key_cache))
-        t.daemon = True
-        t.start()
+    if len(args.wh_types) == 0:
+        log.info('Webhook disabled.')
+    else:
+        log.info('Webhook enabled for events: sending %s to %s.',
+                 args.wh_types,
+                 args.webhooks)
 
-    config['ROOT_PATH'] = app.root_path
-    config['GMAPS_KEY'] = args.gmaps_key
+        # Thread to process webhook updates.
+        for i in range(args.wh_threads):
+            log.debug('Starting wh-updater worker thread %d', i)
+            t = Thread(target=wh_updater, name='wh-updater-{}'.format(i),
+                       args=(args, wh_updates_queue, wh_key_cache))
+            t.daemon = True
+            t.start()
 
     if not args.only_server:
         # Check if we are able to scan.
@@ -339,10 +367,13 @@ def main():
             sys.exit(1)
 
         # Processing proxies if set (load from file, check and overwrite old
-        # args.proxy with new working list)
-        args.proxy = check_proxies(args)
+        # args.proxy with new working list).
+        args.proxy = load_proxies(args)
 
-        # Run periodical proxy refresh thread
+        if args.proxy and not args.proxy_skip_check:
+            args.proxy = check_proxies(args, args.proxy)
+
+        # Run periodical proxy refresh thread.
         if (args.proxy_file is not None) and (args.proxy_refresh > 0):
             t = Thread(target=proxies_refresher,
                        name='proxy-refresh', args=(args,))
@@ -366,7 +397,8 @@ def main():
             }
             db_updates_queue.put((PlayerLocale, {0: db_player_locale}))
         else:
-            log.debug('Existing player locale has been retrieved from the DB.')
+            log.debug(
+                'Existing player locale has been retrieved from the DB.')
 
         # Gather the Pokemon!
 
@@ -376,13 +408,14 @@ def main():
                 args.spawnpoint_scanning != 'nofile' and
                 args.dump_spawnpoints):
             with open(args.spawnpoint_scanning, 'w+') as file:
-                log.info('Saving spawn points to %s', args.spawnpoint_scanning)
+                log.info(
+                    'Saving spawn points to %s', args.spawnpoint_scanning)
                 spawns = SpawnPoint.get_spawnpoints_in_hex(
                     position, args.step_limit)
                 file.write(json.dumps(spawns))
                 log.info('Finished exporting spawn points')
 
-        argset = (args, new_location_queue, pause_bit,
+        argset = (args, new_location_queue, control_flags,
                   heartbeat, db_updates_queue, wh_updates_queue)
 
         log.debug('Starting a %s search thread', args.scheduler)
@@ -391,22 +424,22 @@ def main():
         search_thread.daemon = True
         search_thread.start()
 
-    if args.cors:
-        CORS(app)
-
-    # No more stale JS.
-    init_cache_busting(app)
-
-    app.set_search_control(pause_bit)
-    app.set_heartbeat_control(heartbeat)
-    app.set_location_queue(new_location_queue)
-
     if args.no_server:
         # This loop allows for ctrl-c interupts to work since flask won't be
         # holding the program open.
         while search_thread.is_alive():
             time.sleep(60)
     else:
+
+        if args.cors:
+            CORS(app)
+
+        # No more stale JS.
+        init_cache_busting(app)
+
+        app.set_control_flags(control_flags)
+        app.set_heartbeat_control(heartbeat)
+        app.set_location_queue(new_location_queue)
         ssl_context = None
         if (args.ssl_certificate and args.ssl_privatekey and
                 os.path.exists(args.ssl_certificate) and
@@ -415,12 +448,77 @@ def main():
             ssl_context.load_cert_chain(
                 args.ssl_certificate, args.ssl_privatekey)
             log.info('Web server in SSL mode.')
-        if args.verbose or args.very_verbose:
+        if args.verbose:
             app.run(threaded=True, use_reloader=False, debug=True,
                     host=args.host, port=args.port, ssl_context=ssl_context)
         else:
             app.run(threaded=True, use_reloader=False, debug=False,
                     host=args.host, port=args.port, ssl_context=ssl_context)
+
+
+def set_log_and_verbosity(log):
+    # Always write to log file.
+    args = get_args()
+    # Create directory for log files.
+    if not os.path.exists(args.log_path):
+        os.mkdir(args.log_path)
+    if not args.no_file_logs:
+        date = strftime('%Y%m%d_%H%M')
+        filename = os.path.join(
+            args.log_path, '{}_{}.log'.format(date, args.status_name))
+        filelog = logging.FileHandler(filename)
+        filelog.setFormatter(logging.Formatter(
+            '%(asctime)s [%(threadName)18s][%(module)14s][%(levelname)8s] ' +
+            '%(message)s'))
+        log.addHandler(filelog)
+
+    if args.verbose:
+        log.setLevel(logging.DEBUG)
+
+        # Let's log some periodic resource usage stats.
+        t = Thread(target=log_resource_usage_loop, name='res-usage')
+        t.daemon = True
+        t.start()
+    else:
+        log.setLevel(logging.INFO)
+
+    # These are very noisy, let's shush them up a bit.
+    logging.getLogger('peewee').setLevel(logging.INFO)
+    logging.getLogger('requests').setLevel(logging.WARNING)
+    logging.getLogger('pgoapi.pgoapi').setLevel(logging.WARNING)
+    logging.getLogger('pgoapi.rpc_api').setLevel(logging.INFO)
+    logging.getLogger('werkzeug').setLevel(logging.ERROR)
+    logging.getLogger('pogom.apiRequests').setLevel(logging.INFO)
+
+    # This sneaky one calls log.warning() on every retry.
+    urllib3_logger = logging.getLogger(requests.packages.urllib3.__package__)
+    urllib3_logger.setLevel(logging.ERROR)
+
+    # Turn these back up if debugging.
+    if args.verbose >= 2:
+        logging.getLogger('pgoapi').setLevel(logging.DEBUG)
+        logging.getLogger('pgoapi.pgoapi').setLevel(logging.DEBUG)
+        logging.getLogger('requests').setLevel(logging.DEBUG)
+        urllib3_logger.setLevel(logging.INFO)
+
+    if args.verbose >= 3:
+        logging.getLogger('peewee').setLevel(logging.DEBUG)
+        logging.getLogger('rpc_api').setLevel(logging.DEBUG)
+        logging.getLogger('pgoapi.rpc_api').setLevel(logging.DEBUG)
+        logging.getLogger('werkzeug').setLevel(logging.DEBUG)
+        logging.addLevelName(5, 'TRACE')
+        logging.getLogger('pogom.apiRequests').setLevel(5)
+
+    # Web access logs.
+    if args.access_logs:
+        date = strftime('%Y%m%d_%H%M')
+        filename = os.path.join(
+            args.log_path, '{}_{}_access.log'.format(date, args.status_name))
+
+        logger = logging.getLogger('werkzeug')
+        handler = logging.FileHandler(filename)
+        logger.setLevel(logging.INFO)
+        logger.addHandler(handler)
 
 
 if __name__ == '__main__':
