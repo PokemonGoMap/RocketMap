@@ -19,7 +19,7 @@ If there is already information in this table, click the "X"s to clear them all 
 
 ![](../_static/img/AzEGV1i.png)
 
-When the information is cleared, add two new records with the text boxes at the top with the following configuration:
+When the information is cleared, add two new records with the text boxes at the top with the following configuration (replace 11.22.33.44 with your server's IP address):
 
 ![](../_static/img/ZXMksO1.png)
 
@@ -49,4 +49,4 @@ Navigate to "Firewall" and change "Security Level" to "High." If you are running
 
 ## Finishing Up
 
-Everything should not be configured correctly! Simply visit `http://yourdomain.com/` in your browser and your map should load, all while hiding your IP address from everybody else.
+Everything should now be configured correctly! Simply visit `http://yourdomain.com/` in your browser and your map should load, all while hiding your IP address from everybody else.

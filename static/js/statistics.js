@@ -1,12 +1,5 @@
-/* Shared */
-var monthArray = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-
 /* Main stats page */
 var rawDataIsLoading = false
-var totalPokemon = 493
-var msPerMinute = 60000
-var spawnTimeMinutes = 15
-var spawnTimeMs = msPerMinute * spawnTimeMinutes
 
 function loadRawData() {
     return $.ajax({
@@ -30,160 +23,113 @@ function loadRawData() {
         },
         complete: function () {
             rawDataIsLoading = false
+        },
+        error: function () {
+            // Display error toast
+            toastr['error']('Request failed while getting data. Retrying...', 'Error getting data')
+            toastr.options = {
+                'closeButton': true,
+                'debug': false,
+                'newestOnTop': true,
+                'progressBar': false,
+                'positionClass': 'toast-top-right',
+                'preventDuplicates': true,
+                'onclick': null,
+                'showDuration': '300',
+                'hideDuration': '1000',
+                'timeOut': '25000',
+                'extendedTimeOut': '1000',
+                'showEasing': 'swing',
+                'hideEasing': 'linear',
+                'showMethod': 'fadeIn',
+                'hideMethod': 'fadeOut'
+            }
         }
     })
-}
-
-function addElement(pokemonId, name) {
-    jQuery('<div/>', {
-        id: 'seen_' + pokemonId,
-        class: 'item'
-    }).appendTo('#seen_container')
-
-    jQuery('<div/>', {
-        id: 'seen_' + pokemonId + '_base',
-        class: 'container'
-    }).appendTo('#seen_' + pokemonId)
-
-    var imageContainer = jQuery('<div/>', {
-        class: 'image'
-    }).appendTo('#seen_' + pokemonId + '_base')
-
-    jQuery('<i/>', {
-        class: 'pokemon-sprite n' + pokemonId
-    }).appendTo(imageContainer)
-
-    var baseDetailContainer = jQuery('<div/>', {
-        class: 'info'
-    }).appendTo('#seen_' + pokemonId + '_base')
-
-    jQuery('<div/>', {
-        id: 'name_' + pokemonId,
-        class: 'name'
-    }).appendTo(baseDetailContainer)
-
-    jQuery('<a/>', {
-        id: 'link_' + pokemonId,
-        href: 'http://pokemon.gameinfo.io/en/pokemon/' + pokemonId,
-        target: '_blank',
-        title: 'View in Pokedex',
-        text: name
-    }).appendTo('#name_' + pokemonId)
-
-    jQuery('<div/>', {
-        id: 'seen_' + pokemonId + '_details',
-        class: 'details'
-    }).appendTo('#seen_' + pokemonId)
-
-    jQuery('<div/>', {
-        id: 'count_' + pokemonId,
-        class: 'seen'
-    }).appendTo('#seen_' + pokemonId + '_details')
-
-    jQuery('<div/>', {
-        id: 'lastseen_' + pokemonId,
-        class: 'lastseen'
-    }).appendTo('#seen_' + pokemonId + '_details')
-
-    jQuery('<div/>', {
-        id: 'location_' + pokemonId,
-        class: 'location'
-    }).appendTo('#seen_' + pokemonId + '_details')
-
-    jQuery('<a/>', {
-        href: 'javascript:void(0);',
-        onclick: 'javascript:showOverlay(' + pokemonId + ');',
-        text: 'All Locations'
-    }).appendTo('#seen_' + pokemonId + '_details')
 }
 
 function processSeen(seen) {
-    var i
-    var total = seen.total
-    var shown = []
+    $('#stats_table > tbody').empty()
 
-    seen.pokemon.sort(function (a, b) {
-        var sort = document.getElementById('sort')
-        var order = document.getElementById('order')
+    for (var i = 0; i < seen.pokemon.length; i++) {
+        var pokemonItem = seen.pokemon[i]
 
-        if (order.options[order.selectedIndex].value === 'desc') {
-            var tmp = b
-            b = a
-            a = tmp
-        }
-
-        if (sort.options[sort.selectedIndex].value === 'id') {
-            return a['pokemon_id'] - b['pokemon_id']
-        } else if (sort.options[sort.selectedIndex].value === 'name') {
-            if (a['pokemon_name'].toLowerCase() < b['pokemon_name'].toLowerCase()) {
-                return -1
-            }
-            if (a['pokemon_name'].toLowerCase() > b['pokemon_name'].toLowerCase()) {
-                return 1
-            }
-            return 0
-        } else {
-            // Default to count
-            if (a['count'] === b['count']) { // Same count: order by id
-                return b['pokemon_id'] - a['pokemon_id']
-            }
-            return a['count'] - b['count']
-        }
-    })
-
-    for (i = seen.pokemon.length - 1; i >= 0; i--) {
-        var item = seen.pokemon[i]
-        var percentage = (item['count'] / total * 100).toFixed(4)
-        var lastSeen = new Date(item['disappear_time'])
-        lastSeen = lastSeen.getHours() + ':' +
-        ('0' + lastSeen.getMinutes()).slice(-2) + ':' +
-        ('0' + lastSeen.getSeconds()).slice(-2) + ' ' +
-        lastSeen.getDate() + ' ' +
-        monthArray[lastSeen.getMonth()] + ' ' +
-        lastSeen.getFullYear()
-        var location = (item['latitude'] * 1).toFixed(7) + ', ' + (item['longitude'] * 1).toFixed(7)
-        if (!$('#seen_' + item['pokemon_id']).length) {
-            addElement(item['pokemon_id'], item['pokemon_name'])
-        }
-        $('#count_' + item['pokemon_id']).html('<strong>Seen:</strong> ' + item['count'].toLocaleString() + ' (' + percentage + '%)')
-        $('#lastseen_' + item['pokemon_id']).html('<strong>Last Seen:</strong> ' + lastSeen)
-        $('#location_' + item['pokemon_id']).html('<strong>Location:</strong> ' + location)
-        $('#seen_' + item['pokemon_id']).show()
-        // Reverting to classic javascript here as it's supposed to increase performance
-        document.getElementById('seen_container').insertBefore(document.getElementById('seen_' + item['pokemon_id']), document.getElementById('seen_container').childNodes[0])
-        shown.push(item['pokemon_id'])
+        $('#stats_table > tbody')
+            .append(`<tr class="status_row">
+                        <td class="status_cell">
+                            <i class="pokemon-sprite n${pokemonItem.pokemon_id}"</i>
+                        </td>
+                        <td class="status_cell">
+                            ${pokemonItem.pokemon_id}                        
+                        </td>
+                        <td class="status_cell">
+                            <a href="http://pokemon.gameinfo.io/en/pokemon/${pokemonItem.pokemon_id}" target="_blank" title="View in Pokedex">
+                                ${pokemonItem.pokemon_name}
+                            </a>
+                        </td>
+                        <td class="status_cell">
+                            ${pokemonItem.count.toLocaleString()}
+                        </td>
+                        <td class="status_cell">
+                            ${(pokemonItem.count / seen.total * 100).toFixed(4)}
+                        </td>
+                        <td class="status_cell">
+                            ${moment(pokemonItem.disappear_time).format('H:mm:ss D MMM YYYY')}
+                        </td>
+                        <td class="status_cell">
+                            ${pokemonItem.latitude.toFixed(7)}, ${pokemonItem.longitude.toFixed(7)}
+                        </td>
+                        <td class="status_cell">
+                            <a href="javascript:void(0);" onclick="javascript:showOverlay(${pokemonItem.pokemon_id});">
+                                All Locations
+                            </a>
+                        </td>
+                     </tr>`)
     }
-
-    // Hide any unneeded items
-    for (i = 1; i <= totalPokemon; i++) {
-        if (shown.indexOf(i) < 0) {
-            $('#seen_' + i).hide()
-        }
-    }
-
-    document.getElementById('seen_total').innerHTML = 'Total: ' + total.toLocaleString()
 }
 
-function updateStatMap(firstRun) {
-    var duration = document.getElementById('duration')
-    var header = 'Pokemon Seen in ' + duration.options[duration.selectedIndex].text
-    if ($('#seen_header').html() !== header) {
-        $('#seen_container').hide()
-        $('#loading').show()
-        $('#seen_header').html('')
-        $('#seen_total').html('')
-    }
+function updateStats() {
+    $('#status_container').hide()
+    $('#loading').show()
+
     loadRawData().done(function (result) {
+        $('#stats_table')
+                .DataTable()
+                .destroy()
+
+        $('#status_container').show()
+        $('#loading').hide()
+
         processSeen(result.seen)
-        if ($('#seen_header').html() !== header) {
-            $('#seen_header').html(header)
-            $('#loading').hide()
-            $('#seen_container').show()
-        }
+
+        var header = 'Pokemon Seen in ' + $('#duration option:selected').text()
+        $('#name').html(header)
+        $('#message').html('Total: ' + result.seen.total.toLocaleString())
+        $('#stats_table')
+            .DataTable({
+                paging: false,
+                searching: false,
+                info: false,
+                order: [[3, 'desc']],
+                'scrollY': '75vh',
+                'stripeClasses': ['status_row'],
+                'columnDefs': [
+                    {'orderable': false, 'targets': [0, 7]}
+                ]
+            })
+    }).fail(function () {
+        // Wait for next retry.
+        setTimeout(updateStats, 1000)
     })
 }
 
-updateStatMap()
+$('#duration')
+    .select2({
+        minimumResultsForSearch: Infinity
+    })
+    .on('change', updateStats)
+
+updateStats()
 
 /* Overlay */
 var detailsLoading = false
@@ -194,6 +140,9 @@ var detailsPersist = false
 var map = null
 var heatmap = null
 var heatmapPoints = []
+var msPerMinute = 60000
+var spawnTimeMinutes = 15
+var spawnTimeMs = msPerMinute * spawnTimeMinutes
 mapData.appearances = {}
 
 function loadDetails() {
@@ -219,6 +168,27 @@ function loadDetails() {
         },
         complete: function () {
             detailsLoading = false
+        },
+        error: function () {
+            // Display error toast
+            toastr['error']('Request failed while getting data. Retrying...', 'Error getting data')
+            toastr.options = {
+                'closeButton': true,
+                'debug': false,
+                'newestOnTop': true,
+                'progressBar': false,
+                'positionClass': 'toast-top-right',
+                'preventDuplicates': true,
+                'onclick': null,
+                'showDuration': '300',
+                'hideDuration': '1000',
+                'timeOut': '25000',
+                'extendedTimeOut': '1000',
+                'showEasing': 'swing',
+                'hideEasing': 'linear',
+                'showMethod': 'fadeIn',
+                'hideMethod': 'fadeOut'
+            }
         }
     })
 }
@@ -372,7 +342,6 @@ function initMap() {
     })
 
     map.setMapTypeId(Store.get('map_style'))
-    google.maps.event.addListener(map, 'idle', updateStatMap)
 
     mapLoaded = true
 
@@ -417,10 +386,14 @@ function closeOverlay() { // eslint-disable-line no-unused-vars
 function processAppearance(i, item) {
     var spawnpointId = item['spawnpoint_id']
     if (!((spawnpointId) in mapData.appearances)) {
+        const isBounceDisabled = true // We don't need this functionality in our heatmap..
+        const scaleByRarity = false   // ..nor this..
+        const isNotifyPkmn = false    // ..and especially not this.
+
         if (item['marker']) {
             item['marker'].setMap(null)
         }
-        item['marker'] = setupPokemonMarker(item, map, true, false)
+        item['marker'] = setupPokemonMarker(item, map, isBounceDisabled, scaleByRarity, isNotifyPkmn)
         item['marker'].setMap(map)
         addListeners(item['marker'])
         item['marker'].spawnpointId = spawnpointId
@@ -433,8 +406,12 @@ function redrawAppearances(appearances) {
     $.each(appearances, function (key, value) {
         var item = appearances[key]
         if (!item['hidden']) {
+            const isBounceDisabled = true // We don't need this functionality in our heatmap..
+            const scaleByRarity = false   // ..nor this..
+            const isNotifyPkmn = false    // ..and especially not this.
+
             item['marker'].setMap(null)
-            const newMarker = setupPokemonMarker(item, map, true, false)
+            const newMarker = setupPokemonMarker(item, map, isBounceDisabled, scaleByRarity, isNotifyPkmn)
             newMarker.setMap(map)
             addListeners(newMarker)
             newMarker.spawnpointId = item['spawnpoint_id']
@@ -448,12 +425,8 @@ function appearanceTab(item) {
     return loadAppearancesTimes(item['pokemon_id'], item['spawnpoint_id']).then(function (result) {
         $.each(result.appearancesTimes, function (key, value) {
             var saw = new Date(value - spawnTimeMs)
-            saw = saw.getHours() + ':' +
-                    ('0' + saw.getMinutes()).slice(-2) + ':' +
-                    ('0' + saw.getSeconds()).slice(-2) + ' ' +
-                    saw.getDate() + ' ' +
-                    monthArray[saw.getMonth()] + ' ' +
-                    saw.getFullYear()
+            saw = moment(saw).format('H:mm:ss D MMM YYYY')
+
             times = '<div class="row' + (key % 2) + '">' + saw + '</div>' + times
         })
         return `<div>
@@ -486,15 +459,12 @@ function updateDetails() {
             map: map,
             radius: 50
         })
+    }).fail(function () {
+        // Wait for next retry.
+        setTimeout(updateDetails, 1000)
     })
 }
 
 if (location.href.match(/overlay_[0-9]+/g)) {
     showOverlay(location.href.replace(/^.*overlay_([0-9]+).*$/, '$1'))
 }
-
-$('#nav select')
-    .select2({
-        minimumResultsForSearch: Infinity
-    })
-    .on('change', updateStatMap)

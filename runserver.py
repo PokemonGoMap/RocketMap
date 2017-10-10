@@ -8,6 +8,7 @@ import time
 import re
 import ssl
 import json
+import requests
 
 from distutils.version import StrictVersion
 
@@ -17,7 +18,8 @@ from flask_cors import CORS
 from flask_cache_bust import init_cache_busting
 
 from pogom.app import Pogom
-from pogom.utils import get_args, now, gmaps_reverse_geolocate
+from pogom.utils import (get_args, now, gmaps_reverse_geolocate,
+                         log_resource_usage_loop, get_debug_dump_link)
 from pogom.altitude import get_gmaps_altitude
 
 from pogom.models import (init_database, create_tables, drop_tables,
@@ -89,7 +91,16 @@ def install_thread_excepthook():
         except (KeyboardInterrupt, SystemExit):
             raise
         except:
-            sys.excepthook(*sys.exc_info())
+            exc_type, exc_value, exc_trace = sys.exc_info()
+
+            # Handle Flask's broken pipe when a client prematurely ends
+            # the connection.
+            if str(exc_value) == '[Errno 32] Broken pipe':
+                pass
+            else:
+                log.critical('Unhandled patched exception (%s): "%s".',
+                             exc_type, exc_value)
+                sys.excepthook(exc_type, exc_value, exc_trace)
     Thread.run = run
 
 
@@ -158,7 +169,7 @@ def can_start_scanning(args):
     api_version_error = (
         'The installed pgoapi is out of date. Please refer to ' +
         'http://rocketmap.readthedocs.io/en/develop/common-issues/' +
-        'faq.html#i-get-an-error-about-pgooapi-version'
+        'faq.html#i-get-an-error-about-pgoapi-version'
     )
 
     # Assert pgoapi >= pgoapi_version.
@@ -193,13 +204,27 @@ def main():
 
     args = get_args()
 
+    set_log_and_verbosity(log)
+
+    # Abort if only-server and no-server are used together
+    if args.only_server and args.no_server:
+        log.critical(
+            "You can't use no-server and only-server at the same time, silly.")
+        sys.exit(1)
+
     # Abort if status name is not valid.
     regexp = re.compile('^([\w\s\-.]+)$')
     if not regexp.match(args.status_name):
         log.critical('Status name contains illegal characters.')
         sys.exit(1)
 
-    set_log_and_verbosity(log)
+    # Stop if we're just looking for a debug dump.
+    if args.dump:
+        log.info('Retrieving environment info...')
+        hastebin = get_debug_dump_link()
+        log.info('Done! Your debug link: https://hastebin.com/%s.txt',
+                 hastebin)
+        sys.exit(1)
 
     # Let's not forget to run Grunt / Only needed when running with webserver.
     if not args.no_server and not validate_assets(args):
@@ -268,7 +293,7 @@ def main():
 
     create_tables(db)
 
-    # fixing encoding on present and future tables
+    # Fix encoding on present and future tables.
     verify_table_encoding(db)
 
     if args.clear_db:
@@ -308,8 +333,8 @@ def main():
         t.daemon = True
         t.start()
 
-    # db cleaner; really only need one ever.
-    if not args.disable_clean:
+    # Database cleaner; really only need one ever.
+    if args.enable_clean:
         t = Thread(target=clean_db_loop, name='db-cleaner', args=(args,))
         t.daemon = True
         t.start()
@@ -449,6 +474,11 @@ def set_log_and_verbosity(log):
 
     if args.verbose:
         log.setLevel(logging.DEBUG)
+
+        # Let's log some periodic resource usage stats.
+        t = Thread(target=log_resource_usage_loop, name='res-usage')
+        t.daemon = True
+        t.start()
     else:
         log.setLevel(logging.INFO)
 
@@ -460,11 +490,16 @@ def set_log_and_verbosity(log):
     logging.getLogger('werkzeug').setLevel(logging.ERROR)
     logging.getLogger('pogom.apiRequests').setLevel(logging.INFO)
 
+    # This sneaky one calls log.warning() on every retry.
+    urllib3_logger = logging.getLogger(requests.packages.urllib3.__package__)
+    urllib3_logger.setLevel(logging.ERROR)
+
     # Turn these back up if debugging.
     if args.verbose >= 2:
         logging.getLogger('pgoapi').setLevel(logging.DEBUG)
         logging.getLogger('pgoapi.pgoapi').setLevel(logging.DEBUG)
         logging.getLogger('requests').setLevel(logging.DEBUG)
+        urllib3_logger.setLevel(logging.INFO)
 
     if args.verbose >= 3:
         logging.getLogger('peewee').setLevel(logging.DEBUG)

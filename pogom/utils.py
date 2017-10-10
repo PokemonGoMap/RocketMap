@@ -10,8 +10,10 @@ import random
 import time
 import socket
 import struct
-import requests
 import hashlib
+import psutil
+import subprocess
+import requests
 
 from s2sphere import CellId, LatLng
 from geopy.geocoders import GoogleV3
@@ -19,6 +21,7 @@ from requests_futures.sessions import FuturesSession
 from requests.packages.urllib3.util.retry import Retry
 from requests.adapters import HTTPAdapter
 from cHaversine import haversine
+from pprint import pformat
 
 log = logging.getLogger(__name__)
 
@@ -55,6 +58,8 @@ def get_args():
         auto_env_var_prefix='POGOMAP_')
     parser.add_argument('-cf', '--config',
                         is_config_file=True, help='Set configuration file')
+    parser.add_argument('-scf', '--shared-config',
+                        is_config_file=True, help='Set a shared config')
     parser.add_argument('-a', '--auth-service', type=str.lower,
                         action='append', default=[],
                         help=('Auth Services, either one for all accounts ' +
@@ -379,9 +384,6 @@ def get_args():
     parser.add_argument('--db-host', help='IP or hostname for the database.')
     parser.add_argument(
         '--db-port', help='Port for the database.', type=int, default=3306)
-    parser.add_argument('--db-max_connections',
-                        help='Max connections (per thread) for the database.',
-                        type=int, default=5)
     parser.add_argument('--db-threads',
                         help=('Number of db threads; increase if the db ' +
                               'queue falls behind.'),
@@ -393,14 +395,14 @@ def get_args():
                         help=('Get all details about gyms (causes an ' +
                               'additional API hit for every gym).'),
                         action='store_true', default=False)
-    parser.add_argument('--disable-clean', help='Disable clean db loop.',
+    parser.add_argument('-DC', '--enable-clean', help='Enable DB cleaner.',
                         action='store_true', default=False)
     parser.add_argument(
         '--wh-types',
         help=('Defines the type of messages to send to webhooks.'),
         choices=[
             'pokemon', 'gym', 'raid', 'egg', 'tth', 'gym-info',
-            'pokestop', 'lure'
+            'pokestop', 'lure', 'captcha'
         ],
         action='append',
         default=[])
@@ -472,8 +474,20 @@ def get_args():
                         help=('Enables the use of X-FORWARDED-FOR headers ' +
                               'to identify the IP of clients connecting ' +
                               'through these trusted proxies.'))
-    parser.add_argument('--api-version', default='0.69.1',
+    parser.add_argument('--api-version', default='0.75.1',
                         help=('API version currently in use.'))
+    parser.add_argument('--no-file-logs',
+                        help=('Disable logging to files. ' +
+                              'Does not disable --access-logs.'),
+                        action='store_true', default=False)
+    parser.add_argument('--log-path',
+                        help=('Defines directory to save log files to.'),
+                        default='logs/')
+    parser.add_argument('--dump',
+                        help=('Dump censored debug info about the ' +
+                              'environment and auto-upload to ' +
+                              'hastebin.com.'),
+                        action='store_true', default=False)
     verbose = parser.add_mutually_exclusive_group()
     verbose.add_argument('-v',
                          help=('Show debug messages from RocketMap ' +
@@ -483,13 +497,6 @@ def get_args():
                          help=('Show debug messages from RocketMap ' +
                                'and pgoapi.'),
                          type=int, dest='verbose')
-    parser.add_argument('--no-file-logs',
-                        help=('Disable logging to files. ' +
-                              'Does not disable --access-logs.'),
-                        action='store_true', default=False)
-    parser.add_argument('--log-path',
-                        help=('Defines directory to save log files to.'),
-                        default='logs/')
     parser.set_defaults(DEBUG=False)
 
     args = parser.parse_args()
@@ -902,17 +909,6 @@ def dottedQuadToNum(ip):
     return struct.unpack("!L", socket.inet_aton(ip))[0]
 
 
-def get_blacklist():
-    try:
-        url = 'https://blist.devkat.org/blacklist.json'
-        blacklist = requests.get(url, timeout=5).json()
-        log.debug('Entries in blacklist: %s.', len(blacklist))
-        return blacklist
-    except (requests.exceptions.RequestException, IndexError, KeyError):
-        log.error('Unable to retrieve blacklist, setting to empty.')
-        return []
-
-
 # Generate random device info.
 # Original by Noctem.
 IPHONES = {'iPhone5,1': 'N41AP',
@@ -1054,3 +1050,235 @@ def get_async_requests_session(num_retries, backoff_factor, pool_size,
                                           pool_maxsize=pool_size))
 
     return session
+
+
+# Get common usage stats.
+def resource_usage():
+    platform = sys.platform
+    proc = psutil.Process()
+
+    with proc.oneshot():
+        cpu_usage = psutil.cpu_times_percent()
+        mem_usage = psutil.virtual_memory()
+        net_usage = psutil.net_io_counters()
+
+        usage = {
+            'platform': platform,
+            'PID': proc.pid,
+            'MEM': {
+                'total': mem_usage.total,
+                'available': mem_usage.available,
+                'used': mem_usage.used,
+                'free': mem_usage.free,
+                'percent_used': mem_usage.percent,
+                'process_percent_used': proc.memory_percent()
+            },
+            'CPU': {
+                'user': cpu_usage.user,
+                'system': cpu_usage.system,
+                'idle': cpu_usage.idle,
+                'process_percent_used': proc.cpu_percent(interval=1)
+            },
+            'NET': {
+                'bytes_sent': net_usage.bytes_sent,
+                'bytes_recv': net_usage.bytes_recv,
+                'packets_sent': net_usage.packets_sent,
+                'packets_recv': net_usage.packets_recv,
+                'errin': net_usage.errin,
+                'errout': net_usage.errout,
+                'dropin': net_usage.dropin,
+                'dropout': net_usage.dropout
+            },
+            'connections': {
+                'ipv4': len(proc.connections('inet4')),
+                'ipv6': len(proc.connections('inet6'))
+            },
+            'thread_count': proc.num_threads(),
+            'process_count': len(psutil.pids())
+        }
+
+        # Linux only.
+        if platform == 'linux' or platform == 'linux2':
+            usage['sensors'] = {
+                'temperatures': psutil.sensors_temperatures(),
+                'fans': psutil.sensors_fans()
+            }
+            usage['connections']['unix'] = len(proc.connections('unix'))
+            usage['num_handles'] = proc.num_fds()
+        elif platform == 'win32':
+            usage['num_handles'] = proc.num_handles()
+
+    return usage
+
+
+# Log resource usage to any logger.
+def log_resource_usage(log_method):
+    usage = resource_usage()
+    log_method('Resource usage: %s.', usage)
+
+
+# Generic method to support periodic background tasks. Thread sleep could be
+# replaced by a tiny sleep, and time measuring, but we're using sleep() for
+# now to keep resource overhead to an absolute minimum.
+def periodic_loop(f, loop_delay_ms):
+    while True:
+        # Do the thing.
+        f()
+        # zZz :bed:
+        time.sleep(loop_delay_ms / 1000)
+
+
+# Periodically log resource usage every 'loop_delay_ms' ms.
+def log_resource_usage_loop(loop_delay_ms=60000):
+    # Helper method to log to specific log level.
+    def log_resource_usage_to_debug():
+        log_resource_usage(log.debug)
+
+    periodic_loop(log_resource_usage_to_debug, loop_delay_ms)
+
+
+# Return shell call output as string, replacing any errors with the
+# error's string representation.
+def check_output_catch(command):
+    try:
+        result = subprocess.check_output(command,
+                                         stderr=subprocess.STDOUT,
+                                         shell=True)
+    except Exception as ex:
+        result = 'ERROR: ' + ex.output.replace(os.linesep, ' ')
+    finally:
+        return result.strip()
+
+
+# Automatically censor all necessary fields. Lists will return
+# their length, all other items will return 'censored_tag'.
+def _censor_args_namespace(args, censored_tag):
+    fields_to_censor = [
+        'accounts',
+        'accounts_L30',
+        'username',
+        'password',
+        'auth_service',
+        'proxy',
+        'webhooks',
+        'webhook_blacklist',
+        'webhook_whitelist',
+        'config',
+        'accountcsv',
+        'high_lvl_accounts',
+        'geofence_file',
+        'geofence_excluded_file',
+        'ignorelist_file',
+        'enc_whitelist_file',
+        'webhook_whitelist_file',
+        'webhook_blacklist_file',
+        'db',
+        'proxy_file',
+        'log_path',
+        'encrypt_lib',
+        'ssl_certificate',
+        'ssl_privatekey',
+        'location',
+        'captcha_key',
+        'captcha_dsk',
+        'manual_captcha_domain',
+        'host',
+        'port',
+        'gmaps_key',
+        'db_name',
+        'db_user',
+        'db_pass',
+        'db_host',
+        'db_port',
+        'status_name',
+        'status_page_password',
+        'hash_key',
+        'trusted_proxies'
+    ]
+
+    for field in fields_to_censor:
+        # Do we have the field?
+        if field in args:
+            value = args[field]
+
+            # Replace with length of list or censored tag.
+            if isinstance(value, list):
+                args[field] = len(value)
+            else:
+                args[field] = censored_tag
+
+    return args
+
+
+# Get censored debug info about the environment we're running in.
+def get_censored_debug_info():
+    CENSORED_TAG = '<censored>'
+    args = _censor_args_namespace(vars(get_args()), CENSORED_TAG)
+
+    # Get git status.
+    status = check_output_catch('git status')
+    log = check_output_catch('git log -1')
+    remotes = check_output_catch('git remote -v')
+
+    # Python, pip, node, npm.
+    python = sys.version.replace(os.linesep, ' ').strip()
+    pip = check_output_catch('pip -V')
+    node = check_output_catch('node -v')
+    npm = check_output_catch('npm -v')
+
+    return {
+        'args': args,
+        'git': {
+            'status': status,
+            'log': log,
+            'remotes': remotes
+        },
+        'versions': {
+            'python': python,
+            'pip': pip,
+            'node': node,
+            'npm': npm
+        }
+    }
+
+
+# Post a string of text to a hasteb.in and retrieve the URL.
+def upload_to_hastebin(text):
+    log.info('Uploading info to hastebin.com...')
+    response = requests.post('https://hastebin.com/documents', data=text)
+    return response.json()['key']
+
+
+# Get censored debug info & auto-upload to hasteb.in.
+def get_debug_dump_link():
+    debug = get_censored_debug_info()
+    args = debug['args']
+    git = debug['git']
+    versions = debug['versions']
+
+    # Format debug info for text upload.
+    result = '''#######################
+### RocketMap debug ###
+#######################
+
+## Versions:
+'''
+
+    # Versions first, for readability.
+    result += '- Python: ' + versions['python'] + '\n'
+    result += '- pip: ' + versions['pip'] + '\n'
+    result += '- Node.js: ' + versions['node'] + '\n'
+    result += '- npm: ' + versions['npm'] + '\n'
+
+    # Next up is git.
+    result += '\n\n' + '## Git:' + '\n'
+    result += git['status'] + '\n'
+    result += '\n\n' + git['remotes'] + '\n'
+    result += '\n\n' + git['log'] + '\n'
+
+    # And finally, our censored args.
+    result += '\n\n' + '## Settings:' + '\n'
+    result += pformat(args, width=1)
+
+    # Upload to hasteb.in.
+    return upload_to_hastebin(result)
