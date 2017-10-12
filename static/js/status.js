@@ -19,8 +19,9 @@ function getFormattedDate(unFormattedDate) { // eslintrc no-undef.
  * Workers
  */
 function addMainWorker(hash) {
+    var worker
     if (showInstances && !showWorkers) {
-        var worker = `
+        worker = `
         <div id="worker_${hash}" class="worker">
             <span id="name_${hash}" class="name"></span>
             <span id="method_${hash}" class="method"></span>
@@ -30,7 +31,7 @@ function addMainWorker(hash) {
         `
     }
     else {
-        var worker = `
+        worker = `
         <div id="worker_${hash}" class="worker">
             <span id="name_${hash}" class="name"></span>
             <span id="method_${hash}" class="method"></span>
@@ -408,11 +409,11 @@ $(document).ready(function () {
 
     $('#showworker-switch').change(function () {
         showWorkers = this.checked
-                                                 
+
         $('#status_container .status_table').remove()
         $('#status_container .worker').remove()
     })
-                  
+
     $('#showinstances-switch').change(function () {
         showInstances = this.checked
 
