@@ -29,8 +29,7 @@ function addMainWorker(hash) {
             <br>
         </div>
         `
-    }
-    else {
+    } else {
         worker = `
         <div id="worker_${hash}" class="worker">
             <span id="name_${hash}" class="name"></span>
