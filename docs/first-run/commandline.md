@@ -32,7 +32,7 @@
                     [--db-pass DB_PASS] [--db-host DB_HOST]
                     [--db-port DB_PORT]
                     [--db-threads DB_THREADS] [-wh WEBHOOKS] [-gi]
-                    [--enable-clean]
+                    [-ec] [--enable-clean]
                     [--wh-types {pokemon,gym,raid,egg,tth,gym-info,pokestop,lure,captcha}]
                     [--wh-threads WH_THREADS] [-whc WH_CONCURRENCY]
                     [-whr WH_RETRIES] [-wht WH_TIMEOUT]
@@ -329,7 +329,7 @@
                             var: POGOMAP_WEBHOOK]
       -gi, --gym-info       Get all details about gyms (causes an additional API
                             hit for every gym). [env var: POGOMAP_GYM_INFO]
-      -DC, --enable-clean   Enable DB cleaner. [env var: POGOMAP_ENABLE_CLEAN]
+      -ec, --enable-clean   Enable DB cleaner. [env var: POGOMAP_ENABLE_CLEAN]
       --wh-types {pokemon,gym,raid,egg,tth,gym-info,pokestop,lure,captcha}
                             Defines the type of messages to send to webhooks. [env
                             var: POGOMAP_WH_TYPES]
