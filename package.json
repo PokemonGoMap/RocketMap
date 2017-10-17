@@ -36,7 +36,6 @@
     "build": "grunt build",
     "watch": "grunt default",
     "lint": "grunt lint",
-    "sprites": "grunt sprites",
     "grunt": "grunt"
   },
   "repository": {
