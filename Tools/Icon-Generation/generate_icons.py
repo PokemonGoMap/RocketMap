@@ -9,12 +9,12 @@ from PIL import ImageFont
 
 
 FONTS = {
-    'arial_bold_32': ImageFont.truetype('arialbd.ttf', 32),
-    'arial_bold_44': ImageFont.truetype('arialbd.ttf', 44)
+    'arial_bold_100': ImageFont.truetype('arialbd.ttf', 100),
+    'arial_bold_130': ImageFont.truetype('arialbd.ttf', 130)
 }
 
 
-def create_icon(id, form=None, size=(94, 94), base_size=(94, 94),
+def create_icon(id, form=None, size=(94, 94), base_size=(300, 300),
                 background_color='#000000', text_color='#FFFFFF'):
     id = str(id) if id else id
     form = str(form) if form else form
@@ -25,7 +25,7 @@ def create_icon(id, form=None, size=(94, 94), base_size=(94, 94),
     draw.ellipse((0, 0, base_size[0], base_size[1]), fill=background_color)
 
     if form:
-        font = FONTS['arial_bold_32']
+        font = FONTS['arial_bold_100']
         id_size = draw.textsize(id, font=font)
         form_size = draw.textsize(form, font=font)
         half_height = base_size[1] / 2.0
@@ -36,7 +36,7 @@ def create_icon(id, form=None, size=(94, 94), base_size=(94, 94),
                    (half_height + 2)),
                   form, text_color, font=font)
     else:
-        font = FONTS['arial_bold_44']
+        font = FONTS['arial_bold_130']
         id_size = draw.textsize(id, font=font)
         draw.text(((base_size[0] - id_size[0]) / 2.0,
                    (base_size[1] - id_size[1]) / 2.0),
