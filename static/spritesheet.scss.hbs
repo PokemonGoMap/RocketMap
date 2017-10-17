@@ -1,0 +1,16 @@
+{{#spritesheet}}
+.pokemon-sprite {
+  background-image: url('../../{{escaped_image}}');
+  background-size: {{width}}px {{height}}px;
+  background-repeat: no-repeat;
+}
+{{/spritesheet}}
+
+{{#sprites}}
+.pokemon-sprite.n{{name}} {
+  background-position: {{x}}px {{y}}px;
+  width: {{width}}px;
+  height: {{height}}px;
+}
+
+{{/sprites}}
