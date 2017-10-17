@@ -2,7 +2,8 @@ module.exports = function (grunt) {
 
     // load plugins as needed instead of up front
     require('jit-grunt')(grunt, {
-        unzip: 'grunt-zip'
+        unzip: 'grunt-zip',
+        sprite: 'grunt-spritesmith'
     })
 
     var path = require('path')
@@ -80,6 +81,7 @@ module.exports = function (grunt) {
                     'static/dist/data/moves.min.json': 'static/data/moves.json',
                     'static/dist/data/mapstyle.min.json': 'static/data/mapstyle.json',
                     'static/dist/data/searchmarkerstyle.min.json': 'static/data/searchmarkerstyle.json',
+                    'static/dist/data/sprites_map.min.json': 'static/data/sprites_map.json',
                     'static/dist/locales/de.min.json': 'static/locales/de.json',
                     'static/dist/locales/fr.min.json': 'static/locales/fr.json',
                     'static/dist/locales/ja.min.json': 'static/locales/ja.json',
@@ -144,8 +146,21 @@ module.exports = function (grunt) {
                 src: 'static01.zip',
                 dest: 'static/'
             }
+        },
+        sprite: {
+            scss: {
+                src: ['static/icons/!(hsl)*.png'],
+                dest: 'static/spritesheet.png',
+                destCss: 'static/sass/sprites.scss',
+                cssTemplate: 'static/spritesheet.scss.hbs'
+            },
+            json: {
+                src: ['static/icons/!(hsl)*.png'],
+                dest: 'static/spritesheet.png',
+                destCss: 'static/data/sprites_map.json',
+                cssTemplate: 'static/sprites_map.json.hbs'
+            }
         }
-
     })
 
     grunt.registerTask('js-build', ['newer:babel', 'newer:uglify'])
@@ -154,6 +169,7 @@ module.exports = function (grunt) {
     grunt.registerTask('json', ['newer:minjson'])
 
     grunt.registerTask('build', ['clean', 'js-build', 'css-build', 'json', 'unzip'])
+    grunt.registerTask('sprites', ['sprite', 'css-build', 'json'])
     grunt.registerTask('lint', ['js-lint'])
     grunt.registerTask('default', ['build', 'watch'])
 }

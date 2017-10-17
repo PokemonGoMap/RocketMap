@@ -788,16 +788,6 @@ var pGoStyleNight = [{
     }]
 }]
 
-var pokemonSprites = {
-    columns: 28,
-    iconWidth: 80,
-    iconHeight: 80,
-    spriteWidth: 2240,
-    spriteHeight: 1440,
-    filename: 'static/icons-large-sprite.png',
-    name: 'High-Res'
-}
-
 //
 // LocalStorage helpers
 //
@@ -1070,39 +1060,72 @@ var mapData = {
     spawnpoints: {}
 }
 
-function getGoogleSprite(index, sprite, displayHeight) {
-    displayHeight = Math.max(displayHeight, 3)
-    var scale = displayHeight / sprite.iconHeight
-    // Crop icon just a tiny bit to avoid bleedover from neighbor
-    var scaledIconSize = new google.maps.Size(scale * sprite.iconWidth - 1, scale * sprite.iconHeight - 1)
-    var scaledIconOffset = new google.maps.Point(
-        (index % sprite.columns) * sprite.iconWidth * scale + 0.5,
-        Math.floor(index / sprite.columns) * sprite.iconHeight * scale + 0.5)
-    var scaledSpriteSize = new google.maps.Size(scale * sprite.spriteWidth, scale * sprite.spriteHeight)
-    var scaledIconCenterOffset = new google.maps.Point(scale * sprite.iconWidth / 2, scale * sprite.iconHeight / 2)
+const spriteSheetPath = 'static/spritesheet.png'
+var spritesMap = {}
+$.getJSON('static/dist/data/sprites_map.min.json').done(function (data) {
+    spritesMap = data
+})
 
+function getSprite(name, size = null) {
+    const spriteSheet = spritesMap.spritesheet
+    const sprite = spritesMap.sprites[name]
+    const scale = size ? (Math.max(size, 3) / sprite.height) : 1
+    const spriteScaledWidth = sprite.width * scale
+    const spriteScaledHeight = sprite.height * scale
     return {
-        url: sprite.filename,
-        size: scaledIconSize,
-        scaledSize: scaledSpriteSize,
-        origin: scaledIconOffset,
-        anchor: scaledIconCenterOffset
+        url: spriteSheet.url,
+        size: new google.maps.Size(spriteScaledWidth - 1, spriteScaledHeight - 1),
+        scaledSize: new google.maps.Size(spriteSheet.width * scale, spriteSheet.height * scale),
+        origin: new google.maps.Point((sprite.x * scale) + 0.5, (sprite.y * scale) + 0.5),
+        anchor: new google.maps.Point(spriteScaledWidth / 2, spriteScaledHeight / 2)
     }
 }
 
-function setupPokemonMarkerDetails(item, map, scaleByRarity = true, isNotifyPkmn = false) {
-    const pokemonIndex = item['pokemon_id'] - 1
-    const sprite = pokemonSprites
+function getPokemonSprite(id, form = null, size = null) {
+    return getSprite(form ? `${id}-${form}` : `${id}`, size)
+}
 
-    var markerDetails = {
-        sprite: sprite
+function pokemonIcon(pokemonId, pokemonForm = 0) {
+    const id = parseInt(pokemonId)
+    const form = parseInt(pokemonForm)
+
+    if (id === 201 && form > 0) {
+        return `static/icons/${id}-${form}.png`
     }
+
+    return `static/icons/${id}.png`
+}
+
+function pokemonSprite(pokemonId, pokemonForm = 0, useLargeSprite = false) {
+    const id = parseInt(pokemonId)
+    const form = parseInt(pokemonForm)
+    const spriteSize = `pokemon${useLargeSprite ? '-large' : ''}`
+
+    if (id === 201 && form > 0) {
+        return `${spriteSize}-form-sprite f${form}`
+    }
+
+    return `${spriteSize}-sprite n${id}`
+}
+
+function pokemonMarkerSprite(pokemonId, pokemonForm = 0, height) {
+    const id = parseInt(pokemonId)
+    const form = parseInt(pokemonForm)
+
+    if (id === 201 && form > 0) {
+        return getPokemonSprite(id, form, height)
+    }
+
+    return getPokemonSprite(id, null, height)
+}
+
+function setupPokemonMarkerDetails(item, map, scaleByRarity = true, isNotifyPkmn = false) {
     var iconSize = (map.getZoom() - 3) * (map.getZoom() - 3) * 0.2 + Store.get('iconSizeModifier')
-    rarityValue = 2
+    var rarityValue = 2
 
     if (Store.get('upscalePokemon')) {
         const upscaledPokemon = Store.get('upscaledPokemon')
-        var rarityValue = isNotifyPkmn || (upscaledPokemon.indexOf(item['pokemon_id']) !== -1) ? 29 : 2
+        rarityValue = isNotifyPkmn || (upscaledPokemon.indexOf(item['pokemon_id']) !== -1) ? 29 : 2
     }
 
     if (scaleByRarity) {
@@ -1122,11 +1145,12 @@ function setupPokemonMarkerDetails(item, map, scaleByRarity = true, isNotifyPkmn
     }
 
     iconSize += rarityValue
-    markerDetails.rarityValue = rarityValue
-    markerDetails.icon = getGoogleSprite(pokemonIndex, sprite, iconSize)
-    markerDetails.iconSize = iconSize
 
-    return markerDetails
+    return {
+        icon: pokemonMarkerSprite(item.pokemon_id, item.form, iconSize),
+        iconSize: iconSize,
+        rarityValue: rarityValue
+    }
 }
 
 function setupPokemonMarker(item, map, isBounceDisabled, scaleByRarity = true, isNotifyPkmn = false) {
