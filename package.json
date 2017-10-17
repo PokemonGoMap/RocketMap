@@ -26,6 +26,7 @@
     "grunt-minjson": "latest",
     "grunt-newer": "^1.2.0",
     "grunt-sass": "latest",
+    "grunt-spritesmith": "^6.4.0",
     "grunt-unused": "latest",
     "grunt-usemin": "latest",
     "grunt-zip": "^0.17.1",
@@ -35,6 +36,7 @@
     "build": "grunt build",
     "watch": "grunt default",
     "lint": "grunt lint",
+    "sprites": "grunt sprites",
     "grunt": "grunt"
   },
   "repository": {
