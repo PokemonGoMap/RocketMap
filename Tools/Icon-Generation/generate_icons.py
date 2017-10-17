@@ -49,6 +49,13 @@ def create_icon(id, form=None, size=(94, 94), base_size=(94, 94),
     return icon
 
 
+def form_to_filename(form):
+    if isinstance(form, tuple):
+        return form[1]
+    else:
+        return form.lower()
+
+
 if __name__ == "__main__":
     static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                           '..', '..', 'static')
@@ -75,7 +82,7 @@ if __name__ == "__main__":
     pokemon_forms = {
         201: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
               'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
-              ('!', 'EXCL'), ('?', 'QUES')],
+              ('!', 'excl'), ('?', 'ques')],
         351: ['NML', 'SUN', 'RN', 'SNW'],
         386: ['NML', 'ATK', 'DEF', 'SPE']
     }
@@ -83,9 +90,8 @@ if __name__ == "__main__":
     for id, forms in pokemon_forms.iteritems():
         color = pokemon_data[str(id)]['types'][0]['color']
         for form in forms:
-            form_sym = form[0] if isinstance(form, tuple) else form
-            form_name = form[1] if isinstance(form, tuple) else form
-            icon = create_icon(id, form_sym, size=(args.size, args.size),
+            form_symbol = form[1] if isinstance(form, tuple) else form
+            icon = create_icon(id, form_symbol, size=(args.size, args.size),
                                background_color=color)
-            icon.save(os.path.join(
-                      args.output_dir, '{}-{}.png'.format(id, form_name)))
+            filename = '{}-{}.png'.format(id, form_to_filename(form))
+            icon.save(os.path.join(args.output_dir, filename))
