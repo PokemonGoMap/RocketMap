@@ -27,19 +27,22 @@ def create_icon(id, form=None, size=(94, 94), base_size=(300, 300),
     if form:
         font = FONTS['arial_bold_100']
         id_size = draw.textsize(id, font=font)
+        id_offset = font.getoffset(id)
         form_size = draw.textsize(form, font=font)
+        form_offset = font.getoffset(form)
         half_height = base_size[1] / 2.0
         draw.text(((base_size[0] - id_size[0]) / 2.0,
-                   (half_height - id_size[1] - 2)),
+                   (half_height - id_size[1] - (id_offset[1] / 2) - 2)),
                   id, text_color, font=font)
         draw.text(((base_size[0] - form_size[0]) / 2.0,
-                   (half_height + 2)),
+                   (half_height - (form_offset[1] / 2) + 2)),
                   form, text_color, font=font)
     else:
         font = FONTS['arial_bold_130']
         id_size = draw.textsize(id, font=font)
+        id_offset = font.getoffset(id)
         draw.text(((base_size[0] - id_size[0]) / 2.0,
-                   (base_size[1] - id_size[1]) / 2.0),
+                   (base_size[1] - id_size[1] - id_offset[1]) / 2.0),
                   id, text_color, font=font)
 
     if size != base_size:
