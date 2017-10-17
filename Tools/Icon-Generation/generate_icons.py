@@ -3,7 +3,6 @@ import os
 from argparse import ArgumentParser
 from json import load as load_json
 
-import PIL
 from PIL import Image
 from PIL import ImageDraw
 from PIL import ImageFont
@@ -20,7 +19,7 @@ def create_icon(id, form=None, size=(94, 94), base_size=(94, 94),
     id = str(id) if id else id
     form = str(form) if form else form
 
-    icon = PIL.Image.new('RGBA', (base_size[0], base_size[1]))
+    icon = Image.new('RGBA', (base_size[0], base_size[1]))
     draw = ImageDraw.Draw(icon)
 
     draw.ellipse((0, 0, base_size[0], base_size[1]), fill=background_color)
