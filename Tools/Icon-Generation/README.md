@@ -8,19 +8,26 @@ To use this tool you need:
 * Pillow - a python image library (a replacement for PIL)
 * The Arial Bold truetype font
 
-To install pillow run `pip install --upgrade -r requirements.txt`.
+### Pillow
 
-Installation of the Arial Bold font varies by platform:
+Depending on your platform, you may need to install some dependencies first. Scripts which install the required dependencies (for some platforms) can be found at https://github.com/python-pillow/Pillow/tree/master/depends.
 
-### Windows
+Note: some platforms automatically install the required dependencies for you through pip. If you can't find an install script for your platform, it may be because it is not necessary for you to install the dependencies manually.
+
+Once you have the necessary dependencies installed, install pillow by running the command:
+`pip install --upgrade -r requirements.txt`.
+
+### Arial Bold
+
+#### Windows
 
 Arial Bold is typically available by default.
 
-### Mac
+#### OSX
 
 Arial Bold is typically available by default.
 
-### Linux
+#### Linux
 
 You may need to install the package `ttf-mscorefonts-installer` (or the equivalent package for your platform) and accept the Microsoft EULA.
 
