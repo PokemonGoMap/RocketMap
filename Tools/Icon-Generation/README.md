@@ -1,6 +1,6 @@
 ## Description
 
-This is a tool for generating RocketMap's base Pokémon icons.
+This is a tool to generate RocketMap's base Pokémon icons.
 
 ## Install
 
