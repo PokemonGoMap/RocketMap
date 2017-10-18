@@ -92,7 +92,7 @@ if __name__ == "__main__":
     for id, forms in pokemon_forms.iteritems():
         color = pokemon_data[str(id)]['types'][0]['color']
         for form in forms:
-            form_symbol = form[1] if isinstance(form, tuple) else form
+            form_symbol = form[0] if isinstance(form, tuple) else form
             icon = create_icon(id, form_symbol, size=(args.size, args.size),
                                background_color=color)
             filename = '{}-{}.png'.format(id, form_to_filename(form))
