@@ -1060,7 +1060,58 @@ var mapData = {
     spawnpoints: {}
 }
 
-const spriteSheetPath = 'static/spritesheet.png'
+const pokemonForms = [
+    {
+        pokemon: 201,
+        forms: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T',  'U', 'V', 'W', 'X', 'Y', 'Z', ['!', 'excl'], ['?', 'ques']]
+    },
+    {
+        pokemon: 351,
+        forms: ['NML', 'SUN', 'RN', 'SNW']
+    },
+    {
+        pokemon: 386,
+        forms: ['NML', 'ATK', 'DEF', 'SPE']
+    }
+]
+
+function getPokemonForm(formId) {
+    var pokemon = undefined
+    var form = undefined
+
+    if (formId && formId > 0) {
+        var start = 1
+        var end = 1
+        $.each(pokemonForms, function (index, entry) {
+            end = start + entry.forms.length
+            if (formId < end) {
+                pokemon = entry.pokemon
+                form = entry.forms[formId - start]
+                return false
+            }
+            start = end
+        })
+    }
+
+    var formSymbol = undefined
+    var formName = undefined
+    if (form) {
+        if ($.isArray(form)) {
+            formSymbol = form[0]
+            formName = form[1]
+        } else {
+            formSymbol = form
+            formName = form.toLowerCase()
+        }
+    }
+
+    return {
+       pokemon: pokemon,
+       formSymbol: formSymbol,
+       formName: formName
+    }
+}
+
 var spritesMap = {}
 $.getJSON('static/dist/data/sprites_map.min.json').done(function (data) {
     spritesMap = data
@@ -1081,31 +1132,24 @@ function getSprite(name, size = null) {
     }
 }
 
-function getPokemonSprite(id, form = null, size = null) {
-    return getSprite(form ? `${id}-${form}` : `${id}`, size)
+function getPokemonSprite(id, form, size) {
+    const formName = getPokemonForm(form).formName
+    return getSprite(formName ? `${id}-${formName}` : `${id}`, size)
 }
 
-function pokemonIcon(pokemonId, pokemonForm = 0) {
+function pokemonIcon(pokemonId, pokemonForm) {
     const id = parseInt(pokemonId)
-    const form = parseInt(pokemonForm)
-
-    if (id === 201 && form > 0) {
-        return `static/icons/${id}-${form}.png`
-    }
-
-    return `static/icons/${id}.png`
+    const formName = getPokemonForm(pokemonForm).formName
+    const fullName = formName ? `${id}-${formName}` : `${id}`
+    return `static/icons/${fullName}.png`
 }
 
 function pokemonSprite(pokemonId, pokemonForm = 0, useLargeSprite = false) {
     const id = parseInt(pokemonId)
-    const form = parseInt(pokemonForm)
+    const formName = getPokemonForm(pokemonForm).formName
+    const fullName = formName ? `${id}-${formName}` : `${id}`
     const spriteSize = `pokemon${useLargeSprite ? '-large' : '-small'}`
-
-    if (id === 201 && form > 0) {
-        return `rm-sprite ${spriteSize} n${id}-${form}`
-    }
-
-    return `rm-sprite ${spriteSize} n${id}`
+    return `rm-sprite ${spriteSize} n${fullName}`
 }
 
 function pokemonMarkerSprite(pokemonId, pokemonForm = 0, height) {
