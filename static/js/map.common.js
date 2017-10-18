@@ -1099,13 +1099,13 @@ function pokemonIcon(pokemonId, pokemonForm = 0) {
 function pokemonSprite(pokemonId, pokemonForm = 0, useLargeSprite = false) {
     const id = parseInt(pokemonId)
     const form = parseInt(pokemonForm)
-    const spriteSize = `pokemon${useLargeSprite ? '-large' : ''}`
+    const spriteSize = `pokemon${useLargeSprite ? '-large' : '-small'}`
 
     if (id === 201 && form > 0) {
-        return `${spriteSize}-form-sprite f${form}`
+        return `rm-sprite ${spriteSize} n${id}-${form}`
     }
 
-    return `${spriteSize}-sprite n${id}`
+    return `rm-sprite ${spriteSize} n${id}`
 }
 
 function pokemonMarkerSprite(pokemonId, pokemonForm = 0, height) {

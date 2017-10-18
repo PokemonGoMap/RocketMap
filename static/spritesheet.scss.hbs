@@ -1,16 +1,25 @@
 {{#spritesheet}}
-.pokemon-sprite {
-  background-image: url('../../{{escaped_image}}');
-  background-size: {{width}}px {{height}}px;
-  background-repeat: no-repeat;
+.rm-sprite {
+  background-image: url('/static/spritesheet.png');
 }
 {{/spritesheet}}
 
 {{#sprites}}
-.pokemon-sprite.n{{name}} {
-  background-position: {{x}}px {{y}}px;
-  width: {{width}}px;
-  height: {{height}}px;
+.rm-sprite.n{{name}} {
+  background-size: (({{total_width}} / {{width}}) * 100%) (({{total_height}} / {{height}}) * 100%);
+  background-position: (({{x}} / ({{total_width}} - {{width}})) * 100%) (({{y}} / ({{total_height}} - {{height}})) * 100%);
 }
 
 {{/sprites}}
+
+.rm-sprite.pokemon-small {
+  display: inline-block;
+  width: 30px;
+  height: 30px;
+}
+
+.rm-sprite.pokemon-large {
+  display: inline-block;
+  width: 80px;
+  height: 80px;
+}
