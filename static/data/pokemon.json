@@ -5311,7 +5311,14 @@
     "name": "Wormadam",
     "rarity": "",
     "types": [
-
+      {
+        "type": "Bug",
+        "color": "#a8b820"
+      },
+      {
+        "type": "Grass",
+        "color": "#78c850"
+      }
     ],
     "spawn_rate": ""
   },
@@ -6278,7 +6285,14 @@
     "name": "Giratina",
     "rarity": "",
     "types": [
-
+      {
+        "type": "Ghost",
+        "color": "#705898"
+      },
+      {
+        "type": "Dragon",
+        "color": "#7038f8"
+      }
     ],
     "spawn_rate": ""
   },
@@ -6330,7 +6344,10 @@
     "name": "Shaymin",
     "rarity": "",
     "types": [
-
+      {
+        "type": "Grass",
+        "color": "#78c850"
+      }
     ],
     "spawn_rate": ""
   },
@@ -8230,7 +8247,10 @@
     "name": "Tornadus",
     "rarity": "",
     "types": [
-
+      {
+        "type": "Flying",
+        "color": "#a890f0"
+      }
     ],
     "spawn_rate": ""
   },
@@ -8238,7 +8258,14 @@
     "name": "Thundurus",
     "rarity": "",
     "types": [
-
+      {
+        "type": "Electric",
+        "color": "#f8d030"
+      },
+      {
+        "type": "Flying",
+        "color": "#a890f0"
+      }
     ],
     "spawn_rate": ""
   },
@@ -8276,7 +8303,14 @@
     "name": "Landorus",
     "rarity": "",
     "types": [
-
+      {
+        "type": "Ground",
+        "color": "#e0c068"
+      },
+      {
+        "type": "Flying",
+        "color": "#a890f0"
+      }
     ],
     "spawn_rate": ""
   },
@@ -8314,7 +8348,14 @@
     "name": "Meloetta",
     "rarity": "",
     "types": [
-
+      {
+        "type": "Normal",
+        "color": "#8a8a59"
+      },
+      {
+        "type": "Psychic",
+        "color": "#f85888"
+      }
     ],
     "spawn_rate": ""
   },
@@ -8730,7 +8771,14 @@
     "name": "Aegislash",
     "rarity": "",
     "types": [
-
+      {
+        "type": "Steel",
+        "color": "#b8b8d0"
+      },
+      {
+        "type": "Ghost",
+        "color": "#705898"
+      }
     ],
     "spawn_rate": ""
   },
@@ -9256,7 +9304,14 @@
     "name": "Hoopa",
     "rarity": "",
     "types": [
-
+      {
+        "type": "Psychic",
+        "color": "#f85888"
+      },
+      {
+        "type": "Ghost",
+        "color": "#705898"
+      }
     ],
     "spawn_rate": ""
   },
