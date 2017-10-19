@@ -371,15 +371,6 @@ class SpawnScan(BaseScheduler):
             log.debug('Loaded %s spawn points from database.' % len(spawns))
 
             for sp in spawns:
-                '''
-                # Skip bad spawnpoints.
-                if sp['missed_count'] > 10:
-                    continue
-
-                # Skip spawnpoints without a valid TTH.
-                if not SpawnPoint.tth_found(sp):
-                    continue
-                '''
                 time, disappear_time = SpawnPoint.start_end(sp)
 
                 if time > cur_sec():
