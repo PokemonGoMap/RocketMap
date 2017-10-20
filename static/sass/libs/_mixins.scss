@@ -42,11 +42,10 @@
 /// Defines Pokemon sprites
 /// @param {string} $filename The filename of the spritesheet, including file extension, excluding path
 /// @param {number} $icon_size The size of one icon, e.g. 80px
-@mixin pokemon-sprites($filename, $icon_size) {
-  /// These are constant for now
-  $icons_per_row: 28;
-  $total_icons: 493;
-
+/// @param {number} $icons_per_row The number of icons in each row of the spritesheet
+/// @param {number} $total_icons The number of icons in the spritesheet
+/// @param {string} $prefix The prefix to use for the css class
+@mixin pokemon-sprites($filename, $icon_size, $icons_per_row, $total_icons, $prefix) {
   display: inline-block;
   background: {
     image: url(../../../#{$filename});
@@ -60,7 +59,7 @@
   width: $icon_size;
 
   @for $i from 1 through $total_icons {
-    &.n#{$i} {
+    &.#{$prefix}#{$i} {
       background-position: -#{$icon_size * (($i - 1) % $icons_per_row)} -#{$icon_size * floor(($i - 1) / $icons_per_row)}
     }
   }

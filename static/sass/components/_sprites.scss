@@ -1,9 +1,19 @@
 /// Sprites for Pokemon icons on map.
 .pokemon-large-sprite {
-  @include pokemon-sprites("icons-large-sprite.png", 80px);
+  @include pokemon-sprites("icons-large-sprite.png", 80px, 28, 493, 'n');
 }
 
 /// Sprites for Pokemon icons in gyms and statistics.
 .pokemon-sprite {
-  @include pokemon-sprites("icons-sprite.png", 30px);
+  @include pokemon-sprites("icons-sprite.png", 30px, 28, 493, 'n');
+}
+
+/// Sprites for Pokemon form icons on map.
+.pokemon-large-form-sprite {
+  @include pokemon-sprites("icons-forms-large-sprite.png", 80px, 28, 28, 'f');
+}
+
+/// Sprites for Pokemon form icons in gyms and statistics.
+.pokemon-form-sprite {
+  @include pokemon-sprites("icons-forms-sprite.png", 30px, 28, 28, 'f');
 }
