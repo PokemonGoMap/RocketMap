@@ -25,10 +25,10 @@ from cachetools import TTLCache
 from cachetools import cached
 from timeit import default_timer
 
-from .utils import (get_pokemon_name, get_pokemon_rarity, get_pokemon_types,
+from .utils import (get_pokemon_name, get_pokemon_types,
                     get_args, cellid, in_radius, date_secs, clock_between,
                     get_move_name, get_move_damage, get_move_energy,
-                    get_move_type, calc_pokemon_level)
+                    get_move_type, calc_pokemon_level, i8ln)
 from .transform import transform_from_wgs_to_gcj, get_new_coords
 from .customLog import printPokemon
 
@@ -191,7 +191,7 @@ class Pokemon(LatLongModel):
         for p in list(query):
 
             p['pokemon_name'] = get_pokemon_name(p['pokemon_id'])
-            p['pokemon_rarity'] = get_pokemon_rarity(p['pokemon_id'])
+            p['pokemon_rarity'] = Pokemon.get_rarity(p['pokemon_id'])
             p['pokemon_types'] = get_pokemon_types(p['pokemon_id'])
             if args.china:
                 p['latitude'], p['longitude'] = \
@@ -229,7 +229,7 @@ class Pokemon(LatLongModel):
         pokemon = []
         for p in query:
             p['pokemon_name'] = get_pokemon_name(p['pokemon_id'])
-            p['pokemon_rarity'] = get_pokemon_rarity(p['pokemon_id'])
+            p['pokemon_rarity'] = Pokemon.get_rarity(p['pokemon_id'])
             p['pokemon_types'] = get_pokemon_types(p['pokemon_id'])
             if args.china:
                 p['latitude'], p['longitude'] = \
@@ -340,6 +340,33 @@ class Pokemon(LatLongModel):
                  )
 
         return list(itertools.chain(*query))
+
+    @staticmethod
+    def get_rarity(pokemon_id):
+        seen = Pokemon.get_seen(0)
+        total = seen['total']
+        found = 0
+        spawn_group = ''
+        for pokemon in seen['pokemon']:
+                if pokemon['pokemon_id'] == pokemon_id:
+                    found = 1
+                    pokemon_count = pokemon['count']
+        if found == 0:
+            pokemon_count = 0
+        spawn_rate = round(100 * pokemon_count / float(total), 4)
+
+        if spawn_rate < 0.01:
+            spawn_group = 'Ultra Rare'
+        elif spawn_rate < 0.03:
+            spawn_group = 'Very Rare'
+        elif spawn_rate < 0.5:
+            spawn_group = 'Rare'
+        elif spawn_rate < 1:
+            spawn_group = 'Uncommon'
+        else:
+            spawn_group = 'Common'
+
+        return i8ln(spawn_group)
 
 
 class Pokestop(LatLongModel):
