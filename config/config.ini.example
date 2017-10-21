@@ -26,14 +26,14 @@
 #location:                      # Location, can be an address or coordinates.
 #step-limit:                    # Steps (default=10)
 #scan-delay:                    # Time delay between requests in scan threads. (default=12)
-#no-gyms                        # Disables gym scanning (default=False)
-#no-pokemon                     # Disables pokemon scanning. (default=False)
-#no-pokestops                   # Disables pokestop scanning. (default=False)
-#no-raids                       # Disables raid scanning (default=False)
-#print-status                   # Enable ENTER to switch between log view and a status view.
+#no-gyms:                        # Disables gym scanning (default=False)
+#no-pokemon:                     # Disables pokemon scanning. (default=False)
+#no-pokestops:                   # Disables pokestop scanning. (default=False)
+#no-raids:                       # Disables raid scanning (default=False)
+#print-status:                   # Enable ENTER to switch between log view and a status view.
                                 # Optionally add ": status" to start in status view and ": logs" to start in log view. (default=False)
 #status-page-password:          # Enables and protects the /status page to view status of all workers. (default=None)
-#captcha-solving                # Enables captcha solving. (default=False)
+#captcha-solving:                # Enables captcha solving. (default=False)
 
 
 # Database settings
@@ -83,9 +83,9 @@
 #bad-scan-retry:                # Number of bad scans before giving up on a step. (default=2, 0 to disable)
 #skip-empty                     # Enables skipping of empty cells in normal scans - requires previously populated database. (not to be used with -ss)
 #min-seconds-left:              # Time that must be left on a spawn before considering it too late and skipping it. (default=0)
-#gym-info                       # Enables detailed gym info collection. (default=False)
-#pokestop-spinning              # Spin Pokestops with "50%" Chance (default=False)
-#account-max-spins              # Maximum number of Pokestop spins per hour (default=80)
+#gym-info:                       # Enables detailed gym info collection. (default=False)
+#pokestop-spinning:              # Spin Pokestops with "50%" Chance (default=False)
+#account-max-spins:              # Maximum number of Pokestop spins per hour (default=80)
 #on-demand_timeout:             # Pause searching while web UI is inactive for this timeout (in seconds). (default=0)
 
 
@@ -105,7 +105,7 @@
 # Pokemon IV (Only use one of the filters below)
 ############
 
-#encounter                      # Set to true to start encounters to pull more info, like IVs or movesets. (default=False)
+#encounter:                      # Set to true to start encounters to pull more info, like IVs or movesets. (default=False)
 #encounter-delay:               # Delay in seconds before starting an encounter. Must not be zero. (default=1)
 #high-lvl-accounts:             # File containing a list high level accounts, in the format "auth_service,username,password"
 #enc-whitelist-file:            # File containing a list of Pokemon IDs to encounter for IV/CPs. Requires L30 or higher accounts in --high-lvl-accounts.
@@ -183,10 +183,10 @@
 # Misc
 ######
 
-#verbosity						          # Show debug messages from RocketMap and PGoApi. Values are 1,2,3 (default=0)
-#no-file-logs					          # Disables logging to files except for access.log. (default=False)
-#log-path						            # Defines the path logs are saved at. (default=logs/)
-#no-version-check               # Disable API version check. (default=False)
+#verbosity:						          # Show debug messages from RocketMap and PGoApi. Values are 1,2,3 (default=0)
+#no-file-logs:					          # Disables logging to files except for access.log. (default=False)
+#log-path=						            # Defines the path logs are saved at. (default=logs/)
+#no-version-check:               # Disable API version check. (default=False)
 #version-check-interval:        # Interval to check API version in seconds (Default: in range [60, 300]).
 #mock:                          # Mock mode - point to a fpgo endpoint instead of using the real PogoApi,
                                 # ec: http://127.0.0.1:9090 (default='')
