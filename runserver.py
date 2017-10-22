@@ -138,7 +138,7 @@ def validate_assets(args):
 
     # You need custom image files now.
     if not os.path.isfile(
-            os.path.join(root_path, 'static/icons-sprite.png')):
+            os.path.join(root_path, 'static/spritesheet.png')):
         log.critical(assets_error_log)
         return False
 
