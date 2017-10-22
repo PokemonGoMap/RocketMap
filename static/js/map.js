@@ -532,7 +532,7 @@ function pokemonLabel(item) {
           <div class='pokemon container'>
             <div class='pokemon container content-left'>
               <div>
-                <i class='${pokemonSprite(id, form)} s48'></i>
+                <i class='${pokemonSprite(id, form)} ib48'></i>
                 <span class='pokemon'>Level: </span><span class='pokemon'>${pokemonLevel}</span>
                 <span class='pokemon links exclude'><a href='javascript:excludePokemon(${id})'>Exclude</a></span>
                 <span class='pokemon links notify'><a href='javascript:notifyAboutPokemon(${id})'>Notify</a></span>
@@ -564,7 +564,7 @@ function pokemonLabel(item) {
       <div class='pokemon container'>
         <div class='pokemon container content-left'>
           <div>
-            <i class='${pokemonSprite(id, form)} s48'></i>
+            <i class='${pokemonSprite(id, form)} ib48'></i>
             <span class='pokemon'>Level: </span><span class='pokemon no-encounter'>n/a</span>
             <span class='pokemon links exclude'><a href='javascript:excludePokemon(${id})'>Exclude</a></span>
             <span class='pokemon links notify'><a href='javascript:notifyAboutPokemon(${id})'>Notify</a></span>
@@ -671,7 +671,7 @@ function gymLabel(gym, includeMembers = true) {
         if (isRaidStarted) {
             // Set default image.
             image = `
-                <img class='gym sprite' src='static/images/raid/${gymTypes[gym.team_id]}_${raid.level}_unknown.png'>
+                <i class='${gymSprite(teamName, getGymLevel(gym), raid.level, 'unknown')} gym sprite'></i>
                 <div class='raid'>
                 <span style='color:rgb(${raidColor[Math.floor((raid.level - 1) / 2)]})'>
                 ${levelStr}
@@ -685,7 +685,7 @@ function gymLabel(gym, includeMembers = true) {
                     <div class='raid container'>
                     <div class='raid container content-left'>
                         <div>
-                        <img class='gym sprite' src='static/icons/${raid.pokemon_id}.png'>
+                        <i class='${pokemonSprite(raid.pokemon_id)} gym sprite'></i>
                         </div>
                     </div>
                     <div class='raid container content-right'>
@@ -706,7 +706,7 @@ function gymLabel(gym, includeMembers = true) {
                 `
             }
         } else {
-            image = `<img class='gym sprite' src='static/images/gym/${gymTypes[gym.team_id]}_${getGymLevel(gym)}_${raid.level}.png'>`
+            image = `<i class='${gymSprite(teamName, getGymLevel(gym), raid.level)} gym sprite'></i>`
         }
 
         if (isUpcomingRaid) {
@@ -719,7 +719,7 @@ function gymLabel(gym, includeMembers = true) {
                 </div>`
         }
     } else {
-        image = `<img class='gym sprite' src='static/images/gym/${teamName}_${getGymLevel(gym)}.png'>`
+        image = `<i class='${gymSprite(teamName, getGymLevel(gym))} gym sprite'></i>`
     }
 
 
@@ -751,7 +751,7 @@ function gymLabel(gym, includeMembers = true) {
               <center>
                 <div>
                   <div>
-                    <i class='${pokemonSprite(member.pokemon_id, member.form)} s30'></i>
+                    <i class='${pokemonSprite(member.pokemon_id, member.form)} ib30'></i>
                   </div>
                   <div>
                     <span class='gym pokemon'>${member.pokemon_name}</span>
@@ -1102,25 +1102,18 @@ function setupGymMarker(item) {
 function updateGymMarker(item, marker) {
     let raidLevel = getRaidLevel(item.raid)
     if (item.raid && isOngoingRaid(item.raid) && Store.get('showRaids') && raidLevel >= Store.get('showRaidMinLevel') && raidLevel <= Store.get('showRaidMaxLevel')) {
-        let markerImage = 'static/images/raid/' + gymTypes[item.team_id] + '_' + item.raid.level + '_unknown.png'
+        let markerIcon
         if (pokemonWithImages.indexOf(item.raid.pokemon_id) !== -1) {
-            markerImage = 'static/images/raid/' + gymTypes[item.team_id] + '_' + item['raid']['pokemon_id'] + '.png'
+            markerIcon = gymMarker(gymTypes[item.team_id], getGymLevel(item), item.raid.level, item.raid.pokemon_id, 48)
+        } else {
+            markerIcon = gymMarker(gymTypes[item.team_id], getGymLevel(item), item.raid.level, 'unknown', 48)
         }
-        marker.setIcon({
-            url: markerImage,
-            scaledSize: new google.maps.Size(48, 48)
-        })
+        marker.setIcon(markerIcon)
         marker.setZIndex(google.maps.Marker.MAX_ZINDEX + 1)
     } else if (item.raid && item.raid.end > Date.now() && Store.get('showRaids') && !Store.get('showActiveRaidsOnly') && raidLevel >= Store.get('showRaidMinLevel') && raidLevel <= Store.get('showRaidMaxLevel')) {
-        marker.setIcon({
-            url: 'static/images/gym/' + gymTypes[item.team_id] + '_' + getGymLevel(item) + '_' + item['raid']['level'] + '.png',
-            scaledSize: new google.maps.Size(48, 48)
-        })
+        marker.setIcon(gymMarker(gymTypes[item.team_id], getGymLevel(item), item.raid.level, undefined, 48))
     } else {
-        marker.setIcon({
-            url: 'static/images/gym/' + gymTypes[item.team_id] + '_' + getGymLevel(item) + '.png',
-            scaledSize: new google.maps.Size(48, 48)
-        })
+        marker.setIcon(gymMarker(gymTypes[item.team_id], getGymLevel(item), undefined, undefined, 48))
         marker.setZIndex(1)
     }
     marker.infoWindow.setContent(gymLabel(item))
@@ -2148,7 +2141,7 @@ function showGymDetails(id) { // eslint-disable-line no-unused-vars
             pokemonHtml = `
                 <center>
                     Gym Leader:<br>
-                    <i class="${pokemonSprite(result.guard_pokemon_id)} s80"></i><br>
+                    <i class="${pokemonSprite(result.guard_pokemon_id)} ib80"></i><br>
                     <b>${result.guard_pokemon_name}</b>
 
                     <p style="font-size: .75em; margin: 5px;">
@@ -2184,7 +2177,7 @@ function getSidebarGymMember(pokemon) {
     return `
                     <tr onclick=toggleGymPokemonDetails(this)>
                         <td width="30px">
-                            <img class="gym pokemon sprite" src="static/icons/${pokemon.pokemon_id}.png">
+                            <i class='${pokemonSprite(pokemon.pokemon_id, pokemon.form)} ib48'></i>
                         </td>
                         <td>
                             <div class="gym pokemon" style="line-height:0.5em;">${pokemon.pokemon_name}</div>
@@ -2542,7 +2535,7 @@ $(function () {
         if (!state.id) {
             return state.text
         }
-        var $state = $(`<span><i class="${pokemonSprite(state.element.value)} s30"></i> ${state.text}</span>`)
+        var $state = $(`<span><i class="${pokemonSprite(state.element.value)} ib30"></i> ${state.text}</span>`)
         return $state
     }
 

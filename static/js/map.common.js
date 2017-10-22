@@ -1124,15 +1124,16 @@ function getSprite(name) {
 function getSpriteMarker(name, size) {
     const spriteSheet = spritesMap.spritesheet
     const sprite = spritesMap.sprites[name]
+    if (!sprite) console.log(name);
     const scale = size ? (Math.max(size, 3) / sprite.height) : 1
     const spriteScaledWidth = sprite.width * scale
     const spriteScaledHeight = sprite.height * scale
     return {
         url: spriteSheet.url,
         size: new google.maps.Size(spriteScaledWidth - 1, spriteScaledHeight - 1),
+        rawSize: new google.maps.Size(spriteScaledWidth, spriteScaledHeight),
         scaledSize: new google.maps.Size(spriteSheet.width * scale, spriteSheet.height * scale),
-        origin: new google.maps.Point((sprite.x * scale) + 0.5, (sprite.y * scale) + 0.5),
-        anchor: new google.maps.Point(spriteScaledWidth / 2, spriteScaledHeight / 2)
+        origin: new google.maps.Point((sprite.x * scale) + 0.5, (sprite.y * scale) + 0.5)
     }
 }
 
@@ -1143,6 +1144,21 @@ function pokemonSpriteName(id, form) {
 
 function pokemonSprite(id, form) {
     return getSprite(pokemonSpriteName(id, form))
+}
+
+function gymSpriteName(team, numPokemon, raidLevel, raidBoss) {
+    const level = raidLevel || 0
+    const boss = raidBoss ? `_${raidBoss}` : ''
+    numPokemon = raidBoss ? 0 : numPokemon
+    return `${team.toLowerCase()}_${numPokemon}_${level}${boss}`
+}
+
+function gymSprite(team, numPokemon, raidLevel, raidBoss) {
+    return getSprite(gymSpriteName(team, numPokemon, raidLevel, raidBoss))
+}
+
+function gymMarker(team, numPokemon, raidLevel, raidBoss, iconSize) {
+    return getSpriteMarker(gymSpriteName(team, numPokemon, raidLevel, raidBoss), iconSize)
 }
 
 function setupPokemonMarkerDetails(item, map, scaleByRarity = true, isNotifyPkmn = false) {
@@ -1172,8 +1188,11 @@ function setupPokemonMarkerDetails(item, map, scaleByRarity = true, isNotifyPkmn
 
     iconSize += rarityValue
 
+    const icon = getSpriteMarker(pokemonSpriteName(item.pokemon_id, item.form), iconSize)
+    icon.anchor = new google.maps.Point(icon.rawSize.width / 2, icon.rawSize.height / 2)
+
     return {
-        icon: getSpriteMarker(pokemonSpriteName(item.pokemon_id, item.form), iconSize),
+        icon: icon,
         iconSize: iconSize,
         rarityValue: rarityValue
     }
