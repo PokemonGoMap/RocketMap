@@ -58,7 +58,7 @@ Using a [hashing  key](https://hashing.pogodev.org/) is mandatory at this point.
 
 ### Is there anything I can do to lower captchas?
 
-Yes, you can run with `-tut` to level your workers to level two (spinning a single pokéstop), this reduces captchas a lot. You may also consider scanning a smaller area, using less workers or encountering less pokemon for IV.
+Yes, you can enable pokestop spinning to level your workers to level two (spinning a single pokéstop), this reduces captchas a lot. You may also consider scanning a smaller area, using less workers or encountering less pokemon for IV.
 
 ### How many workers do I need?
 
@@ -145,7 +145,7 @@ cells = map_dict['responses']['GET_MAP_OBJECTS']['map_cells']
 KeyError: 'map_cells'
 ```
 
-The account is banned or hasn't completed the tutorial.
+The account is banned.
 
 #### Database error
 
@@ -154,22 +154,6 @@ InternalError(1054, u"unknown column 'cp' in 'field list'") or similar
 ```
 
 Only one instance can run when the database is being modified or upgraded. Run ***ONE*** instance of RM with `-cd` to wipe your database, then run ***ONE*** instance of RM (without `-cd`) to setup your database.
-
-#### Peewee max connections
-
-```
-ValueError: Exceeded maximum connections.
-```
-
-Try raising --db-max_connections, default is 5.
-
-#### MySQL max connections
-
-```
-OperationalError(1040, u'Too many connections')
-```
-
-You need to raise the maximum connections allowed on your MySQL server configuration, this is typically by setting `max_connections` in my.cnf or my.ini. Please use Google to find where this file is located on your specific operating system.
 
 #### SQLite query limit
 

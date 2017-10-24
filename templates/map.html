@@ -29,10 +29,11 @@
     <!-- retina iPhone 6 iOS 7 -->
     <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/appicons/180x180.png').lstrip('/') }}" sizes="180x180">
     <link rel="stylesheet" href="{{ url_for('static', filename='dist/css/app.min.css').lstrip('/') }}">
+    <!-- CDN -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.0/jquery-ui.min.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/1.10.12/css/jquery.dataTables.css">
-    <!-- Toastr -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.css">
     <!-- Custom CSS code-->
       {% if show.custom_css %}
     <link rel="stylesheet" type="text/css" href="static/css/custom.css">
@@ -74,7 +75,7 @@
                 <span class="switch-handle"></span>
                 </label>
               </div>
-            </div>            
+            </div>
             <div id="raids-filter-wrapper" style="display:none">
               <div class="form-control switch-container" id="raid-active-gym-wrapper">
                 <h3>Show Active Raids only</h3>
@@ -187,7 +188,7 @@
                 </select>
               </div>
             </div>
-              {% endif %}			  
+              {% endif %}
               {% if show.pokestops %}
             <div class="form-control switch-container">
               <h3>Pokéstops</h3>
@@ -382,6 +383,13 @@
               <select id="map-style"></select>
             </div>
             <div class="form-control switch-container">
+              <h3>Map Service Provider</h3>
+              <select name="map-service-provider" id="map-service-provider">
+                <option value="googlemaps">Google Maps</option>
+                <option value="applemaps">Apple Maps</option>
+              </select>
+            </div>
+            <div class="form-control switch-container">
               <h3>Icon Size</h3>
               <select name="pokemon-icon-size" id="pokemon-icon-size">
                 <option value="-8">Small</option>
@@ -443,22 +451,30 @@
       <div id="map"></div>
       <div class="fab" id="scan-here" style="display:none"></div>
     </div>
-    <!-- Scripts -->
+    <!-- Load JS libs before custom scripts. -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/js/select2.min.js"></script>
     <script src="https://cdn.datatables.net/1.10.12/js/jquery.dataTables.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.18.1/moment-with-locales.min.js"></script>
-    <script src="{{ url_for('static', filename='dist/js/app.min.js').lstrip('/') }}"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/push.js/1.0.4/push.min.js"></script>
+    <script src="{{ url_for('static', filename='dist/js/vendor/markerclusterer.min.js').lstrip('/') }}"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.js"></script>
     <script>
       var centerLat = {{lat}};
       var centerLng = {{lng}};
       var showConfig = {{show|tojson|safe}};
     </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+    <script src="{{ url_for('static', filename='dist/js/app.min.js').lstrip('/') }}"></script>
     <script src="{{ url_for('static', filename='dist/js/map.common.min.js').lstrip('/') }}"></script>
+    <!-- Load custom JS before map.js so it can change Store defaults. -->
+      {% if show.custom_js %}
+    <script src="{{ url_for('static', filename='dist/js/custom.min.js').lstrip('/') }}"></script>
+      {% endif %}
     <script src="{{ url_for('static', filename='dist/js/map.min.js').lstrip('/') }}"></script>
     <script src="{{ url_for('static', filename='dist/js/stats.min.js').lstrip('/') }}"></script>
     <script defer src="https://maps.googleapis.com/maps/api/js?key={{ gmaps_key }}&amp;callback=initMap&amp;libraries=places,geometry"></script>
+    <script async src='https://www.google-analytics.com/analytics.js'></script>
   </body>
 </html>
