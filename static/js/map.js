@@ -2192,7 +2192,17 @@ function showGymDetails(id) { // eslint-disable-line no-unused-vars
 function getSidebarGymMember(pokemon) {
     var perfectPercent = getIv(pokemon.iv_attack, pokemon.iv_defense, pokemon.iv_stamina)
     var moveEnergy = Math.round(100 / pokemon.move_2_energy)
-
+    
+    const motivationColor = ['16,155,49,1', '235,193,26,1', '255,25,25,1']
+    const motivationPercentage = (pokemon.cp_decayed/pokemon.pokemon_cp)*100
+    var colorIdx = 0
+    if (motivationPercentage <= 50) {
+        colorIdx = 2
+    } else if ( (motivationPercentage > 50) && (motivationPercentage < 74) ) {
+        colorIdx = 1
+    } else if (motivationPercentage >= 74) {
+        colorIdx = 0
+    }
 
     return `
                     <tr onclick=toggleGymPokemonDetails(this)>
@@ -2201,7 +2211,7 @@ function getSidebarGymMember(pokemon) {
                         </td>
                         <td>
                             <div class="gym pokemon" style="line-height:0.5em;">${pokemon.pokemon_name}</div>
-                            <div><img class="gym pokemon motivation heart" src="static/images/gym/Heart.png"> <span class="gym pokemon motivation">${pokemon.cp_decayed}</span></div>
+                            <div><img class="gym pokemon motivation heart" src="static/images/gym/Heart.png"> <span class="gym pokemon motivation" style='color:rgba(${motivationColor[colorIdx]})'>${pokemon.pokemon_cp}</span></div>
                         </td>
                         <td width="190" align="center">
                             <div class="gym pokemon" style="line-height:1em;">${pokemon.trainer_name} (${pokemon.trainer_level})</div>
