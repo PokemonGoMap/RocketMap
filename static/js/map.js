@@ -2196,11 +2196,11 @@ function getSidebarGymMember(pokemon) {
     const motivationColor = ['16,155,49,1', '235,193,26,1', '255,25,25,1']
     const motivationPercentage = (pokemon.cp_decayed/pokemon.pokemon_cp)*100
     var colorIdx = 0
-    if (motivationPercentage <= 50) {
+    if (motivationPercentage <= 46.66) {
         colorIdx = 2
-    } else if ( (motivationPercentage > 50) && (motivationPercentage < 74) ) {
+    } else if ( (motivationPercentage > 46.66) && (motivationPercentage < 73.33) ) {
         colorIdx = 1
-    } else if (motivationPercentage >= 74) {
+    } else if (motivationPercentage >= 73.33) {
         colorIdx = 0
     }
 
