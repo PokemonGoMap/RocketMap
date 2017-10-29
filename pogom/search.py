@@ -1224,22 +1224,6 @@ def upsertKeys(keys, key_scheduler, db_updates_queue):
     db_updates_queue.put((HashKeys, hashkeys))
 
 
-def calc_distance(pos1, pos2):
-    R = 6378.1  # KM radius of the earth.
-
-    dLat = math.radians(pos1[0] - pos2[0])
-    dLon = math.radians(pos1[1] - pos2[1])
-
-    a = math.sin(dLat / 2) * math.sin(dLat / 2) + \
-        math.cos(math.radians(pos1[0])) * math.cos(math.radians(pos2[0])) * \
-        math.sin(dLon / 2) * math.sin(dLon / 2)
-
-    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-    d = R * c
-
-    return d
-
-
 # Delay each thread start time so that logins occur after delay.
 def stagger_thread(args):
     loginDelayLock.acquire()

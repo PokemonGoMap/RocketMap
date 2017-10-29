@@ -354,9 +354,9 @@ class SpawnScan(BaseScheduler):
         self.step_limit = args.step_limit
         self.locations = []
 
-        self.cluster_range = 60
-        if self.args.no_jitter:
-            self.cluster_range = 70
+        self.cluster_range = 70
+        if self.args.jitter:
+            self.cluster_range = 65
 
     # Generate locations is called when the locations list is cleared - the
     # first time it scans or after a location change.

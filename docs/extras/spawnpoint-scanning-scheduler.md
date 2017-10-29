@@ -26,8 +26,10 @@ Note: When using the mode when not in a beehive, it is recommended to use an -st
 python runserver.py -ss -ssct YOURVALUE -l YOURLOCATION -st STEPS
 ```
 
-Where YOURLOCATION is the location the map should be centered at and also the center of the hex to get spawn locations from, -st sets the size of the clipping hexagon (hexagon is the same size as the scan of the same -st value), -ssct (Spawnpoint Cluster Time) sets a Time threshold for spawn point clustering. A Value around 200 is recommended.
-Spawnpoint Clustering can help to reduce requests and also your worker count because its compressing several Spawnpoints into a cluster.
+Where YOURLOCATION is the location the map should be centered at and also the center of the hex to get spawn locations from, -st sets the size of the clipping hexagon (hexagon is the same size as the scan of the same -st value), -ssct (Spawnpoint Cluster Time) sets a Time threshold (in seconds) for spawn point clustering.
+A Value around 200 seconds is recommended.
+Spawnpoint Clustering can help to reduce requests and also your worker count because its compressing several Spawnpoints into a cluster. Cluster time will try to schedule scans at the same position within -ssct amount of seconds to catch multiple spawns at once.
+
 
 This is particularly useful for when using a beehive.
 

@@ -256,8 +256,8 @@
                             in a circle based on step_limit when on DB. [env var:
                             POGOMAP_SPAWNPOINT_SCANNING]
       -ssct SS_CLUSTER_TIME, --ss-cluster-time SS_CLUSTER_TIME
-                            Time threshold for spawn point clustering. (0 to
-                            disable). [env var: POGOMAP_SS_CLUSTER_TIME]
+                            Time threshold in seconds for spawn point clustering
+                            (0 to disable). [env var: POGOMAP_SS_CLUSTER_TIME]
       -speed, --speed-scan  Use speed scanning to identify spawn points and then
                             scan closest spawns. [env var: POGOMAP_SPEED_SCAN]
       -spin, --pokestop-spinning

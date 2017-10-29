@@ -306,8 +306,8 @@ def get_args():
                               'when on DB.'),
                         action='store_true', default=False)
     parser.add_argument('-ssct', '--ss-cluster-time',
-                        help=('Time threshold for spawn point clustering. ' +
-                              '(0 to disable).'),
+                        help=('Time threshold in seconds for spawn point ' +
+                              'clustering (0 to disable).'),
                         type=int, default=0)
     parser.add_argument('-speed', '--speed-scan',
                         help=('Use speed scanning to identify spawn points ' +
