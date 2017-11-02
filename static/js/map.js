@@ -2199,8 +2199,6 @@ function getSidebarGymMember(pokemon) {
         colorIdx = 2
     } else if ((motivationPercentage > 46.66) && (motivationPercentage < 73.33)) {
         colorIdx = 1
-    } else if (motivationPercentage >= 73.33) {
-        colorIdx = 0
     }
 
     return `
@@ -2210,7 +2208,7 @@ function getSidebarGymMember(pokemon) {
                         </td>
                         <td>
                             <div class="gym pokemon" style="line-height:0.5em;">${pokemon.pokemon_name}</div>
-                            <div><img class="gym pokemon motivation heart" src="static/images/gym/Heart.png"> <span class="gym pokemon motivation" style='color:rgba(${motivationColor[colorIdx]})'>${pokemon.pokemon_cp}</span></div>
+                            <div><img class="gym pokemon motivation heart" src="static/images/gym/Heart.png"> <span class="gym pokemon motivation" style='color:rgba(${motivationColor[colorIdx]})'>${pokemon.cp_decayed}</span></div>
                         </td>
                         <td width="190" align="center">
                             <div class="gym pokemon" style="line-height:1em;">${pokemon.trainer_name} (${pokemon.trainer_level})</div>
@@ -2247,6 +2245,11 @@ function getSidebarGymMember(pokemon) {
                                     <div class="type">PERFECT</div>
                                     <div class="value">
                                         ${perfectPercent.toFixed(0)}<span style="font-size: .6em;">%</span>
+                                    </div>
+                                </div>
+								<div class="type">CP</div>
+                                    <div class="value">
+                                        ${pokemon.pokemon_cp}
                                     </div>
                                 </div>
                             </div>
