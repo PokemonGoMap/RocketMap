@@ -126,7 +126,9 @@ def validate_assets(args):
 
     static_path = os.path.join(root_path, 'static/js')
     for file in os.listdir(static_path):
-        if file.endswith(".js"):
+        if (file.endswith(".js")
+                and file != 'build_icons.js'
+                and file != 'build_spritesheet.js'):
             generated_path = os.path.join(static_path, '../dist/js/',
                                           file.replace(".js", ".min.js"))
             source_path = os.path.join(static_path, file)
