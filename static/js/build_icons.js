@@ -79,7 +79,7 @@ function collectIconResources() {
             iconResources.push({
                 name: `raid_boss_${raidBoss}`,
                 promise: Jimp.read(`${pokemonDir}/${raidBoss}.png`),
-                size: [100, 100]
+                size: [145, 145]
             })
         }
     }
@@ -110,6 +110,14 @@ function buildGymIcon(iconMap, teamId, numPokemon, raidLevel, raidBoss) {
                 icon = icon.composite(raidEgg,
                                       icon.bitmap.width - raidEgg.bitmap.width,
                                       icon.bitmap.height - raidEgg.bitmap.height - 5)
+            }
+
+            // Raid boss
+            if (raidBoss) {
+                var raidBossIcon = iconMap[`raid_boss_${raidBoss}`]
+                icon = icon.composite(raidBossIcon,
+                                      0,
+                                      icon.bitmap.height - raidBossIcon.bitmap.height)
             }
 
             // Gym strength
@@ -186,14 +194,6 @@ function buildGymIcon(iconMap, teamId, numPokemon, raidLevel, raidBoss) {
                                           - (numPokemonNum.bitmap.height / 2))
             }
 
-            // Raid boss
-            if (raidBoss) {
-                var raidBossIcon = iconMap[`raid_boss_${raidBoss}`]
-                icon = icon.composite(raidBossIcon,
-                                      0,
-                                      icon.bitmap.height - raidBossIcon.bitmap.height)
-            }
-
             var name = `${team}_${numPokemon || 0}_${raidLevel || 0}`
             if (raidBoss) {
                 name += `_${raidBoss}`
@@ -249,7 +249,7 @@ module.exports = function() {
 
             // Only contested gyms
             for (var teamId = 1; teamId < teams.length; ++teamId) {
-                // Gym icon with no additions (no pokemon, raid eggs or raid bosses)
+                // Plain gym icon (no pokemon, raid eggs or raid bosses)
                 generationPromises.push(buildGymIcon(iconMap, teamId))
 
                 // Gym icons with pokemon and raid eggs (but no raid bosses)
