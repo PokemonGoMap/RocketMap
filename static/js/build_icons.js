@@ -4,14 +4,13 @@ const Jimp = require('jimp')
 
 const partsDir = 'static/icons/parts'
 const gymsDir = 'static/icons/gyms'
-const raidsDir = 'static/icons/raids'
 const pokemonDir = 'static/icons/pokemon'
 
 const teams = [
     'uncontested',
     'instinct',
     'mystic',
-    'valor',
+    'valor'
 ]
 
 const teamColors = [
@@ -88,24 +87,24 @@ function collectIconResources() {
 }
 
 function buildGymIcon(iconMap, teamId, numPokemon, raidLevel, raidBoss) {
-    return new Promise(function(resolve, reject) {
-        new Jimp(192, 192, function (err, icon) {
+    return new Promise(function (resolve, reject) {
+        Jimp(192, 192, function (err, icon) {
             if (err) {
                 reject(err)
             }
 
-            var team = teams[teamId]
+            const team = teams[teamId]
 
-            var circle = iconMap['circle']
-            var circleBorder = iconMap['circle_border']
+            const circle = iconMap['circle']
+            const circleBorder = iconMap['circle_border']
 
-            var gym = iconMap[`gym_${team}`]
+            const gym = iconMap[`gym_${team}`]
             icon = icon.composite(gym,
                                   (icon.bitmap.width / 2) - (gym.bitmap.width / 2),
                                   (icon.bitmap.height / 2) - (gym.bitmap.height / 2))
 
             // Raid egg
-            var raidEgg = iconMap[`raid_egg_${raidLevel}`]
+            const raidEgg = iconMap[`raid_egg_${raidLevel}`]
             if (raidLevel && raidLevel > 0 && !raidBoss) {
                 icon = icon.composite(raidEgg,
                                       icon.bitmap.width - raidEgg.bitmap.width,
@@ -114,84 +113,77 @@ function buildGymIcon(iconMap, teamId, numPokemon, raidLevel, raidBoss) {
 
             // Raid boss
             if (raidBoss) {
-                var raidBossIcon = iconMap[`raid_boss_${raidBoss}`]
+                const raidBossIcon = iconMap[`raid_boss_${raidBoss}`]
                 icon = icon.composite(raidBossIcon,
                                       0,
                                       icon.bitmap.height - raidBossIcon.bitmap.height)
             }
 
             // Gym strength
-            if (numPokemon && numPokemon > 0 && !raidBoss) {
-                var numPokemonBkg = circle.clone()
-                                          .color([{
-                                               apply: 'mix',
-                                               params: [teamColors[teamId], 100]
-                                          }])
-                                          .background(0x0)
+            const numPokemonY = icon.bitmap.height - (circleBorder.bitmap.height / 2)
 
+            if (numPokemon && numPokemon > 0 && !raidBoss) {
+                const numPokemonBkg = circle.clone()
+                                            .color([{
+                                                apply: 'mix',
+                                                params: [teamColors[teamId], 100]
+                                            }])
+                                            .background(0x0)
+
+                var numPokemonX
                 if (raidLevel && raidLevel > 0) {
-                    var numPokemonX = (icon.bitmap.width / 2)
-                                           - (numPokemonBkg.bitmap.width / 2)
-                                           - 3
+                    numPokemonX = (icon.bitmap.width / 2) -
+                                  (numPokemonBkg.bitmap.width / 2) -
+                                  3
                 } else {
-                    var numPokemonX = (icon.bitmap.width / 2) - 12
+                    numPokemonX = (icon.bitmap.width / 2) - 12
                 }
 
-                var numPokemonY = icon.bitmap.height
-                                      - (circleBorder.bitmap.height / 2)
-
                 icon = icon.composite(numPokemonBkg,
-                                      numPokemonX
-                                          - (numPokemonBkg.bitmap.width / 2),
-                                      numPokemonY
-                                          - (numPokemonBkg.bitmap.height / 2))
+                                      numPokemonX - (numPokemonBkg.bitmap.width / 2),
+                                      numPokemonY - (numPokemonBkg.bitmap.height / 2))
                 icon = icon.composite(circleBorder,
-                                      numPokemonX
-                                          - (circleBorder.bitmap.width / 2),
-                                      numPokemonY
-                                          - (circleBorder.bitmap.height / 2))
+                                      numPokemonX - (circleBorder.bitmap.width / 2),
+                                      numPokemonY - (circleBorder.bitmap.height / 2))
             }
 
             // Raid level
             if (raidLevel && raidLevel > 0) {
-                var raidLevelBkg = circle.clone()
-                                         .color([{
-                                              apply: 'mix',
-                                              params: [raidLevelColors[raidLevel - 1], 100]
-                                         }])
-                                         .background(0x0)
-                var raidLevelNum = iconMap[`number_${raidLevel}`]
-                var raidLevelHeight = icon.bitmap.height
-                                          - (circleBorder.bitmap.height / 2)
+                const raidLevelBkg = circle.clone()
+                                           .color([{
+                                               apply: 'mix',
+                                               params: [raidLevelColors[raidLevel - 1], 100]
+                                           }])
+                                           .background(0x0)
+                const raidLevelNum = iconMap[`number_${raidLevel}`]
+                const raidLevelHeight = icon.bitmap.height - (circleBorder.bitmap.height / 2)
 
                 icon = icon.composite(raidLevelBkg,
-                                      icon.bitmap.width
-                                          - (raidEgg.bitmap.width / 2)
-                                          - (raidLevelBkg.bitmap.width / 2),
-                                      raidLevelHeight
-                                          - (raidLevelBkg.bitmap.height / 2))
+                                      icon.bitmap.width -
+                                      (raidEgg.bitmap.width / 2) -
+                                      (raidLevelBkg.bitmap.width / 2),
+                                      raidLevelHeight -
+                                      (raidLevelBkg.bitmap.height / 2))
                 icon = icon.composite(circleBorder,
-                                      icon.bitmap.width
-                                          - (raidEgg.bitmap.width / 2)
-                                          - (circleBorder.bitmap.width / 2),
-                                      raidLevelHeight
-                                          - (circleBorder.bitmap.height / 2))
+                                      icon.bitmap.width -
+                                      (raidEgg.bitmap.width / 2) -
+                                      (circleBorder.bitmap.width / 2),
+                                      raidLevelHeight -
+                                      (circleBorder.bitmap.height / 2))
                 icon = icon.composite(raidLevelNum,
-                                      icon.bitmap.width
-                                          - (raidEgg.bitmap.width / 2)
-                                          - (raidLevelNum.bitmap.width / 2),
-                                      raidLevelHeight
-                                          - (raidLevelNum.bitmap.height / 2))
+                                      icon.bitmap.width -
+                                      (raidEgg.bitmap.width / 2) -
+                                      (raidLevelNum.bitmap.width / 2),
+                                      raidLevelHeight -
+                                      (raidLevelNum.bitmap.height / 2))
             }
 
             // Gym strength number
             if (numPokemon && numPokemon > 0 && !raidBoss) {
-                var numPokemonNum = iconMap[`number_${numPokemon}`]
+                const numPokemonNum = iconMap[`number_${numPokemon}`]
                 icon = icon.composite(numPokemonNum,
-                                      numPokemonX
-                                          - (numPokemonNum.bitmap.width / 2),
-                                      numPokemonY
-                                          - (numPokemonNum.bitmap.height / 2))
+                                      numPokemonX - (numPokemonNum.bitmap.width / 2),
+                                      numPokemonY - (numPokemonNum.bitmap.height / 2))
             }
 
             var name = `${team}_${numPokemon || 0}_${raidLevel || 0}`
@@ -199,14 +191,14 @@ function buildGymIcon(iconMap, teamId, numPokemon, raidLevel, raidBoss) {
                 name += `_${raidBoss}`
             }
 
-            icon.write(`${gymsDir}/${name}.png`, function() {
+            icon.write(`${gymsDir}/${name}.png`, function () {
                 resolve()
             })
         })
     })
 }
 
-module.exports = function() {
+module.exports = function () {
     const iconPromisesMap = collectIconResources()
 
     const iconPromises = iconPromisesMap.map(function (icon) {
@@ -229,13 +221,16 @@ module.exports = function() {
 
             const generationPromises = []
 
+            var teamId
+            var raidLevel
+
             // All gyms
-            for (var teamId = 0; teamId < teams.length; ++teamId) {
-                for (var raidLevel = 0; raidLevel <= 5; ++raidLevel) {
+            for (teamId = 0; teamId < teams.length; ++teamId) {
+                for (raidLevel = 0; raidLevel <= 5; ++raidLevel) {
                     // Gym icons with just raid eggs (no pokemon or raid bosses)
                     generationPromises.push(
                         buildGymIcon(iconMap, teamId, 0, raidLevel))
-                
+
                     // Gym icons with just raid bosses (and no pokemon)
                     if (raidLevel > 0) {
                         for (var raidBoss in raidBosses[raidLevel]) {
@@ -248,21 +243,21 @@ module.exports = function() {
             }
 
             // Only contested gyms
-            for (var teamId = 1; teamId < teams.length; ++teamId) {
+            for (teamId = 1; teamId < teams.length; ++teamId) {
                 // Plain gym icon (no pokemon, raid eggs or raid bosses)
                 generationPromises.push(buildGymIcon(iconMap, teamId))
 
                 // Gym icons with pokemon and raid eggs (but no raid bosses)
                 for (var numPokemon = 0; numPokemon <= 6; ++numPokemon) {
-                    for (var raidLevel = 0; raidLevel <= 5; ++raidLevel) {
+                    for (raidLevel = 0; raidLevel <= 5; ++raidLevel) {
                         generationPromises.push(
                             buildGymIcon(iconMap, teamId, numPokemon, raidLevel))
                     }
                 }
             }
-            
+
             Promise.all(generationPromises)
-            .then(function() {
+            .then(function () {
                 resolve()
             })
         }).catch(function (err) {

@@ -49,7 +49,7 @@ module.exports = function () {
     const sprites = glob.sync(`${spritesheetIcons}/**/*.png`, {
         ignore: `${spritesheetIcons}/parts/*.png`
     })
-    
+
     const spritesmith = new Spritesmith({
         engine: 'canvassmith'
     })
