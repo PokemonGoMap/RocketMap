@@ -36,4 +36,4 @@ static/js/custom.js
 !static/data/*
 !static/icons/hsl*.png
 !static/app/settings.json
-static/data/sprites_map.json
+static/data/sprite_map.json
