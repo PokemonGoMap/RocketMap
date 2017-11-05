@@ -1071,9 +1071,9 @@ function updateGymMarker(item, marker) {
     var raidLevel = item.raid.level || 0
     var raidPokemon = item.raid.pokemon_id
 
-    const shouldShowRaid = Store.get('showRaids')
-                               && raidLevel >= Store.get('showRaidMinLevel')
-                               && raidLevel <= Store.get('showRaidMaxLevel')
+    const shouldShowRaid = Store.get('showRaids') &&
+                           raidLevel >= Store.get('showRaidMinLevel') &&
+                           raidLevel <= Store.get('showRaidMaxLevel')
     const isOngoingEgg = item.raid && item.raid.end > Date.now()
 
     if (shouldShowRaid && isOngoingRaid(item.raid)) {
@@ -1170,7 +1170,7 @@ function getColorBySpawnTime(value) {
 }
 
 function changeSpawnIcon(color, zoom) {
-    if (color == 275) {
+    if (color === 275) {
         color += '-light'
     }
 
@@ -2086,7 +2086,7 @@ function showGymDetails(id) { // eslint-disable-line no-unused-vars
 
     data.done(function (result) {
         var pokemonHtml = ''
-        if (false) {//result.pokemon.length) {
+        if (result.pokemon.length) {
             result.pokemon.forEach((pokemon) => {
                 pokemonHtml += getSidebarGymMember(pokemon)
             })

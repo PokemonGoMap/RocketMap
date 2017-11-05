@@ -99,6 +99,7 @@ function collectGymIconResources() {
 
 function buildGymIcon(iconMap, teamId, numPokemon, raidLevel, raidBoss) {
     return new Promise(function (resolve, reject) {
+        // eslint-disable-next-line no-new
         new Jimp(192, 192, function (err, icon) {
             if (err) {
                 reject(err)
