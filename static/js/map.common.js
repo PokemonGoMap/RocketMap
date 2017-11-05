@@ -1112,38 +1112,50 @@ function getPokemonForm(formId) {
     }
 }
 
-var spritesMap = {}
-$.getJSON('static/dist/data/sprites_map.min.json').done(function (data) {
-    spritesMap = data
+var spriteMap = {}
+$.getJSON('static/dist/data/sprite_map.min.json').done(function (data) {
+    spriteMap = data
 })
 
-function getSprite(name) {
-    return `rm-sprite n${name}`
+function spriteClass(name, type) {
+    return `rm-sprite ${type}-${name}`
 }
 
-function getSpriteMarker(name, size) {
-    const spriteSheet = spritesMap.spritesheet
-    const sprite = spritesMap.sprites[name]
-    if (!sprite) console.log(name);
+function markerName(name, type) {
+    return `${type}-${name}`
+}
+
+function spriteMarker(name, size) {
+    const spriteSheet = spriteMap.spritesheet
+    const sprite = spriteMap.sprites[name]
+
+    if (!sprite) {
+        return undefined
+    }
+
     const scale = size ? (Math.max(size, 3) / sprite.height) : 1
     const spriteScaledWidth = sprite.width * scale
     const spriteScaledHeight = sprite.height * scale
     return {
         url: spriteSheet.url,
-        size: new google.maps.Size(spriteScaledWidth - 1, spriteScaledHeight - 1),
+        size: new google.maps.Size(spriteScaledWidth, spriteScaledHeight),
         rawSize: new google.maps.Size(spriteScaledWidth, spriteScaledHeight),
         scaledSize: new google.maps.Size(spriteSheet.width * scale, spriteSheet.height * scale),
-        origin: new google.maps.Point((sprite.x * scale) + 0.5, (sprite.y * scale) + 0.5)
+        origin: new google.maps.Point((sprite.x * scale), (sprite.y * scale))
     }
 }
 
 function pokemonSpriteName(id, form) {
     const formName = getPokemonForm(form).formName
-    return formName ? `${id}-${formName}` : `${id}`
+    return formName ? `${id}-${formName}` : id
 }
 
 function pokemonSprite(id, form) {
-    return getSprite(pokemonSpriteName(id, form))
+    return spriteClass(pokemonSpriteName(id, form), 'pokemon')
+}
+
+function pokemonMarker(id, form, size) {
+    return spriteMarker(markerName(pokemonSpriteName(id, form), 'pokemon'), size)
 }
 
 function gymSpriteName(team, numPokemon, raidLevel, raidBoss) {
@@ -1153,12 +1165,51 @@ function gymSpriteName(team, numPokemon, raidLevel, raidBoss) {
     return `${team.toLowerCase()}_${numPokemon}_${level}${boss}`
 }
 
-function gymSprite(team, numPokemon, raidLevel, raidBoss) {
-    return getSprite(gymSpriteName(team, numPokemon, raidLevel, raidBoss))
+function checkedGymSpriteName(team, numPokemon, raidLevel, raidBoss) {
+    var name = gymSpriteName(team, numPokemon, raidLevel, raidBoss)
+    if (!spriteMap.sprites[markerName(name, 'gyms')]) {
+        name = gymSpriteName(team, numPokemon, raidLevel, 'unknown')
+    }
+    return name
 }
 
-function gymMarker(team, numPokemon, raidLevel, raidBoss, iconSize) {
-    return getSpriteMarker(gymSpriteName(team, numPokemon, raidLevel, raidBoss), iconSize)
+function gymSprite(team, numPokemon, raidLevel, raidBoss) {
+    const name = checkedGymSpriteName(team, numPokemon, raidLevel, raidBoss)
+    return spriteClass(name, 'gyms')
+}
+
+function gymMarker(team, numPokemon, raidLevel, raidBoss, size) {
+    const name = checkedGymSpriteName(team, numPokemon, raidLevel, raidBoss)
+    return spriteMarker(markerName(name, 'gyms'), size)
+}
+
+function pokestopSprite(lured) {
+    const name = lured ? 'pokestop-lured' : 'pokestop'
+    return spriteClass(name, 'pokestops')
+}
+
+function pokestopMarker(lured, size) {
+    const name = lured ? 'pokestop-lured' : 'pokestop'
+    return spriteMarker(markerName(name, 'pokestops'), size)
+}
+
+function spawnpointMarker(color, size) {
+    return spriteMarker(markerName(`hsl-${color}`, 'colors'), size)
+}
+
+function getPositionMarkers() {
+    const positionMarkers = {}
+    for (var spriteName in spriteMap.sprites) {
+        if (spriteName.startsWith('markers-')) {
+            var markerName = spriteName.replace('markers-', '')
+            positionMarkers[markerName] = spriteMap.sprites[spriteName]
+        }
+    }
+    return positionMarkers
+}
+
+function positionMarker(style, size) {
+    return spriteMarker(markerName(style, 'markers'), size)
 }
 
 function setupPokemonMarkerDetails(item, map, scaleByRarity = true, isNotifyPkmn = false) {
@@ -1188,7 +1239,7 @@ function setupPokemonMarkerDetails(item, map, scaleByRarity = true, isNotifyPkmn
 
     iconSize += rarityValue
 
-    const icon = getSpriteMarker(pokemonSpriteName(item.pokemon_id, item.form), iconSize)
+    const icon = pokemonMarker(item.pokemon_id, item.form, iconSize)
     icon.anchor = new google.maps.Point(icon.rawSize.width / 2, icon.rawSize.height / 2)
 
     return {
@@ -1233,4 +1284,10 @@ function isTouchDevice() {
 function isMobileDevice() {
     //  Basic mobile OS (not browser) detection
     return (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent))
+}
+
+function toTitleCase(str) {
+    return str.replace(/\w\S*/g, function (txt) {
+        return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
+    })
 }
