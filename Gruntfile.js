@@ -157,8 +157,8 @@ module.exports = function (grunt) {
     grunt.registerTask('css-build', ['newer:sass', 'newer:cssmin'])
     grunt.registerTask('js-lint', ['newer:eslint'])
     grunt.registerTask('json', ['newer:minjson'])
-    grunt.registerTask('build', ['clean', 'js-build', 'css-build', 'json'])
-    //grunt.registerTask('build', ['clean', 'icons-build', 'sp-build', 'js-build', 'css-build', 'json'])
+    //grunt.registerTask('build', ['clean', 'js-build', 'css-build', 'json'])
+    grunt.registerTask('build', ['clean', 'icons-build', 'sp-build', 'js-build', 'css-build', 'json'])
     grunt.registerTask('lint', ['js-lint'])
     grunt.registerTask('default', ['build', 'watch'])
 }
