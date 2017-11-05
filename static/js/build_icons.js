@@ -29,14 +29,19 @@ const raidLevelColors = [
 ]
 
 const raidBosses = {
-    '1': [129, 153, 156, 159],
-    '2': [89, 103, 110, 125, 126],
-    '3': [59, 65, 68, 94, 134, 135, 136],
-    '4': [3, 6, 9, 112, 131, 143, 248],
+    '1': [2, 5, 8, 11],
+    /* Ivysaur, Charmeleon, Wartortle, Metapod */
+    '2': [28, 73, 82, 91, 105, 302],
+    /* Sandslash, Tentacruel, Magneton, Cloyster, Marowak, Magneton */
+    '3': [38, 65, 68, 94, 123, 137, 139],
+    /* Ninetales, Alakazam, Machamp, Gengar, Scyther, Porygon, Omastar */
+    '4': [31, 34, 62, 71, 76, 131, 143, 248],
+    /* Nidoqueen, Nidoking, Poliwrath, Victreebel, Golem, Lapras, Snorlax, Tyranitar */
     '5': [144, 145, 146, 150, 243, 244, 245, 249, 250]
+    /* Articuno, Zapdos, Moltres, Mewtwo, Raikou, Entei, Suicune, Lugia, Ho-Oh */
 }
 
-function collectIconResources() {
+function collectBaseIconResources() {
     const iconResources = [
         {
             name: 'circle',
@@ -57,6 +62,12 @@ function collectIconResources() {
             size: [60, 60]
         })
     }
+
+    return iconResources
+}
+
+function collectGymIconResources() {
+    const iconResources = []
 
     for (var t = 0; t < teams.length; ++t) {
         iconResources.push({
@@ -88,7 +99,7 @@ function collectIconResources() {
 
 function buildGymIcon(iconMap, teamId, numPokemon, raidLevel, raidBoss) {
     return new Promise(function (resolve, reject) {
-        Jimp(192, 192, function (err, icon) {
+        new Jimp(192, 192, function (err, icon) {
             if (err) {
                 reject(err)
             }
@@ -199,7 +210,7 @@ function buildGymIcon(iconMap, teamId, numPokemon, raidLevel, raidBoss) {
 }
 
 module.exports = function () {
-    const iconPromisesMap = collectIconResources()
+    const iconPromisesMap = collectBaseIconResources().concat(collectGymIconResources())
 
     const iconPromises = iconPromisesMap.map(function (icon) {
         return icon.promise
