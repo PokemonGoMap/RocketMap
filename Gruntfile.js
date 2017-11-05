@@ -2,8 +2,7 @@ module.exports = function (grunt) {
 
     // load plugins as needed instead of up front
     require('jit-grunt')(grunt, {
-        unzip: 'grunt-zip',
-        sprite: 'grunt-spritesmith'
+        unzip: 'grunt-zip'
     })
 
     var path = require('path')

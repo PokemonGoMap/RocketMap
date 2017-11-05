@@ -29,7 +29,6 @@
     "grunt-newer": "^1.2.0",
     "grunt-promise": "^1.1.2",
     "grunt-sass": "latest",
-    "grunt-spritesmith": "^6.4.0",
     "grunt-unused": "latest",
     "grunt-usemin": "latest",
     "grunt-zip": "^0.17.1",
