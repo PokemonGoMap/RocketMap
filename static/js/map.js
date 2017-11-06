@@ -164,7 +164,7 @@ function initMap() { // eslint-disable-line no-unused-vars
 
     // Enable clustering.
     var clusterOptions = {
-        imagePath: 'static/images/cluster/m',
+        imagePath: 'static/icons/clusters/m',
         maxZoom: Store.get('maxClusterZoomLevel'),
         zoomOnClick: Store.get('clusterZoomOnClick'),
         gridSize: Store.get('clusterGridSize')
