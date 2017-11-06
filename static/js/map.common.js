@@ -1112,9 +1112,11 @@ function getPokemonForm(formId) {
     }
 }
 
-var spriteMap = {}
-$.getJSON('static/dist/data/sprite_map.min.json').done(function (data) {
-    spriteMap = data
+var spriteMap
+$(function () {
+    $.getJSON('static/dist/data/sprite_map.min.json').done(function (data) {
+        spriteMap = data
+    })
 })
 
 function spriteClass(name, type) {

@@ -2444,39 +2444,50 @@ $(function () {
     $selectSearchIconMarker = $('#iconmarker-style')
     $selectLocationIconMarker = $('#locationmarker-style')
 
-    const positionMarkers = getPositionMarkers()
-    const positionMarkerNames = $.map(positionMarkers, function (details, name) {
-        return {
-            id: name,
-            text: toTitleCase(name.replace(/[-_]+/g, ' '))
-        }
-    })
+    function setupPositionMarkers() {
+        const positionMarkers = getPositionMarkers()
+        const positionMarkerNames = $.map(positionMarkers, function (details, name) {
+            return {
+                id: name,
+                text: toTitleCase(name.replace(/[-_]+/g, ' '))
+            }
+        })
+        
+        $selectSearchIconMarker.select2({
+            placeholder: 'Select Icon Marker',
+            data: positionMarkerNames,
+            minimumResultsForSearch: Infinity
+        })
+        
+        $selectSearchIconMarker.on('change', function (e) {
+            Store.set('searchMarkerStyle', this.value)
+            updatePositionMarker(searchMarker, this.value)
+        })
+        
+        $selectSearchIconMarker.val(Store.get('searchMarkerStyle')).trigger('change')
+        
+        $selectLocationIconMarker.select2({
+            placeholder: 'Select Location Marker',
+            data: positionMarkerNames,
+            minimumResultsForSearch: Infinity
+        })
+        
+        $selectLocationIconMarker.on('change', function (e) {
+            Store.set('locationMarkerStyle', this.value)
+            updatePositionMarker(locationMarker, this.value)
+        })
+        
+        $selectLocationIconMarker.val(Store.get('locationMarkerStyle')).trigger('change')
+    }
 
-    $selectSearchIconMarker.select2({
-        placeholder: 'Select Icon Marker',
-        data: positionMarkerNames,
-        minimumResultsForSearch: Infinity
-    })
-
-    $selectSearchIconMarker.on('change', function (e) {
-        Store.set('searchMarkerStyle', this.value)
-        updatePositionMarker(searchMarker, this.value)
-    })
-
-    $selectSearchIconMarker.val(Store.get('searchMarkerStyle')).trigger('change')
-
-    $selectLocationIconMarker.select2({
-        placeholder: 'Select Location Marker',
-        data: positionMarkerNames,
-        minimumResultsForSearch: Infinity
-    })
-
-    $selectLocationIconMarker.on('change', function (e) {
-        Store.set('locationMarkerStyle', this.value)
-        updatePositionMarker(locationMarker, this.value)
-    })
-
-    $selectLocationIconMarker.val(Store.get('locationMarkerStyle')).trigger('change')
+    if (spriteMap) {
+        setupPositionMarkers()
+    } else {
+        $.getJSON('static/dist/data/sprite_map.min.json').done(function (data) {
+            spriteMap = data
+            setupPositionMarkers()
+        })
+    }
 })
 
 $(function () {
