@@ -1912,7 +1912,7 @@ function createMyLocationButton() {
     locationIcon.style.margin = '5px'
     locationIcon.style.width = '18px'
     locationIcon.style.height = '18px'
-    locationIcon.style.backgroundImage = 'url(static/mylocation-sprite-1x.png)'
+    locationIcon.style.backgroundImage = 'url(https://maps.gstatic.com/tactile/mylocation/mylocation-sprite-1x.png)'
     locationIcon.style.backgroundSize = '180px 18px'
     locationIcon.style.backgroundPosition = '0px 0px'
     locationIcon.style.backgroundRepeat = 'no-repeat'
