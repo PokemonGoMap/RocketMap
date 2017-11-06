@@ -106,7 +106,7 @@ function collectGymIconResources() {
     }
 
     iconResources.push({
-        name: `raid_boss_unknown`,
+        name: 'raid_boss_unknown',
         promise: Jimp.read(`${partsDir}/id.png`),
         size: [135, 135]
     })
@@ -326,7 +326,7 @@ module.exports = function () {
 
             Promise.all(generationPromises)
             .then(function (results) {
-                console.log(`>>`['green'] + ` ${results.length} icons built.`)
+                console.log('>>'['green'] + ` ${results.length} icons built.`)
                 resolve()
             })
         }).catch(function (err) {
