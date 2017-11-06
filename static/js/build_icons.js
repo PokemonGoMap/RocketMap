@@ -1,10 +1,12 @@
 'use strict'
 
+const fs = require('fs')
 const Jimp = require('jimp')
 
-const partsDir = 'static/icons/parts'
-const gymsDir = 'static/icons/gyms'
-const pokemonDir = 'static/icons/pokemon'
+const iconsDir = 'static/icons'
+const partsDir = `${iconsDir}/parts`
+const gymsDir = `${iconsDir}/gyms`
+const pokemonDir = `${iconsDir}/pokemon`
 
 const teams = [
     'uncontested',
@@ -32,13 +34,17 @@ const raidBosses = {
     '1': [2, 5, 8, 11],
     /* Ivysaur, Charmeleon, Wartortle, Metapod */
     '2': [28, 73, 82, 91, 105, 302],
-    /* Sandslash, Tentacruel, Magneton, Cloyster, Marowak, Magneton */
+    /* Sandslash, Tentacruel, Magneton, Cloyster, Marowak, Sableye */
     '3': [38, 65, 68, 94, 123, 137, 139],
     /* Ninetales, Alakazam, Machamp, Gengar, Scyther, Porygon, Omastar */
     '4': [31, 34, 62, 71, 76, 131, 143, 248],
     /* Nidoqueen, Nidoking, Poliwrath, Victreebel, Golem, Lapras, Snorlax, Tyranitar */
     '5': [144, 145, 146, 150, 243, 244, 245, 249, 250]
     /* Articuno, Zapdos, Moltres, Mewtwo, Raikou, Entei, Suicune, Lugia, Ho-Oh */
+}
+
+function iconAlreadyExists(name, type) {
+    return fs.existsSync(`${iconsDir}/${type}/${name}.png`)
 }
 
 function collectBaseIconResources() {
@@ -52,6 +58,11 @@ function collectBaseIconResources() {
             name: 'circle_border',
             promise: Jimp.read(`${partsDir}/circle_border.png`),
             size: [68, 68]
+        },
+        {
+            name: 'circle_large',
+            promise: Jimp.read(`${partsDir}/circle.png`),
+            size: [135, 135]
         }
     ]
 
@@ -89,12 +100,28 @@ function collectGymIconResources() {
             iconResources.push({
                 name: `raid_boss_${raidBoss}`,
                 promise: Jimp.read(`${pokemonDir}/${raidBoss}.png`),
-                size: [145, 145]
+                size: [135, 135]
             })
         }
     }
 
+    iconResources.push({
+        name: `raid_boss_unknown`,
+        promise: Jimp.read(`${partsDir}/id.png`),
+        size: [135, 135]
+    })
+
     return iconResources
+}
+
+function gymIconName(teamId, numPokemon, raidLevel, raidBoss) {
+    var name = `${teams[teamId]}_${numPokemon || 0}_${raidLevel || 0}`
+
+    if (raidBoss) {
+        name += `_${raidBoss}`
+    }
+
+    return name
 }
 
 function buildGymIcon(iconMap, teamId, numPokemon, raidLevel, raidBoss) {
@@ -109,6 +136,7 @@ function buildGymIcon(iconMap, teamId, numPokemon, raidLevel, raidBoss) {
 
             const circle = iconMap['circle']
             const circleBorder = iconMap['circle_border']
+            const largeCircle = iconMap['circle_large']
 
             const gym = iconMap[`gym_${team}`]
             icon = icon.composite(gym,
@@ -126,9 +154,21 @@ function buildGymIcon(iconMap, teamId, numPokemon, raidLevel, raidBoss) {
             // Raid boss
             if (raidBoss) {
                 const raidBossIcon = iconMap[`raid_boss_${raidBoss}`]
+
+                if (raidBoss === 'unknown') {
+                    const raidBossBkg = largeCircle.clone()
+                                                   .color([{
+                                                       apply: 'mix',
+                                                       params: ['#CFCFCF', 100]
+                                                   }])
+                                                   .background(0x0)
+
+                    icon = icon.composite(raidBossBkg,
+                                          0, icon.bitmap.height - raidBossIcon.bitmap.height)
+                }
+
                 icon = icon.composite(raidBossIcon,
-                                      0,
-                                      icon.bitmap.height - raidBossIcon.bitmap.height)
+                                      0, icon.bitmap.height - raidBossIcon.bitmap.height)
             }
 
             // Gym strength
@@ -148,7 +188,7 @@ function buildGymIcon(iconMap, teamId, numPokemon, raidLevel, raidBoss) {
                                   (numPokemonBkg.bitmap.width / 2) -
                                   3
                 } else {
-                    numPokemonX = (icon.bitmap.width / 2) - 12
+                    numPokemonX = (icon.bitmap.width / 2)
                 }
 
                 icon = icon.composite(numPokemonBkg,
@@ -198,13 +238,9 @@ function buildGymIcon(iconMap, teamId, numPokemon, raidLevel, raidBoss) {
                                       numPokemonY - (numPokemonNum.bitmap.height / 2))
             }
 
-            var name = `${team}_${numPokemon || 0}_${raidLevel || 0}`
-            if (raidBoss) {
-                name += `_${raidBoss}`
-            }
-
+            const name = gymIconName(teamId, numPokemon, raidLevel, raidBoss)
             icon.write(`${gymsDir}/${name}.png`, function () {
-                resolve()
+                resolve(name)
             })
         })
     })
@@ -233,22 +269,36 @@ module.exports = function () {
 
             const generationPromises = []
 
+            var iconName
             var teamId
             var raidLevel
+            var rebuild = false
 
             // All gyms
             for (teamId = 0; teamId < teams.length; ++teamId) {
                 for (raidLevel = 0; raidLevel <= 5; ++raidLevel) {
                     // Gym icons with just raid eggs (no pokemon or raid bosses)
-                    generationPromises.push(
-                        buildGymIcon(iconMap, teamId, 0, raidLevel))
+                    iconName = gymIconName(teamId, 0, raidLevel)
+                    if (!iconAlreadyExists(iconName, 'gyms') || rebuild) {
+                        generationPromises.push(
+                            buildGymIcon(iconMap, teamId, 0, raidLevel))
+                    }
 
                     // Gym icons with just raid bosses (and no pokemon)
                     if (raidLevel > 0) {
                         for (var raidBoss in raidBosses[raidLevel]) {
                             raidBoss = raidBosses[raidLevel][raidBoss]
+                            iconName = gymIconName(teamId, 0, raidLevel, raidBoss)
+                            if (!iconAlreadyExists(iconName, 'gyms') || rebuild) {
+                                generationPromises.push(
+                                    buildGymIcon(iconMap, teamId, 0, raidLevel, raidBoss))
+                            }
+                        }
+
+                        iconName = gymIconName(teamId, 0, raidLevel, 'unknown')
+                        if (!iconAlreadyExists(iconName, 'gyms') || rebuild) {
                             generationPromises.push(
-                                buildGymIcon(iconMap, teamId, 0, raidLevel, raidBoss))
+                                buildGymIcon(iconMap, teamId, 0, raidLevel, 'unknown'))
                         }
                     }
                 }
@@ -257,19 +307,26 @@ module.exports = function () {
             // Only contested gyms
             for (teamId = 1; teamId < teams.length; ++teamId) {
                 // Plain gym icon (no pokemon, raid eggs or raid bosses)
-                generationPromises.push(buildGymIcon(iconMap, teamId))
+                iconName = gymIconName(teamId)
+                if (!iconAlreadyExists(iconName, 'gyms') || rebuild) {
+                    generationPromises.push(buildGymIcon(iconMap, teamId))
+                }
 
                 // Gym icons with pokemon and raid eggs (but no raid bosses)
                 for (var numPokemon = 0; numPokemon <= 6; ++numPokemon) {
                     for (raidLevel = 0; raidLevel <= 5; ++raidLevel) {
-                        generationPromises.push(
-                            buildGymIcon(iconMap, teamId, numPokemon, raidLevel))
+                        iconName = gymIconName(teamId, numPokemon, raidLevel)
+                        if (!iconAlreadyExists(iconName, 'gyms') || rebuild) {
+                            generationPromises.push(
+                                buildGymIcon(iconMap, teamId, numPokemon, raidLevel))
+                        }
                     }
                 }
             }
 
             Promise.all(generationPromises)
-            .then(function () {
+            .then(function (results) {
+                console.log(`>>`['green'] + ` ${results.length} icons built.`)
                 resolve()
             })
         }).catch(function (err) {
