@@ -22,14 +22,6 @@ const teamColors = [
     '#FF1A1A'
 ]
 
-const raidLevelColors = [
-    '#FC70B0',
-    '#FC70B0',
-    '#FF9E16',
-    '#FF9E16',
-    '#B8A5DD'
-]
-
 const raidBosses = {
     '1': [2, 5, 8, 11],
     /* Ivysaur, Charmeleon, Wartortle, Metapod */
@@ -74,9 +66,15 @@ function collectGymIconResources() {
 
     for (var i = 1; i <= 6; ++i) {
         iconResources.push({
-            name: `number_${i}`,
+            name: `gym_strength_${i}`,
             promise: Jimp.read(`${partsDir}/${i}.png`),
             size: [60, 60]
+        })
+
+        iconResources.push({
+            name: `raid_level_${i}`,
+            promise: Jimp.read(`${partsDir}/${i}.png`),
+            size: [50, 50]
         })
     }
 
@@ -93,6 +91,12 @@ function collectGymIconResources() {
             name: `raid_egg_${raidLevel}`,
             promise: Jimp.read(`${partsDir}/raid_egg_${raidLevel}.png`),
             size: [110, 110]
+        })
+
+        iconResources.push({
+            name: `raid_star_${raidLevel}`,
+            promise: Jimp.read(`${partsDir}/raid_star_${raidLevel}.png`),
+            size: [80, 80]
         })
 
         for (var raidBoss in raidBosses[raidLevel]) {
@@ -201,14 +205,9 @@ function buildGymIcon(iconMap, teamId, numPokemon, raidLevel, raidBoss) {
 
             // Raid level
             if (raidLevel && raidLevel > 0) {
-                const raidLevelBkg = circle.clone()
-                                           .color([{
-                                               apply: 'mix',
-                                               params: [raidLevelColors[raidLevel - 1], 100]
-                                           }])
-                                           .background(0x0)
-                const raidLevelNum = iconMap[`number_${raidLevel}`]
-                const raidLevelHeight = icon.bitmap.height - (circleBorder.bitmap.height / 2)
+                const raidLevelBkg = iconMap[`raid_star_${raidLevel}`].clone()
+                const raidLevelNum = iconMap[`raid_level_${raidLevel}`]
+                const raidLevelHeight = icon.bitmap.height - (raidLevelBkg.bitmap.height / 2)
 
                 icon = icon.composite(raidLevelBkg,
                                       icon.bitmap.width -
@@ -216,23 +215,18 @@ function buildGymIcon(iconMap, teamId, numPokemon, raidLevel, raidBoss) {
                                       (raidLevelBkg.bitmap.width / 2),
                                       raidLevelHeight -
                                       (raidLevelBkg.bitmap.height / 2))
-                icon = icon.composite(circleBorder,
-                                      icon.bitmap.width -
-                                      (raidEgg.bitmap.width / 2) -
-                                      (circleBorder.bitmap.width / 2),
-                                      raidLevelHeight -
-                                      (circleBorder.bitmap.height / 2))
                 icon = icon.composite(raidLevelNum,
                                       icon.bitmap.width -
                                       (raidEgg.bitmap.width / 2) -
                                       (raidLevelNum.bitmap.width / 2),
                                       raidLevelHeight -
-                                      (raidLevelNum.bitmap.height / 2))
+                                      (raidLevelNum.bitmap.height / 2) +
+                                      5)
             }
 
             // Gym strength number
             if (numPokemon && numPokemon > 0 && !raidBoss) {
-                const numPokemonNum = iconMap[`number_${numPokemon}`]
+                const numPokemonNum = iconMap[`gym_strength_${numPokemon}`]
                 icon = icon.composite(numPokemonNum,
                                       numPokemonX - (numPokemonNum.bitmap.width / 2),
                                       numPokemonY - (numPokemonNum.bitmap.height / 2))
@@ -272,7 +266,7 @@ module.exports = function () {
             var iconName
             var teamId
             var raidLevel
-            var rebuild = false
+            var rebuild = true
 
             // All gyms
             for (teamId = 0; teamId < teams.length; ++teamId) {
