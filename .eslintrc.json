@@ -46,6 +46,8 @@
     "Store": true,
     "mapData": true,
     "getPokemonForm": true,
+    "spriteMap": true,
+    "spriteClass": true,
     "getSprite": true,
     "getSpriteMarker": true,
     "pokemonIcon": true,

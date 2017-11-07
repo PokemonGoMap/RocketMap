@@ -2451,31 +2451,31 @@ $(function () {
                 text: toTitleCase(name.replace(/[-_]+/g, ' '))
             }
         })
-        
+
         $selectSearchIconMarker.select2({
             placeholder: 'Select Icon Marker',
             data: positionMarkerNames,
             minimumResultsForSearch: Infinity
         })
-        
+
         $selectSearchIconMarker.on('change', function (e) {
             Store.set('searchMarkerStyle', this.value)
             updatePositionMarker(searchMarker, this.value)
         })
-        
+
         $selectSearchIconMarker.val(Store.get('searchMarkerStyle')).trigger('change')
-        
+
         $selectLocationIconMarker.select2({
             placeholder: 'Select Location Marker',
             data: positionMarkerNames,
             minimumResultsForSearch: Infinity
         })
-        
+
         $selectLocationIconMarker.on('change', function (e) {
             Store.set('locationMarkerStyle', this.value)
             updatePositionMarker(locationMarker, this.value)
         })
-        
+
         $selectLocationIconMarker.val(Store.get('locationMarkerStyle')).trigger('change')
     }
 
