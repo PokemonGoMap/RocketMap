@@ -82,7 +82,7 @@ function collectGymIconResources() {
         iconResources.push({
             name: `gym_${teams[t]}`,
             promise: Jimp.read(`${partsDir}/gym_${teams[t]}.png`),
-            size: [175, 175]
+            size: [170, 170]
         })
     }
 
@@ -152,7 +152,7 @@ function buildGymIcon(iconMap, teamId, numPokemon, raidLevel, raidBoss) {
             if (raidLevel && raidLevel > 0 && !raidBoss) {
                 icon = icon.composite(raidEgg,
                                       icon.bitmap.width - raidEgg.bitmap.width,
-                                      icon.bitmap.height - raidEgg.bitmap.height - 5)
+                                      icon.bitmap.height - raidEgg.bitmap.height - 12)
             }
 
             // Raid boss
