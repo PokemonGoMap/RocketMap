@@ -5,6 +5,24 @@ var groupByWorker = true
 var showHashTable = true
 var showWorkersTable = true
 var hashkeys = {}
+var statshash = 'a5e8e28e'  /* unique worker hash for statistics: hashFnv32a('statsABC987)*/
+var active
+var success
+var failed
+var empty
+var skipped
+var captcha
+var mainWorkers
+var elapsedTotal
+var elapsedSecs
+var elapsedHours
+var sph
+var fph
+var eph
+var skph
+var cph
+var ccost
+var cmonth
 
 // Raw data updating
 var minUpdateDelay = 1000 // Minimum delay between updates (in ms).
@@ -153,6 +171,7 @@ function processHashKeys(i, hashkey) {
 }
 
 function parseResult(result) {
+    addTotalStats(result)
     if (groupByWorker && showWorkersTable) {
         $.each(result.main_workers, processMainWorker)
     }
@@ -163,6 +182,7 @@ function parseResult(result) {
         $.each(result.hashkeys, processHashKeys)
     }
 }
+
 /*
  * Tables
  */
@@ -306,6 +326,88 @@ function updateStatus() {
         // Don't use interval.
         window.setTimeout(updateStatus, delay)
     })
+}
+
+/*
+ * Generate Statistics Across All Workers
+ */
+function addStatsWorker(hash) {
+    var worker = `
+    <div id="worker_${hash}" class="worker">
+    <span id="name_${hash}" class="name"></span>
+    <span id="method_${hash}" class="method"></span>
+    <span id="message_${hash}" class="message"></span>
+    </div>
+    `
+
+    $(worker).appendTo('#status_container')
+}
+
+function getStats(i, worker) {
+    success += worker['success']
+    failed += worker['fail']
+    empty += worker['empty']
+    skipped += worker['skip']
+    captcha += worker['captcha']
+    mainWorkers += 1
+
+    elapsedTotal += worker['elapsed']
+    elapsedSecs = elapsedTotal / (i + 1)
+    elapsedHours = elapsedSecs / 3600
+}
+
+function getActive(i, worker) {
+    active += 1
+}
+
+function addTotalStats(result) {
+    var statmsg, title
+
+    active = 0
+    success = 0
+    failed = 0
+    empty = 0
+    skipped = 0
+    captcha = 0
+    mainWorkers = 0
+    elapsedTotal = 0
+    elapsedSecs = 0
+    elapsedHours = 0
+    sph = 0
+    fph = 0
+    eph = 0
+    skph = 0
+    cph = 0
+    ccost = 0
+    cmonth = 0
+
+    $.each(result.main_workers, getStats)
+
+    if ((mainWorkers > 1) || !groupByWorker) {
+        $.each(result.workers, getActive)
+
+        sph = (success * 3600 / elapsedSecs) || 0
+        fph = (failed * 3600 / elapsedSecs) || 0
+        eph = (empty * 3600 / elapsedSecs) || 0
+        skph = (skipped * 3600 / elapsedSecs) || 0
+        cph = (captcha * 3600 / elapsedSecs) || 0
+        ccost = cph * 0.00299
+        cmonth = ccost * 730
+
+        if ($('#worker_' + statshash).length === 0) {
+            addStatsWorker(statshash)
+        }
+
+        statmsg = 'Total active: ' + active + ' | Success: ' + success.toFixed() + ' (' + sph.toFixed(1) + '/hr) | Fails: ' + failed.toFixed() + ' (' + fph.toFixed(1) + '/hr) | Empties: ' + empty.toFixed() + ' (' + eph.toFixed(1) + '/hr) | Skips: ' + skipped.toFixed() + ' (' + skph.toFixed(1) + '/hr) | Captchas: ' + captcha.toFixed() + ' (' + cph.toFixed(1) + '/hr) ($' + ccost.toFixed(1) + '/hr, $' + cmonth.toFixed(1) + '/mo) | Elapsed:  ' + elapsedHours.toFixed(1) + 'h<hr />'
+        if (mainWorkers > 1) {
+            title = '(Total Statistics across ' + mainWorkers + ' instances)'
+        } else {
+            title = '(Total Statistics across ' + mainWorkers + ' instance)'
+        }
+        $('#name_' + statshash).html('All Instances')
+        $('#method_' + statshash).html(title)
+        $('#message_' + statshash).html(statmsg)
+    }
 }
 
 /**

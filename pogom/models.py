@@ -42,7 +42,7 @@ args = get_args()
 flaskDb = FlaskDB()
 cache = TTLCache(maxsize=100, ttl=60 * 5)
 
-db_schema_version = 20
+db_schema_version = 21
 
 
 class MyRetryDB(RetryOperationalError, PooledMySQLDatabase):
@@ -1076,6 +1076,13 @@ class MainWorker(BaseModel):
     accounts_working = IntegerField()
     accounts_captcha = IntegerField()
     accounts_failed = IntegerField()
+    success = IntegerField(default=0)
+    fail = IntegerField(default=0)
+    empty = IntegerField(default=0)
+    skip = IntegerField(default=0)
+    captcha = IntegerField(default=0)
+    start = IntegerField(default=0)
+    elapsed = IntegerField(default=0)
 
     @staticmethod
     def get_account_stats():
@@ -3067,6 +3074,10 @@ def database_migrate(db, old_ver):
                                     null=False, default=datetime.utcnow())),
             migrator.add_column('gym', 'total_cp',
                                 SmallIntegerField(null=False, default=0)))
+
+    if old_ver < 21:
+        db.drop_tables([WorkerStatus])
+        db.drop_tables([MainWorker])
 
     # Always log that we're done.
     log.info('Schema upgrade complete.')
