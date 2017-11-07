@@ -55,16 +55,22 @@ function collectBaseIconResources() {
             size: [68, 68]
         },
         {
-            name: 'circle_border',
-            promise: Jimp.read(`${partsDir}/circle_border.png`),
-            size: [68, 68]
-        },
-        {
             name: 'circle_large',
             promise: Jimp.read(`${partsDir}/circle.png`),
             size: [135, 135]
+        },
+        {
+            name: 'circle_border',
+            promise: Jimp.read(`${partsDir}/circle_border.png`),
+            size: [68, 68]
         }
     ]
+
+    return iconResources
+}
+
+function collectGymIconResources() {
+    const iconResources = []
 
     for (var i = 1; i <= 6; ++i) {
         iconResources.push({
@@ -73,12 +79,6 @@ function collectBaseIconResources() {
             size: [60, 60]
         })
     }
-
-    return iconResources
-}
-
-function collectGymIconResources() {
-    const iconResources = []
 
     for (var t = 0; t < teams.length; ++t) {
         iconResources.push({
