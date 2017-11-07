@@ -90,4 +90,10 @@
       -webkit-font-smoothing: antialiased;
     }
   }
+
+  &.sprite {
+    display: block;
+    height: 48px;
+    width: 48px;
+  }
 }
