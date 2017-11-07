@@ -192,7 +192,7 @@ function buildGymIcon(iconMap, teamId, numPokemon, raidLevel, raidBoss) {
                                   (numPokemonBkg.bitmap.width / 2) -
                                   3
                 } else {
-                    numPokemonX = (icon.bitmap.width / 2)
+                    numPokemonX = (icon.bitmap.width / 2) - 12
                 }
 
                 icon = icon.composite(numPokemonBkg,
