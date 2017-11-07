@@ -624,11 +624,8 @@ function gymLabel(gym, includeMembers = true) {
 
     if (gym.team_id !== 0) {
         subtitle = `
-        <div>
-            <img class='gym info strength' src='static/images/gym/Strength.png'>
-            <span class='gym info strength'>
-              Strength: ${gymPoints} (${slotsString})
-            </span>
+        <div class='gym info strength'>
+            <i class='${spriteClass('heart', 'gyms')}'></i> <span>Strength: ${gymPoints} (${slotsString})</span>
         </div>`
     }
 
@@ -724,8 +721,8 @@ function gymLabel(gym, includeMembers = true) {
                   <div>
                     <span class='gym pokemon'>${member.pokemon_name}</span>
                   </div>
-                  <div>
-                    <img class='gym pokemon motivation heart' src='static/images/gym/Heart.png'> <span class='gym pokemon motivation'>${member.cp_decayed}</span>
+                  <div class='gym pokemon motivation'>
+                    <i class='${spriteClass('heart', 'gyms')}'></i> <span>${member.cp_decayed}</span>
                   </div>
                 </div>
               </center>
@@ -2138,7 +2135,9 @@ function getSidebarGymMember(pokemon) {
                         </td>
                         <td>
                             <div class="gym pokemon" style="line-height:0.5em;">${pokemon.pokemon_name}</div>
-                            <div><img class="gym pokemon motivation heart" src="static/images/gym/Heart.png"> <span class="gym pokemon motivation">${pokemon.cp_decayed}</span></div>
+                            <div class="gym pokemon motivation">
+                                <i class='${spriteClass('heart', 'gyms')}'></i> <span>${pokemon.cp_decayed}</span>
+                            </div>
                         </td>
                         <td width="190" align="center">
                             <div class="gym pokemon" style="line-height:1em;">${pokemon.trainer_name} (${pokemon.trainer_level})</div>
