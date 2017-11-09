@@ -270,6 +270,12 @@
         }
       }
 
+      .move-bar {
+        display: block;
+        width: 100px;
+        height: 15px;
+      }
+
       .damage {
         @media screen and (max-width: 480px) {
           margin-right: 2px !important;

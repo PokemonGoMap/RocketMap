@@ -2195,7 +2195,7 @@ function getSidebarGymMember(pokemon) {
                                         ${pokemon.move_2_name}
                                         <div class="type ${pokemon.move_2_type['type_en'].toLowerCase()}">${pokemon.move_2_type['type']}</div>
                                         <div>
-                                            <i class="move-bar-sprite move-bar-sprite-${moveEnergy}"></i>
+                                            <i class="${spriteClass('move-bar-' + moveEnergy, 'other')} move-bar"></i>
                                         </div>
                                     </div>
                                     <div class="damage">
