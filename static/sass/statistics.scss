@@ -1,8 +1,8 @@
-.status_container{
+.status_container {
     display: none;
 }
 
-.overlay{
+.overlay {
     z-index: 100000;
     display: none;
     background-color: rgba(0,0,0,0.5);
@@ -13,11 +13,11 @@
     min-height: 100%;
 }
 
-#location_map{
+#location_map {
     height: 100%;
 }
 
-#times_list{
+#times_list {
     float: left;
     background: white;
     position: fixed;
@@ -28,19 +28,19 @@
     overflow: auto;
 }
 
-#times_list div{
+#times_list div {
     padding-bottom: 2px;
 }
 
-#times_list .row0{
+#times_list .row0 {
     background: #f1f1f1;
 }
 
-#times_list .row1{
+#times_list .row1 {
     background: #f8f8f8;
 }
 
-.overlay .close{
+.overlay .close {
     position: relative;
     float: right;
     margin-top: 20px;
@@ -49,7 +49,7 @@
     cursor: pointer;
 }
 
-.overlay .content{
+.overlay .content {
     background: white;
     margin: 50px;
     border-radius: 10px;
@@ -62,14 +62,14 @@
     right: 0px;
 }
 
-#loading{
+#loading {
     width: 100%;
     height: 100%;
     position: fixed;
     top: 0px;
 }
 
-#loading img{
+#loading img {
     top: 50%;
     left: 50%;
     margin-right: -50%;
@@ -78,6 +78,12 @@
 
 .stats-table-pokemon-sprite {
     display: block;
+    width: 30px;
+    height: 30px;
+}
+
+.rm-sprite.other-close {
+    display: inline-block;
     width: 30px;
     height: 30px;
 }
