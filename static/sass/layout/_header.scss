@@ -133,7 +133,8 @@
     }
   }
 
-  .rocket.icon {
+  .rm-sprite.other-rocket {
+    display: inline-block;
     @media screen and (max-width: 480px) {
       height: 24px !important;
       width:: 24px !important;
