@@ -58,7 +58,7 @@ function processSeen(seen) {
         $('#stats_table > tbody')
             .append(`<tr class="status_row">
                         <td class="status_cell">
-                            <i class="${pokemonSprite(pokemonItem.pokemon_id)} stats-table-pokemon-sprite"></i>
+                            <i class="${pokemonSprite(pokemonItem.pokemon_id)} pokemon sprite"></i>
                         </td>
                         <td class="status_cell">
                             ${pokemonItem.pokemon_id}                        
