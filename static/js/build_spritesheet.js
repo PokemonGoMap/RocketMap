@@ -6,13 +6,13 @@ const fs = require('fs')
 const Spritesmith = require('spritesmith')
 const Handlebars = require('handlebars')
 
-fs.readFileAsync = Promise.promisify(fs.readFile)
-
 const spritesheetIcons = 'static/icons'
 const spritesheetFile = 'static/spritesheet.png'
 const spritesheetScssFile = 'static/sass/sprites.scss'
 const spritesheetScssTemplate = 'templates/sprites.scss.hbs'
 const spritesheetMapFile = 'static/data/sprite_map.json'
+
+const writeFile = Promise.promisify(fs.writeFile)
 
 function writeSpritesheetToFile(spritesheet, file) {
     return new Promise(function (resolve, reject) {
@@ -24,30 +24,19 @@ function writeSpritesheetToFile(spritesheet, file) {
 }
 
 function writeSpritesheetScssToFile(spritesheetMap, file) {
-    return new Promise(function (resolve, reject) {
-        const templateFile = fs.readFileSync(spritesheetScssTemplate, 'utf8')
-        const template = Handlebars.compile(templateFile)
-        const spritesheetScss = template(spritesheetMap)
-
-        const stream = fs.createWriteStream(file)
-        stream.on('finish', resolve)
-        stream.on('error', reject)
-        stream.write(spritesheetScss)
-    })
+    const templateFile = fs.readFileSync(spritesheetScssTemplate, 'utf8')
+    const template = Handlebars.compile(templateFile)
+    const spritesheetScss = template(spritesheetMap)
+    return writeFile(file, spritesheetScss)
 }
 
 function writeSpritesheetMapToFile(spritesheetMap, file) {
-    return new Promise(function (resolve, reject) {
-        const stream = fs.createWriteStream(file)
-        stream.on('error', reject)
-        stream.on('finish', resolve)
-        stream.write(JSON.stringify(spritesheetMap, null, 2))
-    })
+    return writeFile(file, JSON.stringify(spritesheetMap, null, 2))
 }
 
 module.exports = function () {
     const sprites = glob.sync(`${spritesheetIcons}/**/*.png`, {
-        ignore: `${spritesheetIcons}/parts/*.png`
+        ignore: `${spritesheetIcons}/parts/**/*.png`
     })
 
     const spritesmith = new Spritesmith({
@@ -79,10 +68,17 @@ module.exports = function () {
             sprites: spriteInfo
         }
 
-        Promise.all([
+        return Promise.all([
             writeSpritesheetToFile(spritesheetData.image, spritesheetFile),
             writeSpritesheetScssToFile(spritesheetMap, spritesheetScssFile),
             writeSpritesheetMapToFile(spritesheetMap, spritesheetMapFile)
         ])
+    })
+    .then(function () {
+        console.log('>> '['green'] + 'spritesheet built.')
+    })
+    .catch(function (err) {
+        console.log('>> '['red'] + (err.stack || err))
+        throw err
     })
 }
