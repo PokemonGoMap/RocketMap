@@ -23,7 +23,7 @@ const teamColors = [
     '#FF1A1A'
 ]
 
-const rebuild = true
+const rebuild = false
 
 const raidBosses = {
     '1': [2, 5, 8, 11],
@@ -121,9 +121,6 @@ function collectPokemonResources() {
         loadIconResource('circle',
                          `${partsDir}/circle.png`,
                          [192, 192]),
-        loadIconResource('rect',
-                         `${partsDir}/rect.png`,
-                         [192, 192]),
         loadFontResource('font_open_sans_bold_72_white',
                          `${fontsDir}/open-sans-bold-72-white.fnt`),
         loadFontResource('font_open_sans_bold_60_white',
@@ -200,8 +197,9 @@ function buildResourceMap(resources) {
             case 'icon':
                 const icon = resource[2]
                 const size = resource[3]
-                
-                if (size && (icon.bitmap.width != size[0] || icon.bitmap.height != size[1])) {
+
+                if (size && (icon.bitmap.width !== size[0] ||
+                             icon.bitmap.height !== size[1])) {
                     resourceMap[name] = icon.resize(size[0], size[1])
                                             .background(0x0)
                 } else {
@@ -229,7 +227,6 @@ function buildPokemonIcon(resourceMap, pokemon, form) {
             }
 
             const circle = resourceMap['circle']
-            const rect = resourceMap['rect']
             const largeFont = resourceMap['font_open_sans_bold_72_white']
             const smallFont = resourceMap['font_open_sans_bold_60_white']
 
@@ -255,14 +252,14 @@ function buildPokemonIcon(resourceMap, pokemon, form) {
                            (pokemonBkg.bitmap.width / 2) -
                            (textWidth(smallFont, idText) / 2),
                            (pokemonBkg.bitmap.height / 2) -
-                           textHeight(smallFont, idText)
-                           - 7,
+                           textHeight(smallFont, idText) -
+                           7,
                            idText)
                 icon.print(smallFont,
                            (pokemonBkg.bitmap.width / 2) -
                            (textWidth(smallFont, formText) / 2),
-                           (pokemonBkg.bitmap.height / 2)
-                           + 7,
+                           (pokemonBkg.bitmap.height / 2) +
+                           7,
                            formText)
             } else {
                 // Just ID
@@ -419,7 +416,7 @@ module.exports = function () {
 
             // Form icons
             var formData = pokemonForms.find(function (pokemonForm) {
-                return pokemonForm.pokemon == pokemon.id
+                return pokemonForm.pokemon === pokemon.id
             })
             if (formData) {
                 formData.forms.forEach(function (form) {
