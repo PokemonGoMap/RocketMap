@@ -1060,20 +1060,12 @@ var mapData = {
     spawnpoints: {}
 }
 
-const allPokemonForms = [
-    {
-        pokemon: 201,
-        forms: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', ['!', 'excl'], ['?', 'ques']]
-    },
-    {
-        pokemon: 351,
-        forms: ['NML', 'SUN', 'RN', 'SNW']
-    },
-    {
-        pokemon: 386,
-        forms: ['NML', 'ATK', 'DEF', 'SPE']
-    }
-]
+var allPokemonForms
+$(function () {
+    $.getJSON('static/dist/data/pokemon_forms.min.json').done(function (data) {
+        allPokemonForms = data.pokemon_forms
+    })
+})
 
 function getPokemonForm(formId) {
     var pokemon

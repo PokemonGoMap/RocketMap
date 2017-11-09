@@ -80,6 +80,7 @@ module.exports = function (grunt) {
             build: {
                 files: {
                     'static/dist/data/pokemon.min.json': 'static/data/pokemon.json',
+                    'static/dist/data/pokemon_forms.min.json': 'static/data/pokemon_forms.json',
                     'static/dist/data/moves.min.json': 'static/data/moves.json',
                     'static/dist/data/mapstyle.min.json': 'static/data/mapstyle.json',
                     'static/dist/data/sprite_map.min.json': 'static/data/sprite_map.json',
