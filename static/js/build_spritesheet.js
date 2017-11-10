@@ -14,6 +14,15 @@ const spritesheetMapFile = 'static/data/sprite_map.json'
 
 const writeFile = Promise.promisify(fs.writeFile)
 
+function findBestEngine() {
+    try {
+        require('canvassmith')
+        return 'canvassmith'
+    } catch (e) {}
+
+    return 'pixelsmith'
+}
+
 function writeSpritesheetToFile(spritesheet, file) {
     return new Promise(function (resolve, reject) {
         const stream = fs.createWriteStream(file)
@@ -40,7 +49,7 @@ module.exports = function () {
     })
 
     const spritesmith = new Spritesmith({
-        engine: 'canvassmith'
+        engine: findBestEngine()
     })
 
     return new Promise(function (resolve, reject) {

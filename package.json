@@ -6,7 +6,6 @@
   "dependencies": {
     "babel-preset-env": "^1.6.0",
     "bluebird": "^3.5.1",
-    "canvassmith": "^1.2.0",
     "eslint": "^3.1.1",
     "eslint-config-standard": "^5.3.5",
     "eslint-plugin-promise": "^2.0.0",
@@ -38,6 +37,9 @@
     "jit-grunt": "^0.10.0",
     "node-gyp": "^3.6.2",
     "spritesmith": "^3.1.1"
+  },
+  "optionalDependencies": {
+    "canvassmith": "^1.2.0"
   },
   "scripts": {
     "build": "grunt build",
