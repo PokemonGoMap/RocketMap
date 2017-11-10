@@ -27,6 +27,7 @@
     "grunt-legacssy": "latest",
     "grunt-minjson": "latest",
     "grunt-newer": "^1.2.0",
+    "grunt-pngmin": "^1.3.0",
     "grunt-promise": "^1.1.2",
     "grunt-sass": "latest",
     "grunt-unused": "latest",
