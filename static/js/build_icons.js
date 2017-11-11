@@ -23,7 +23,10 @@ const teamColors = [
     '#FF1A1A'
 ]
 
-const rebuild = false
+const rebuild = {
+    pokemon: false,
+    gyms: true
+}
 
 const raidBosses = {
     '1': [2, 5, 8, 11],
@@ -141,7 +144,9 @@ function collectGymResources() {
                          [68, 68]),
         loadIconResource('raid_boss_unknown',
                          `${partsDir}/id.png`,
-                         [135, 135])
+                         [135, 135]),
+        loadFontResource('font_open_sans_bold_72_white',
+                         `${fontsDir}/open-sans-bold-72-white.fnt`)
     ]
 
     for (var i = 1; i <= 6; ++i) {
@@ -292,6 +297,7 @@ function buildGymIcon(resourceMap, teamId, numPokemon, raidLevel, raidBoss) {
             const circle = resourceMap['circle_small']
             const circleBorder = resourceMap['circle_border_small']
             const largerCircle = resourceMap['circle_medium']
+            const font = resourceMap['font_open_sans_bold_72_white']
 
             const gym = resourceMap[`gym_${team}`]
             icon = icon.composite(gym,
@@ -308,22 +314,33 @@ function buildGymIcon(resourceMap, teamId, numPokemon, raidLevel, raidBoss) {
 
             // Raid boss
             if (raidBoss) {
-                const raidBossIcon = resourceMap[`raid_boss_${raidBoss}`]
-
                 if (raidBoss === 'unknown') {
-                    const raidBossBkg = largerCircle.clone()
-                                                    .color([{
-                                                        apply: 'mix',
-                                                        params: ['#CFCFCF', 100]
-                                                    }])
-                                                    .background(0x0)
+                    const unknownRaidBossBkg = largerCircle.clone()
+                                                           .color([{
+                                                               apply: 'mix',
+                                                               params: ['#C0C0C0', 100]
+                                                           }])
+                                                           .background(0x0)
+                    const unknownRaidBossText = '?'
 
-                    icon = icon.composite(raidBossBkg,
-                                          0, icon.bitmap.height - raidBossIcon.bitmap.height)
+                    icon = icon.composite(unknownRaidBossBkg,
+                                          0,
+                                          icon.bitmap.height -
+                                          unknownRaidBossBkg.bitmap.height)
+                    icon.print(font,
+                               (unknownRaidBossBkg.bitmap.width / 2) -
+                               (textWidth(font, unknownRaidBossText) / 2),
+                               icon.bitmap.height -
+                               (unknownRaidBossBkg.bitmap.height / 2) -
+                               (textHeight(font, unknownRaidBossText) / 2),
+                               unknownRaidBossText)
+                } else {
+                    const raidBossIcon = resourceMap[`raid_boss_${raidBoss}`]
+                    icon = icon.composite(raidBossIcon,
+                                          0,
+                                          icon.bitmap.height -
+                                          raidBossIcon.bitmap.height)
                 }
-
-                icon = icon.composite(raidBossIcon,
-                                      0, icon.bitmap.height - raidBossIcon.bitmap.height)
             }
 
             // Gym strength
@@ -409,7 +426,7 @@ module.exports = function () {
 
             // Base icon
             iconName = pokemonIconName(pokemon)
-            if (!iconAlreadyExists(iconName, 'pokemon') || rebuild) {
+            if (!iconAlreadyExists(iconName, 'pokemon') || rebuild.pokemon) {
                 pokemonIconPromises.push(
                     buildPokemonIcon(resourceMap, pokemon))
             }
@@ -422,7 +439,7 @@ module.exports = function () {
                 formData.forms.forEach(function (form) {
                     form = parseForm(form)
                     iconName = pokemonIconName(pokemon, form)
-                    if (!iconAlreadyExists(iconName, 'pokemon') || rebuild) {
+                    if (!iconAlreadyExists(iconName, 'pokemon') || rebuild.pokemon) {
                         pokemonIconPromises.push(
                             buildPokemonIcon(resourceMap, pokemon, form))
                     }
@@ -452,7 +469,7 @@ module.exports = function () {
             for (raidLevel = 0; raidLevel <= 5; ++raidLevel) {
                 // Gym icons with just raid eggs (no pokemon or raid bosses)
                 iconName = gymIconName(teamId, 0, raidLevel)
-                if (!iconAlreadyExists(iconName, 'gyms') || rebuild) {
+                if (!iconAlreadyExists(iconName, 'gyms') || rebuild.gyms) {
                     gymIconPromises.push(
                         buildGymIcon(resourceMap, teamId, 0, raidLevel))
                 }
@@ -462,14 +479,14 @@ module.exports = function () {
                     for (var raidBoss in raidBosses[raidLevel]) {
                         raidBoss = raidBosses[raidLevel][raidBoss]
                         iconName = gymIconName(teamId, 0, raidLevel, raidBoss)
-                        if (!iconAlreadyExists(iconName, 'gyms') || rebuild) {
+                        if (!iconAlreadyExists(iconName, 'gyms') || rebuild.gyms) {
                             gymIconPromises.push(
                                 buildGymIcon(resourceMap, teamId, 0, raidLevel, raidBoss))
                         }
                     }
 
                     iconName = gymIconName(teamId, 0, raidLevel, 'unknown')
-                    if (!iconAlreadyExists(iconName, 'gyms') || rebuild) {
+                    if (!iconAlreadyExists(iconName, 'gyms') || rebuild.gyms) {
                         gymIconPromises.push(
                             buildGymIcon(resourceMap, teamId, 0, raidLevel, 'unknown'))
                     }
@@ -481,7 +498,7 @@ module.exports = function () {
         for (teamId = 1; teamId < teams.length; ++teamId) {
             // Plain gym icon (no pokemon, raid eggs or raid bosses)
             iconName = gymIconName(teamId)
-            if (!iconAlreadyExists(iconName, 'gyms') || rebuild) {
+            if (!iconAlreadyExists(iconName, 'gyms') || rebuild.gyms) {
                 gymIconPromises.push(buildGymIcon(resourceMap, teamId))
             }
 
@@ -489,7 +506,7 @@ module.exports = function () {
             for (var numPokemon = 0; numPokemon <= 6; ++numPokemon) {
                 for (raidLevel = 0; raidLevel <= 5; ++raidLevel) {
                     iconName = gymIconName(teamId, numPokemon, raidLevel)
-                    if (!iconAlreadyExists(iconName, 'gyms') || rebuild) {
+                    if (!iconAlreadyExists(iconName, 'gyms') || rebuild.gyms) {
                         gymIconPromises.push(
                             buildGymIcon(resourceMap, teamId, numPokemon, raidLevel))
                     }
