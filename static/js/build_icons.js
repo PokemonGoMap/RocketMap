@@ -25,7 +25,7 @@ const teamColors = [
 
 const rebuild = {
     pokemon: false,
-    gyms: true
+    gyms: false
 }
 
 const raidBosses = {
@@ -76,7 +76,7 @@ function loadPokemonData() {
 
 function loadPokemonForms() {
     const pokemonFormsStr = fs.readFileSync('static/data/pokemon_forms.json', 'utf8')
-    return JSON.parse(pokemonFormsStr).pokemon_forms
+    return JSON.parse(pokemonFormsStr)
 }
 
 function pokemonIconName(pokemon, form) {
@@ -91,14 +91,14 @@ function gymIconName(teamId, numPokemon, raidLevel, raidBoss) {
 function parseForm(form) {
     if (Array.isArray(form)) {
         return {
-            symbol: form[0],
-            name: form[1]
+            name: form[0],
+            symbol: form[1]
         }
     }
 
     return {
-        symbol: form,
-        name: form.toLowerCase()
+        name: form,
+        symbol: form.toUpperCase()
     }
 }
 
@@ -424,19 +424,10 @@ module.exports = function () {
             var pokemon = pokemonData[pokemonId]
             pokemon.id = pokemonId
 
-            // Base icon
-            iconName = pokemonIconName(pokemon)
-            if (!iconAlreadyExists(iconName, 'pokemon') || rebuild.pokemon) {
-                pokemonIconPromises.push(
-                    buildPokemonIcon(resourceMap, pokemon))
-            }
+            var forms = pokemonForms[pokemon.id]
 
-            // Form icons
-            var formData = pokemonForms.find(function (pokemonForm) {
-                return pokemonForm.pokemon === pokemon.id
-            })
-            if (formData) {
-                formData.forms.forEach(function (form) {
+            if (forms) {
+                forms.forEach(function (form) {
                     form = parseForm(form)
                     iconName = pokemonIconName(pokemon, form)
                     if (!iconAlreadyExists(iconName, 'pokemon') || rebuild.pokemon) {
@@ -444,6 +435,12 @@ module.exports = function () {
                             buildPokemonIcon(resourceMap, pokemon, form))
                     }
                 })
+            } else {
+                iconName = pokemonIconName(pokemon)
+                if (!iconAlreadyExists(iconName, 'pokemon') || rebuild.pokemon) {
+                    pokemonIconPromises.push(
+                        buildPokemonIcon(resourceMap, pokemon))
+                }
             }
         }
 

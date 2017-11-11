@@ -1,16 +1,5 @@
 {
-    "pokemon_forms": [
-        {
-            "pokemon": 201,
-            "forms": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", ["!", "exclamation"], ["?", "question"]]
-        },
-        {
-            "pokemon": 351,
-            "forms": [["NML", "normal"], ["SUN", "sunny"], ["RN", "rainy"], ["SNW", "snowy"]]
-        },
-        {
-            "pokemon": 386,
-            "forms": [["NML", "normal"], ["ATK", "attack"], ["DEF", "defense"], ["SPE", "speed"]]
-        }
-    ]
+    "201": ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", ["exclamation", "!"], ["question", "?"]],
+    "351": [["normal", "NML"], ["sunny", "SUN"], ["rainy", "RN"], ["snowy", "SNW"]],
+    "386": [["normal", "NML"], ["attack", "ATK"], ["defense", "DEF"], ["speed", "SPE"]]
 }

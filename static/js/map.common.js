@@ -1060,49 +1060,56 @@ var mapData = {
     spawnpoints: {}
 }
 
-var allPokemonForms
-$(function () {
-    $.getJSON('static/dist/data/pokemon_forms.min.json').done(function (data) {
-        allPokemonForms = data.pokemon_forms
-    })
-})
-
-function getPokemonForm(formId) {
-    var pokemon
-    var form
-
-    if (formId && formId > 0) {
-        var start = 1
-        var end = 1
-        $.each(allPokemonForms, function (index, entry) {
-            end = start + entry.forms.length
-            if (formId < end) {
-                pokemon = entry.pokemon
-                form = entry.forms[formId - start]
-                return false
-            }
-            start = end
-        })
-    }
-
-    var formSymbol
-    var formName
-    if (form) {
-        if ($.isArray(form)) {
-            formSymbol = form[0]
-            formName = form[1]
-        } else {
-            formSymbol = form
-            formName = form.toLowerCase()
+function parseForm(form) {
+    if (Array.isArray(form)) {
+        return {
+            name: form[0],
+            symbol: form[1]
         }
     }
 
     return {
-        pokemon: pokemon,
-        formSymbol: formSymbol,
-        formName: formName
+        name: form,
+        symbol: form.toUpperCase()
     }
 }
+
+var pokemonFormMap
+var formMap
+$(function () {
+    $.getJSON('static/dist/data/pokemon_forms.min.json').done(function (data) {
+        pokemonFormMap = data
+
+        $.each(pokemonFormMap, function (pokemon, forms) {
+            for (var form = 0; form < forms.length; ++form) {
+                forms[form] = parseForm(forms[form])
+            }
+        })
+
+        const pokemonFormList = $.map(pokemonFormMap, function (forms, pokemon) {
+            return {
+                pokemon: pokemon,
+                forms: forms
+            }
+        })
+
+        pokemonFormList.sort(function (a, b) {
+            return a.id - b.id
+        })
+
+        var formID = 1
+        formMap = {}
+        $.each(pokemonFormList, function (index, pokemonFormData) {
+            $.each(pokemonFormData.forms, function (index, data) {
+                formMap[formID] = {
+                    pokemon: pokemonFormData.pokemon,
+                    data: data
+                }
+                ++formID
+            })
+        })
+    })
+})
 
 var spriteMap
 $(function () {
@@ -1140,8 +1147,16 @@ function spriteMarker(name, size) {
 }
 
 function pokemonSpriteName(id, form) {
-    const formName = getPokemonForm(form).formName
-    return formName ? `${id}-${formName}` : id
+    var formData
+    if (pokemonFormMap[id]) {
+        if (formMap[form]) {
+            formData = formMap[form].data
+        } else {
+            formData = pokemonFormMap[id][0]
+        }
+    }
+
+    return formData ? `${id}-${formData.name}` : id
 }
 
 function pokemonSprite(id, form) {

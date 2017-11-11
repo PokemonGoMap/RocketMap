@@ -482,11 +482,11 @@ function pokemonLabel(item) {
 
     var contentstring = ''
 
-    const formData = getPokemonForm(form)
+    const formSymbol = formMap[form] ? formMap[form].data.symbol : ''
 
     contentstring += `
     <div class='pokemon name'>
-      ${name} <span class='pokemon name pokedex'><a href='http://pokemon.gameinfo.io/en/pokemon/${id}' target='_blank' title='View in Pokédex'>#${id}</a></span> ${formData.formSymbol || ''} <span class='pokemon gender rarity'>${genderType[gender - 1]} ${rarityDisplay}</span> ${typesDisplay}
+      ${name} <span class='pokemon name pokedex'><a href='http://pokemon.gameinfo.io/en/pokemon/${id}' target='_blank' title='View in Pokédex'>#${id}</a></span> ${formSymbol} <span class='pokemon gender rarity'>${genderType[gender - 1]} ${rarityDisplay}</span> ${typesDisplay}
     </div>`
 
     if (cp !== null && cpMultiplier !== null) {
