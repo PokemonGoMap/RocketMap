@@ -54,7 +54,7 @@ module.exports = function () {
         engine: findBestEngine()
     })
 
-    return new Promise(function (resolve, reject) {
+    new Promise(function (resolve, reject) {
         spritesmith.createImages(sprites, function (err, images) {
             if (err) {
                 reject(err)
