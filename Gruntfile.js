@@ -166,8 +166,8 @@ module.exports = function (grunt) {
         }
     })
 
-    grunt.registerPromise('icons-build', 'Builds the icons for gyms and raids.', buildIcons)
-    grunt.registerPromise('sp-build', 'Builds the spritesheet.', buildSpritesheet)
+    grunt.registerTask('icons-build', 'Builds the icons for gyms and raids.', buildIcons)
+    grunt.registerTask('sp-build', 'Builds the spritesheet.', buildSpritesheet)
     grunt.registerTask('js-build', ['newer:babel', 'newer:uglify'])
     grunt.registerTask('css-build', ['newer:sass', 'newer:cssmin'])
     grunt.registerTask('js-lint', ['newer:eslint'])

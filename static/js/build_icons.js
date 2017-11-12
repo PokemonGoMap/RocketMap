@@ -409,9 +409,11 @@ function buildGymIcon(resourceMap, teamId, numPokemon, raidLevel, raidBoss) {
 }
 
 module.exports = function () {
+    const done = this.async()
+
     const pokemonResourcePromises = collectPokemonResources()
 
-    return Promise.all(pokemonResourcePromises)
+    Promise.all(pokemonResourcePromises)
     .then(function (resources) {
         const resourceMap = buildResourceMap(resources)
         const pokemonData = loadPokemonData()
@@ -515,9 +517,10 @@ module.exports = function () {
     })
     .then(function (results) {
         console.log('>>'['green'] + ` ${results.length} gym icons built.`)
+        done()
     })
     .catch(function (err) {
         console.log('>> '['red'] + (err.stack || err))
-        throw err
+        done(false)
     })
 }

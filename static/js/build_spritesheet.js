@@ -44,6 +44,8 @@ function writeSpritesheetMapToFile(spritesheetMap, file) {
 }
 
 module.exports = function () {
+    const done = this.async()
+
     const sprites = glob.sync(`${spritesheetIcons}/**/*.png`, {
         ignore: `${spritesheetIcons}/parts/**/*.png`
     })
@@ -85,9 +87,10 @@ module.exports = function () {
     })
     .then(function () {
         console.log('>> '['green'] + 'spritesheet built.')
+        done()
     })
     .catch(function (err) {
         console.log('>> '['red'] + (err.stack || err))
-        throw err
+        done(false)
     })
 }
