@@ -8,7 +8,6 @@ module.exports = function (grunt) {
 
     var path = require('path')
     var fs = require('fs')
-    var Promise = require('grunt-promise').using('bluebird')
     var buildIcons = require('./static/js/build_icons.js')
     var buildSpritesheet = require('./static/js/build_spritesheet.js')
 
