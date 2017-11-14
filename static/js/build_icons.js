@@ -154,19 +154,19 @@ function gymResourceDetails(teamId, gymStrength, raidLevel, raidBoss) {
     const resourceDetails = [
         {
             type: 'icon',
-            name: 'circle_small',
+            name: 'small_circle',
             path: `${partsDir}/circle.png`,
             size: [68, 68]
         },
         {
             type: 'icon',
-            name: 'circle_medium',
+            name: 'large_circle',
             path: `${partsDir}/circle.png`,
-            size: [135, 135]
+            size: [150, 150]
         },
         {
             type: 'icon',
-            name: 'circle_border_small',
+            name: 'circle_border',
             path: `${partsDir}/circle_border.png`,
             size: [68, 68]
         },
@@ -199,7 +199,7 @@ function gymResourceDetails(teamId, gymStrength, raidLevel, raidBoss) {
             type: 'icon',
             name: 'raid_egg',
             path: `${partsDir}/raid_egg_${raidLevel}.png`,
-            size: [110, 110]
+            size: [105, 105]
         })
 
         resourceDetails.push({
@@ -222,7 +222,7 @@ function gymResourceDetails(teamId, gymStrength, raidLevel, raidBoss) {
                 type: 'icon',
                 name: 'raid_boss',
                 path: `${pokemonDir}/${raidBoss}.png`,
-                size: [135, 135]
+                size: [150, 150]
             })
         }
     }
@@ -466,9 +466,9 @@ function buildGymIcon(iconDetails, resources) {
             const raidLevel = iconDetails.raidLevel
             const raidBoss = iconDetails.raidBoss
 
-            const circle = resources['circle_small']
-            const circleBorder = resources['circle_border_small']
-            const largerCircle = resources['circle_medium']
+            const circle = resources['small_circle']
+            const circleBorder = resources['circle_border']
+            const largeCircle = resources['large_circle']
             const font = resources['font']
 
             const gym = resources['gym']
@@ -480,19 +480,19 @@ function buildGymIcon(iconDetails, resources) {
             const raidEgg = resources['raid_egg']
             if (raidLevel && raidLevel > 0 && !raidBoss) {
                 icon = icon.composite(raidEgg,
-                                      icon.bitmap.width - raidEgg.bitmap.width,
+                                      icon.bitmap.width - raidEgg.bitmap.width - 3,
                                       icon.bitmap.height - raidEgg.bitmap.height - 12)
             }
 
             // Raid boss
             if (raidBoss) {
                 if (raidBoss === 'unknown') {
-                    const unknownRaidBossBkg = largerCircle.clone()
-                                                           .color([{
-                                                               apply: 'mix',
-                                                               params: ['#C0C0C0', 100]
-                                                           }])
-                                                           .background(0x0)
+                    const unknownRaidBossBkg = largeCircle.clone()
+                                                          .color([{
+                                                              apply: 'mix',
+                                                              params: ['#C0C0C0', 100]
+                                                          }])
+                                                          .background(0x0)
 
                     icon = icon.composite(unknownRaidBossBkg,
                                           0,
@@ -515,7 +515,9 @@ function buildGymIcon(iconDetails, resources) {
             }
 
             // Gym strength
-            const gymStrengthY = icon.bitmap.height - (circleBorder.bitmap.height / 2)
+            const gymStrengthY = icon.bitmap.height -
+                                 (circleBorder.bitmap.height / 1.75) -
+                                 4
 
             if (gymStrength && gymStrength > 0 && !raidBoss) {
                 const gymStrengthBkg = circle.clone()
@@ -528,10 +530,10 @@ function buildGymIcon(iconDetails, resources) {
                 var gymStrengthX
                 if (raidLevel && raidLevel > 0) {
                     gymStrengthX = (icon.bitmap.width / 2) -
-                                  (gymStrengthBkg.bitmap.width / 2) -
-                                  3
+                                  (gymStrengthBkg.bitmap.width / 2) +
+                                  9
                 } else {
-                    gymStrengthX = (icon.bitmap.width / 2) - 12
+                    gymStrengthX = (icon.bitmap.width / 2) - 6
                 }
 
                 icon = icon.composite(gymStrengthBkg,
@@ -551,13 +553,15 @@ function buildGymIcon(iconDetails, resources) {
                 icon = icon.composite(raidLevelBkg,
                                       icon.bitmap.width -
                                       (raidEgg.bitmap.width / 2) -
-                                      (raidLevelBkg.bitmap.width / 2),
+                                      (raidLevelBkg.bitmap.width / 2) +
+                                      10,
                                       raidLevelHeight -
                                       (raidLevelBkg.bitmap.height / 2))
                 icon = icon.composite(raidLevelNum,
                                       icon.bitmap.width -
                                       (raidEgg.bitmap.width / 2) -
-                                      (raidLevelNum.bitmap.width / 2),
+                                      (raidLevelNum.bitmap.width / 2) +
+                                      10,
                                       raidLevelHeight -
                                       (raidLevelNum.bitmap.height / 2) +
                                       5)
