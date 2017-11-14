@@ -17,6 +17,7 @@ src/
 _build
 _build_html
 beehive.*
+static/icons/.tracking
 static/icons/pokemon/*.png
 static/icons/gyms/*.png
 !static/icons/gyms/heart.png
