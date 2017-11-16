@@ -41,7 +41,7 @@ args = get_args()
 flaskDb = FlaskDB()
 cache = TTLCache(maxsize=100, ttl=60 * 5)
 
-db_schema_version = 20
+db_schema_version = 21
 
 
 class MyRetryDB(RetryOperationalError, PooledMySQLDatabase):
@@ -2788,10 +2788,11 @@ def bulk_upsert(cls, data, db):
 
 
 def create_tables(db):
-    tables = [Pokemon, Pokestop, Gym, Raid, ScannedLocation, GymDetails,
-              GymMember, GymPokemon, Trainer, MainWorker, WorkerStatus,
-              SpawnPoint, ScanSpawnPoint, SpawnpointDetectionData,
-              Token, LocationAltitude, PlayerLocale, HashKeys]
+    tables = [Accounts, Pokemon, Pokestop, Gym, Raid, ScannedLocation,
+              GymDetails, GymMember, GymPokemon, Trainer, MainWorker,
+              WorkerStatus, SpawnPoint, ScanSpawnPoint,
+              SpawnpointDetectionData, Token, LocationAltitude, PlayerLocale,
+              HashKeys]
     with db.execution_context():
         for table in tables:
             if not table.table_exists():
@@ -2803,8 +2804,8 @@ def create_tables(db):
 
 
 def drop_tables(db):
-    tables = [Pokemon, Pokestop, Gym, Raid, ScannedLocation, Versions,
-              GymDetails, GymMember, GymPokemon, Trainer, MainWorker,
+    tables = [Accounts, Pokemon, Pokestop, Gym, Raid, ScannedLocation,
+              Versions, GymDetails, GymMember, GymPokemon, Trainer, MainWorker,
               WorkerStatus, SpawnPoint, ScanSpawnPoint,
               SpawnpointDetectionData, LocationAltitude, PlayerLocale,
               Token, HashKeys]
