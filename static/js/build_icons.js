@@ -648,7 +648,7 @@ module.exports = function () {
     .then(function (resources) {
         const resourceMap = buildResourceMap(resources)
 
-        var pokemonIconDetailsBatches = []
+        const pokemonIconDetailsBatches = []
         const numBatches = Math.ceil(pokemonIconDetails.length / batchSize)
         for (var i = 0; i < numBatches; ++i) {
             const batchStart = i * batchSize
@@ -656,26 +656,29 @@ module.exports = function () {
             pokemonIconDetailsBatches.push(batch)
         }
 
-        createProgressBar('> building pokemon icons', numBatches)
+        createProgressBar('>> building pokemon icons', numBatches)
 
+        var iconsCreated = 0
         return pokemonIconDetailsBatches.reduce(function (prev, pokemonIconDetails) {
             return prev
             .then(function () {
-                return pokemonIconDetails.map(function (iconDetails) {
+                return Promise.all(pokemonIconDetails.map(function (iconDetails) {
                     const iconResources = resourcesForIcon(iconDetails, resourceMap)
                     return buildPokemonIcon(iconDetails, iconResources)
-                })
+                }))
             })
-            .then(function () {
+            .then(function (results) {
+                iconsCreated += results.length
                 updateProgressBar()
             })
         }, Promise.resolve(1))
         .then(function () {
             endProgressBar()
+            return iconsCreated
         })
     })
-    .then(function () {
-        console.log('>>'['green'] + ` ${pokemonIconDetails.length} pokemon icons built.`)
+    .then(function (iconsCreated) {
+        console.log('>>'['green'] + ` ${iconsCreated} pokemon icons built.`)
 
         const gymResourcePromises = []
         for (var item in gymResourceDetails) {
@@ -688,7 +691,7 @@ module.exports = function () {
     .then(function (resources) {
         const resourceMap = buildResourceMap(resources)
 
-        var gymIconDetailsBatches = []
+        const gymIconDetailsBatches = []
         const numBatches = Math.ceil(gymIconDetails.length / batchSize)
         for (var i = 0; i < numBatches; ++i) {
             const batchStart = i * batchSize
@@ -696,22 +699,25 @@ module.exports = function () {
             gymIconDetailsBatches.push(batch)
         }
 
-        createProgressBar('> building gym icons', numBatches)
+        createProgressBar('>> building gym icons', numBatches)
 
+        var iconsCreated = 0
         return gymIconDetailsBatches.reduce(function (prev, gymIconDetails) {
             return prev
             .then(function () {
-                return gymIconDetails.map(function (iconDetails) {
+                return Promise.all(gymIconDetails.map(function (iconDetails) {
                     const iconResources = resourcesForIcon(iconDetails, resourceMap)
                     return buildGymIcon(iconDetails, iconResources)
-                })
+                }))
             })
-            .then(function () {
+            .then(function (results) {
+                iconsCreated += results.length
                 updateProgressBar()
             })
         }, Promise.resolve(1))
         .then(function () {
             endProgressBar()
+            return iconsCreated
         })
     })
     .then(function () {
