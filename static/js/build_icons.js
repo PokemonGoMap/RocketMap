@@ -666,7 +666,7 @@ module.exports = function () {
                     return buildPokemonIcon(iconDetails, iconResources)
                 })
             })
-            .then(function() {
+            .then(function () {
                 updateProgressBar()
             })
         }, Promise.resolve(1))
@@ -706,7 +706,7 @@ module.exports = function () {
                     return buildGymIcon(iconDetails, iconResources)
                 })
             })
-            .then(function() {
+            .then(function () {
                 updateProgressBar()
             })
         }, Promise.resolve(1))
