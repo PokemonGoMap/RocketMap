@@ -954,6 +954,7 @@ def generate_device_info(identifier):
 
     if device_pick in ('iPhone10,1', 'iPhone10,2', 'iPhone10,3',
                        'iPhone10,4', 'iPhone10,5', 'iPhone10,6'):
+        # iPhone 8/8+ and X started on 11.
         ios_pool = ios11
     elif device_pick in ('iPhone9,1', 'iPhone9,2', 'iPhone9,3', 'iPhone9,4'):
         # iPhone 7/7+ started on 10.
