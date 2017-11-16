@@ -1,7 +1,9 @@
 'use strict'
 
 const fs = require('fs')
+const readline = require('readline')
 const FileChanged = require('file-changed')
+const Promise = require('bluebird')
 const Jimp = require('jimp')
 
 const iconsDir = 'static/icons'
@@ -42,6 +44,8 @@ const raidBosses = {
     '5': [144, 145, 146, 150, 243, 244, 245, 249, 250]
     /* Articuno, Zapdos, Moltres, Mewtwo, Raikou, Entei, Suicune, Lugia, Ho-Oh */
 }
+
+const batchSize = 50
 
 function textWidth(font, text) {
     var width = 0
@@ -391,6 +395,31 @@ function buildResourceMap(resources) {
     return resourceMap
 }
 
+function resourcesForIcon(iconDetails, resourceMap) {
+    const iconResources = {}
+    iconDetails.resourceDetails.forEach(function (details) {
+        const resource = resourceMap[resourceDetailsHash(details)].resource
+        iconResources[details.name] = resource
+    })
+    return iconResources
+}
+
+function createProgressBar(text, size, stream = process.stdout) {
+    readline.clearLine(stream, 0)
+    stream.write(`${text} [${' '.repeat(size)}]\n`)
+    readline.moveCursor(stream, 0, -1)
+    readline.cursorTo(stream, text.length + 2)
+}
+
+function updateProgressBar(stream = process.stdout) {
+    stream.write('=')
+}
+
+function endProgressBar(stream = process.stdout) {
+    readline.cursorTo(stream, 0)
+    readline.clearLine(stream, 0)
+}
+
 function buildPokemonIcon(iconDetails, resources) {
     return new Promise(function (resolve, reject) {
         // eslint-disable-next-line no-new
@@ -618,20 +647,35 @@ module.exports = function () {
     Promise.all(pokemonResourcePromises)
     .then(function (resources) {
         const resourceMap = buildResourceMap(resources)
-        const pokemonIconPromises = pokemonIconDetails.map(function (iconDetails) {
-            const iconResources = {}
-            iconDetails.resourceDetails.forEach(function (details) {
-                const resource = resourceMap[resourceDetailsHash(details)].resource
-                iconResources[details.name] = resource
-            })
-            return buildPokemonIcon(iconDetails, iconResources)
-        })
 
-        return Promise.all(pokemonIconPromises)
+        var pokemonIconDetailsBatches = []
+        const numBatches = Math.ceil(pokemonIconDetails.length / batchSize)
+        for (var i = 0; i < numBatches; ++i) {
+            const batchStart = i * batchSize
+            const batch = pokemonIconDetails.slice(batchStart, batchStart + batchSize)
+            pokemonIconDetailsBatches.push(batch)
+        }
+
+        createProgressBar('> building pokemon icons', numBatches)
+
+        return pokemonIconDetailsBatches.reduce(function (prev, pokemonIconDetails) {
+            return prev
+            .then(function () {
+                return pokemonIconDetails.map(function (iconDetails) {
+                    const iconResources = resourcesForIcon(iconDetails, resourceMap)
+                    return buildPokemonIcon(iconDetails, iconResources)
+                })
+            })
+            .then(function() {
+                updateProgressBar()
+            })
+        }, Promise.resolve(1))
+        .then(function () {
+            endProgressBar()
+        })
     })
-    .then(function (results) {
-        console.log('>>'['green'] + ` ${results.length} pokemon icons built.`)
-        saveResourceInfo()
+    .then(function () {
+        console.log('>>'['green'] + ` ${pokemonIconDetails.length} pokemon icons built.`)
 
         const gymResourcePromises = []
         for (var item in gymResourceDetails) {
@@ -643,25 +687,40 @@ module.exports = function () {
     })
     .then(function (resources) {
         const resourceMap = buildResourceMap(resources)
-        const gymIconPromises = gymIconDetails.map(function (iconDetails) {
-            const iconResources = {}
-            iconDetails.resourceDetails.forEach(function (details) {
-                const resource = resourceMap[resourceDetailsHash(details)].resource
-                iconResources[details.name] = resource
-            })
-            return buildGymIcon(iconDetails, iconResources)
-        })
 
-        return Promise.all(gymIconPromises)
+        var gymIconDetailsBatches = []
+        const numBatches = Math.ceil(gymIconDetails.length / batchSize)
+        for (var i = 0; i < numBatches; ++i) {
+            const batchStart = i * batchSize
+            const batch = gymIconDetails.slice(batchStart, batchStart + batchSize)
+            gymIconDetailsBatches.push(batch)
+        }
+
+        createProgressBar('> building gym icons', numBatches)
+
+        return gymIconDetailsBatches.reduce(function (prev, gymIconDetails) {
+            return prev
+            .then(function () {
+                return gymIconDetails.map(function (iconDetails) {
+                    const iconResources = resourcesForIcon(iconDetails, resourceMap)
+                    return buildGymIcon(iconDetails, iconResources)
+                })
+            })
+            .then(function() {
+                updateProgressBar()
+            })
+        }, Promise.resolve(1))
+        .then(function () {
+            endProgressBar()
+        })
     })
-    .then(function (results) {
-        console.log('>>'['green'] + ` ${results.length} gym icons built.`)
+    .then(function () {
+        console.log('>>'['green'] + ` ${gymIconDetails.length} gym icons built.`)
         saveResourceInfo()
         done()
     })
     .catch(function (err) {
         console.log('>> '['red'] + (err.stack || err))
-        saveResourceInfo()
         done(false)
     })
 }
