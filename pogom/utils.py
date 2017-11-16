@@ -81,6 +81,8 @@ def get_args():
                         default=7200,
                         help=('Seconds for accounts to rest when they fail ' +
                               'or are switched out.'))
+    parser.add_argument('-ar', '--account-refreshement', type=int, default=60,
+                        help=('Seconds between .csv and DB parsing.'))
     parser.add_argument('-ac', '--accountcsv',
                         help=('Load accounts from CSV file containing ' +
                               '"auth_service,username,password" lines.'))
@@ -531,6 +533,8 @@ def get_args():
                     csv_input.append('<username>')
                     csv_input.append('<username>,<password>')
                     csv_input.append('<ptc/google>,<username>,<password>')
+                    csv_input.append(
+                        '<ptc/google>,<username>,<password>,<level>')
 
                     # If the number of fields is different,
                     # then this is not a CSV.
@@ -589,12 +593,11 @@ def get_args():
                         else:
                             field_error = 'method'
 
-                        # If field length is not longer then 0 something is
-                        # wrong!
-                        if len(fields[1]) > 0:
-                            args.username.append(fields[1])
+                    if num_fields == 4:
+                        if len(fields[3]) >= '30':
+                            args.high_lvl_accounts.append(fields[3])
                         else:
-                            field_error = 'username'
+                            continue
 
                         # If field length is not longer then 0 something is
                         # wrong!
@@ -602,6 +605,12 @@ def get_args():
                             args.password.append(fields[2])
                         else:
                             field_error = 'password'
+
+                    if num_fields > 4:
+                        print(('Too many fields in accounts file: max ' +
+                               'supported are 4 fields. ' +
+                               'Found {} fields').format(num_fields))
+                        sys.exit(1)
 
                     # If something is wrong display error.
                     if field_error != '':
@@ -680,7 +689,8 @@ def get_args():
         for i, username in enumerate(args.username):
             args.accounts.append({'username': username,
                                   'password': args.password[i],
-                                  'auth_service': args.auth_service[i]})
+                                  'auth_service': args.auth_service[i],
+                                  'level': args.level[i]})
 
         # Prepare the L30 accounts for the account sets.
         args.accounts_L30 = []

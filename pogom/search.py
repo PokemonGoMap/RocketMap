@@ -56,6 +56,8 @@ log = logging.getLogger(__name__)
 loginDelayLock = Lock()
 gym_cache_lock = threading.Lock()
 
+# TODO: Add accounts that got parsed to db via .csv to account.queue somehow :D
+
 
 # Thread to handle user input.
 def switch_status_printer(display_type, current_page, mainlog,

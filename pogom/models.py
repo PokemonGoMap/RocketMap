@@ -109,6 +109,103 @@ class LatLongModel(BaseModel):
         return results
 
 
+class Accounts(LatLongModel):
+    auth_service = CharField(max_length=5)
+    username = CharField(primary_key=True)
+    password = CharField()
+    level = SmallIntegerField(default=1)
+    captcha = BooleanField(index=True, default=False)
+    latitude = DoubleField(null=True)
+    longitude = DoubleField(null=True)
+    active = BooleanField(default=False)
+    fail = BooleanField(index=True, default=False)
+    shadowban = BooleanField(index=True, default=False)
+    warning = BooleanField(index=True, default=False)
+    banned = BooleanField(index=True, default=False)
+    last_modified = DateTimeField(index=True, default=datetime.utcnow)
+
+    @staticmethod
+    # Load Accounts and return a list which we are parsing into the db.
+    def load_accounts(db, args, account):
+        accounts = []
+        # Load accounts from csv file. Compares existing accounts in db
+        # with given csv file and updates db accordingly.
+        if args.accountcsv is not None:
+            log.info('Loading Accounts from file into DB.')
+
+            with open(args.accountcsv) as f:
+                for line in f:
+                    stripped = line.strip()
+
+                    # Ignore blank lines and comment lines.
+                    if len(stripped) == 0 or line.startswith('#'):
+                        continue
+
+                    accounts.append(stripped)
+
+            log.info('Loaded %d accounts from file.', len(accounts))
+            log.debug('Processing %d accounts into the database.',
+                      len(accounts))
+
+            new_accounts = []
+            if args.db_type == 'mysql':
+                step = 250
+            else:
+                # SQLite has a default max number of parameters of 999,
+                # so we need to limit how many rows we insert for it.
+                step = 50
+
+            usernames = [a['username'] for a in accounts]
+
+            query = (Accounts
+                     .select(Accounts.username)
+                     .where(Accounts.username << usernames)
+                     .dicts())
+
+            db_usernames = [dbu['username'] for dbu in query]
+
+            for a in accounts:
+                if a['username'] in db_usernames:
+                    # Skip accounts already on database.
+                    continue
+                elif a['username'] not in args.accountcsv:
+                    # Account got removed from csv updating db.
+                    query = (Accounts
+                             .delete()
+                             .where(Accounts.username != usernames))
+                    query.execute()
+
+                new_accounts.append(a)
+
+            with db.atomic():
+                for idx in range(0, len(new_accounts), step):
+                    Accounts.insert_many(
+                        new_accounts[idx:idx+step]).execute()
+
+                    log.info('Inserted %d new accounts into the database.',
+                             len(new_accounts))
+
+            if len(accounts) == 0:
+                log.error('Account CSV was configured but ' +
+                          'no were loaded. Aborting.')
+                sys.exit(1)
+
+        return accounts
+
+    # Thread function for periodical account updating.
+    @staticmethod
+    def account_refresher(args, load_accounts):
+        while True:
+            # Wait before refresh, because initial refresh is done at startup.
+            time.sleep(args.account_refreshement)
+
+            try:
+                load_accounts(args)
+                log.info('Regular account refresh complete.')
+            except Exception as e:
+                log.exception('Exception while refreshing accounts: %s.', e)
+
+
 class Pokemon(LatLongModel):
     # We are base64 encoding the ids delivered by the api
     # because they are too big for sqlite to handle.

@@ -387,6 +387,33 @@ def main():
 
         initialize_proxies(args)
 
+        # Processing proxies if set (load from file, check and overwrite old
+        # args.proxy with new working list).
+        args.proxy = load_proxies(args)
+
+        if args.proxy and not args.proxy_skip_check:
+            args.proxy = check_proxies(args, args.proxy)
+
+        # Run periodical CSV refresh thread.
+        if (args.accountcsv is not None) and (args.account_refreshement > 0):
+            log.info('Starting account-refresher thread.')
+            t = Thread(target=account_refresher,
+                       name='account-refresher', args=(args,))
+            t.daemon = True
+            t.start()
+        else:
+            log.info('Account refreshement disabled.')
+
+        # Run periodical proxy refresh thread.
+        if (args.proxy_file is not None) and (args.proxy_refresh > 0):
+            t = Thread(target=proxies_refresher,
+                       name='proxy-refresh', args=(args,))
+            t.daemon = True
+            t.start()
+        else:
+            log.info('Periodical proxies refresh disabled.')
+>>>>>>> 0e17804... Accounts in db Alpha 1
+
         # Update player locale if not set correctly, yet.
         args.player_locale = PlayerLocale.get_locale(args.location)
         if not args.player_locale:
