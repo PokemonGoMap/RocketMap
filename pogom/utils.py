@@ -945,7 +945,7 @@ def generate_device_info(identifier):
     # 10.0 was only for iPhone 7 and 7 Plus, and is rare.
     ios10 = ('10.0.1', '10.0.2', '10.0.3', '10.1', '10.1.1', '10.2', '10.2.1',
              '10.3', '10.3.1', '10.3.2', '10.3.3')
-    ios11 = ('11.0.1', '11.0.2', '11.0.3', '11.1', '11.1.1')
+    ios11 = ('11.0.1', '11.0.2', '11.0.3', '11.1', '11.1.1', '11.1.2')
 
     device_pick = devices[pick_hash % len(devices)]
     device_info['device_model_boot'] = device_pick
