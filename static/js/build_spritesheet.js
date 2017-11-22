@@ -14,6 +14,8 @@ const spritesheetMapFile = 'static/data/sprite_map.json'
 
 const writeFile = Promise.promisify(fs.writeFile)
 
+const batchSize = 40
+
 function findBestEngine() {
     try {
         require('canvassmith')
@@ -50,15 +52,34 @@ module.exports = function () {
         ignore: `${spritesheetIcons}/parts/**/*.png`
     })
 
+    const spriteBatches = []
+    const numBatches = Math.ceil(sprites.length / batchSize)
+    for (var i = 0; i < numBatches; ++i) {
+        const batchStart = i * batchSize
+        const batch = sprites.slice(batchStart, batchStart + batchSize)
+        spriteBatches.push(batch)
+    }
+
     const spritesmith = new Spritesmith({
         engine: findBestEngine()
     })
 
-    new Promise(function (resolve, reject) {
-        spritesmith.createImages(sprites, function (err, images) {
-            if (err) {
-                reject(err)
-            }
+    spriteBatches.reduce(function (prev, sprites) {
+        return prev
+        .then(function (allImages) {
+            return new Promise(function (resolve, reject) {
+                spritesmith.createImages(sprites, function (err, images) {
+                    if (err) {
+                        reject(err)
+                    }
+                    allImages.push.apply(allImages, images)
+                    resolve(allImages)
+                })
+            })
+        })
+    }, Promise.resolve([]))
+    .then(function (images) {
+        return new Promise(function (resolve, reject) {
             resolve(spritesmith.processImages(images))
         })
     })
