@@ -237,7 +237,7 @@ class Accounts(LatLongModel):
                         log.error((
                             'File "%s" has an error on line "%d": ' +
                             'last field must contain the account level.'),
-                            filename, num)
+                            args.accountcsv, num)
                         return False
 
                     level = int(fields[3])
@@ -245,7 +245,7 @@ class Accounts(LatLongModel):
                         log.error((
                             'File "%s" has an error on line "%d": ' +
                             'account level must be between 1 and 40.'),
-                            filename, num)
+                            args.accountcsv, num)
                         return False
 
                 account = {
@@ -291,7 +291,7 @@ class Accounts(LatLongModel):
                     # Skip accounts already on database.
                     continue
                 new_accounts.append(a)
-                elif db_usernames not in args.accountcsv:
+                if db_usernames not in args.accountcsv:
                     # Account got removed from csv updating db.
                     query = (Accounts
                              .delete()
