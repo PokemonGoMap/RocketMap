@@ -41,8 +41,8 @@ from distutils.version import StrictVersion
 from cachetools import TTLCache
 
 from pgoapi.hash_server import HashServer
-from .models import (parse_map, GymDetails, parse_gyms, MainWorker,
-                     WorkerStatus, HashKeys, ScannedLocation)
+from .models import (Accounts, parse_map, GymDetails, parse_gyms,
+                     MainWorker, WorkerStatus, HashKeys)
 from .utils import now, distance
 from .transform import get_new_coords
 from .account import setup_api, check_login, AccountSet
@@ -331,7 +331,6 @@ def search_overseer_thread(args, new_location_queue, control_flags, heartb,
                            db_updates_queue, wh_queue):
 
     log.info('Search overseer starting...')
-
     search_items_queue_array = []
     scheduler_array = []
     account_queue = Queue()
@@ -353,8 +352,8 @@ def search_overseer_thread(args, new_location_queue, control_flags, heartb,
     they can be tried again later, but must wait a bit before doing do so
     to prevent accounts from being cycled through too quickly.
     '''
-    for i, account in enumerate(args.accounts):
-        account_queue.put(account)
+    add_accounts_to_queue(args, account_queue, args.workers,
+                          max_level=29, init=True)
 
     '''
     Create sets of special case accounts.
@@ -402,19 +401,11 @@ def search_overseer_thread(args, new_location_queue, control_flags, heartb,
         t.daemon = True
         t.start()
 
-    # Create account recycler thread.
-    log.info('Starting account recycler thread...')
-    t = Thread(target=account_recycler, name='account-recycler',
-               args=(args, account_queue, account_failures))
-    t.daemon = True
-    t.start()
-
     # Create captcha overseer thread.
     if args.captcha_solving:
         log.info('Starting captcha overseer thread...')
         t = Thread(target=captcha_overseer_thread, name='captcha-overseer',
-                   args=(args, account_queue, account_captchas, key_scheduler,
-                         wh_queue))
+                   args=(args, account_captchas, key_scheduler, wh_queue))
         t.daemon = True
         t.start()
 
@@ -821,6 +812,7 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
                 'message':
                     'Switching to account {}.'.format(account['username'])
             })
+            Accounts.heartbeat(account)
             log.info(status['message'])
 
             # Sleep when consecutive_fails reaches max_failures, overall fails
@@ -851,6 +843,11 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
                     account_failures.append({'account': account,
                                              'last_fail_time': now(),
                                              'reason': 'failures'})
+                    # TODO: use db queue
+                    Accounts.set_fail(account)
+
+                    add_accounts_to_queue(args, account_queue, 1, max_level=29)
+
                     # Exit this loop to get a new account and have the API
                     # recreated.
                     break
@@ -868,6 +865,9 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
                     account_failures.append({'account': account,
                                              'last_fail_time': now(),
                                              'reason': 'empty scans'})
+                    # TODO: use db queue
+                    Accounts.set_fail(account)
+                    add_accounts_to_queue(args, account_queue, 1, max_level=29)
                     # Exit this loop to get a new account and have the API
                     # recreated.
                     break
@@ -882,7 +882,7 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
                             account['username'], status['proxy_url'])
                     log.warning(status['message'])
                     # Experimental, nobody did this before.
-                    account_queue.put(account)
+                    add_accounts_to_queue(args, account_queue, 1, max_level=29)
                     # Exit this loop to get a new account and have the API
                     # recreated.
                     break
@@ -898,6 +898,8 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
                         account_failures.append({'account': account,
                                                  'last_fail_time': now(),
                                                  'reason': 'rest interval'})
+                        add_accounts_to_queue(args, account_queue, 1,
+                                              max_level=29)
                         break
 
                 # Grab the next thing to search (when available).
@@ -989,6 +991,9 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
                 status['longitude'] = scan_coords[1]
                 dbq.put((WorkerStatus, {0: WorkerStatus.db_format(status)}))
 
+                account['latitude'] = step_location[0]
+                account['longitude'] = step_location[1]
+
                 # Nothing back. Mark it up, sleep, carry on.
                 if not response_dict:
                     status['fail'] += 1
@@ -1012,6 +1017,13 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
                         response_dict = gmo(api, account, scan_coords)
                     elif captcha is not None:
                         account_queue.task_done()
+                        # Automatic captcha disabled, captcha sent to queue.
+                        # TODO: rework captcha solving, auto vs manual,
+                        # keep account in local instance or release?
+                        # captcha handling should be removed from search/models
+                        # and be handled all together in PGoAPI client/wrapper.
+                        add_accounts_to_queue(args, account_queue, 1,
+                                              max_level=29)
                         time.sleep(3)
                         break
 
@@ -1210,6 +1222,8 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
             account_failures.append({'account': account,
                                      'last_fail_time': now(),
                                      'reason': 'exception'})
+            Accounts.set_fail(account)
+            add_accounts_to_queue(args, account_queue, 1, max_level=29)
             time.sleep(args.scan_delay)
 
 
@@ -1329,3 +1343,25 @@ def is_paused(control_flags):
         if flag.is_set():
             return True
     return False
+
+
+def add_accounts_to_queue(args, account_queue, number,
+                          min_level=1, max_level=40, init=False):
+    accounts = []
+    retry_delay = 0
+    while len(accounts) < number:
+        accounts = Accounts.get_accounts((number - len(accounts)),
+                                         min_level=min_level,
+                                         max_level=max_level,
+                                         init=init)
+        for a in accounts:
+            account_queue.put(a)
+
+        if len(accounts) < number:
+            retry_delay += args.login_delay
+            log.error('Got only {} / {} account(s). Retrying in {} s.',
+                      len(accounts), number, retry_delay)
+            time.sleep(retry_delay)
+
+    log.info('Loaded {} accounts from the DB.'.format(number))
+    return account_queue

@@ -667,10 +667,9 @@ class SpeedScan(HexSearch):
 
     # How long to delay since last action
     def delay(self, last_scan_date):
-        return max(
-            ((last_scan_date - datetime.utcnow()).total_seconds() +
-             self.args.scan_delay),
-            2)
+        return min(max(((last_scan_date - datetime.utcnow()).total_seconds() +
+                       self.args.scan_delay), 10),
+                   90)
 
     def band_status(self):
         try:

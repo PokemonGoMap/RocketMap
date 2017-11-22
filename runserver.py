@@ -21,9 +21,10 @@ from pogom.utils import (get_args, now, gmaps_reverse_geolocate,
                          log_resource_usage_loop, get_debug_dump_link)
 from pogom.altitude import get_gmaps_altitude
 
-from pogom.models import (init_database, create_tables, drop_tables,
-                          PlayerLocale, db_updater, clean_db_loop,
-                          verify_table_encoding, verify_database_schema)
+from pogom.models import (Accounts, init_database, create_tables,
+                          drop_tables, PlayerLocale, SpawnPoint, db_updater,
+                          clean_db_loop, verify_table_encoding,
+                          verify_database_schema)
 from pogom.webhook import wh_updater
 
 from pogom.proxy import initialize_proxies
@@ -341,6 +342,10 @@ def main():
     new_location_queue = Queue()
     new_location_queue.put(position)
 
+    # Import accounts from .csv file into db on startup.
+    accounts = Accounts.load_accounts(args)
+    Accounts.process_accounts(db, accounts)
+
     # DB Updates
     db_updates_queue = Queue()
 
@@ -395,14 +400,17 @@ def main():
             args.proxy = check_proxies(args, args.proxy)
 
         # Run periodical CSV refresh thread.
-        if (args.accountcsv is not None) and (args.account_refreshement > 0):
+        if (args.accountcsv is not None) and (args.account_refresh > 0):
             log.info('Starting account-refresher thread.')
-            t = Thread(target=account_refresher,
-                       name='account-refresher', args=(args,))
+            t = Thread(target=Accounts.account_refresher,
+                       name='account-refresher', args=(args, db,
+                                                       Accounts.load_accounts,
+                                                       Accounts.
+                                                       process_accounts))
             t.daemon = True
             t.start()
         else:
-            log.info('Account refreshement disabled.')
+            log.info('Account refresh disabled.')
 
         # Run periodical proxy refresh thread.
         if (args.proxy_file is not None) and (args.proxy_refresh > 0):
