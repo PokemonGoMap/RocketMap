@@ -109,45 +109,167 @@ class LatLongModel(BaseModel):
         return results
 
 
+# TODO: Add support for high_lvl_accounts.
 class Accounts(LatLongModel):
-    auth_service = CharField(max_length=5)
-    username = CharField(primary_key=True)
-    password = CharField()
+    auth_service = Utf8mb4CharField(max_length=6)
+    username = Utf8mb4CharField(primary_key=True, max_length=26)
+    password = Utf8mb4CharField()
     level = SmallIntegerField(default=1)
     captcha = BooleanField(index=True, default=False)
     latitude = DoubleField(null=True)
     longitude = DoubleField(null=True)
     active = BooleanField(default=False)
+    in_use = BooleanField(index=True, default=False)
+    instance_name = CharField(index=True, null=True, max_length=64)
     fail = BooleanField(index=True, default=False)
+    last_modified = DateTimeField(index=True, default=datetime.utcnow)
+    # TODO: add functionallity for the tables below.
     shadowban = BooleanField(index=True, default=False)
     warning = BooleanField(index=True, default=False)
     banned = BooleanField(index=True, default=False)
-    last_modified = DateTimeField(index=True, default=datetime.utcnow)
+
+    # Fetch accounts from db that we are using for scanning then.
+    @staticmethod
+    def get_accounts(number, min_level=1, max_level=40, init=False):
+        query = []
+        accounts = []
+        # Try to re-use previous accounts for this instance
+        if init:
+            Accounts.reset_instance(keep_instance_name=True)
+            query = (Accounts
+                     .select()
+                     .where((Accounts.instance_name == args.status_name) &
+                            (Accounts.fail == 0) &
+                            (Accounts.shadowban == 0) &
+                            (Accounts.banned == 0) &
+                            (Accounts.level >= min_level) &
+                            (Accounts.level <= max_level))
+                     .order_by(Accounts.level.asc(),
+                               Accounts.last_modified.asc())
+                     .limit(number)
+                     .dicts())
+
+        if len(query) != number:  # Not exact same config? Get new accounts!
+            query = (Accounts
+                     .select()
+                     .where((Accounts.in_use == 0) &
+                            (Accounts.fail == 0) &
+                            (Accounts.shadowban == 0) &
+                            (Accounts.banned == 0) &
+                            (Accounts.level >= min_level) &
+                            (Accounts.level <= max_level))
+                     .order_by(Accounts.level.asc(),
+                               Accounts.last_modified.asc())
+                     .limit(number)
+                     .dicts())
+
+        if len(query):
+            # Directly set accounts to in_use with the instance_name
+            usernames = [dba['username'] for dba in query]
+            (Accounts.update(in_use=True,
+                             instance_name=args.status_name)
+                     .where((Accounts.username << usernames))
+                     .execute())
+
+            for a in query:
+                accounts.append(a)
+                a['db_level'] = a['level']
+
+            # Sets free all instance-flagged accounts which are not used now
+            if init:
+                (Accounts.update(in_use=False, instance_name=None)
+                         .where((Accounts.instance_name == args.status_name) &
+                                ~(Accounts.username << usernames))
+                         .execute())
+
+        log.debug('Got {} accounts.'.format(len(accounts)))
+
+        return accounts
 
     @staticmethod
     # Load Accounts and return a list which we are parsing into the db.
-    def load_accounts(db, args, account):
+    def load_accounts(args):
+        csv_lines = []
+        with open(args.accountcsv, 'r') as file:
+            csv_lines = file.read().splitlines()
+
+        if not csv_lines:
+            log.error('Accounts CSV file "%s" could not be read.',
+                      args.accountcsv)
+            return False
+
         accounts = []
-        # Load accounts from csv file. Compares existing accounts in db
-        # with given csv file and updates db accordingly.
-        if args.accountcsv is not None:
-            log.info('Loading Accounts from file into DB.')
+        num_fields = -1
+        for num, line in enumerate(csv_lines, 1):
+            line = line.strip()
 
-            with open(args.accountcsv) as f:
-                for line in f:
-                    stripped = line.strip()
+            # Ignore blank lines and comment lines.
+            if len(line) == 0 or line.startswith('#'):
+                continue
 
-                    # Ignore blank lines and comment lines.
-                    if len(stripped) == 0 or line.startswith('#'):
-                        continue
+            fields = line.split(",")
+            fields = map(str.strip, fields)
+            if num_fields < 0:
+                num_fields = len(fields)
 
-                    accounts.append(stripped)
+            if num_fields == 2:
+                account = {
+                    'auth_service': 'ptc',
+                    'username': fields[0],
+                    'password': fields[1],
+                    'level': 1
+                }
+                accounts.append(account)
 
-            log.info('Loaded %d accounts from file.', len(accounts))
-            log.debug('Processing %d accounts into the database.',
-                      len(accounts))
+            elif num_fields == 3 or num_fields == 4:
+                auth_service = fields[0].lower()
+                if auth_service != 'ptc' and auth_service != 'google':
+                    log.error((
+                        'File "%s" has an error on line "%d": ' +
+                        'first field must be either "ptc" or "google."'),
+                        args.accountcsv, num)
+                    return False
 
-            new_accounts = []
+                level = 1
+                # Check if account level is present.
+                if num_fields == 4 and fields[3]:
+                    if not fields[3].isdigit():
+                        log.error((
+                            'File "%s" has an error on line "%d": ' +
+                            'last field must contain the account level.'),
+                            filename, num)
+                        return False
+
+                    level = int(fields[3])
+                    if level < 1 or level > 40:
+                        log.error((
+                            'File "%s" has an error on line "%d": ' +
+                            'account level must be between 1 and 40.'),
+                            filename, num)
+                        return False
+
+                account = {
+                    'auth_service': fields[0],
+                    'username': fields[1],
+                    'password': fields[2],
+                    'level': level
+                }
+                accounts.append(account)
+            else:
+                log.error((
+                    'File "%s" has an error on line "%d": ' +
+                    'invalid field count, check syntax.'), args.accountcsv,
+                    num)
+                return False
+        return accounts
+
+    @staticmethod
+    def process_accounts(db, accounts):
+        log.info('Loaded %d accounts from file.',
+                 len(accounts))
+
+        new_accounts = []
+        if accounts:
             if args.db_type == 'mysql':
                 step = 250
             else:
@@ -168,39 +290,76 @@ class Accounts(LatLongModel):
                 if a['username'] in db_usernames:
                     # Skip accounts already on database.
                     continue
-                elif a['username'] not in args.accountcsv:
+                new_accounts.append(a)
+                elif db_usernames not in args.accountcsv:
                     # Account got removed from csv updating db.
                     query = (Accounts
                              .delete()
-                             .where(Accounts.username != usernames))
+                             .where(~(Accounts.username << args.accountcsv)))
                     query.execute()
-
-                new_accounts.append(a)
+                    log.info('Removed %d accounts from DB.', len(accounts))
 
             with db.atomic():
                 for idx in range(0, len(new_accounts), step):
-                    Accounts.insert_many(
-                        new_accounts[idx:idx+step]).execute()
+                    Accounts.insert_many(new_accounts[idx:idx+step]).execute()
 
-                    log.info('Inserted %d new accounts into the database.',
-                             len(new_accounts))
+        log.info('Inserted %d new accounts into the database.',
+                 len(new_accounts))
 
-            if len(accounts) == 0:
-                log.error('Account CSV was configured but ' +
-                          'no were loaded. Aborting.')
-                sys.exit(1)
+    # Updates the DB account after an action to show it's still in use.
+    @staticmethod
+    def heartbeat(account):
+        (Accounts(username=account['username'],
+                  in_use=True,
+                  instance_name=args.status_name,
+                  last_modified=datetime.utcnow())
+         .save())
 
-        return accounts
+    # Resets all instance-flagged accounts to set them free for re-use.
+    @staticmethod
+    def reset_instance(keep_instance_name=False):
+        instance_name = args.status_name if keep_instance_name else None
+        (Accounts.update(in_use=False, instance_name=instance_name)
+                 .where(Accounts.instance_name == args.status_name)
+                 .execute())
+
+    # Resets instance-flags of accounts to set them free for re-use
+    @staticmethod
+    def release_account(account):
+        (Accounts(username=account['username'],
+                  in_use=False,
+                  instance_name=None)
+         .save())
+
+    # Sets the fail flag of an account when getting removed from queue for
+    # uncertain reason. Re-use is possible.
+    @staticmethod
+    def set_fail(account):
+        (Accounts(username=account['username'],
+                  in_use=False,
+                  fail=True)
+         .save())
+        (WorkerStatus
+         .delete()
+         .where((WorkerStatus.username == account['username']))
+         .execute())
+
+    # Fetches all captcha'd accounts for captcha handling (later)
+    @staticmethod
+    def get_captchad():
+        query = Accounts.select().where((Accounts.captcha == 1)).dicts()
+        return list(query.values())
 
     # Thread function for periodical account updating.
     @staticmethod
-    def account_refresher(args, load_accounts):
+    def account_refresher(args, db, load_accounts, process_accounts):
         while True:
             # Wait before refresh, because initial refresh is done at startup.
-            time.sleep(args.account_refreshement)
+            time.sleep(args.account_refresh)
 
             try:
-                load_accounts(args)
+                accounts = load_accounts(args)
+                process_accounts(db, accounts)
                 log.info('Regular account refresh complete.')
             except Exception as e:
                 log.exception('Exception while refreshing accounts: %s.', e)
