@@ -56,7 +56,6 @@ log = logging.getLogger(__name__)
 loginDelayLock = Lock()
 gym_cache_lock = threading.Lock()
 
-
 # Thread to handle user input.
 def switch_status_printer(display_type, current_page, mainlog,
                           loglevel, logmode):
