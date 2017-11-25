@@ -286,19 +286,63 @@ class Accounts(LatLongModel):
 
             db_usernames = [dbu['username'] for dbu in query]
 
+            query = (Accounts
+                     .select(Accounts.username)
+                     .where(~(Accounts.username << usernames))
+                     .dicts())
+
+            remove_db_usernames = [dbu['username'] for dbu in query]
+
             for a in accounts:
                 if a['username'] in db_usernames:
                     # Skip accounts already on database.
                     continue
                 new_accounts.append(a)
-                # TODO: make this work :sadface:
-                # if db_usernames not in a['username']:
-                #        query = (Accounts
-                #                 .delete()
-                #                 .where(~(Accounts.username << usernames)))
-                #        query.execute()
-                #        log.info('Removed %d deleted accounts from DB.', len(
-                #            db_usernames))
+
+    @staticmethod
+    def process_accounts(db, accounts):
+        log.info('Loaded %d accounts from file.',
+                 len(accounts))
+
+        new_accounts = []
+        if accounts:
+            if args.db_type == 'mysql':
+                step = 250
+                log.info('using mysql ')
+            else:
+                log.info('using sqlite ')
+                # SQLite has a default max number of parameters of 999,
+                # so we need to limit how many rows we insert for it.
+                step = 50
+
+            usernames = [a['username'] for a in accounts]
+            query = (Accounts
+                     .select(Accounts.username)
+                     .where(Accounts.username << usernames)
+                     .dicts())
+
+            db_usernames = [dbu['username'] for dbu in query]
+
+            query = (Accounts
+                     .select(Accounts.username)
+                     .where(~(Accounts.username << usernames))
+                     .dicts())
+
+            remove_db_usernames = [dbu['username'] for dbu in query]
+
+            for a in accounts:
+                if a['username'] in db_usernames:
+                    # Skip accounts already on database.
+                    continue
+                new_accounts.append(a)
+
+            if(len(remove_db_usernames)):
+                query = (Accounts
+                         .delete()
+                         .where(Accounts.username << remove_db_usernames))
+                query.execute()
+                log.info('Removed %d deleted accounts from DB.', len(
+                    remove_db_usernames))
 
             with db.atomic():
                 for idx in range(0, len(new_accounts), step):
@@ -3271,6 +3315,40 @@ def database_migrate(db, old_ver):
                                     null=False, default=datetime.utcnow())),
             migrator.add_column('gym', 'total_cp',
                                 SmallIntegerField(null=False, default=0)))
+
+    # if old_ver < 21:
+    #    migrate(
+    #        migrator.add_column(
+    #            'Accounts', 'auth_service', Utf8mb4CharField(max_length=6)),
+    #        migrator.add_column('Accounts', 'username', Utf8mb4CharField(
+    #                primary_key=True, max_length=26))
+    #        migrator.add_column('Accounts', 'password', Utf8mb4CharField()),
+    #        migrator.add_column('Accounts', 'level', SmallIntegerField(
+    #            default=1)),
+    #        migration.add_column('Accounts', 'captcha', BooleanField(
+    #            index=True, default=False)),
+    #        migrator.add_column('Accounts', 'latitude', DoubleField(
+    #            null=True)),
+    #        migrator.add_column('Accounts', 'longitude', DoubleField(
+    #            null=True)),
+    #        migrator.add_colum('Accounts', 'active', BooleanField(
+    #            default=False)),
+    #        migrator.add_colum('Accounts', 'in_use', BooleanField(
+    #            index=True, default=False)),
+    #        migrator.add_colum('Accounts', 'instance_name', CharField(
+    #            index=True, null=True, max_length=64)),
+    #        migrator.add_colum('Accounts', 'fail', BooleanField(
+    #            index=True, default=False)),
+    #        migrator.add_colum('Accounts', 'last_modified', DateTimeField(
+    #            index=True, default=datetime.utcnow)),
+    #        # TODO: add functionallity for the tables below.
+    #        migrator.add_colum('Accounts', 'shadowban', BooleanField(
+    #            index=True, default=False)),
+    #        migrator.add_column('Accounts', 'warning', BooleanField(
+    #            index=True, default=False)),
+    #        migraor.add_column('Accounts', 'banned', BooleanField(
+    #            index=True, default=False))
+    #    )
 
     # Always log that we're done.
     log.info('Schema upgrade complete.')
