@@ -111,7 +111,7 @@ class LatLongModel(BaseModel):
 
 # TODO: Add support for high_lvl_accounts.
 class Accounts(LatLongModel):
-    auth_service = Utf8mb4CharField(max_length=6)
+    auth_service = Utf8mb4CharField(max_length=6, default='ptc')
     username = Utf8mb4CharField(primary_key=True, max_length=26)
     password = Utf8mb4CharField()
     level = SmallIntegerField(default=1)
@@ -265,8 +265,7 @@ class Accounts(LatLongModel):
 
     @staticmethod
     def process_accounts(db, accounts):
-        log.info('Loaded %d accounts from file.',
-                 len(accounts))
+        log.info('Loaded %d accounts from file.', len(accounts))
 
         new_accounts = []
         if accounts:
