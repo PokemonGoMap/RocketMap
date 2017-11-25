@@ -149,7 +149,7 @@ class Accounts(LatLongModel):
                      .limit(number)
                      .dicts())
 
-        if len(query) != number:  # Not exact same config? Get new accounts!
+        if len(query) != number:  # Not exact same config? Get new accounts.
             query = (Accounts
                      .select()
                      .where((Accounts.in_use == 0) &
@@ -164,7 +164,7 @@ class Accounts(LatLongModel):
                      .dicts())
 
         if len(query):
-            # Directly set accounts to in_use with the instance_name
+            # Directly set accounts to in_use with the instance_name.
             usernames = [dba['username'] for dba in query]
             (Accounts.update(in_use=True,
                              instance_name=args.status_name)
@@ -175,7 +175,7 @@ class Accounts(LatLongModel):
                 accounts.append(a)
                 a['db_level'] = a['level']
 
-            # Sets free all instance-flagged accounts which are not used now
+            # Releases all instance-flagged accounts which are not used now.
             if init:
                 (Accounts.update(in_use=False, instance_name=None)
                          .where((Accounts.instance_name == args.status_name) &
@@ -291,13 +291,14 @@ class Accounts(LatLongModel):
                     # Skip accounts already on database.
                     continue
                 new_accounts.append(a)
-                if db_usernames not in args.accountcsv:
-                    # Account got removed from csv updating db.
-                    query = (Accounts
-                             .delete()
-                             .where(~(Accounts.username << args.accountcsv)))
-                    query.execute()
-                    log.info('Removed %d accounts from DB.', len(accounts))
+                # TODO: make this work :sadface:
+                # if db_usernames not in a['username']:
+                #        query = (Accounts
+                #                 .delete()
+                #                 .where(~(Accounts.username << usernames)))
+                #        query.execute()
+                #        log.info('Removed %d deleted accounts from DB.', len(
+                #            db_usernames))
 
             with db.atomic():
                 for idx in range(0, len(new_accounts), step):

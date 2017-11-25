@@ -56,8 +56,6 @@ log = logging.getLogger(__name__)
 loginDelayLock = Lock()
 gym_cache_lock = threading.Lock()
 
-# TODO: Add accounts that got parsed to db via .csv to account.queue somehow :D
-
 
 # Thread to handle user input.
 def switch_status_printer(display_type, current_page, mainlog,
@@ -1359,7 +1357,7 @@ def add_accounts_to_queue(args, account_queue, number,
 
         if len(accounts) < number:
             retry_delay += args.login_delay
-            log.error('Got only {} / {} account(s). Retrying in {} s.',
+            log.error('Got only %s / %s account(s). Retrying in %ss.',
                       len(accounts), number, retry_delay)
             time.sleep(retry_delay)
 
