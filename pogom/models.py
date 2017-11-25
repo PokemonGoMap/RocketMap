@@ -272,42 +272,6 @@ class Accounts(LatLongModel):
         if accounts:
             if args.db_type == 'mysql':
                 step = 250
-            else:
-                # SQLite has a default max number of parameters of 999,
-                # so we need to limit how many rows we insert for it.
-                step = 50
-
-            usernames = [a['username'] for a in accounts]
-
-            query = (Accounts
-                     .select(Accounts.username)
-                     .where(Accounts.username << usernames)
-                     .dicts())
-
-            db_usernames = [dbu['username'] for dbu in query]
-
-            query = (Accounts
-                     .select(Accounts.username)
-                     .where(~(Accounts.username << usernames))
-                     .dicts())
-
-            remove_db_usernames = [dbu['username'] for dbu in query]
-
-            for a in accounts:
-                if a['username'] in db_usernames:
-                    # Skip accounts already on database.
-                    continue
-                new_accounts.append(a)
-
-    @staticmethod
-    def process_accounts(db, accounts):
-        log.info('Loaded %d accounts from file.',
-                 len(accounts))
-
-        new_accounts = []
-        if accounts:
-            if args.db_type == 'mysql':
-                step = 250
                 log.info('using mysql ')
             else:
                 log.info('using sqlite ')
@@ -335,7 +299,6 @@ class Accounts(LatLongModel):
                     # Skip accounts already on database.
                     continue
                 new_accounts.append(a)
-
             if(len(remove_db_usernames)):
                 query = (Accounts
                          .delete()
