@@ -64,12 +64,10 @@ module.exports = function () {
         engine: findBestEngine()
     })
 
-    console.log('HERE 1')
     spriteBatches.reduce(function (prev, sprites) {
         return prev
         .then(function (allImages) {
             return new Promise(function (resolve, reject) {
-                console.log('HERE 2')
                 spritesmith.createImages(sprites, function (err, images) {
                     if (err) {
                         reject(err)
@@ -81,13 +79,11 @@ module.exports = function () {
         })
     }, Promise.resolve([]))
     .then(function (images) {
-        console.log('HERE 3')
         return new Promise(function (resolve, reject) {
             resolve(spritesmith.processImages(images))
         })
     })
     .then(function (spritesheetData) {
-        console.log('HERE 4')
         const spritesheetInfo = spritesheetData.properties
         spritesheetInfo.url = spritesheetFile
 
@@ -104,11 +100,21 @@ module.exports = function () {
             sprites: spriteInfo
         }
 
-        return Promise.all([
+        console.log('HERE 1')
+        return writeSpritesheetToFile(spritesheetData.image, spritesheetFile)
+        .then(function () {
+            console.log('HERE 2')
+            return writeSpritesheetScssToFile(spritesheetMap, spritesheetScssFile)
+        })
+        .then(function () {
+            console.log('HERE 3')
+            return writeSpritesheetMapToFile(spritesheetMap, spritesheetMapFile)
+        })
+        /*return Promise.all([
             writeSpritesheetToFile(spritesheetData.image, spritesheetFile),
             writeSpritesheetScssToFile(spritesheetMap, spritesheetScssFile),
             writeSpritesheetMapToFile(spritesheetMap, spritesheetMapFile)
-        ])
+        ])*/
     })
     .then(function () {
         console.log('>> '['green'] + 'spritesheet built.')
