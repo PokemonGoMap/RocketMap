@@ -41,7 +41,7 @@ args = get_args()
 flaskDb = FlaskDB()
 cache = TTLCache(maxsize=100, ttl=60 * 5)
 
-db_schema_version = 21
+db_schema_version = 20
 
 
 class MyRetryDB(RetryOperationalError, PooledMySQLDatabase):
@@ -128,6 +128,7 @@ class Accounts(LatLongModel):
     warning = BooleanField(index=True, default=False)
     banned = BooleanField(index=True, default=False)
 
+    # TODO: Add high_lvl_accounts support.
     # Fetch accounts from db that we are using for scanning then.
     @staticmethod
     def get_accounts(number, min_level=1, max_level=40, init=False):
@@ -271,9 +272,7 @@ class Accounts(LatLongModel):
         if accounts:
             if args.db_type == 'mysql':
                 step = 250
-                log.info('using mysql ')
             else:
-                log.info('using sqlite ')
                 # SQLite has a default max number of parameters of 999,
                 # so we need to limit how many rows we insert for it.
                 step = 50
@@ -298,6 +297,7 @@ class Accounts(LatLongModel):
                     # Skip accounts already on database.
                     continue
                 new_accounts.append(a)
+
             if(len(remove_db_usernames)):
                 query = (Accounts
                          .delete()
@@ -2882,6 +2882,32 @@ def clean_db_loop(args):
                                 (datetime.now() - timedelta(days=1))))
                 query.execute()
 
+                # Some quite inactive Accounts in use? Reset them.
+                # Caused by hard shut-down or more workers than needed.
+                # TODO: review account cleanup
+                query = (Accounts
+                         .update(in_use=False)
+                         .where((Accounts.in_use == 1) &
+                                (Accounts.last_modified <
+                                (datetime.utcnow() - timedelta(minutes=15))))
+                         .execute())
+
+                query = (Accounts
+                         .update(in_use=False, instance_name=None)
+                         .where((Accounts.instance_name.is_null(False)) &
+                                (Accounts.last_modified <
+                                (datetime.utcnow() - timedelta(minutes=60))))
+                         .execute())
+
+                # Resets failed accounts after rest time for re-use.
+                query = (Accounts
+                         .update(in_use=False, instance_name=None, fail=False)
+                         .where((Accounts.fail == 1) &
+                                (Accounts.last_modified <
+                                (datetime.utcnow() - timedelta(
+                                    seconds=args.account_rest_interval))))
+                         .execute())
+
                 # If desired, clear old Pokemon spawns.
                 if args.purge_data > 0:
                     log.info("Beginning purge of old Pokemon spawns.")
@@ -3277,40 +3303,6 @@ def database_migrate(db, old_ver):
                                     null=False, default=datetime.utcnow())),
             migrator.add_column('gym', 'total_cp',
                                 SmallIntegerField(null=False, default=0)))
-
-    # if old_ver < 21:
-    #    migrate(
-    #        migrator.add_column(
-    #            'Accounts', 'auth_service', Utf8mb4CharField(max_length=6)),
-    #        migrator.add_column('Accounts', 'username', Utf8mb4CharField(
-    #                primary_key=True, max_length=26))
-    #        migrator.add_column('Accounts', 'password', Utf8mb4CharField()),
-    #        migrator.add_column('Accounts', 'level', SmallIntegerField(
-    #            default=1)),
-    #        migration.add_column('Accounts', 'captcha', BooleanField(
-    #            index=True, default=False)),
-    #        migrator.add_column('Accounts', 'latitude', DoubleField(
-    #            null=True)),
-    #        migrator.add_column('Accounts', 'longitude', DoubleField(
-    #            null=True)),
-    #        migrator.add_colum('Accounts', 'active', BooleanField(
-    #            default=False)),
-    #        migrator.add_colum('Accounts', 'in_use', BooleanField(
-    #            index=True, default=False)),
-    #        migrator.add_colum('Accounts', 'instance_name', CharField(
-    #            index=True, null=True, max_length=64)),
-    #        migrator.add_colum('Accounts', 'fail', BooleanField(
-    #            index=True, default=False)),
-    #        migrator.add_colum('Accounts', 'last_modified', DateTimeField(
-    #            index=True, default=datetime.utcnow)),
-    #        # TODO: add functionallity for the tables below.
-    #        migrator.add_colum('Accounts', 'shadowban', BooleanField(
-    #            index=True, default=False)),
-    #        migrator.add_column('Accounts', 'warning', BooleanField(
-    #            index=True, default=False)),
-    #        migraor.add_column('Accounts', 'banned', BooleanField(
-    #            index=True, default=False))
-    #    )
 
     # Always log that we're done.
     log.info('Schema upgrade complete.')
