@@ -64,10 +64,12 @@ module.exports = function () {
         engine: findBestEngine()
     })
 
+    console.log('HERE 1')
     spriteBatches.reduce(function (prev, sprites) {
         return prev
         .then(function (allImages) {
             return new Promise(function (resolve, reject) {
+                console.log('HERE 2')
                 spritesmith.createImages(sprites, function (err, images) {
                     if (err) {
                         reject(err)
@@ -79,11 +81,13 @@ module.exports = function () {
         })
     }, Promise.resolve([]))
     .then(function (images) {
+        console.log('HERE 3')
         return new Promise(function (resolve, reject) {
             resolve(spritesmith.processImages(images))
         })
     })
     .then(function (spritesheetData) {
+        console.log('HERE 4')
         const spritesheetInfo = spritesheetData.properties
         spritesheetInfo.url = spritesheetFile
 
