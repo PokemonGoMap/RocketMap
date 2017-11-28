@@ -2759,7 +2759,7 @@ $(function () {
             lastgyms = false
             wrapperGyms.hide(options)
             if (!switchRaids.prop('checked')) {
-               wrapperSidebar.hide(options)
+                wrapperSidebar.hide(options)
             }
         }
         buildSwitchChangeListener(mapData, ['gyms'], 'showGyms').bind(this)()
@@ -2778,8 +2778,8 @@ $(function () {
         } else {
             lastgyms = false
             wrapperRaids.hide(options)
-            if (!wrapperGyms.prop('checked')) {
-              wrapperSidebar.hide(options)
+            if (!switchGyms.prop('checked')) {
+                wrapperSidebar.hide(options)
             }
         }
         buildSwitchChangeListener(mapData, ['gyms'], 'showRaids').bind(this)()
