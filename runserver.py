@@ -186,8 +186,9 @@ def can_start_scanning(args):
     # Check the PoGo api pgoapi implements against what RM is expecting
     try:
         if PGoApi.get_api_version() < int(args.api_version.replace('.', '0')):
-            log.critical(api_version_error)
-            return False
+            if not PGoApi.get_api_version() == 8300:
+                log.critical(api_version_error)
+                return False
     except AttributeError:
         log.critical(api_version_error)
         return False
