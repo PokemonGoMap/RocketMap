@@ -45,7 +45,7 @@
      The rocketmapdb database already exists.
      If you're trying to start a fresh database you'll need to execute `DROP DATABASE rocketmapdb`, and then run `CREATE DATABASE rocketgomapdb`. If you want to keep the rocketmapdb but start a new one, change the name.
    - **(1045, u"Access denied for user 'rocketmapuser'@'localhost' (using password: YES)")**
-     You are using **password** as your password for the database user **rocketmapuser**. Simply run `CREATE USER 'rocketmapuser'@'localhost' IDENTIFIED BY 'password';` and replace `'password'` to the password you want to use.
+     You might be using **password** as your password for the database user **rocketmapuser**. Simply run `ALTER USER 'rocketmapuser'@'localhost' IDENTIFIED BY 'password';` and replace `'password'` with the password you want to use.
 6. Congratulations, your database is now setup and ready to be used.
 
 ## IV. Setting up the Config.ini file
