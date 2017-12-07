@@ -86,7 +86,7 @@ const excludedRaritiesList = [
   ['common', 'uncommon'],
   ['common', 'uncommon', 'rare'],
   ['common', 'uncommon', 'rare', 'very rare'],
-  ['common', 'uncommon', 'rare', 'very rare', 'ultra rare'],
+  ['common', 'uncommon', 'rare', 'very rare', 'ultra rare']
 ]
 
 
@@ -1589,7 +1589,6 @@ function processPokemon(item) {
 
     var oldMarker = null
     var newMarker = null
-    var excludedRarities = []
 
     if (!(item['encounter_id'] in mapData.pokemons) &&
          !isExcludedPoke && !isExcludedRarity && isPokeAlive) {
@@ -2522,13 +2521,13 @@ $(function () {
     $selectExcludeRarity = $('#exclude-rarity')
 
     $selectExcludeRarity.select2({
-      placeholder: 'None',
-      minimumResultsForSearch: Infinity
+        placeholder: 'None',
+        minimumResultsForSearch: Infinity
     })
 
     $selectExcludeRarity.on('change', function () {
-      Store.set('excludedRarity', this.value)
-      updateMap()
+        Store.set('excludedRarity', this.value)
+        updateMap()
     })
 
     $selectSearchIconMarker = $('#iconmarker-style')
