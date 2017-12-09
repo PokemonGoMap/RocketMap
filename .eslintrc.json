@@ -32,9 +32,6 @@
     "google": true,
     "moment": false,
     "MarkerClusterer": true,
-    "isNotifyPoke": true,
-    "isTouchDevice": true,
-    "isMobileDevice": true,
 
     "noLabelsStyle": true,
     "darkStyle": true,
@@ -48,17 +45,35 @@
 
     "Store": true,
     "mapData": true,
+    "pokemonFormMap": true,
+    "formMap": true,
+    "spriteMap": true,
+    "spriteClass": true,
+    "getSprite": true,
+    "getSpriteMarker": true,
+    "pokemonIcon": true,
+    "pokemonSprite": true,
+    "pokestopSprite": true,
+    "pokestopMarker": true,
+    "gymSprite": true,
+    "gymMarker": true,
+    "spawnpointMarker": true,
+    "getPositionMarkers": true,
+    "positionMarker": true,
+    "setupPokemonMarker": true,
+    "updatePokemonMarker": true,
+    "isNotifyPoke": true,
+    "isTouchDevice": true,
+    "isMobileDevice": true,
+    "toTitleCase": true,
 
-    "pokemonSprites": true,
     "centerLat": true,
     "centerLng": true,
     "clusterImagePath": true,
     "showConfig": true,
 
-    "pageLoaded": true,
     "countMarkers": true,
-    "skel": true,
-    "setupPokemonMarker": true,
-    "updatePokemonMarker": true
+
+    "pageLoaded": true
   }
 }

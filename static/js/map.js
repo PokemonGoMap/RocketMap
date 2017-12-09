@@ -27,8 +27,6 @@ var i8lnDictionary = {}
 var languageLookups = 0
 var languageLookupThreshold = 3
 
-var searchMarkerStyles
-
 var timestamp
 var excludedPokemon = []
 var notifiedPokemon = []
@@ -71,11 +69,6 @@ const audio = new Audio('static/sounds/ding.mp3')
 const cryFileTypes = ['wav', 'mp3']
 
 const genderType = ['♂', '♀', '⚲']
-const unownForm = ['unset', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '!', '?']
-const pokemonWithImages = [
-    2, 3, 5, 6, 8, 9, 11, 28, 31, 34, 38, 59, 62, 65, 68, 71, 73, 76, 82, 89, 91, 94, 103, 105, 110, 112, 123, 125, 126, 129, 131, 134,
-    135, 136, 137, 139, 143, 144, 145, 146, 150, 153, 156, 159, 243, 244, 245, 248, 249, 250, 302
-]
 
 
 /*
@@ -171,7 +164,7 @@ function initMap() { // eslint-disable-line no-unused-vars
 
     // Enable clustering.
     var clusterOptions = {
-        imagePath: 'static/images/cluster/m',
+        imagePath: 'static/icons/clusters/m',
         maxZoom: Store.get('maxClusterZoomLevel'),
         zoomOnClick: Store.get('clusterZoomOnClick'),
         gridSize: Store.get('clusterGridSize')
@@ -281,23 +274,6 @@ function initMap() { // eslint-disable-line no-unused-vars
     }
 }
 
-function updateLocationMarker(style) {
-    if (style in searchMarkerStyles) {
-        var url = searchMarkerStyles[style].icon
-        if (url) {
-            locationMarker.setIcon({
-                url: url,
-                scaledSize: new google.maps.Size(24, 24)
-            })
-        } else {
-            locationMarker.setIcon(url)
-        }
-        Store.set('locationMarkerStyle', style)
-    }
-
-    return locationMarker
-}
-
 function createLocationMarker() {
     var position = Store.get('followMyLocationPosition')
     var lat = ('lat' in position) ? position.lat : centerLat
@@ -332,23 +308,6 @@ function createLocationMarker() {
     })
 
     return locationMarker
-}
-
-function updateSearchMarker(style) {
-    if (style in searchMarkerStyles) {
-        var url = searchMarkerStyles[style].icon
-        if (url) {
-            searchMarker.setIcon({
-                url: url,
-                scaledSize: new google.maps.Size(24, 24)
-            })
-        } else {
-            searchMarker.setIcon(url)
-        }
-        Store.set('searchMarkerStyle', style)
-    }
-
-    return searchMarker
 }
 
 function createSearchMarker() {
@@ -391,6 +350,10 @@ function createSearchMarker() {
     })
 
     return searchMarker
+}
+
+function updatePositionMarker(marker, style) {
+    marker.setIcon(positionMarker(style, 24))
 }
 
 var searchControlURI = 'search_control'
@@ -518,15 +481,12 @@ function pokemonLabel(item) {
     var details = ''
 
     var contentstring = ''
-    var formString = ''
 
-    if (id === 201 && form !== null && form > 0) {
-        formString += `(${unownForm[item['form']]})`
-    }
+    const formSymbol = formMap[form] ? formMap[form].data.symbol : ''
 
     contentstring += `
     <div class='pokemon name'>
-      ${name} <span class='pokemon name pokedex'><a href='http://pokemon.gameinfo.io/en/pokemon/${id}' target='_blank' title='View in Pokédex'>#${id}</a></span> ${formString} <span class='pokemon gender rarity'>${genderType[gender - 1]} ${rarityDisplay}</span> ${typesDisplay}
+      ${name} <span class='pokemon name pokedex'><a href='http://pokemon.gameinfo.io/en/pokemon/${id}' target='_blank' title='View in Pokédex'>#${id}</a></span> ${formSymbol} <span class='pokemon gender rarity'>${genderType[gender - 1]} ${rarityDisplay}</span> ${typesDisplay}
     </div>`
 
     if (cp !== null && cpMultiplier !== null) {
@@ -540,7 +500,7 @@ function pokemonLabel(item) {
           <div class='pokemon container'>
             <div class='pokemon container content-left'>
               <div>
-                <img class='pokemon sprite' src='static/icons/${id}.png'>
+                <i class='${pokemonSprite(id, form)} pokemon sprite'></i>
                 <span class='pokemon'>Level: </span><span class='pokemon'>${pokemonLevel}</span>
                 <span class='pokemon links exclude'><a href='javascript:excludePokemon(${id})'>Exclude</a></span>
                 <span class='pokemon links notify'><a href='javascript:notifyAboutPokemon(${id})'>Notify</a></span>
@@ -572,7 +532,7 @@ function pokemonLabel(item) {
       <div class='pokemon container'>
         <div class='pokemon container content-left'>
           <div>
-            <img class='pokemon sprite' src='static/icons/${id}.png'>
+            <i class='${pokemonSprite(id, form)} pokemon sprite'></i>
             <span class='pokemon'>Level: </span><span class='pokemon no-encounter'>n/a</span>
             <span class='pokemon links exclude'><a href='javascript:excludePokemon(${id})'>Exclude</a></span>
             <span class='pokemon links notify'><a href='javascript:notifyAboutPokemon(${id})'>Notify</a></span>
@@ -664,11 +624,8 @@ function gymLabel(gym, includeMembers = true) {
 
     if (gym.team_id !== 0) {
         subtitle = `
-        <div>
-            <img class='gym info strength' src='static/images/gym/Strength.png'>
-            <span class='gym info strength'>
-              Strength: ${gymPoints} (${slotsString})
-            </span>
+        <div class='gym info strength'>
+            <i class='${spriteClass('heart', 'gyms')}'></i> <span>Strength: ${gymPoints} (${slotsString})</span>
         </div>`
     }
 
@@ -679,7 +636,7 @@ function gymLabel(gym, includeMembers = true) {
         if (isRaidStarted) {
             // Set default image.
             image = `
-                <img class='gym sprite' src='static/images/raid/${gymTypes[gym.team_id]}_${raid.level}_unknown.png'>
+                <i class='${gymSprite(teamName, getGymLevel(gym), raid.level, 'unknown')} gym sprite'></i>
                 <div class='raid'>
                 <span style='color:rgb(${raidColor[Math.floor((raid.level - 1) / 2)]})'>
                 ${levelStr}
@@ -688,12 +645,12 @@ function gymLabel(gym, includeMembers = true) {
                 </div>
             `
             // Use Pokémon-specific image if we have one.
-            if (raid.pokemon_id !== null && pokemonWithImages.indexOf(raid.pokemon_id) !== -1) {
+            if (raid.pokemon_id !== null) {
                 image = `
                     <div class='raid container'>
                     <div class='raid container content-left'>
                         <div>
-                        <img class='gym sprite' src='static/icons/${raid.pokemon_id}.png'>
+                        <i class='${pokemonSprite(raid.pokemon_id)} gym sprite'></i>
                         </div>
                     </div>
                     <div class='raid container content-right'>
@@ -714,7 +671,7 @@ function gymLabel(gym, includeMembers = true) {
                 `
             }
         } else {
-            image = `<img class='gym sprite' src='static/images/gym/${gymTypes[gym.team_id]}_${getGymLevel(gym)}_${raid.level}.png'>`
+            image = `<i class='${gymSprite(teamName, getGymLevel(gym), raid.level)} gym sprite'></i>`
         }
 
         if (isUpcomingRaid) {
@@ -727,7 +684,7 @@ function gymLabel(gym, includeMembers = true) {
                 </div>`
         }
     } else {
-        image = `<img class='gym sprite' src='static/images/gym/${teamName}_${getGymLevel(gym)}.png'>`
+        image = `<i class='${gymSprite(teamName, getGymLevel(gym))} gym sprite'></i>`
     }
 
 
@@ -759,13 +716,13 @@ function gymLabel(gym, includeMembers = true) {
               <center>
                 <div>
                   <div>
-                    <i class='pokemon-sprite n${member.pokemon_id}'></i>
+                    <i class='${pokemonSprite(member.pokemon_id, member.form)} gym pokemon sprite'></i>
                   </div>
                   <div>
                     <span class='gym pokemon'>${member.pokemon_name}</span>
                   </div>
-                  <div>
-                    <img class='gym pokemon motivation heart' src='static/images/gym/Heart.png'> <span class='gym pokemon motivation'>${member.cp_decayed}</span>
+                  <div class='gym pokemon motivation'>
+                    <i class='${spriteClass('heart', 'gyms')}'></i> <span>${member.cp_decayed}</span>
                   </div>
                 </div>
               </center>
@@ -802,7 +759,7 @@ function pokestopLabel(expireTime, latitude, longitude) {
                   <span class='label-countdown' disappears-at='${expireTime}'>00m00s</span> left (${moment(expireTime).format('HH:mm')})
               </div>
               <div>
-                <img class='pokestop sprite' src='static/images/pokestop//PokestopLured.png'>
+                <i class='${pokestopSprite(true)} pokestop sprite'></i>
               </div>
               <div>
                 <span class='pokestop navigate'><a href='javascript:void(0);' onclick='javascript:openMapDirections(${latitude},${longitude});' title='Open in Google Maps'; class='pokestop lure'>${latitude.toFixed(6)}, ${longitude.toFixed(7)}</a></span>
@@ -816,7 +773,7 @@ function pokestopLabel(expireTime, latitude, longitude) {
                 Pokéstop
               </div>
               <div>
-                <img class='pokestop sprite' src='static/images/pokestop//Pokestop.png'>
+                <i class='${pokestopSprite()} pokestop sprite'></i>
               </div>
               <div>
                 <span class='pokestop navigate'><a href='javascript:void(0);' onclick='javascript:openMapDirections(${latitude},${longitude});' title='Open in Google Maps'; class='pokestop nolure'>${latitude.toFixed(6)}, ${longitude.toFixed(7)}</a></span>
@@ -1108,39 +1065,30 @@ function setupGymMarker(item) {
 }
 
 function updateGymMarker(item, marker) {
-    let raidLevel = getRaidLevel(item.raid)
-    if (item.raid && isOngoingRaid(item.raid) && Store.get('showRaids') && raidLevel >= Store.get('showRaidMinLevel') && raidLevel <= Store.get('showRaidMaxLevel')) {
-        let markerImage = 'static/images/raid/' + gymTypes[item.team_id] + '_' + item.raid.level + '_unknown.png'
-        if (pokemonWithImages.indexOf(item.raid.pokemon_id) !== -1) {
-            markerImage = 'static/images/raid/' + gymTypes[item.team_id] + '_' + item['raid']['pokemon_id'] + '.png'
-        }
-        marker.setIcon({
-            url: markerImage,
-            scaledSize: new google.maps.Size(48, 48)
-        })
+    var raidLevel = item.raid.level || 0
+    var raidPokemon = item.raid.pokemon_id
+
+    const shouldShowRaid = Store.get('showRaids') &&
+                           raidLevel >= Store.get('showRaidMinLevel') &&
+                           raidLevel <= Store.get('showRaidMaxLevel')
+    const isOngoingEgg = item.raid && item.raid.end > Date.now()
+
+    if (shouldShowRaid && isOngoingRaid(item.raid)) {
         marker.setZIndex(google.maps.Marker.MAX_ZINDEX + 1)
-    } else if (item.raid && item.raid.end > Date.now() && Store.get('showRaids') && !Store.get('showActiveRaidsOnly') && raidLevel >= Store.get('showRaidMinLevel') && raidLevel <= Store.get('showRaidMaxLevel')) {
-        marker.setIcon({
-            url: 'static/images/gym/' + gymTypes[item.team_id] + '_' + getGymLevel(item) + '_' + item['raid']['level'] + '.png',
-            scaledSize: new google.maps.Size(48, 48)
-        })
+    } else if (shouldShowRaid && isOngoingEgg && !Store.get('showActiveRaidsOnly')) {
+        raidPokemon = undefined
     } else {
-        marker.setIcon({
-            url: 'static/images/gym/' + gymTypes[item.team_id] + '_' + getGymLevel(item) + '.png',
-            scaledSize: new google.maps.Size(48, 48)
-        })
+        raidLevel = undefined
+        raidPokemon = undefined
         marker.setZIndex(1)
     }
+
+    marker.setIcon(gymMarker(gymTypes[item.team_id], getGymLevel(item), raidLevel, raidPokemon, 48))
     marker.infoWindow.setContent(gymLabel(item))
     return marker
 }
 
 function setupPokestopMarker(item) {
-    var imagename = item['lure_expiration'] ? 'PokestopLured' : 'Pokestop'
-    var image = {
-        url: 'static/images/pokestop/' + imagename + '.png',
-        scaledSize: new google.maps.Size(32, 32)
-    }
     var marker = new google.maps.Marker({
         position: {
             lat: item['latitude'],
@@ -1148,7 +1096,7 @@ function setupPokestopMarker(item) {
         },
         map: map,
         zIndex: item['lure_expiration'] ? 3 : 2,
-        icon: image
+        icon: pokestopMarker(item['lure_expiration'], 32)
     })
 
     if (!marker.rangeCircle && isRangeActive(map)) {
@@ -1219,26 +1167,17 @@ function getColorBySpawnTime(value) {
 }
 
 function changeSpawnIcon(color, zoom) {
-    var urlColor = ''
     if (color === 275) {
-        urlColor = './static/icons/hsl-275-light.png'
-    } else {
-        urlColor = './static/icons/hsl-' + color + '.png'
-    }
-    var zoomScale = 1.6 // adjust this value to change the size of the spawnpoint icons
-    var minimumSize = 1
-    var newSize = Math.round(zoomScale * (zoom - 10)) // this scales the icon based on zoom
-    if (newSize < minimumSize) {
-        newSize = minimumSize
+        color += '-light'
     }
 
-    var newIcon = {
-        url: urlColor,
-        scaledSize: new google.maps.Size(newSize, newSize),
-        anchor: new google.maps.Point(newSize / 2, newSize / 2)
-    }
+    const zoomScale = 1.6
+    const size = Math.max(Math.round(zoomScale * (zoom - 10)), 1)
 
-    return newIcon
+    const icon = spawnpointMarker(color, size)
+    icon.anchor = new google.maps.Point(size / 2, size / 2)
+
+    return icon
 }
 
 function spawnPointIndex(color) {
@@ -1970,7 +1909,7 @@ function createMyLocationButton() {
     locationIcon.style.margin = '5px'
     locationIcon.style.width = '18px'
     locationIcon.style.height = '18px'
-    locationIcon.style.backgroundImage = 'url(static/mylocation-sprite-1x.png)'
+    locationIcon.style.backgroundImage = 'url(https://maps.gstatic.com/tactile/mylocation/mylocation-sprite-1x.png)'
     locationIcon.style.backgroundSize = '180px 18px'
     locationIcon.style.backgroundPosition = '0px 0px'
     locationIcon.style.backgroundRepeat = 'no-repeat'
@@ -2156,7 +2095,7 @@ function showGymDetails(id) { // eslint-disable-line no-unused-vars
             pokemonHtml = `
                 <center>
                     Gym Leader:<br>
-                    <i class="pokemon-large-sprite n${result.guard_pokemon_id}"></i><br>
+                    <i class="${pokemonSprite(result.guard_pokemon_id)} gym sprite"></i><br>
                     <b>${result.guard_pokemon_name}</b>
 
                     <p style="font-size: .75em; margin: 5px;">
@@ -2192,11 +2131,13 @@ function getSidebarGymMember(pokemon) {
     return `
                     <tr onclick=toggleGymPokemonDetails(this)>
                         <td width="30px">
-                            <img class="gym pokemon sprite" src="static/icons/${pokemon.pokemon_id}.png">
+                            <i class='${pokemonSprite(pokemon.pokemon_id, pokemon.form)} gym sprite pokemon'></i>
                         </td>
                         <td>
                             <div class="gym pokemon" style="line-height:0.5em;">${pokemon.pokemon_name}</div>
-                            <div><img class="gym pokemon motivation heart" src="static/images/gym/Heart.png"> <span class="gym pokemon motivation">${pokemon.cp_decayed}</span></div>
+                            <div class="gym pokemon motivation">
+                                <i class='${spriteClass('heart', 'gyms')}'></i> <span>${pokemon.cp_decayed}</span>
+                            </div>
                         </td>
                         <td width="190" align="center">
                             <div class="gym pokemon" style="line-height:1em;">${pokemon.trainer_name} (${pokemon.trainer_level})</div>
@@ -2254,7 +2195,7 @@ function getSidebarGymMember(pokemon) {
                                         ${pokemon.move_2_name}
                                         <div class="type ${pokemon.move_2_type['type_en'].toLowerCase()}">${pokemon.move_2_type['type']}</div>
                                         <div>
-                                            <i class="move-bar-sprite move-bar-sprite-${moveEnergy}"></i>
+                                            <i class="${spriteClass('move-bar-' + moveEnergy, 'other')} move-bar"></i>
                                         </div>
                                     </div>
                                     <div class="damage">
@@ -2502,46 +2443,50 @@ $(function () {
     $selectSearchIconMarker = $('#iconmarker-style')
     $selectLocationIconMarker = $('#locationmarker-style')
 
-    $.getJSON('static/dist/data/searchmarkerstyle.min.json').done(function (data) {
-        searchMarkerStyles = data
-        var searchMarkerStyleList = []
-
-        $.each(data, function (key, value) {
-            searchMarkerStyleList.push({
-                id: key,
-                text: value.name
-            })
+    function setupPositionMarkers() {
+        const positionMarkers = getPositionMarkers()
+        const positionMarkerNames = $.map(positionMarkers, function (details, name) {
+            return {
+                id: name,
+                text: toTitleCase(name.replace(/[-_]+/g, ' '))
+            }
         })
 
         $selectSearchIconMarker.select2({
             placeholder: 'Select Icon Marker',
-            data: searchMarkerStyleList,
+            data: positionMarkerNames,
             minimumResultsForSearch: Infinity
         })
 
         $selectSearchIconMarker.on('change', function (e) {
-            var selectSearchIconMarker = $selectSearchIconMarker.val()
-            Store.set('searchMarkerStyle', selectSearchIconMarker)
-            updateSearchMarker(selectSearchIconMarker)
+            Store.set('searchMarkerStyle', this.value)
+            updatePositionMarker(searchMarker, this.value)
         })
 
         $selectSearchIconMarker.val(Store.get('searchMarkerStyle')).trigger('change')
 
-        updateSearchMarker(Store.get('lockMarker'))
-
         $selectLocationIconMarker.select2({
             placeholder: 'Select Location Marker',
-            data: searchMarkerStyleList,
+            data: positionMarkerNames,
             minimumResultsForSearch: Infinity
         })
 
         $selectLocationIconMarker.on('change', function (e) {
             Store.set('locationMarkerStyle', this.value)
-            updateLocationMarker(this.value)
+            updatePositionMarker(locationMarker, this.value)
         })
 
         $selectLocationIconMarker.val(Store.get('locationMarkerStyle')).trigger('change')
-    })
+    }
+
+    if (spriteMap) {
+        setupPositionMarkers()
+    } else {
+        $.getJSON('static/dist/data/sprite_map.min.json').done(function (data) {
+            spriteMap = data
+            setupPositionMarkers()
+        })
+    }
 })
 
 $(function () {
@@ -2550,9 +2495,7 @@ $(function () {
         if (!state.id) {
             return state.text
         }
-        var $state = $(
-            '<span><i class="pokemon-sprite n' + state.element.value.toString() + '"></i> ' + state.text + '</span>'
-        )
+        var $state = $(`<span><i class="${pokemonSprite(state.element.value)} gym pokemon sprite"></i> ${state.text}</span>`)
         return $state
     }
 

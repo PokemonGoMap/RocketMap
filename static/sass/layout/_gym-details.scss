@@ -270,6 +270,12 @@
         }
       }
 
+      .move-bar {
+        display: block;
+        width: 100px;
+        height: 15px;
+      }
+
       .damage {
         @media screen and (max-width: 480px) {
           margin-right: 2px !important;
@@ -389,14 +395,24 @@
         }
 
         &.strength {
-          @media screen and (max-width: 480px) {
-            height: 12px !important;
-            width:: 12px !important;
+          .rm-sprite {
+            display: inline-block;
+            @media screen and (max-width: 320px) {
+              height: 12px !important;
+              width: 12px !important;
+            }
+            height: 16px;
+            width: 16px;
+            margin: 2px;
+            margin-right: 1px;
+            vertical-align: middle;
           }
-          font-weight: 900;
-          height: 16px;
-          width: 16px;
-          vertical-align: middle;
+
+          span {
+            display: inline-block;
+            font-weight: 900;
+            vertical-align: middle;
+          }
         }
       }
 
@@ -404,15 +420,22 @@
         font-size: 12px;
 
         &.motivation {
-          font-weight: 900;
-
-          &.heart {
-            @media screen and (max-width: 480px) {
+          .rm-sprite {
+            display: inline-block;
+            @media screen and (max-width: 320px) {
               height: 8px !important;
               width: 8px !important;
             }
             height: 12px;
             width: 12px;
+            margin: 2px;
+            margin-right: 1px;
+            vertical-align: middle;
+          }
+
+          span {
+            display: inline-block;
+            font-weight: 900;
             vertical-align: middle;
           }
         }

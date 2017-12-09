@@ -1,0 +1,11 @@
+.rm-sprite {
+  background-image: url(/{{spritesheet.url}});
+}
+
+{{#each sprites as |sprite name|}}
+.rm-sprite.{{name}} {
+  background-size: (({{../spritesheet.width}} / {{sprite.width}}) * 100%) (({{../spritesheet.height}} / {{sprite.height}}) * 100%);
+  background-position: (({{sprite.x}} / ({{../spritesheet.width}} - {{sprite.width}})) * 100%) (({{sprite.y}} / ({{../spritesheet.height}} - {{sprite.height}})) * 100%);
+}
+
+{{/each}}

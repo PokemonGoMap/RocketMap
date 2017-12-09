@@ -57,10 +57,24 @@
     }
 
     &.strength {
-      font-weight: 900;
-      height: 12px;
-      width: 12px;
-      vertical-align: middle;
+      .rm-sprite {
+        display: inline-block;
+        @media screen and (max-width: 320px) {
+          height: 8px !important;
+          width: 8px !important;
+        }
+        height: 12px;
+        width: 12px;
+        margin: 2px;
+        margin-right: 1px;
+        vertical-align: middle;
+      }
+
+      span {
+        display: inline-block;
+        font-weight: 900;
+        vertical-align: middle;
+      }
     }
   }
 
@@ -73,16 +87,29 @@
     vertical-align: middle;
 
     &.motivation {
-
-      &.heart {
+      .rm-sprite {
+        display: inline-block;
         @media screen and (max-width: 320px) {
           height: 6px !important;
           width: 6px !important;
         }
-        height: 8px;
-        width: 8px;
-        margin-right: -1px;
+        height: 10px;
+        width: 10px;
+        margin: 2px;
+        margin-right: 1px;
+        vertical-align: middle;
       }
+
+      span {
+        display: inline-block;
+        font-weight: 900;
+        vertical-align: middle;
+      }
+    }
+
+    &.sprite {
+      height: 30px;
+      width: 30px;
     }
   }
 }

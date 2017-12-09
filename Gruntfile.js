@@ -2,11 +2,14 @@ module.exports = function (grunt) {
 
     // load plugins as needed instead of up front
     require('jit-grunt')(grunt, {
-        unzip: 'grunt-zip'
+        unzip: 'grunt-zip',
+        pngmin: 'grunt-pngmin'
     })
 
     var path = require('path')
     var fs = require('fs')
+    var buildIcons = require('./static/js/build_icons.js')
+    var buildSpritesheet = require('./static/js/build_spritesheet.js')
 
     grunt.initConfig({
         pkg: grunt.file.readJSON('package.json'),
@@ -77,9 +80,10 @@ module.exports = function (grunt) {
             build: {
                 files: {
                     'static/dist/data/pokemon.min.json': 'static/data/pokemon.json',
+                    'static/dist/data/pokemon_forms.min.json': 'static/data/pokemon_forms.json',
                     'static/dist/data/moves.min.json': 'static/data/moves.json',
                     'static/dist/data/mapstyle.min.json': 'static/data/mapstyle.json',
-                    'static/dist/data/searchmarkerstyle.min.json': 'static/data/searchmarkerstyle.json',
+                    'static/dist/data/sprite_map.min.json': 'static/data/sprite_map.json',
                     'static/dist/locales/de.min.json': 'static/locales/de.json',
                     'static/dist/locales/fr.min.json': 'static/locales/fr.json',
                     'static/dist/locales/ja.min.json': 'static/locales/ja.json',
@@ -144,16 +148,31 @@ module.exports = function (grunt) {
                 src: 'static01.zip',
                 dest: 'static/'
             }
+        },
+        pngmin: {
+            compile: {
+                files: [
+                    {
+                      src: 'static/spritesheet.png',
+                      dest: 'static/'
+                    }
+                ],
+                options: {
+                    ext: '.png',
+                    force: true
+                }
+            }
         }
-
     })
 
+    grunt.registerTask('icons-build', 'Builds the icons for gyms and raids.', buildIcons)
+    grunt.registerTask('sp-build', 'Builds the spritesheet.', buildSpritesheet)
     grunt.registerTask('js-build', ['newer:babel', 'newer:uglify'])
     grunt.registerTask('css-build', ['newer:sass', 'newer:cssmin'])
     grunt.registerTask('js-lint', ['newer:eslint'])
     grunt.registerTask('json', ['newer:minjson'])
-
-    grunt.registerTask('build', ['clean', 'js-build', 'css-build', 'json', 'unzip'])
+    grunt.registerTask('build', ['clean', 'icons-build', 'sp-build', 'pngmin',
+                                 'js-build', 'css-build', 'json'])
     grunt.registerTask('lint', ['js-lint'])
     grunt.registerTask('default', ['build', 'watch'])
 }

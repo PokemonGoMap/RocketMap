@@ -5,7 +5,7 @@
 
 Live visualization of all the Pokémon (with option to show gyms, raids and PokéStops) in your area. This is a proof of concept that we can load all the Pokémon visible nearby given a location. Currently runs on a Flask server displaying Google Maps with markers on it.
 
-![Map](https://github.com/RocketMap/RocketMap/blob/develop/static/RocketMap.png)
+![Map](https://github.com/RocketMap/RocketMap/blob/develop/docs/_static/img/RocketMap.png)
 
 ## Features:
 
