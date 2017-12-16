@@ -95,8 +95,7 @@ def parse_inventory(account, api_response):
     parsed_pokemons = 0
     parsed_eggs = 0
     parsed_incubators = 0
-    account['last_timestamp_ms'] = api_response['responses'][
-        'GET_HOLO_INVENTORY'].inventory_delta.new_timestamp_ms
+    account['last_timestamp_ms'] = inventory.inventory_delta.new_timestamp_ms
 
     for item in inventory.inventory_delta.inventory_items:
         item_data = item.inventory_item_data
