@@ -838,6 +838,21 @@ def i8ln(word):
     else:
         return word
 
+# Thread function for periodical enc list updating.
+def enc_list_refresher(args):
+    while True:
+        # Wait 30 secs before refresh,
+        time.sleep(30)
+
+        try:
+            # IV/CP scanning.
+            if args.enc_whitelist_file:
+                with open(args.enc_whitelist_file) as f:
+                    args.enc_whitelist = frozenset([int(l.strip()) for l in f])
+
+            log.info('Regular encounter list refresh complete.')
+        except Exception as e:
+            log.exception('Exception while refreshing enc_list: %s.', e)
 
 def get_pokemon_data(pokemon_id):
     if not hasattr(get_pokemon_data, 'pokemon'):

@@ -19,7 +19,7 @@ from flask_cache_bust import init_cache_busting
 
 from pogom.app import Pogom
 from pogom.utils import (get_args, now, gmaps_reverse_geolocate,
-                         log_resource_usage_loop, get_debug_dump_link)
+                         log_resource_usage_loop, get_debug_dump_link, enc_list_refresher)
 from pogom.altitude import get_gmaps_altitude
 
 from pogom.models import (init_database, create_tables, drop_tables,
@@ -391,6 +391,14 @@ def main():
         else:
             log.info('Periodical proxies refresh disabled.')
 
+        if args.encounter:
+            t = Thread(target=enc_list_refresher,
+                        name='dynamic-encList', args=(args,))
+            t.daemon = True
+            t.start()
+            log.info('Encounter is enabled.')
+        else:
+            log.info('Encounter is disabled.')
         # Update player locale if not set correctly, yet.
         args.player_locale = PlayerLocale.get_locale(args.location)
         if not args.player_locale:
