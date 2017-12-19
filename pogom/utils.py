@@ -838,6 +838,7 @@ def i8ln(word):
     else:
         return word
 
+
 # Thread function for periodical enc list updating.
 def enc_list_refresher(args):
     while True:
@@ -853,6 +854,7 @@ def enc_list_refresher(args):
             log.info('Regular encounter list refresh complete.')
         except Exception as e:
             log.exception('Exception while refreshing enc_list: %s.', e)
+
 
 def get_pokemon_data(pokemon_id):
     if not hasattr(get_pokemon_data, 'pokemon'):
