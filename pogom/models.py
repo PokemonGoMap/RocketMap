@@ -2397,13 +2397,10 @@ def encounter_pokemon(args, pokemon, account, api, account_sets, status,
 
         # If the already existent API is using a proxy but
         # it's not alive anymore, we need to get a new proxy.
-        elif (args.proxy and
+        elif (args.proxy and args.proxy_usage != 'ptc' and
               (hlvl_api._session.proxies['http'] not in args.proxy)):
             proxy_idx, proxy_new = get_new_proxy(args)
             hlvl_api.set_proxy({
-                'http': proxy_new,
-                'https': proxy_new})
-            hlvl_api._auth_provider.set_proxy({
                 'http': proxy_new,
                 'https': proxy_new})
 
@@ -2422,7 +2419,7 @@ def encounter_pokemon(args, pokemon, account, api, account_sets, status,
         hlvl_api.set_position(*scan_location)
 
         # Log in.
-        check_login(args, hlvl_account, hlvl_api, status['proxy_url'])
+        check_login(args, hlvl_account, hlvl_api)
         encounter_level = hlvl_account['level']
 
         # User error -> we skip freeing the account.

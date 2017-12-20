@@ -873,7 +873,8 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
                 # If used proxy disappears from "live list" after background
                 # checking - switch account but do not freeze it (it's not an
                 # account failure).
-                if args.proxy and status['proxy_url'] not in args.proxy:
+                if (args.proxy and args.proxy_usage != 'ptc' and
+                        status['proxy_url'] not in args.proxy):
                     status['message'] = (
                         'Account {} proxy {} is not in a live list any ' +
                         'more. Switching accounts...').format(
@@ -964,7 +965,7 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
 
                 # Ok, let's get started -- check our login status.
                 status['message'] = 'Logging in...'
-                check_login(args, account, api, status['proxy_url'])
+                check_login(args, account, api)
 
                 # Only run this when it's the account's first login, after
                 # check_login().
@@ -1297,7 +1298,7 @@ def get_api_version(args):
     """
     proxies = {}
 
-    if args.proxy:
+    if args.proxy and args.proxy_usage != 'ptc':
         num, proxy = get_new_proxy(args)
         proxies = {
             'http': proxy,
