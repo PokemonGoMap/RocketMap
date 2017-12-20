@@ -2207,8 +2207,13 @@ function getSidebarGymMember(pokemon) {
                             <img class="gym pokemon sprite" src="static/icons/${pokemon.pokemon_id}.png">
                         </td>
                         <td>
-                            <div class="gym pokemon" style="line-height:0.5em;">${pokemon.pokemon_name}</div>
-                            <div><img class="gym pokemon motivation heart" src="static/images/gym/Heart.png"> <span class="gym pokemon motivation" style='color:rgba(${motivationColor[colorIdx]})'>${pokemon.cp_decayed}</span></div>
+                            <div class="gym pokemon" style="line-height:1em;"><span class="gym pokemon name">${pokemon.pokemon_name}</span></div>
+                            <div>
+                            <span class="gym pokemon motivation decayed" style='color:rgba(${motivationColor[colorIdx]})'>${pokemon.cp_decayed}</span>
+                            </div>
+                            <div>
+                            <span class="gym pokemon motivation cp">Max: ${pokemon.pokemon_cp}</span>
+                            </div>
                         </td>
                         <td width="190" align="center">
                             <div class="gym pokemon" style="line-height:1em;">${pokemon.trainer_name} (${pokemon.trainer_level})</div>
