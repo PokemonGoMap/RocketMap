@@ -394,7 +394,7 @@ def main():
 
         if args.encounter:
             t = Thread(target=enc_list_refresher,
-                       name='dynamic-enclist', args=(args,))
+                       name='dynamic-enclist', args=(args.enc_whitelist_file,))
             t.daemon = True
             t.start()
             log.info('Encounter is enabled.')

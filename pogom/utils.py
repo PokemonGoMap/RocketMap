@@ -840,16 +840,18 @@ def i8ln(word):
 
 
 # Thread function for periodical enc list updating.
-def enc_list_refresher(args):
+def enc_list_refresher(enc_whitelist_file):
     while True:
-        # Wait 30 secs before refresh,
-        time.sleep(30)
+        # Wait 60 secs before refresh,
+        time.sleep(60)
 
         try:
             # IV/CP scanning.
-            if args.enc_whitelist_file:
-                with open(args.enc_whitelist_file) as f:
-                    args.enc_whitelist = frozenset([int(l.strip()) for l in f])
+            if enc_whitelist_file:
+                if (os.stat(enc_whitelist_file).st_mtime + 60) > time.time():
+                    with open(enc_whitelist_file) as f:
+                        enc_whitelist = frozenset([int(l.strip()) for l in f])
+                    log.info('New enc list is ' + enc_whitelist)
 
             log.info('Regular encounter list refresh complete.')
         except Exception as e:
