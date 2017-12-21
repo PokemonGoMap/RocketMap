@@ -112,7 +112,7 @@
                             Query the Elevation API for each step, rather than
                             only once, and store results in the database. [env
                             var: POGOMAP_USE_ALTITUDE_CACHE]
-      -nj, --no-jitter      Apply random -5m to +5m jitter to location. [env
+      -j, --jitter          Apply random -5m to +5m jitter to location. [env
                             var: POGOMAP_JITTER]
       -al, --access-logs    Write web logs to access.log. [env var:
                             POGOMAP_ACCESS_LOGS]
