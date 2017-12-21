@@ -116,8 +116,8 @@ def get_args():
                               ' the database.'),
                         action='store_true', default=False)
     parser.add_argument('-j', '--jitter',
-                        help=("Apply random -5m to +5m jitter to " +
-                              "location."),
+                        help=('Apply random -5m to +5m jitter to ' +
+                              'location.'),
                         action='store_true', default=False)
     parser.add_argument('-al', '--access-logs',
                         help=("Write web logs to access.log."),
