@@ -1,7 +1,7 @@
 $(function () {
     'use strict'
 
-    // Marker cluster might have loaded before custom.js
+    // Marker cluster might have loaded before custom.js.
     const isMarkerClusterLoaded = typeof window.markerCluster !== 'undefined' && !!window.markerCluster
 
     /* Settings. */
