@@ -6,13 +6,14 @@
 
 Currently all apis and tools are affected, the flag they use to identify us has not been found and there are some fields in the API which we are missing information for.
 
- * Clean accounts work for 3-4 days before blinding.
+ * Clean accounts work for 3 days before blinding under regular usage.
+ * There are some unknow daily limits for map requests or encounters, if an account reaches that limit it gets banned directly.
  * Blinded accounts will get banned after 2-3 more days (even if they are removed from use).
- * Banned accounts will get unbanned and unblinded after 2-3 weeks.
- * If you buy accounts to scan, you do so at your own risk. Often these accounts are already blind when you purchase them or can get blinded soon if the seller does not give you accounts that have been resting for 2-3 weeks.
+ * Banned accounts will get unbanned and unblinded after 2 months.
+ * If you buy accounts to scan, you do so at your own risk. Often these accounts are already blind when you purchase them or can get blinded soon if the seller does not give you accounts that have been resting for 2 months.
  * Blinding is inevitable.
  * All 3rd party apps/scanners are affected in the exact same manner. We've spent extra time to confirm this because some people were pretty convinced we were wrong, although it usually ended up being because they hadn't even realized their accounts were already blind.
- * Blinding also affect high level accounts, blinded accounts will fail to encounter the pokemons hidden in the map
+ * Blinding also affect high level accounts, blinded accounts will fail to encounter the pokemons hidden in the map, they also get banned in 24 hours if they do too many encounters.
  * Even a simple login without a map request will start the countdown that leads to blinding.
 
 ## What can I do?
