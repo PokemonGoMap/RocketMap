@@ -989,8 +989,8 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
                 status['longitude'] = scan_coords[1]
                 dbq.put((WorkerStatus, {0: WorkerStatus.db_format(status)}))
 
-                account['latitude'] = step_location[0]
-                account['longitude'] = step_location[1]
+                account['latitude'] = scan_coords[0]
+                account['longitude'] = scan_coords[1]
 
                 # Nothing back. Mark it up, sleep, carry on.
                 if not response_dict:
