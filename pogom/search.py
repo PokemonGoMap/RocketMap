@@ -42,7 +42,7 @@ from cachetools import TTLCache
 
 from pgoapi.hash_server import HashServer
 from .models import (Accounts, parse_map, GymDetails, parse_gyms,
-                     MainWorker, WorkerStatus, HashKeys)
+                     MainWorker, WorkerStatus, HashKeys, ScannedLocation)
 from .utils import now, distance
 from .transform import get_new_coords
 from .account import setup_api, check_login, AccountSet
@@ -55,6 +55,7 @@ log = logging.getLogger(__name__)
 
 loginDelayLock = Lock()
 gym_cache_lock = threading.Lock()
+
 
 # Thread to handle user input.
 def switch_status_printer(display_type, current_page, mainlog,
@@ -1356,9 +1357,10 @@ def add_accounts_to_queue(args, account_queue, number,
 
         if len(accounts) < number:
             retry_delay += args.login_delay
-            log.error('Got only %s / %s account(s). Retrying in %ss.',
+            log.error('Got only %s / %s account(s). Reloading csv in %ss.',
                       len(accounts), number, retry_delay)
             time.sleep(retry_delay)
+            Accounts.process_accounts()
 
     log.info('Loaded {} accounts from the DB.'.format(number))
     return account_queue

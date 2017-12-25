@@ -129,7 +129,6 @@ class Accounts(LatLongModel):
     banned = BooleanField(index=True, default=False)
 
     # TODO: Add high_lvl_accounts support.
-    # Fetch accounts from db that we are using for scanning then.
     @staticmethod
     def get_accounts(number, min_level=1, max_level=40, init=False):
         query = []
