@@ -1,7 +1,6 @@
 # Configuring Accounts
 
-RocketMap needs at least the same number of accounts as workers, some spares (5-10%) are nice as accounts can be put
-to sleep if some error occurs.
+RocketMap needs at least the same number of accounts as workers. Having some spare (5% to 10%) is useful because accounts can be put on pause if an error occurs while scanning.
 By default accounts work 24/7 if you want to configure some kind of working schedule using --account-search-interval
 then take that into account when adding the required number of accounts.
 
@@ -54,7 +53,7 @@ password: [password01, password02, password03]
 
 ## Using CSV file:
 
-To use multiple accounts from a CSV file, you create a CSV file with the auth method, username and password on each line. Shorten to 3 fields only, more than 3 fields will error out.
+To use multiple accounts from a CSV file, you create a CSV file with the auth method, username and password on each line. If more fields appear in the CSV file they will not be taken into account.
 
 CSV File Example:
 ```
