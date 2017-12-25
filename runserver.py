@@ -343,8 +343,10 @@ def main():
     new_location_queue.put(position)
 
     # Import accounts from .csv file into db on startup.
-    accounts = Accounts.load_accounts(args)
-    Accounts.process_accounts(db, accounts)
+    # But not for server only instances.
+    if not args.only_server:
+        accounts = Accounts.load_accounts(args)
+        Accounts.process_accounts(db, accounts)
 
     # DB Updates
     db_updates_queue = Queue()
