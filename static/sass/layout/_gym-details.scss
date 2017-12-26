@@ -417,6 +417,17 @@
           }
           font-weight: 900;
           font-size: 16px;
+          &.zone {
+            &.good {
+              color: rgba(16,155,49,1);
+            }
+            &.average {
+              color: rgba(235,193,26,1);
+            }
+            &.bad {
+              color: rgba(255,25,25,1);
+            }
+          }
         }
 
         &.motivation.cp:before {
