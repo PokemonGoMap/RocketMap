@@ -2668,10 +2668,38 @@ def clean_db_loop(args):
 
 
 def bulk_upsert(cls, data, db):
-    num_rows = len(data.values())
+    rows = data.values()
+    num_rows = len(rows)
     i = 0
+
+    # This shouldn't happen, ever, but anyways...
+    if num_rows < 1:
+        return
+
+    # We used to support SQLite and it has a default max 999 parameters,
+    # so we need to limit how many rows we insert for it.
     step = 250
 
+    # Prepare for our query.
+    conn = db.get_conn()
+    cursor = db.get_cursor()
+
+    fields = rows[0].keys()
+    fields = [conn.escape_string(f) for f in fields]    
+    table = '`'+conn.escape_string(cls._meta.db_table)+'`'
+    placeholders = ['%s' for field in fields]
+    assignments = ['`{x}` = VALUES(`{x}`)'.format(
+        x=conn.escape_string(x)
+    ) for x in fields]
+
+    # We build our own MySQL query because peewee only supports
+    # REPLACE INTO for upserting, which deletes the old row before
+    # adding the new one, giving a serious performance hit.
+    query_string = ('INSERT INTO {table} ({fields}) VALUES'
+                    + ' ({placeholders}) ON DUPLICATE KEY UPDATE'
+                    + ' {assignments}')
+
+    # Prepare transaction.
     with db.atomic():
         while i < num_rows:
             log.debug('Inserting items %d to %d.', i, min(i + step, num_rows))
@@ -2682,9 +2710,21 @@ def bulk_upsert(cls, data, db):
                 # constraint errors.
                 db.execute_sql('SET FOREIGN_KEY_CHECKS=0;')
 
-                # Use peewee's own implementation of the insert_many() method.
-                InsertQuery(cls, rows=data.values()[
-                            i:min(i + step, num_rows)]).upsert().execute()
+                # Time to bulk upsert our data. Convert objects to a list of
+                # values for executemany().
+                batch = [r.values() for r in rows[i:min(i + step, num_rows)]]
+
+                formatted_query = query_string.format(
+                    table=table,
+                    fields=', '.join(fields),
+                    placeholders=', '.join(placeholders),
+                    assignments=', '.join(assignments)
+                )
+
+                log.debug(formatted_query)
+                log.debug(batch[0])
+
+                cursor.executemany(formatted_query, batch)
 
                 db.execute_sql('SET FOREIGN_KEY_CHECKS=1;')
 
