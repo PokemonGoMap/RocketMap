@@ -3,7 +3,7 @@
 
 import logging
 
-from pgoapi.utilities import f2i, get_cell_ids
+from pgoapi.utilities import get_cell_ids
 from pgoapi.hash_server import BadHashRequestException, HashingOfflineException
 
 log = logging.getLogger(__name__)
@@ -67,7 +67,7 @@ def parse_remote_config(account, api_response):
 
     remote_config = api_response['responses']['DOWNLOAD_REMOTE_CONFIG_VERSION']
     if remote_config.result == 0:
-        raise AccountBannedException('The account has a temporal ban')
+        raise AccountBannedException('The account is temporarily banned')
 
     asset_time = remote_config.asset_digest_timestamp_ms / 1000000
     template_time = remote_config.item_templates_timestamp_ms / 1000
@@ -239,8 +239,8 @@ def get_map_objects(api, account, location):
     timestamps = [0, ]*len(cell_ids)
     req = api.create_request()
     req.get_map_objects(
-        latitude=f2i(location[0]),
-        longitude=f2i(location[1]),
+        latitude=location[0],
+        longitude=location[1],
         since_timestamp_ms=timestamps,
         cell_id=cell_ids)
     return send_generic_request(req, account)
@@ -251,8 +251,8 @@ def gym_get_info(api, account, position, gym):
     req = api.create_request()
     req.gym_get_info(
         gym_id=gym['gym_id'],
-        player_lat_degrees=f2i(position[0]),
-        player_lng_degrees=f2i(position[1]),
+        player_lat_degrees=position[0],
+        player_lng_degrees=position[1],
         gym_lat_degrees=gym['latitude'],
         gym_lng_degrees=gym['longitude'])
     return send_generic_request(req, account)
