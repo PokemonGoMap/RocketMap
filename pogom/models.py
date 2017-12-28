@@ -2684,13 +2684,33 @@ def bulk_upsert(cls, data, db):
     conn = db.get_conn()
     cursor = db.get_cursor()
 
-    fields = rows[0].keys()
-    fields = [conn.escape_string(f) for f in fields]    
+    # We build our own INSERT INTO ... ON DUPLICATE KEY
+    # UPDATE x=VALUES(x) query, making sure all data is
+    # properly escaped. We use placeholders for 
+    # VALUES(%s, %s, ...) so we can use executemany().
+    row_fields = rows[0].keys()
+    fields = ['`'+conn.escape_string(f)+'`' for f in row_fields]    
     table = '`'+conn.escape_string(cls._meta.db_table)+'`'
     placeholders = ['%s' for field in fields]
     assignments = ['`{x}` = VALUES(`{x}`)'.format(
         x=conn.escape_string(x)
-    ) for x in fields]
+    ) for x in row_fields]
+    
+    # Store defaults so we can fall back to them if a value
+    # isn't set.
+    defaults = {}
+
+    for f in row_fields:
+        if f in cls._meta.defaults:
+            field_default = cls._meta.defaults[f]
+        else:
+            field_default = None
+
+        # peewee's defaults can be callable, e.g. current time.
+        if callable(field_default):
+            field_default = field_default()
+
+        defaults[f] = field_default
 
     # We build our own MySQL query because peewee only supports
     # REPLACE INTO for upserting, which deletes the old row before
@@ -2711,9 +2731,20 @@ def bulk_upsert(cls, data, db):
                 db.execute_sql('SET FOREIGN_KEY_CHECKS=0;')
 
                 # Time to bulk upsert our data. Convert objects to a list of
-                # values for executemany().
-                batch = [r.values() for r in rows[i:min(i + step, num_rows)]]
+                # values for executemany(), and fall back to defaults if
+                # necessary.
+                batch = []
 
+                for row in rows[i:min(i + step, num_rows)]:
+                    # Fall back to default if no value is set.
+                    for field in row:
+                        if row[field] is None:
+                            row[field] = defaults[field]
+
+                    row = row.values()
+                    batch.append(row)
+
+                # Format query, and go.
                 formatted_query = query_string.format(
                     table=table,
                     fields=', '.join(fields),
