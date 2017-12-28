@@ -26,7 +26,7 @@ from timeit import default_timer
 from .utils import (get_pokemon_name, get_pokemon_types,
                     get_args, cellid, in_radius, date_secs, clock_between,
                     get_move_name, get_move_damage, get_move_energy,
-                    get_move_type, calc_pokemon_level)
+                    get_move_type, calc_pokemon_level, peewee_attr_to_col)
 from .transform import transform_from_wgs_to_gcj, get_new_coords
 from .customLog import printPokemon
 
@@ -2686,7 +2686,7 @@ def bulk_upsert(cls, data, db):
 
     # We build our own INSERT INTO ... ON DUPLICATE KEY
     # UPDATE x=VALUES(x) query, making sure all data is
-    # properly escaped. We use placeholders for 
+    # properly escaped. We use placeholders for
     # VALUES(%s, %s, ...) so we can use executemany().
     row_fields = rows[0].keys()
     table = '`'+conn.escape_string(cls._meta.db_table)+'`'
@@ -2710,18 +2710,19 @@ def bulk_upsert(cls, data, db):
 
         defaults[field_name] = field_default
 
+    # Translate to proper column name, e.g. foreign keys.
+    row_fields = [peewee_attr_to_col(cls, f) for f in row_fields]
+
     # Sort our keys. We'll do the same for row.items() later.
     row_fields = sorted(row_fields)
-    log.debug('Defaults: %s.', defaults)
-    log.debug('Fields: %s.', row_fields)
 
     # Assign fields, placeholders and assignments after defaults
     # so our lists/keys stay in order.
     fields = ['`'+conn.escape_string(f)+'`' for f in row_fields]
     placeholders = ['%s' for field in fields]
-    assignments = ['`{x}` = VALUES(`{x}`)'.format(
-        x=conn.escape_string(x)
-    ) for x in row_fields]
+    assignments = ['{x} = VALUES({x})'.format(
+        x=escaped_field
+    ) for escaped_field in fields]
 
     # We build our own MySQL query because peewee only supports
     # REPLACE INTO for upserting, which deletes the old row before
@@ -2754,34 +2755,28 @@ def bulk_upsert(cls, data, db):
                 for row in rows[i:min(i + step, num_rows)]:
                     # Fall back to default if no value is set.
                     for field in row.keys():
+                        # Translate to proper column name, e.g. foreign keys.
+                        field_column = peewee_attr_to_col(cls, field)
+
+                        # Field name differs.
+                        if field != field_column:
+                            row[field_column] = row[field]
+                            row.pop(field)
+
                         # Take a default if we need it.
-                        if row[field] is None:
+                        if row[field_column] is None:
                             default = defaults.get(field, None)
                             row[field] = default
 
-                        # Translate to proper column name, e.g. foreign keys.
-                        field_column = getattr(cls, field)
-
-                        # Only try to do it on populated fields.
-                        if field_column is not None:
-                            field_column = field_column.db_column
-
-                        if field == 'scannedlocation' or field_column == 'scannedlocation':
-                            log.debug('Field %s col %s.', field, field_column)
-                        if field != field_column:
-                            log.debug('Field %s col %s.', field, field_column)
-                            row[field_column] = row[field]
-                            row.pop(field)
-                    log.debug(row)
                     # If we're missing a field that has a default, add it.
                     for field in defaults:
                         default = defaults.get(field, None)
 
                         if field not in row and default is not None:
                             row[field] = default
-                    
+
                     # Dicts are unordered. Any modification to a dict can
-                    # change its order, so we keep an alphabetical one.
+                    # change its order, so we keep a sorted one.
                     row = [val for (key, val) in sorted(row.items())]
                     batch.append(row)
 
