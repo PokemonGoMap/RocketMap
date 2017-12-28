@@ -2689,28 +2689,37 @@ def bulk_upsert(cls, data, db):
     # properly escaped. We use placeholders for 
     # VALUES(%s, %s, ...) so we can use executemany().
     row_fields = rows[0].keys()
-    fields = ['`'+conn.escape_string(f)+'`' for f in row_fields]    
     table = '`'+conn.escape_string(cls._meta.db_table)+'`'
-    placeholders = ['%s' for field in fields]
-    assignments = ['`{x}` = VALUES(`{x}`)'.format(
-        x=conn.escape_string(x)
-    ) for x in row_fields]
-    
+
     # Store defaults so we can fall back to them if a value
     # isn't set.
     defaults = {}
 
-    for f in row_fields:
-        if f in cls._meta.defaults:
-            field_default = cls._meta.defaults[f]
-        else:
-            field_default = None
+    for f in cls._meta.fields.values():
+        field_name = f.db_column
+        field_default = cls._meta.defaults.get(f, None)
 
         # peewee's defaults can be callable, e.g. current time.
         if callable(field_default):
             field_default = field_default()
 
-        defaults[f] = field_default
+        if field_default is not None:
+            # Make sure ones w/ a default are in our query.
+            if field_name not in row_fields:
+                row_fields.append(field_name)
+
+        defaults[field_name] = field_default
+
+    # Sort our keys. We'll do the same for row.items() later.
+    row_fields = sorted(row_fields)
+
+    # Assign fields, placeholders and assignments after defaults
+    # so our lists/keys stay in order.
+    fields = ['`'+conn.escape_string(f)+'`' for f in row_fields]
+    placeholders = ['%s' for field in fields]
+    assignments = ['`{x}` = VALUES(`{x}`)'.format(
+        x=conn.escape_string(x)
+    ) for x in row_fields]
 
     # We build our own MySQL query because peewee only supports
     # REPLACE INTO for upserting, which deletes the old row before
@@ -2737,11 +2746,21 @@ def bulk_upsert(cls, data, db):
 
                 for row in rows[i:min(i + step, num_rows)]:
                     # Fall back to default if no value is set.
-                    for field in row:
+                    for field in row.keys():
                         if row[field] is None:
-                            row[field] = defaults[field]
+                            default = defaults.get(field, None)
+                            row[field] = default
 
-                    row = row.values()
+                    # If we're missing a field that has a default, add it.
+                    for field in defaults:
+                        default = defaults.get(field, None)
+
+                        if field not in row and default is not None:
+                            row[field] = default
+                    
+                    # Dicts are unordered. Any modification to a dict can
+                    # change its order, so we keep an alphabetical one.
+                    row = [val for (key, val) in sorted(row.items())]
                     batch.append(row)
 
                 # Format query, and go.
@@ -2751,9 +2770,6 @@ def bulk_upsert(cls, data, db):
                     placeholders=', '.join(placeholders),
                     assignments=', '.join(assignments)
                 )
-
-                log.debug(formatted_query)
-                log.debug(batch[0])
 
                 cursor.executemany(formatted_query, batch)
 
