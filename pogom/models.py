@@ -2712,6 +2712,8 @@ def bulk_upsert(cls, data, db):
 
     # Sort our keys. We'll do the same for row.items() later.
     row_fields = sorted(row_fields)
+    log.debug('Defaults: %s.', defaults)
+    log.debug('Fields: %s.', row_fields)
 
     # Assign fields, placeholders and assignments after defaults
     # so our lists/keys stay in order.
@@ -2731,7 +2733,12 @@ def bulk_upsert(cls, data, db):
     # Prepare transaction.
     with db.atomic():
         while i < num_rows:
-            log.debug('Inserting items %d to %d.', i, min(i + step, num_rows))
+            start = i
+            end = min(i + step, num_rows)
+            name = cls.__name__
+
+            log.debug('Inserting items %d to %d for %s.', start, end, name)
+
             try:
                 # Turn off FOREIGN_KEY_CHECKS on MySQL, because apparently it's
                 # unable to recognize strings to update unicode keys for
@@ -2747,10 +2754,25 @@ def bulk_upsert(cls, data, db):
                 for row in rows[i:min(i + step, num_rows)]:
                     # Fall back to default if no value is set.
                     for field in row.keys():
+                        # Take a default if we need it.
                         if row[field] is None:
                             default = defaults.get(field, None)
                             row[field] = default
 
+                        # Translate to proper column name, e.g. foreign keys.
+                        field_column = getattr(cls, field)
+
+                        # Only try to do it on populated fields.
+                        if field_column is not None:
+                            field_column = field_column.db_column
+
+                        if field == 'scannedlocation' or field_column == 'scannedlocation':
+                            log.debug('Field %s col %s.', field, field_column)
+                        if field != field_column:
+                            log.debug('Field %s col %s.', field, field_column)
+                            row[field_column] = row[field]
+                            row.pop(field)
+                    log.debug(row)
                     # If we're missing a field that has a default, add it.
                     for field in defaults:
                         default = defaults.get(field, None)
