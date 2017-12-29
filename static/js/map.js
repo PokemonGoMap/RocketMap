@@ -678,7 +678,21 @@ function gymLabel(gym, includeMembers = true) {
         if (isRaidStarted) {
             // Set default image.
             image = `
-                <img class='gym sprite' src='static/images/raid/${gymTypes[gym.team_id]}_${raid.level}_unknown.png'>
+                <div class='raid container'>
+                <div class='raid container content-left'>
+                    <div>
+                    <img class='gym sprite' src='static/images/raid/${gymTypes[gym.team_id]}_${raid.level}_unknown.png'>
+                    </div>
+                </div>
+                <div class='raid container content-right'>
+                    <div>
+                    <div class='raid pokemon'>
+                        ${raid['pokemon_name']} <a href='http://pokemon.gameinfo.io/en/pokemon/${raid['pokemon_id']}' target='_blank' title='View in Pokédex'>#${raid['pokemon_id']}</a> | CP: ${raid['cp']}
+                    </div>
+                        ${raidStr}
+                    </div>
+                    </div>
+                </div>
                 <div class='raid'>
                 <span style='color:rgb(${raidColor[Math.floor((raid.level - 1) / 2)]})'>
                 ${levelStr}
