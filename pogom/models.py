@@ -1181,7 +1181,7 @@ class SpawnPoint(LatLongModel):
         indexes = ((('latitude', 'longitude'), False),)
         constraints = [Check('earliest_unseen >= 0'),
                        Check('earliest_unseen < 3600'),
-                       Check('latest_seen >= 0'), Check('latest_seen < 3600')]
+                       Check('latest_seen >= 0'), Check('latest_seen <= 3600')]
 
     # Returns the spawnpoint dict from ID, or a new dict if not found.
     @staticmethod
