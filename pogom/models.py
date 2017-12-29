@@ -130,6 +130,22 @@ class Accounts(LatLongModel):
 
     # TODO: Add high_lvl_accounts support.
     @staticmethod
+    def get_accounts_in_use(min_level=1, max_level=40):
+        query = (Accounts
+                 .select()
+                 .where((Accounts.instance_name == args.status_name) &
+                        (Accounts.fail == 0) &
+                        (Accounts.in_use == 1) &
+                        (Accounts.shadowban == 0) &
+                        (Accounts.banned == 0) &
+                        (Accounts.level >= min_level) &
+                        (Accounts.level <= max_level))
+                 .order_by(Accounts.level.asc(),
+                           Accounts.last_modified.asc())
+                 .dicts())
+        return query
+
+    @staticmethod
     def get_accounts(number, min_level=1, max_level=40, init=False):
         query = []
         accounts = []
@@ -148,7 +164,6 @@ class Accounts(LatLongModel):
                                Accounts.last_modified.asc())
                      .limit(number)
                      .dicts())
-
         if len(query) != number:  # Not exact same config? Get new accounts.
             query = (Accounts
                      .select()
@@ -168,8 +183,8 @@ class Accounts(LatLongModel):
             usernames = [dba['username'] for dba in query]
             (Accounts.update(in_use=True,
                              instance_name=args.status_name)
-                     .where((Accounts.username << usernames))
-                     .execute())
+             .where((Accounts.username << usernames))
+             .execute())
 
             for a in query:
                 accounts.append(a)
@@ -217,7 +232,18 @@ class Accounts(LatLongModel):
                     'auth_service': 'ptc',
                     'username': fields[0],
                     'password': fields[1],
-                    'level': 1
+                    'level': 1,
+                    'captcha': 0,
+                    'latitude': None,
+                    'longitude': None,
+                    'active': 0,
+                    'in_use': 0,
+                    'instance_name': args.status_name,
+                    'fail': 0,
+                    'last_modified': datetime.utcnow(),
+                    'shadowban': 0,
+                    'warning': 0,
+                    'banned': 0
                 }
                 accounts.append(account)
 
@@ -252,7 +278,18 @@ class Accounts(LatLongModel):
                     'auth_service': fields[0],
                     'username': fields[1],
                     'password': fields[2],
-                    'level': level
+                    'level': level,
+                    'captcha': 0,
+                    'latitude': None,
+                    'longitude': None,
+                    'active': 0,
+                    'in_use': 0,
+                    'instance_name': args.status_name,
+                    'fail': 0,
+                    'last_modified': datetime.utcnow(),
+                    'shadowban': 0,
+                    'warning': 0,
+                    'banned': 0
                 }
                 accounts.append(account)
             else:
@@ -264,17 +301,12 @@ class Accounts(LatLongModel):
         return accounts
 
     @staticmethod
-    def process_accounts(db, accounts):
+    def process_accounts(db_updates_queue):
+        accounts = Accounts.load_accounts(args)
         log.info('Loaded %d accounts from file.', len(accounts))
 
-        new_accounts = []
+        new_accounts = {}
         if accounts:
-            if args.db_type == 'mysql':
-                step = 250
-            else:
-                # SQLite has a default max number of parameters of 999,
-                # so we need to limit how many rows we insert for it.
-                step = 50
 
             usernames = [a['username'] for a in accounts]
             query = (Accounts
@@ -293,9 +325,9 @@ class Accounts(LatLongModel):
 
             for a in accounts:
                 if a['username'] in db_usernames:
-                    # Skip accounts already on database.
+                    # Skip accounts already in database.
                     continue
-                new_accounts.append(a)
+                new_accounts[a['username']] = a
 
             if(len(remove_db_usernames)):
                 query = (Accounts
@@ -305,9 +337,7 @@ class Accounts(LatLongModel):
                 log.info('Removed %d deleted accounts from DB.', len(
                     remove_db_usernames))
 
-            with db.atomic():
-                for idx in range(0, len(new_accounts), step):
-                    Accounts.insert_many(new_accounts[idx:idx+step]).execute()
+            db_updates_queue.put((Accounts, new_accounts))
 
         log.info('Inserted %d new accounts into the database.',
                  len(new_accounts))
@@ -358,14 +388,14 @@ class Accounts(LatLongModel):
 
     # Thread function for periodical account updating.
     @staticmethod
-    def account_refresher(args, db, load_accounts, process_accounts):
+    def account_refresher(args, db_updates_queue, load_accounts,
+                          process_accounts):
         while True:
             # Wait before refresh, because initial refresh is done at startup.
             time.sleep(args.account_refresh)
 
             try:
-                accounts = load_accounts(args)
-                process_accounts(db, accounts)
+                process_accounts(db_updates_queue)
                 log.info('Regular account refresh complete.')
             except Exception as e:
                 log.exception('Exception while refreshing accounts: %s.', e)
@@ -512,15 +542,15 @@ class Pokemon(LatLongModel):
         # and should use the disappear_time index and hopefully
         # improve performance
         pokemon_count_query = (Pokemon
-                               .select((Pokemon.pokemon_id+0).alias(
-                                           'pokemon_id'),
-                                       fn.COUNT((Pokemon.pokemon_id+0)).alias(
-                                           'count'),
-                                       fn.MAX(Pokemon.disappear_time).alias(
-                                           'lastappeared')
-                                       )
+                               .select((Pokemon.pokemon_id + 0).alias(
+                                   'pokemon_id'),
+                                   fn.COUNT((Pokemon.pokemon_id + 0)).alias(
+                                   'count'),
+                                   fn.MAX(Pokemon.disappear_time).alias(
+                                   'lastappeared')
+                               )
                                .where(Pokemon.disappear_time > timediff)
-                               .group_by((Pokemon.pokemon_id+0))
+                               .group_by((Pokemon.pokemon_id + 0))
                                .alias('counttable')
                                )
         query = (Pokemon
@@ -581,7 +611,6 @@ class Pokemon(LatLongModel):
     @staticmethod
     def get_appearances_times_by_spawnpoint(pokemon_id, spawnpoint_id,
                                             timediff):
-
         '''
         :param pokemon_id: id of Pokemon that we need appearances times for.
         :param spawnpoint_id: spawnpoint id we need appearances times for.
@@ -1482,7 +1511,7 @@ class SpawnPoint(LatLongModel):
                 SpawnPoint.latitude, SpawnPoint.longitude, SpawnPoint.id,
                 SpawnPoint.links, SpawnPoint.kind, SpawnPoint.latest_seen,
                 SpawnPoint.earliest_unseen, ScannedLocation.done)
-                     .join(ScanSpawnPoint).join(ScannedLocation).dicts())
+                .join(ScanSpawnPoint).join(ScannedLocation).dicts())
 
             if timestamp > 0:
                 query = (
@@ -2025,7 +2054,7 @@ class HashKeys(BaseModel):
         # Obfuscate hashing keys before we sent them to the front-end.
         hashkeys = HashKeys.get_all()
         for i, s in enumerate(hashkeys):
-            hashkeys[i]['key'] = s['key'][:-9] + '*'*9
+            hashkeys[i]['key'] = s['key'][:-9] + '*' * 9
         return hashkeys
 
     @staticmethod
@@ -2304,7 +2333,7 @@ def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
                     encountered_pokestops = [(f['pokestop_id'], int(
                         (f['last_modified'] - datetime(1970, 1,
                                                        1)).total_seconds()))
-                                             for f in query]
+                        for f in query]
 
         for f in forts:
             if not args.no_pokestops and f.type == 1:  # Pokestops.
@@ -2388,7 +2417,7 @@ def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
                         'occupied_since':
                             calendar.timegm((datetime.utcnow() - timedelta(
                                 milliseconds=gym_display.occupied_millis)
-                                            ).timetuple()),
+                            ).timetuple()),
                         'last_modified':
                             f.last_modified_timestamp_ms,
                         'raid_active_until':
@@ -2483,7 +2512,7 @@ def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
     # can narrow down tth window.
     for sp in ScannedLocation.linked_spawn_points(scan_location['cellid']):
         if sp['missed_count'] > 5:
-                continue
+            continue
 
         if sp['id'] in sp_id_list:
             # Don't overwrite changes from this parse with DB version.
@@ -2819,7 +2848,6 @@ def db_updater(q, db):
             # Loop the queue.
             while True:
                 model, data = q.get()
-
                 start_timer = default_timer()
                 bulk_upsert(model, data, db)
                 q.task_done()
@@ -2888,14 +2916,14 @@ def clean_db_loop(args):
                          .update(in_use=False)
                          .where((Accounts.in_use == 1) &
                                 (Accounts.last_modified <
-                                (datetime.utcnow() - timedelta(minutes=15))))
+                                 (datetime.utcnow() - timedelta(minutes=15))))
                          .execute())
 
                 query = (Accounts
                          .update(in_use=False, instance_name=None)
                          .where((Accounts.instance_name.is_null(False)) &
                                 (Accounts.last_modified <
-                                (datetime.utcnow() - timedelta(minutes=60))))
+                                 (datetime.utcnow() - timedelta(minutes=60))))
                          .execute())
 
                 # Resets failed accounts after rest time for re-use.
@@ -2903,8 +2931,8 @@ def clean_db_loop(args):
                          .update(in_use=False, instance_name=None, fail=False)
                          .where((Accounts.fail == 1) &
                                 (Accounts.last_modified <
-                                (datetime.utcnow() - timedelta(
-                                    seconds=args.account_rest_interval))))
+                                 (datetime.utcnow() - timedelta(
+                                     seconds=args.account_rest_interval))))
                          .execute())
 
                 # If desired, clear old Pokemon spawns.

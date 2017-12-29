@@ -350,7 +350,7 @@ def search_overseer_thread(args, new_location_queue, control_flags, heartb,
     they can be tried again later, but must wait a bit before doing do so
     to prevent accounts from being cycled through too quickly.
     '''
-    add_accounts_to_queue(args, account_queue, args.workers,
+    add_accounts_to_queue(args, account_queue, db_updates_queue, args.workers,
                           max_level=29, init=True)
 
     '''
@@ -844,7 +844,8 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
                     # TODO: use db queue
                     Accounts.set_fail(account)
 
-                    add_accounts_to_queue(args, account_queue, 1, max_level=29)
+                    add_accounts_to_queue(args, account_queue, dbq,
+                                          1, max_level=29)
 
                     # Exit this loop to get a new account and have the API
                     # recreated.
@@ -865,7 +866,8 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
                                              'reason': 'empty scans'})
                     # TODO: use db queue
                     Accounts.set_fail(account)
-                    add_accounts_to_queue(args, account_queue, 1, max_level=29)
+                    add_accounts_to_queue(args, account_queue, dbq,
+                                          1, max_level=29)
                     # Exit this loop to get a new account and have the API
                     # recreated.
                     break
@@ -880,7 +882,8 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
                             account['username'], status['proxy_url'])
                     log.warning(status['message'])
                     # Experimental, nobody did this before.
-                    add_accounts_to_queue(args, account_queue, 1, max_level=29)
+                    add_accounts_to_queue(args, account_queue, dbq,
+                                          1, max_level=29)
                     # Exit this loop to get a new account and have the API
                     # recreated.
                     break
@@ -896,7 +899,7 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
                         account_failures.append({'account': account,
                                                  'last_fail_time': now(),
                                                  'reason': 'rest interval'})
-                        add_accounts_to_queue(args, account_queue, 1,
+                        add_accounts_to_queue(args, account_queue, dbq, 1,
                                               max_level=29)
                         break
 
@@ -1020,7 +1023,7 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
                         # keep account in local instance or release?
                         # captcha handling should be removed from search/models
                         # and be handled all together in PGoAPI client/wrapper.
-                        add_accounts_to_queue(args, account_queue, 1,
+                        add_accounts_to_queue(args, account_queue, dbq, 1,
                                               max_level=29)
                         time.sleep(3)
                         break
@@ -1221,7 +1224,7 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
                                      'last_fail_time': now(),
                                      'reason': 'exception'})
             Accounts.set_fail(account)
-            add_accounts_to_queue(args, account_queue, 1, max_level=29)
+            add_accounts_to_queue(args, account_queue, dbq, 1, max_level=29)
             time.sleep(args.scan_delay)
 
 
@@ -1343,11 +1346,18 @@ def is_paused(control_flags):
     return False
 
 
-def add_accounts_to_queue(args, account_queue, number,
+def add_accounts_to_queue(args, account_queue, db_updates_queue, number,
                           min_level=1, max_level=40, init=False):
     accounts = []
     retry_delay = 0
+    loaded_accounts = 0
     while len(accounts) < number:
+        if len(accounts):
+            # if we've looped through here once, then we have loaded accounts.
+            # If we have loaded accounts, then subsequent calls should not
+            # have init=True, because then it keeps reloading the same Accounts
+            # Setting this to false, will only look for new unassigned accounts
+            init = False
         accounts = Accounts.get_accounts((number - len(accounts)),
                                          min_level=min_level,
                                          max_level=max_level,
@@ -1357,10 +1367,15 @@ def add_accounts_to_queue(args, account_queue, number,
 
         if len(accounts) < number:
             retry_delay += args.login_delay
-            log.error('Got only %s / %s account(s). Reloading csv in %ss.',
-                      len(accounts), number, retry_delay)
-            time.sleep(retry_delay)
-            Accounts.process_accounts()
 
-    log.info('Loaded {} accounts from the DB.'.format(number))
+            loaded_accounts = Accounts.get_accounts_in_use(min_level=min_level,
+                                                           max_level=max_level)
+
+            log.error('Got only %s / %s account(s). Reloading csv in %ss.',
+                      len(loaded_accounts), number, retry_delay)
+            time.sleep(retry_delay)
+            Accounts.process_accounts(db_updates_queue)
+
+    log.info('Loaded {} total accounts from the DB.'.
+             format(account_queue.qsize()))
     return account_queue

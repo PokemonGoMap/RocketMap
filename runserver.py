@@ -342,12 +342,6 @@ def main():
     new_location_queue = Queue()
     new_location_queue.put(position)
 
-    # Import accounts from .csv file into db on startup.
-    # But not for server only instances.
-    if not args.only_server:
-        accounts = Accounts.load_accounts(args)
-        Accounts.process_accounts(db, accounts)
-
     # DB Updates
     db_updates_queue = Queue()
 
@@ -388,6 +382,11 @@ def main():
             t.start()
 
     if not args.only_server:
+
+        # Import accounts from .csv file into db on startup.
+        # But not for server only instances.
+        Accounts.process_accounts(db_updates_queue)
+
         # Check if we are able to scan.
         if not can_start_scanning(args):
             sys.exit(1)
@@ -405,7 +404,7 @@ def main():
         if (args.accountcsv is not None) and (args.account_refresh > 0):
             log.info('Starting account-refresher thread.')
             t = Thread(target=Accounts.account_refresher,
-                       name='account-refresher', args=(args, db,
+                       name='account-refresher', args=(args, db_updates_queue,
                                                        Accounts.load_accounts,
                                                        Accounts.
                                                        process_accounts))
