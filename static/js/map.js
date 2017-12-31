@@ -675,10 +675,6 @@ function gymLabel(gym, includeMembers = true) {
         const raidColor = ['252,112,176', '255,158,22', '184,165,221']
         const levelStr = '★'.repeat(raid['level'])
 
-    if ((isUpcomingRaid || isRaidStarted) && isRaidFilterOn && isGymSatisfiesRaidMinMaxFilter(raid)) {
-        const raidColor = ['252,112,176', '255,158,22', '184,165,221']
-        const levelStr = '★'.repeat(raid['level'])
-
         if (isRaidStarted) {
             // set Pokémon-specific image if we have one.
             if (raid.pokemon_id !== null && pokemonWithImages.indexOf(raid.pokemon_id) !== -1) {
