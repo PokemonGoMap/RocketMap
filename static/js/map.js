@@ -75,7 +75,7 @@ const unownForm = ['unset', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K
 const pokemonWithImages = [
     2, 3, 5, 6, 8, 9, 11, 28, 31, 34, 38, 59, 62, 65, 68, 71, 73, 76, 82, 89, 91, 94, 103, 105, 110, 112, 123, 125, 126, 129, 131, 134, 135, 136, 137, 139, 143, 144, 145, 146, 150, 153, 156, 159, 243, 244, 245, 248, 249, 250, 302, 303, 359, 382, 383, 384
 ]
-
+var raidImage
 
 /*
  text place holders:
@@ -675,13 +675,22 @@ function gymLabel(gym, includeMembers = true) {
         const raidColor = ['252,112,176', '255,158,22', '184,165,221']
         const levelStr = '★'.repeat(raid['level'])
 
+    if ((isUpcomingRaid || isRaidStarted) && isRaidFilterOn && isGymSatisfiesRaidMinMaxFilter(raid)) {
+        const raidColor = ['252,112,176', '255,158,22', '184,165,221']
+        const levelStr = '★'.repeat(raid['level'])
+
         if (isRaidStarted) {
-            // Set default image.
+            // set Pokémon-specific image if we have one.
+            if (raid.pokemon_id !== null && pokemonWithImages.indexOf(raid.pokemon_id) !== -1) {
+                raidImage = `<img class='gym sprite' src='static/icons/${raid.pokemon_id}.png'>`
+            } else {
+                raidImage = `<img class='gym sprite' src='static/images/raid/${gymTypes[gym.team_id]}_${raid.level}_unknown.png'>`
+            }
             image = `
                 <div class='raid container'>
                 <div class='raid container content-left'>
                     <div>
-                    <img class='gym sprite' src='static/images/raid/${gymTypes[gym.team_id]}_${raid.level}_unknown.png'>
+                    ${raidImage}
                     </div>
                 </div>
                 <div class='raid container content-right'>
@@ -700,32 +709,6 @@ function gymLabel(gym, includeMembers = true) {
                 <span class='raid countdown label-countdown' disappears-at='${raid.end}'></span> left (${moment(raid.end).format('HH:mm')})
                 </div>
             `
-            // Use Pokémon-specific image if we have one.
-            if (raid.pokemon_id !== null && pokemonWithImages.indexOf(raid.pokemon_id) !== -1) {
-                image = `
-                    <div class='raid container'>
-                    <div class='raid container content-left'>
-                        <div>
-                        <img class='gym sprite' src='static/icons/${raid.pokemon_id}.png'>
-                        </div>
-                    </div>
-                    <div class='raid container content-right'>
-                        <div>
-                        <div class='raid pokemon'>
-                            ${raid['pokemon_name']} <a href='http://pokemon.gameinfo.io/en/pokemon/${raid['pokemon_id']}' target='_blank' title='View in Pokédex'>#${raid['pokemon_id']}</a> | CP: ${raid['cp']}
-                    </div>
-                        ${raidStr}
-                    </div>
-                    </div>
-                </div>
-                    <div class='raid'>
-                    <span style='color:rgb(${raidColor[Math.floor((raid.level - 1) / 2)]})'>
-                    ${levelStr}
-                    </span>
-                    <span class='raid countdown label-countdown' disappears-at='${raid.end}'></span> left (${moment(raid.end).format('HH:mm')})
-                    </div>
-                `
-            }
         } else {
             image = `<img class='gym sprite' src='static/images/gym/${gymTypes[gym.team_id]}_${getGymLevel(gym)}_${raid.level}.png'>`
         }
