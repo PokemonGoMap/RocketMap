@@ -113,20 +113,36 @@ class LatLongModel(BaseModel):
 class Accounts(LatLongModel):
     auth_service = Utf8mb4CharField(max_length=6, default='ptc')
     username = Utf8mb4CharField(primary_key=True, max_length=26)
-    password = Utf8mb4CharField()
+    password = Utf8mb4CharField(max_length=64)
     level = SmallIntegerField(default=1)
     captcha = BooleanField(index=True, default=False)
     latitude = DoubleField(null=True)
     longitude = DoubleField(null=True)
-    active = BooleanField(default=False)
     in_use = BooleanField(index=True, default=False)
     instance_name = CharField(index=True, null=True, max_length=64)
     fail = BooleanField(index=True, default=False)
     last_modified = DateTimeField(index=True, default=datetime.utcnow)
-    # TODO: add functionallity for the tables below.
     shadowban = BooleanField(index=True, default=False)
     warning = BooleanField(index=True, default=False)
     banned = BooleanField(index=True, default=False)
+
+    @staticmethod
+    def db_format(account, name='status_account_db'):
+        account['username'] = account.get('username')
+        return {'auth_service': account['auth_service'],
+                'username': account['username'],
+                'password': account['password'],
+                'level': account['level'],
+                'captcha': account['captcha'],
+                'latitude': account.get('latitude', None),
+                'longitude': account.get('longitude', None),
+                'in_use': account['in_use'],
+                'instance_name': account['instance_name'],
+                'fail': account['fail'],
+                'last_modified': datetime.utcnow(),
+                'shadowban': account['shadowban'],
+                'warning': account['warning'],
+                'banned': account['banned']}
 
     # TODO: Add high_lvl_accounts support.
     @staticmethod
@@ -236,7 +252,6 @@ class Accounts(LatLongModel):
                     'captcha': 0,
                     'latitude': None,
                     'longitude': None,
-                    'active': 0,
                     'in_use': 0,
                     'instance_name': args.status_name,
                     'fail': 0,
@@ -282,7 +297,6 @@ class Accounts(LatLongModel):
                     'captcha': 0,
                     'latitude': None,
                     'longitude': None,
-                    'active': 0,
                     'in_use': 0,
                     'instance_name': args.status_name,
                     'fail': 0,

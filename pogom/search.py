@@ -841,9 +841,7 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
                     account_failures.append({'account': account,
                                              'last_fail_time': now(),
                                              'reason': 'failures'})
-                    # TODO: use db queue
                     Accounts.set_fail(account)
-
                     add_accounts_to_queue(args, account_queue, dbq,
                                           1, max_level=29)
 
@@ -864,7 +862,6 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
                     account_failures.append({'account': account,
                                              'last_fail_time': now(),
                                              'reason': 'empty scans'})
-                    # TODO: use db queue
                     Accounts.set_fail(account)
                     add_accounts_to_queue(args, account_queue, dbq,
                                           1, max_level=29)
@@ -992,8 +989,10 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
                 status['longitude'] = scan_coords[1]
                 dbq.put((WorkerStatus, {0: WorkerStatus.db_format(status)}))
 
+                # Parse recorded time and place also to db.
                 account['latitude'] = scan_coords[0]
                 account['longitude'] = scan_coords[1]
+                dbq.put((Accounts, {0: Accounts.db_format(account)}))
 
                 # Nothing back. Mark it up, sleep, carry on.
                 if not response_dict:
