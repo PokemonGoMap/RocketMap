@@ -124,7 +124,8 @@ class Accounts(LatLongModel):
     last_modified = DateTimeField(index=True, default=datetime.utcnow)
     shadowban = BooleanField(index=True, default=False)
     warning = BooleanField(index=True, default=False)
-    banned = BooleanField(index=True, default=False)
+    tempban = BooleanField(index=True, default=False)
+    permban = BooleanField(index=True, default=False)
 
     @staticmethod
     def db_format(account, name='status_account_db'):
@@ -419,13 +420,26 @@ class Accounts(LatLongModel):
                   warn=True)
          .save())
 
-    # Sets the ban flag of an account. Re-use impossible.
+    # Sets the ban flag of an account. Re-use possible after rest.
     @staticmethod
-    def set_banned(account):
+    def set_tempban(account):
         (Accounts(username=account['username'],
                   in_use=False,
                   instance_name=None,
-                  banned=True)
+                  tempban=True)
+         .save())
+        (WorkerStatus
+         .delete()
+         .where((WorkerStatus.username == account['username']))
+         .execute())
+
+    # Sets the ban flag of an account. Re-use impossible.
+    @staticmethod
+    def set_permban(account):
+        (Accounts(username=account['username'],
+                  in_use=False,
+                  instance_name=None,
+                  tempban=True)
          .save())
         (WorkerStatus
          .delete()
@@ -2979,6 +2993,15 @@ def clean_db_loop(args):
                                 (Accounts.last_modified <
                                  (datetime.utcnow() - timedelta(
                                      seconds=args.account_rest_interval))))
+                         .execute())
+
+                # Resets temp-banned accounts.
+                query = (Accounts
+                         .update(shadowban=False, tempban=False)
+                         .where((Accounts.shadowban == 1) &
+                                (Accounts.tempban == 1)) &
+                               (Accounts.last_modified <
+                                (datetime.utcnow() - timedelta(weeks=6)))
                          .execute())
 
                 # If desired, clear old Pokemon spawns.
