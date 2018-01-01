@@ -439,7 +439,7 @@ class Accounts(LatLongModel):
         (Accounts(username=account['username'],
                   in_use=False,
                   instance_name=None,
-                  tempban=True)
+                  permban=True)
          .save())
         (WorkerStatus
          .delete()
