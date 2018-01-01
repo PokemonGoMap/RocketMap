@@ -788,10 +788,10 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
             else:
                 status.update({
                     'username': account['username'],
-                    'last_modified': datetime.utcnow(),
+                    'last_modified': account['last_modified'],
                     'last_scan_date': datetime.utcnow(),
-                    'latitude': None,
-                    'longitude': None
+                    'latitude': account['latitude'],
+                    'longitude': account['longitude']
                 })
             # New lease of life right here.
             status.update({
@@ -820,6 +820,10 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
             # Sleep when consecutive_noitems reaches max_empty, overall noitems
             # for stat purposes.
             consecutive_noitems = 0
+
+            # Reset rareless count so we dont set shadowbanflag,
+            # during init by accident.
+            rareless = 0
 
             api = setup_api(args, status, account)
 
@@ -1031,11 +1035,20 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
                                        scan_location, dbq, whq, key_scheduler,
                                        api, status, scan_date, account,
                                        account_sets)
-
                     scheduler.task_done(status, parsed)
                     if parsed['count'] > 0:
                         status['success'] += 1
                         consecutive_noitems = 0
+                        # check for shadowban also.
+                        if is_rareless_scan(response_dict):
+                            rareless += 1
+                            if rareless >= 10:
+                                Accounts.set_shadowban(account)
+                                log.info(
+                                    'Account %s shadowbanned, rotating out...',
+                                    account['username'])
+                                add_accounts_to_queue(args, account_queue, dbq,
+                                                      1, max_level=29)
                     else:
                         status['noitems'] += 1
                         consecutive_noitems += 1
@@ -1378,3 +1391,51 @@ def add_accounts_to_queue(args, account_queue, db_updates_queue, number,
     log.info('Loaded {} total accounts from the DB.'.
              format(account_queue.qsize()))
     return account_queue
+
+
+def is_rareless_scan(response_dict):
+    # Functions to deal with shadowbans / rareless scans
+    COMMON_POKEMON = [
+        16,     # Pidgey
+        19,     # Rattata
+        23,     # Ekans
+        27,     # Sandshrew
+        29,     # Nidoran F
+        32,     # Nidoran M
+        41,     # Zubat
+        43,     # Oddish
+        46,     # Paras
+        52,     # Meowth
+        54,     # Psyduck
+        60,     # Poliwag
+        69,     # Bellsprout
+        72,     # Tentacool
+        74,     # Geodude
+        77,     # Ponyta
+        81,     # Magnemite
+        98,     # Krabby
+        118,    # Goldeen
+        120,    # Staryu
+        129,    # Magikarp
+        161,    # Sentret
+        165,    # Ledyba
+        167,    # Spinarak
+        177,    # Natu
+        183,    # Marill
+        187,    # Hoppip
+        191,    # Sunkern
+        194,    # Wooper
+        198,    # Murkrow
+        209,    # Snubbull
+        218     # Slugma
+    ]
+    for map_cells in response_dict:
+        for p in map_cells.wild_pokemons:
+            if p.pokemon_data.pokemon_id not in COMMON_POKEMON:
+                return False
+        for p in map_cells.nearby_pokemons:
+            if p.pokemon_id not in COMMON_POKEMON:
+                return False
+
+    # No rare Pokemon found, so the scan was "rareless"
+    return True

@@ -140,9 +140,9 @@ class Accounts(LatLongModel):
                 'instance_name': account['instance_name'],
                 'fail': account['fail'],
                 'last_modified': datetime.utcnow(),
-                'shadowban': account['shadowban'],
-                'warning': account['warning'],
-                'banned': account['banned']}
+                'shadowban': account.get('shadowban', None),
+                'warning': account.get('warning', None),
+                'banned': account.get('banned', None)}
 
     # TODO: Add high_lvl_accounts support.
     @staticmethod
@@ -399,6 +399,38 @@ class Accounts(LatLongModel):
     def get_captchad():
         query = Accounts.select().where((Accounts.captcha == 1)).dicts()
         return list(query.values())
+
+    # Sets the shadowban flag of an account
+    @staticmethod
+    def set_shadowban(account):
+        (Accounts(username=account['username'],
+                  in_use=False,
+                  shadowban=True)
+         .save())
+        (WorkerStatus
+         .delete()
+         .where((WorkerStatus.username == account['username']))
+         .execute())
+
+    # Sets the warn flag of an account. Usage still possible in the future.
+    @staticmethod
+    def set_warn(account):
+        (Accounts(username=account['username'],
+                  warn=True)
+         .save())
+
+    # Sets the ban flag of an account. Re-use impossible.
+    @staticmethod
+    def set_banned(account):
+        (Accounts(username=account['username'],
+                  in_use=False,
+                  instance_name=None,
+                  banned=True)
+         .save())
+        (WorkerStatus
+         .delete()
+         .where((WorkerStatus.username == account['username']))
+         .execute())
 
     # Thread function for periodical account updating.
     @staticmethod
