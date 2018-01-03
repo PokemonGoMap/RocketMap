@@ -80,11 +80,6 @@ def get_args():
     parser.add_argument('-ac', '--accountcsv',
                         help=('Load accounts from CSV file containing ' +
                               '"auth_service,username,password" lines.'))
-    parser.add_argument('-hlvl', '--high-lvl-accounts',
-                        help=('Load high level accounts from CSV file '
-                              + ' containing '
-                              + '"auth_service,username,password"'
-                              + ' lines.'))
     parser.add_argument('-bh', '--beehive',
                         help=('Use beehive configuration for multiple ' +
                               'accounts, one account per hex.  Make sure ' +
