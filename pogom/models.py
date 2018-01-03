@@ -27,7 +27,7 @@ from timeit import default_timer
 from .utils import (get_pokemon_name, get_pokemon_rarity, get_pokemon_types,
                     get_args, cellid, in_radius, date_secs, clock_between,
                     get_move_name, get_move_damage, get_move_energy,
-                    get_move_type, calc_pokemon_level)
+                    get_move_type, calc_pokemon_level, distance)
 from .transform import transform_from_wgs_to_gcj, get_new_coords
 from .customLog import printPokemon
 
@@ -356,6 +356,39 @@ class Accounts(LatLongModel):
 
         log.info('Inserted %d new accounts into the database.',
                  len(new_accounts))
+
+    @staticmethod
+    def get_hlvl_account(target_location):
+        hlvl_account = None
+        query = (Accounts
+                 .select()
+                 .where((Accounts.in_use == 0) &
+                        (Accounts.fail == 0) &
+                        (Accounts.shadowban == 0) &
+                        (Accounts.banned == 0) &
+                        (Accounts.level == 30))
+                 .order_by(Accounts.last_modified.asc())
+                 .limit(10)  # Don't spend too much time checking accounts.
+                 .dicts())
+
+        if not query:
+            log.warning('Found no available high-level accounts in database.')
+            return hlvl_account
+
+        min_distance = 100000000
+        for account in query:
+            location = (account['latitude'], account['longitude'])
+            meters = distance(target_location, location)
+            if meters < min_distance:
+                min_distance = meters
+                hlvl_account = account
+
+        if hlvl_account:
+            (Accounts.update(in_use=True, instance_name=args.status_name)
+                     .where(Accounts.username == hlvl_account['username'])
+                     .execute())
+
+        return hlvl_account
 
     # Updates the DB account after an action to show it's still in use.
     @staticmethod
@@ -2139,8 +2172,7 @@ def hex_bounds(center, steps=None, radius=None):
 
 # todo: this probably shouldn't _really_ be in "models" anymore, but w/e.
 def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
-              wh_update_queue, key_scheduler, api, status, now_date, account,
-              account_sets):
+              wh_update_queue, key_scheduler, api, status, now_date, account):
     pokemon = {}
     pokestops = {}
     gyms = {}
@@ -2318,7 +2350,7 @@ def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
             pokemon_info = False
             if args.encounter and (pokemon_id in args.enc_whitelist):
                 pokemon_info = encounter_pokemon(
-                    args, p, account, api, account_sets, status, key_scheduler)
+                    args, p, account, api, status, key_scheduler)
 
             pokemon[p.encounter_id] = {
                 'encounter_id': b64encode(str(p.encounter_id)),
@@ -2647,9 +2679,8 @@ def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
     }
 
 
-def encounter_pokemon(args, pokemon, account, api, account_sets, status,
-                      key_scheduler):
-    using_accountset = False
+def encounter_pokemon(args, pokemon, account, api, status, key_scheduler):
+    using_db_account = False
     hlvl_account = None
     pokemon_id = None
     result = False
@@ -2664,8 +2695,7 @@ def encounter_pokemon(args, pokemon, account, api, account_sets, status,
             hlvl_api = api
         else:
             # Get account to use for IV and CP scanning.
-            hlvl_account = account_sets.next('30', scan_location)
-            using_accountset = True
+            hlvl_account = Accounts.get_hlvl_account(scan_location)
 
         time.sleep(args.encounter_delay)
 
@@ -2683,7 +2713,7 @@ def encounter_pokemon(args, pokemon, account, api, account_sets, status,
         # If not args.no_api_store is enabled, we need to
         # re-use an old API object if it's stored and we're
         # using an account from the AccountSet.
-        if not args.no_api_store and using_accountset:
+        if not args.no_api_store and using_db_account:
             hlvl_api = hlvl_account.get('api', None)
 
         # Make new API for this account if we're not using an
@@ -2711,7 +2741,7 @@ def encounter_pokemon(args, pokemon, account, api, account_sets, status,
             hlvl_api.activate_hash_server(key)
 
         # We have an API object now. If necessary, store it.
-        if using_accountset and not args.no_api_store:
+        if using_db_account and not args.no_api_store:
             hlvl_account['api'] = hlvl_api
 
         # Set location.
@@ -2776,8 +2806,8 @@ def encounter_pokemon(args, pokemon, account, api, account_sets, status,
 
     # We're done with the encounter. If it's from an
     # AccountSet, release account back to the pool.
-    if using_accountset:
-        account_sets.release(hlvl_account)
+    if using_db_account:
+        Accounts.release_account(hlvl_account)
 
     return result
 

@@ -45,7 +45,7 @@ from .models import (Accounts, parse_map, GymDetails, parse_gyms,
                      MainWorker, WorkerStatus, HashKeys, ScannedLocation)
 from .utils import now, distance
 from .transform import get_new_coords
-from .account import setup_api, check_login, AccountSet
+from .account import setup_api, check_login
 from .captcha import captcha_overseer_thread, handle_captcha
 from .proxy import get_new_proxy
 from .apiRequests import gym_get_info, get_map_objects as gmo
@@ -332,7 +332,6 @@ def search_overseer_thread(args, new_location_queue, control_flags, heartb,
     search_items_queue_array = []
     scheduler_array = []
     account_queue = Queue()
-    account_sets = AccountSet(args.hlvl_kph)
     threadStatus = {}
     key_scheduler = None
     api_check_time = 0
@@ -352,15 +351,6 @@ def search_overseer_thread(args, new_location_queue, control_flags, heartb,
     '''
     add_accounts_to_queue(args, account_queue, db_updates_queue, args.workers,
                           max_level=29, init=True)
-
-    '''
-    Create sets of special case accounts.
-    Currently limited to L30+ IV/CP scanning.
-    '''
-    account_sets.create_set('30', args.accounts_L30)
-
-    # Debug.
-    log.info('Added %s accounts to the L30 pool.', len(args.accounts_L30))
 
     # Create a list for failed accounts.
     account_failures = []
@@ -449,7 +439,7 @@ def search_overseer_thread(args, new_location_queue, control_flags, heartb,
             'proxy_url': proxy_url,
         }
         argset = (
-            args, account_queue, account_sets, account_failures,
+            args, account_queue, account_failures,
             account_captchas, control_flags, threadStatus[workerId],
             db_updates_queue, wh_queue, scheduler, key_scheduler, gym_cache)
 
@@ -748,7 +738,7 @@ def generate_hive_locations(current_location, step_distance,
     return results
 
 
-def search_worker_thread(args, account_queue, account_sets, account_failures,
+def search_worker_thread(args, account_queue, account_failures,
                          account_captchas, control_flags, status, dbq, whq,
                          scheduler, key_scheduler, gym_cache):
 
@@ -1033,8 +1023,7 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
 
                     parsed = parse_map(args, response_dict, scan_coords,
                                        scan_location, dbq, whq, key_scheduler,
-                                       api, status, scan_date, account,
-                                       account_sets)
+                                       api, status, scan_date, account)
                     scheduler.task_done(status, parsed)
                     if parsed['count'] > 0:
                         status['success'] += 1
