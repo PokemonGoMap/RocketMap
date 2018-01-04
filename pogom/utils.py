@@ -517,6 +517,14 @@ def get_args():
             errors.append(
                 'Missing `workers` either as -w/--workers or in config.')
 
+        # Accounts are defined with staus_name by now. if its not giving,
+        # show a warning
+
+        if args.status_name is None:
+            log.warning('Missing `status-name` either as -sn or status-name' +
+                        'in config. This could cause problems during account' +
+                        'loading.')
+
         if len(errors) > 0:
             parser.print_usage()
             print(sys.argv[0] + ": errors: \n - " + "\n - ".join(errors))

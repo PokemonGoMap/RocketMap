@@ -2860,11 +2860,15 @@ def encounter_pokemon(args, pokemon, account, api, status, key_scheduler):
                               hlvl_account['username'])
 
             if ('ENCOUNTER' in enc_responses and
-                    enc_responses['ENCOUNTER'].status != 1):
+                    enc_responses['ENCOUNTER'].status == 0):
                 log.error('There was an error encountering Pokemon ID %s with '
                           + 'account %s: %d.', pokemon_id,
                           hlvl_account['username'],
                           enc_responses['ENCOUNTER'].status)
+            # Placeholder for L30 shadowban/error handling.
+            # elif ('ENCOUNTER' in enc_responses and enc_responses[
+            #        'ENCOUNTER'].status == 2, 3, 4):
+            #
             else:
                 pokemon_info = enc_responses[
                     'ENCOUNTER'].wild_pokemon.pokemon_data
