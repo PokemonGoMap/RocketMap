@@ -369,6 +369,7 @@ def search_overseer_thread(args, new_location_queue, control_flags, heartb,
         'success_total': 0,
         'fail_total': 0,
         'empty_total': 0,
+        'nonrares_total': 0,
         'scheduler': args.scheduler,
         'scheduler_status': {'tth_found': 0}
     }
@@ -435,6 +436,7 @@ def search_overseer_thread(args, new_location_queue, control_flags, heartb,
             'skip': 0,
             'captcha': 0,
             'username': '',
+            'nonrares_total': 0,
             'proxy_display': proxy_display,
             'proxy_url': proxy_url,
         }
@@ -608,6 +610,7 @@ def get_stats_message(threadStatus, search_items_queue_array, db_updates_queue,
     eph = overseer['empty_total'] * 3600.0 / elapsed
     skph = overseer['skip_total'] * 3600.0 / elapsed
     cph = overseer['captcha_total'] * 3600.0 / elapsed
+    nrph = overseer['nonrares_total'] * 3600 / elapsed
     ccost = cph * 0.00299
     cmonth = ccost * 730
 
@@ -629,11 +632,13 @@ def get_stats_message(threadStatus, search_items_queue_array, db_updates_queue,
     message += (
         'Total active: {}  |  Success: {} ({:.1f}/hr) | ' +
         'Fails: {} ({:.1f}/hr) | Empties: {} ({:.1f}/hr) | ' +
-        'Skips {} ({:.1f}/hr) | Captchas: {} ({:.1f}/hr)|${:.5f}/hr|${:.3f}/mo'
+        'Skips {} ({:.1f}/hr) | ' +
+        'Captchas: {} ({:.1f}/hr)|${:.5f}/hr|${:.3f}/mo | ' +
+        'Nonrares {} ({:.1f}/hr)'
     ).format(overseer['active_accounts'], overseer['success_total'], sph,
              overseer['fail_total'], fph, overseer['empty_total'], eph,
              overseer['skip_total'], skph, overseer['captcha_total'], cph,
-             ccost, cmonth)
+             ccost, cmonth, overseer['nonrares_total'], nrph)
     return message
 
 
@@ -658,12 +663,15 @@ def update_total_stats(threadStatus, last_account_status):
             overseer['fail_total'] += stat_delta(tstatus, last_status, 'fail')
             overseer['success_total'] += stat_delta(tstatus, last_status,
                                                     'success')
+            overseer['nonrares_total'] += stat_delta(tstatus, last_status,
+                                                     'nonrares')
             last_account_status[username] = {
                 'skip': tstatus['skip'],
                 'captcha': tstatus['captcha'],
                 'noitems': tstatus['noitems'],
                 'fail': tstatus['fail'],
-                'success': tstatus['success']
+                'success': tstatus['success'],
+                'nonrares': tstatus['nonrares']
             }
 
     overseer['active_accounts'] = active_count
@@ -795,6 +803,8 @@ def search_worker_thread(args, account_queue, account_failures,
                     0,
                 'captcha':
                     0,
+                'nonrares':
+                    0,
                 'active':
                     True,
                 'message':
@@ -810,10 +820,6 @@ def search_worker_thread(args, account_queue, account_failures,
             # Sleep when consecutive_noitems reaches max_empty, overall noitems
             # for stat purposes.
             consecutive_noitems = 0
-
-            # Reset rareless count so we dont set shadowbanflag,
-            # during init by accident.
-            rareless = 0
 
             api = setup_api(args, status, account)
 
@@ -1028,16 +1034,6 @@ def search_worker_thread(args, account_queue, account_failures,
                     if parsed['count'] > 0:
                         status['success'] += 1
                         consecutive_noitems = 0
-                        # check for shadowban also.
-                        if is_rareless_scan(response_dict):
-                            rareless += 1
-                            if rareless >= 10:
-                                Accounts.set_shadowban(account)
-                                log.info(
-                                    'Account %s shadowbanned, rotating out...',
-                                    account['username'])
-                                add_accounts_to_queue(args, account_queue, dbq,
-                                                      1, max_level=29)
                     else:
                         status['noitems'] += 1
                         consecutive_noitems += 1
@@ -1047,6 +1043,7 @@ def search_worker_thread(args, account_queue, account_failures,
                         scan_coords[0], scan_coords[1],
                         parsed['count'])
                     log.debug(status['message'])
+
                 except Exception as e:
                     parsed = False
                     status['fail'] += 1
@@ -1380,51 +1377,3 @@ def add_accounts_to_queue(args, account_queue, db_updates_queue, number,
     log.info('Loaded {} total accounts from the DB.'.
              format(account_queue.qsize()))
     return account_queue
-
-
-def is_rareless_scan(response_dict):
-    # Functions to deal with shadowbans / rareless scans
-    COMMON_POKEMON = [
-        16,     # Pidgey
-        19,     # Rattata
-        23,     # Ekans
-        27,     # Sandshrew
-        29,     # Nidoran F
-        32,     # Nidoran M
-        41,     # Zubat
-        43,     # Oddish
-        46,     # Paras
-        52,     # Meowth
-        54,     # Psyduck
-        60,     # Poliwag
-        69,     # Bellsprout
-        72,     # Tentacool
-        74,     # Geodude
-        77,     # Ponyta
-        81,     # Magnemite
-        98,     # Krabby
-        118,    # Goldeen
-        120,    # Staryu
-        129,    # Magikarp
-        161,    # Sentret
-        165,    # Ledyba
-        167,    # Spinarak
-        177,    # Natu
-        183,    # Marill
-        187,    # Hoppip
-        191,    # Sunkern
-        194,    # Wooper
-        198,    # Murkrow
-        209,    # Snubbull
-        218     # Slugma
-    ]
-    for map_cells in response_dict:
-        for p in map_cells.wild_pokemons:
-            if p.pokemon_data.pokemon_id not in COMMON_POKEMON:
-                return False
-        for p in map_cells.nearby_pokemons:
-            if p.pokemon_id not in COMMON_POKEMON:
-                return False
-
-    # No rare Pokemon found, so the scan was "rareless"
-    return True

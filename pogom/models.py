@@ -724,6 +724,46 @@ class Pokemon(LatLongModel):
 
         return list(itertools.chain(*query))
 
+    @classmethod
+    def get_pokemons_nearby(cls, center, timestamp):
+
+        # Maximum distance, where we see pokemons nearby
+        visible_distance = 200
+
+        # Get box of visible distance
+        start = geopy.distance.distance(meters=visible_distance-1)
+        sw = start.destination(center, 225).format_decimal()
+        sw = [float(s) for s in sw.split(',')]
+        ne = start.destination(center, 45).format_decimal()
+        ne = [float(s) for s in ne.split(',')]
+
+        swLat = sw[0]
+        swLng = sw[1]
+        neLat = ne[0]
+        neLng = ne[1]
+
+        # Get active pokemons on those borders
+        query = (Pokemon
+                 .select(Pokemon.latitude.alias('lat'),
+                         Pokemon.longitude.alias('lng'),
+                         Pokemon.pokemon_id)
+                 .where((Pokemon.disappear_time >= timestamp) &
+                        ((Pokemon.latitude >= swLat) &
+                         (Pokemon.longitude >= swLng) &
+                         (Pokemon.latitude <= neLat) &
+                         (Pokemon.longitude <= neLng)))
+                 .dicts())
+        p = list(query)
+
+        # Remove pokemons outside visible circle
+        pokemons = []
+        for idx, sp in enumerate(p):
+            if geopy.distance.distance(
+                    center, (sp['lat'], sp['lng'])).meters <= visible_distance:
+                pokemons.append(p[idx]['pokemon_id'])
+
+        return pokemons
+
 
 class Pokestop(LatLongModel):
     pokestop_id = Utf8mb4CharField(primary_key=True, max_length=50)
@@ -2184,12 +2224,18 @@ def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
     forts_count = 0
     wild_pokemon = []
     wild_pokemon_count = 0
-    nearby_pokemon = 0
+    nearby_pokemon = []
+    nearby_pokemon_ids = []
+    nearby_pokemon_count = 0
     spawn_points = {}
     scan_spawn_points = {}
     sightings = {}
     new_spawn_points = []
     sp_id_list = []
+    missed = []
+    common_ids = [16, 19, 23, 27, 29, 32, 41, 43, 46, 52, 54, 60, 69,
+                  72, 74, 77, 81, 98, 118, 120, 129, 161, 165, 167,
+                  177, 183, 187, 191, 194, 198, 209, 218]
 
     # Consolidate the individual lists in each cell into two lists of Pokemon
     # and a list of forts.
@@ -2205,13 +2251,14 @@ def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
             now_date = datetime.utcfromtimestamp(
                 cell.current_timestamp_ms / 1000)
 
-        nearby_pokemon += len(cell.nearby_pokemons)
+        nearby_pokemon_count += len(cell.nearby_pokemons)
         # Parse everything for stats (counts).  Future enhancement -- we don't
         # necessarily need to know *how many* forts/wild/nearby were found but
         # we'd like to know whether or not *any* were found to help determine
         # if a scan was actually bad.
         if not args.no_pokemon:
             wild_pokemon += cell.wild_pokemons
+            nearby_pokemon += cell.nearby_pokemons
 
         if not args.no_pokestops or not args.no_gyms:
             forts += cell.forts
@@ -2224,7 +2271,7 @@ def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
     del map_dict['responses']['GET_MAP_OBJECTS']
 
     # If there are no wild or nearby Pokemon...
-    if not wild_pokemon and not nearby_pokemon:
+    if not wild_pokemon and not nearby_pokemon_count:
         # ...and there are no gyms/pokestops then it's unusable/bad.
         if not forts:
             log.warning('Bad scan. Parsing found absolutely nothing.')
@@ -2241,6 +2288,40 @@ def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
     done_already = scan_location['done']
     ScannedLocation.update_band(scan_location, now_date)
     just_completed = not done_already and scan_location['done']
+
+    # Checking if account is shadowbanned
+    if (nearby_pokemon or wild_pokemon) and not args.no_pokemon:
+
+        # Create list of present pokemon IDs for blinded check
+        for p in nearby_pokemon:
+            nearby_pokemon_ids.append(p.pokemon_id)
+        for p in wild_pokemon:
+            nearby_pokemon_ids.append(p.pokemon_data.pokemon_id)
+
+            # Remove common pokemons from seen
+        rare_finds = [p for p in nearby_pokemon_ids if p not in common_ids]
+    # Checking if found only common pokemons
+
+        if len(rare_finds) == 0:
+            # Get nearby active pokemons from database
+            status['nonrares'] += 1
+            if status['nonrares'] >= 3:
+                encountered_pokemon_ids = Pokemon.get_pokemons_nearby(
+                    scan_location, now_date + timedelta(seconds=10))
+
+                for p in encountered_pokemon_ids:
+                    if p not in nearby_pokemon_ids and p not in common_ids:
+                        missed.append(p)
+
+                if missed:
+                    Accounts.set_shadowban(account)
+
+            if status['nonrares'] >= 20:
+                Accounts.set_shadowban(account)
+
+        # reset counter if rares are found
+        else:
+            status['nonrares'] = 0
 
     if wild_pokemon and not args.no_pokemon:
         encounter_ids = [b64encode(str(p.encounter_id))
@@ -2593,7 +2674,7 @@ def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
              'pokestops: %d, gyms: %d, raids: %d.',
              len(pokemon) + skipped,
              filtered,
-             nearby_pokemon,
+             nearby_pokemon_count,
              len(pokestops) + stopsskipped,
              len(gyms),
              len(raids))
@@ -2659,7 +2740,7 @@ def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
         if sightings:
             db_update_queue.put((SpawnpointDetectionData, sightings))
 
-    if not nearby_pokemon and not wild_pokemon:
+    if not nearby_pokemon_count and not wild_pokemon:
         # After parsing the forts, we'll mark this scan as bad due to
         # a possible speed violation.
         return {
