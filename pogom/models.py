@@ -1681,7 +1681,7 @@ class SpawnpointDetectionData(BaseModel):
         # If more than one disparate union, take the largest as our starting
         # point.
         union = reduce(lambda x, y: x if (x[1] - x[0]) % 3600 >
-                       (y[1] - y[0]) % 3600 else y, union, [0, 3600])
+                       (y[1] - y[0]) % 3600 else y, union, [0, 0])
         sp['latest_seen'] = union[1]
         sp['earliest_unseen'] = union[0]
         log.info('1x60: appear %d, despawn %d, duration: %d min.',
