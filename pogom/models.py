@@ -2684,45 +2684,51 @@ def bulk_upsert(cls, data, db):
     conn = db.get_conn()
     cursor = db.get_cursor()
 
-    # We build our own INSERT INTO ... ON DUPLICATE KEY
-    # UPDATE x=VALUES(x) query, making sure all data is
-    # properly escaped. We use placeholders for
-    # VALUES(%s, %s, ...) so we can use executemany().
-    row_fields = rows[0].keys()
-    table = '`'+conn.escape_string(cls._meta.db_table)+'`'
+    # We build our own INSERT INTO ... ON DUPLICATE KEY UPDATE x=VALUES(x)
+    # query, making sure all data is properly escaped. We use
+    # placeholders for VALUES(%s, %s, ...) so we can use executemany().
+    # We use peewee's InsertQuery to retrieve the fields because it
+    # takes care of peewee's internals (e.g. required default fields).
+    query = InsertQuery(cls, rows=[ rows[0] ])
+    # Take the first row. We need to call _iter_rows() for peewee internals.
+    # Using next() for a single item is not considered "pythonic".
+    first_row = {}
+    for row in query._iter_rows():
+        first_row = row
+        break
+    # Convert the row to its fields, sorted by peewee.
+    row_fields = sorted(first_row.keys(), key=lambda x: x._sort_key)
+    row_fields = map(lambda x: x.name, row_fields)
+     # Translate to proper column name, e.g. foreign keys.
+    db_columns = [peewee_attr_to_col(cls, f) for f in row_fields]
 
     # Store defaults so we can fall back to them if a value
     # isn't set.
     defaults = {}
 
     for f in cls._meta.fields.values():
-        field_name = f.db_column
+        # Use DB column name as key.
+        field_name = f.name
         field_default = cls._meta.defaults.get(f, None)
 
         # peewee's defaults can be callable, e.g. current time.
         if callable(field_default):
             field_default = field_default()
 
-        if field_default is not None:
-            # Make sure ones w/ a default are in our query.
-            if field_name not in row_fields:
-                row_fields.append(field_name)
-
         defaults[field_name] = field_default
 
-    # Translate to proper column name, e.g. foreign keys.
-    row_fields = [peewee_attr_to_col(cls, f) for f in row_fields]
-
-    # Sort our keys. We'll do the same for row.items() later.
-    row_fields = sorted(row_fields)
+    log.debug('Fields: %s.', row_fields)
+    log.debug('DB columns: %s.', db_columns)
+    log.debug('Defaults: %s.', defaults)
 
     # Assign fields, placeholders and assignments after defaults
     # so our lists/keys stay in order.
-    fields = ['`'+conn.escape_string(f)+'`' for f in row_fields]
-    placeholders = ['%s' for field in fields]
+    table = '`'+conn.escape_string(cls._meta.db_table)+'`'
+    escaped_fields = ['`'+conn.escape_string(f)+'`' for f in db_columns]
+    placeholders = ['%s' for escaped_field in escaped_fields]
     assignments = ['{x} = VALUES({x})'.format(
         x=escaped_field
-    ) for escaped_field in fields]
+    ) for escaped_field in escaped_fields]
 
     # We build our own MySQL query because peewee only supports
     # REPLACE INTO for upserting, which deletes the old row before
@@ -2751,39 +2757,30 @@ def bulk_upsert(cls, data, db):
                 # values for executemany(), and fall back to defaults if
                 # necessary.
                 batch = []
+                batch_rows = rows[i:min(i + step, num_rows)]
 
-                for row in rows[i:min(i + step, num_rows)]:
-                    # Fall back to default if no value is set.
-                    for field in row.keys():
-                        # Translate to proper column name, e.g. foreign keys.
-                        field_column = peewee_attr_to_col(cls, field)
+                # We pop them off one by one so we can gradually release
+                # memory as we pass each item. No duplicate memory usage.
+                while len(batch_rows) > 0:
+                    row = batch_rows.pop()
+                    row_data = []
 
-                        # Field name differs.
-                        if field != field_column:
-                            row[field_column] = row[field]
-                            row.pop(field)
-
+                    # Parse rows, build arrays of values sorted via row_fields.
+                    for field in row_fields:
                         # Take a default if we need it.
-                        if row[field_column] is None:
+                        if field not in row:
                             default = defaults.get(field, None)
                             row[field] = default
 
-                    # If we're missing a field that has a default, add it.
-                    for field in defaults:
-                        default = defaults.get(field, None)
+                        # Append to keep the exact order, and only these fields.
+                        row_data.append(row[field])
+                    # Done preparing, add it to the batch.
+                    batch.append(row_data)
 
-                        if field not in row and default is not None:
-                            row[field] = default
-
-                    # Dicts are unordered. Any modification to a dict can
-                    # change its order, so we keep a sorted one.
-                    row = [val for (key, val) in sorted(row.items())]
-                    batch.append(row)
-
-                # Format query, and go.
+                # Format query and go.
                 formatted_query = query_string.format(
                     table=table,
-                    fields=', '.join(fields),
+                    fields=', '.join(escaped_fields),
                     placeholders=', '.join(placeholders),
                     assignments=', '.join(assignments)
                 )
