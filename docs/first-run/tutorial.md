@@ -23,7 +23,7 @@ This setting could be enough for some maps with high density of stops, as the ac
 
 ## Levelup tool
 
-Inside the RM folder there is a small python script that will go throught the account list, ask for the map at 1 location, and spin all stops in range (following `account-max-spins` limit), that way you can be sure that accounts are properly leveled before using them.
+Inside the RM folder there is a small python script that will go through the account list, ask for the map at 1 location, and spin all stops in range (following `account-max-spins` limit), that way you can be sure that accounts are properly leveled before using them.
 
 The tool uses the same config file and options as RM (the ones that apply) so the setup and run is pretty simple, just change the location to some coodinates that are near 1 or more pokestops and change the worker setting to the number of simultaneus accounts you want to level up.
 
