@@ -2275,10 +2275,10 @@ def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
     ScannedLocation.update_band(scan_location, now_date)
     just_completed = not done_already and scan_location['done']
 
-    # Checking if account is shadowbanned
+    # Checking if account is shadowbanned.
     if (nearby_pokemon or wild_pokemon) and not args.no_pokemon:
 
-        # Create list of present pokemon IDs for blinded check
+        # Create list of present pokemon IDs for blinded check.
         for p in nearby_pokemon:
             nearby_pokemon_ids.append(p.pokemon_id)
         for p in wild_pokemon:
@@ -2287,9 +2287,9 @@ def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
         # Remove common pokemons from seen
         rare_finds = [p for p in nearby_pokemon_ids if p not in common_ids]
 
-        # Checking if found only common pokemons
+        # Checking if found only common pokemons.
         if len(rare_finds) == 0:
-            # Get nearby active pokemons from database
+            # Get nearby active pokemons from database.
             status['nonrares'] += 1
             if status['nonrares'] >= 3:
                 encountered_pokemon_ids = Pokemon.get_pokemons_nearby(
@@ -2303,7 +2303,7 @@ def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
                     account['shadowban'] = True
             if status['nonrares'] >= 20:
                 account['shadowban'] = True
-        # reset counter if rares are found
+        # reset counter if rares are found.
         else:
             status['nonrares'] = 0
 
