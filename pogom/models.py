@@ -120,6 +120,7 @@ class Account(LatLongModel):
     allocated = BooleanField(index=True, default=False)
     instance_id = CharField(index=True, null=True, max_length=32)
     fail = BooleanField(index=True, default=False)
+    last_scan = DateTimeField(index=True, null=True)
     last_modified = DateTimeField(index=True, default=datetime.utcnow)
     shadowban = BooleanField(index=True, default=False)
     warning = BooleanField(index=True, default=False)
