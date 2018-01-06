@@ -41,7 +41,7 @@ from distutils.version import StrictVersion
 from cachetools import TTLCache
 
 from pgoapi.hash_server import HashServer
-from .models import (Accounts, parse_map, GymDetails, parse_gyms,
+from .models import (Account, parse_map, GymDetails, parse_gyms,
                      MainWorker, WorkerStatus, HashKeys, ScannedLocation)
 from .utils import now, distance
 from .transform import get_new_coords
@@ -810,7 +810,14 @@ def search_worker_thread(args, account_queue, account_failures,
                 'message':
                     'Switching to account {}.'.format(account['username'])
             })
-            Accounts.heartbeat(account)
+
+            # Acount heartbeat.
+            account = {
+                'username': account['username'],
+                'in_use': True,
+                'instance_name': args.status_name,
+                'last_modified': datetime.utcnow()}
+
             log.info(status['message'])
 
             # Sleep when consecutive_fails reaches max_failures, overall fails
@@ -841,7 +848,7 @@ def search_worker_thread(args, account_queue, account_failures,
                     account_failures.append({'account': account,
                                              'last_fail_time': now(),
                                              'reason': 'failures'})
-                    Accounts.set_fail(account)
+                    account['fail'] = True
                     add_accounts_to_queue(args, account_queue, dbq,
                                           1, max_level=29)
 
@@ -862,7 +869,7 @@ def search_worker_thread(args, account_queue, account_failures,
                     account_failures.append({'account': account,
                                              'last_fail_time': now(),
                                              'reason': 'empty scans'})
-                    Accounts.set_fail(account)
+                    account['fail'] = True
                     add_accounts_to_queue(args, account_queue, dbq,
                                           1, max_level=29)
                     # Exit this loop to get a new account and have the API
@@ -992,7 +999,7 @@ def search_worker_thread(args, account_queue, account_failures,
                 # Parse recorded time and place also to db.
                 account['latitude'] = scan_coords[0]
                 account['longitude'] = scan_coords[1]
-                dbq.put((Accounts, {0: Accounts.db_format(account)}))
+                dbq.put((Account, {0: Account.db_format(account)}))
 
                 # Nothing back. Mark it up, sleep, carry on.
                 if not response_dict:
@@ -1221,7 +1228,7 @@ def search_worker_thread(args, account_queue, account_failures,
             account_failures.append({'account': account,
                                      'last_fail_time': now(),
                                      'reason': 'exception'})
-            Accounts.set_fail(account)
+            Account.set_fail(account)
             add_accounts_to_queue(args, account_queue, dbq, 1, max_level=29)
             time.sleep(args.scan_delay)
 
@@ -1351,28 +1358,28 @@ def add_accounts_to_queue(args, account_queue, db_updates_queue, number,
     loaded_accounts = 0
     while len(accounts) < number:
         if len(accounts):
-            # if we've looped through here once, then we have loaded accounts.
+            # If we've looped through here once, then we have loaded accounts.
             # If we have loaded accounts, then subsequent calls should not
             # have init=True, because then it keeps reloading the same Accounts
             # Setting this to false, will only look for new unassigned accounts
             init = False
-        accounts = Accounts.get_accounts((number - len(accounts)),
-                                         min_level=min_level,
-                                         max_level=max_level,
-                                         init=init)
+        accounts = Account.get_accounts((number - len(accounts)),
+                                        min_level=min_level,
+                                        max_level=max_level,
+                                        init=init)
         for a in accounts:
             account_queue.put(a)
 
         if len(accounts) < number:
             retry_delay += args.login_delay
 
-            loaded_accounts = Accounts.get_accounts_in_use(min_level=min_level,
-                                                           max_level=max_level)
+            loaded_accounts = Account.get_accounts_in_use(min_level=min_level,
+                                                          max_level=max_level)
 
             log.error('Got only %s / %s account(s). Reloading csv in %ss.',
                       len(loaded_accounts), number, retry_delay)
             time.sleep(retry_delay)
-            Accounts.process_accounts(db_updates_queue)
+            Account.process_accounts(db_updates_queue)
 
     log.info('Loaded {} total accounts from the DB.'.
              format(account_queue.qsize()))

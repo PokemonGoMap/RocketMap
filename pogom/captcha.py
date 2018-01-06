@@ -24,7 +24,7 @@ from pgoapi import PGoApi
 from .fakePogoApi import FakePogoApi
 from .pgoapiwrapper import PGoApiWrapper
 
-from .models import Token, Accounts
+from .models import Token, Account
 from .transform import jitter_location
 from .account import check_login
 from .proxy import get_new_proxy
@@ -155,8 +155,8 @@ def captcha_solver_thread(args, account_captchas, hash_key, wh_queue,
             "Account {} successfully uncaptcha'd, returning to " +
             'active duty.').format(account['username'])
         log.info(status['message'])
-        Accounts.set_captcha(account, captcha=False)
-        Accounts.release_account(account)
+        Account.set_captcha(account, captcha=False)
+        Account.release_account(account)
     else:
         status['message'] = (
             'Account {} failed verifyChallenge, putting back ' +
@@ -187,7 +187,7 @@ def handle_captcha(args, status, api, account, account_failures,
 
     if len(captcha_url) > 1:
         status['captcha'] += 1
-        Accounts.set_captcha(account)
+        Account.set_captcha(account)
         if not args.captcha_solving:
             status['message'] = (
                 'Account {} has encountered a captcha. ' +
@@ -213,7 +213,7 @@ def handle_captcha(args, status, api, account, account_failures,
         if args.captcha_key and args.manual_captcha_timeout == 0:
             if automatic_captcha_solve(args, status, api, captcha_url, account,
                                        whq):
-                Accounts.set_captcha(account, captcha=False)
+                Account.set_captcha(account, captcha=False)
                 return True
             else:
                 account_failures.append({
@@ -288,7 +288,7 @@ def automatic_captcha_solve(args, status, api, captcha_url, account, wh_queue):
         if success:
             status['message'] = "Account {} successfully uncaptcha'd.".format(
                 account['username'])
-            Accounts.set_captcha(account, captcha=False)
+            Account.set_captcha(account, captcha=False)
         else:
             status['message'] = (
                 'Account {} failed verifyChallenge, putting away ' +

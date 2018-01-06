@@ -807,6 +807,21 @@ def generate_device_info(identifier):
     return device_info
 
 
+def generate_instance_id(args):
+    md5 = hashlib.md5()
+    if args.status_name:
+        md5.update(args.status_name)
+    md5.update(args.location)
+    md5.update(str(args.step_limit))
+    md5.update(str(args.workers))
+    if args.beehive:
+        md5.update(str(args.workers_per_hive))
+
+    instance_id = md5.hexdigest()
+    args.instance_id = instance_id
+    log.debug('Instance ID: %s', instance_id)
+
+
 def calc_pokemon_level(cp_multiplier):
     if cp_multiplier < 0.734:
         pokemon_level = (58.35178527 * cp_multiplier * cp_multiplier -

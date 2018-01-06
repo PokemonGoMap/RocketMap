@@ -17,7 +17,6 @@ from .proxy import get_new_proxy
 from .apiRequests import (send_generic_request, fort_details,
                           recycle_inventory_item, use_item_egg_incubator,
                           release_pokemon, level_up_rewards, fort_search)
-from .models import Accounts
 
 log = logging.getLogger(__name__)
 
@@ -178,7 +177,7 @@ def rpc_login_sequence(args, api, account):
         send_generic_request(req, account, settings=True, buddy=False,
                              inbox=False)
         if 'remote_config' not in account:
-            Accounts.set_tempban(account)
+            account['tempban'] = 1
         total_req += 1
         time.sleep(random.uniform(.53, 1.1))
     except Exception as e:
