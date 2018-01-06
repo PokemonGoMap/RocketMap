@@ -530,39 +530,6 @@ def get_args():
             print(sys.argv[0] + ": errors: \n - " + "\n - ".join(errors))
             sys.exit(1)
 
-        # Prepare the L30 accounts for the account sets.
-        args.accounts_L30 = []
-
-        if args.high_lvl_accounts:
-            # Context processor.
-            with open(args.high_lvl_accounts, 'r') as accs:
-                for line in accs:
-                    # Make sure it's not an empty line.
-                    if not line.strip():
-                        continue
-
-                    line = line.split(',')
-
-                    # We need "service, username, password".
-                    if len(line) < 3:
-                        raise Exception('L30 account is missing a'
-                                        + ' field. Each line requires: '
-                                        + '"service,user,pass".')
-
-                    # Let's remove trailing whitespace.
-                    service = line[0].strip()
-                    username = line[1].strip()
-                    password = line[2].strip()
-
-                    hlvl_account = {
-                        'auth_service': service,
-                        'username': username,
-                        'password': password,
-                        'captcha': False
-                    }
-
-                    args.accounts_L30.append(hlvl_account)
-
         # Prepare the IV/CP scanning filters.
         args.enc_whitelist = []
 
