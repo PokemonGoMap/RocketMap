@@ -814,7 +814,7 @@ def search_worker_thread(args, account_queue, account_failures,
             # Acount heartbeat.
             account = {
                 'username': account['username'],
-                'in_use': True,
+                'allocated': True,
                 'instance_name': args.status_name,
                 'last_modified': datetime.utcnow()}
 
