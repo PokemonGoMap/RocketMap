@@ -109,8 +109,7 @@ class LatLongModel(BaseModel):
         return results
 
 
-# TODO: Add support for high_lvl_accounts.
-class Accounts(LatLongModel):
+class Account(LatLongModel):
     auth_service = Utf8mb4CharField(max_length=6, default='ptc')
     username = Utf8mb4CharField(primary_key=True, max_length=26)
     password = Utf8mb4CharField(max_length=64)
@@ -118,8 +117,8 @@ class Accounts(LatLongModel):
     captcha = BooleanField(index=True, default=False)
     latitude = DoubleField(null=True)
     longitude = DoubleField(null=True)
-    in_use = BooleanField(index=True, default=False)
-    instance_name = CharField(index=True, null=True, max_length=64)
+    allocated = BooleanField(index=True, default=False)
+    instance_id = CharField(index=True, null=True, max_length=32)
     fail = BooleanField(index=True, default=False)
     last_modified = DateTimeField(index=True, default=datetime.utcnow)
     shadowban = BooleanField(index=True, default=False)
@@ -128,37 +127,40 @@ class Accounts(LatLongModel):
     permban = BooleanField(index=True, default=False)
 
     @staticmethod
-    def db_format(account, name='status_account_db'):
-        account['username'] = account.get('username')
-        return {'auth_service': account['auth_service'],
-                'username': account['username'],
-                'password': account['password'],
-                'level': account['level'],
-                'captcha': account['captcha'],
-                'latitude': account.get('latitude', None),
-                'longitude': account.get('longitude', None),
-                'in_use': account['in_use'],
-                'instance_name': account['instance_name'],
-                'fail': account['fail'],
-                'last_modified': datetime.utcnow(),
-                'shadowban': account.get('shadowban', None),
-                'warning': account.get('warning', None),
-                'banned': account.get('banned', None)}
+    def db_format(account):
+        account['last_modified'] = datetime.utcnow()
+        return {
+            'auth_service': account['auth_service'],
+            'username': account['username'],
+            'password': account['password'],
+            'instance_id': account.get('instance_id', None),
+            'allocated': account.get('allocated', False),
+            'latitude': account.get('latitude', None),
+            'longitude': account.get('longitude', None),
+            'captcha': account.get('captcha', False),
+            'fail': account.get('fail', False),
+            'shadowban': account.get('shadowban', False),
+            'warning': account.get('warning', False),
+            'tempban': account.get('tempban', 0),
+            'permban': account.get('permban', 0),
+            'level': account['level'],
+            'last_scan': account.get('last_scan', None),
+            'last_modified': account['last_modified']}
 
-    # TODO: Add high_lvl_accounts support.
     @staticmethod
     def get_accounts_in_use(min_level=1, max_level=40):
-        query = (Accounts
+        query = (Account
                  .select()
-                 .where((Accounts.instance_name == args.status_name) &
-                        (Accounts.fail == 0) &
-                        (Accounts.in_use == 1) &
-                        (Accounts.shadowban == 0) &
-                        (Accounts.banned == 0) &
-                        (Accounts.level >= min_level) &
-                        (Accounts.level <= max_level))
-                 .order_by(Accounts.level.asc(),
-                           Accounts.last_modified.asc())
+                 .where((Account.instance_id == args.instance_id) &
+                        (Account.fail == 0) &
+                        (Account.allocated == 1) &
+                        (Account.shadowban == 0) &
+                        (Account.tempban == 0) &
+                        (Account.permban == 0) &
+                        (Account.level >= min_level) &
+                        (Account.level <= max_level))
+                 .order_by(Account.level.asc(),
+                           Account.last_modified.asc())
                  .dicts())
         return query
 
@@ -166,41 +168,43 @@ class Accounts(LatLongModel):
     def get_accounts(number, min_level=1, max_level=40, init=False):
         query = []
         accounts = []
-        # Try to re-use previous accounts for this instance
+        # Try to re-use previous accounts for this instance.
         if init:
-            Accounts.reset_instance(keep_instance_name=True)
-            query = (Accounts
+            Account.release_accounts(keep_instance_name=True)
+            query = (Account
                      .select()
-                     .where((Accounts.instance_name == args.status_name) &
-                            (Accounts.fail == 0) &
-                            (Accounts.shadowban == 0) &
-                            (Accounts.banned == 0) &
-                            (Accounts.level >= min_level) &
-                            (Accounts.level <= max_level))
-                     .order_by(Accounts.level.asc(),
-                               Accounts.last_modified.asc())
+                     .where((Account.instance_id == args.instance_id) &
+                            (Account.fail == 0) &
+                            (Account.shadowban == 0) &
+                            (Account.tempban == 0) &
+                            (Account.permban == 0) &
+                            (Account.level >= min_level) &
+                            (Account.level <= max_level))
+                     .order_by(Account.level.asc(),
+                               Account.last_modified.asc())
                      .limit(number)
                      .dicts())
         if len(query) != number:  # Not exact same config? Get new accounts.
-            query = (Accounts
+            query = (Account
                      .select()
-                     .where((Accounts.in_use == 0) &
-                            (Accounts.fail == 0) &
-                            (Accounts.shadowban == 0) &
-                            (Accounts.banned == 0) &
-                            (Accounts.level >= min_level) &
-                            (Accounts.level <= max_level))
-                     .order_by(Accounts.level.asc(),
-                               Accounts.last_modified.asc())
+                     .where((Account.in_use == 0) &
+                            (Account.fail == 0) &
+                            (Account.shadowban == 0) &
+                            (Account.tempban == 0) &
+                            (Account.permban == 0) &
+                            (Account.level >= min_level) &
+                            (Account.level <= max_level))
+                     .order_by(Account.level.asc(),
+                               Account.last_modified.asc())
                      .limit(number)
                      .dicts())
 
         if len(query):
-            # Directly set accounts to in_use with the instance_name.
+            # Directly set accounts to allocated with the instance_name.
             usernames = [dba['username'] for dba in query]
-            (Accounts.update(in_use=True,
-                             instance_name=args.status_name)
-             .where((Accounts.username << usernames))
+            (Account.update(allocated=True,
+                            instance_id=args.instance_id)
+             .where((Account.username << usernames))
              .execute())
 
             for a in query:
@@ -209,17 +213,17 @@ class Accounts(LatLongModel):
 
             # Releases all instance-flagged accounts which are not used now.
             if init:
-                (Accounts.update(in_use=False, instance_name=None)
-                         .where((Accounts.instance_name == args.status_name) &
-                                ~(Accounts.username << usernames))
-                         .execute())
+                (Account.update(allocated=False, instance_name=None)
+                        .where((Account.instance_id == args.instance_id) &
+                               ~(Account.username << usernames))
+                        .execute())
 
         log.debug('Got {} accounts.'.format(len(accounts)))
 
         return accounts
 
     @staticmethod
-    # Load Accounts and return a list which we are parsing into the db.
+    # Load accounts and return a list which we are parsing into the DB.
     def load_accounts(args):
         csv_lines = []
         with open(args.accountcsv, 'r') as file:
@@ -253,8 +257,8 @@ class Accounts(LatLongModel):
                     'captcha': 0,
                     'latitude': None,
                     'longitude': None,
-                    'in_use': 0,
-                    'instance_name': args.status_name,
+                    'allocated': 0,
+                    'instance_id': args.instance_id,
                     'fail': 0,
                     'last_modified': datetime.utcnow(),
                     'shadowban': 0,
@@ -298,8 +302,8 @@ class Accounts(LatLongModel):
                     'captcha': 0,
                     'latitude': None,
                     'longitude': None,
-                    'in_use': 0,
-                    'instance_name': args.status_name,
+                    'allocated': 0,
+                    'instance_id': args.instance_id,
                     'fail': 0,
                     'last_modified': datetime.utcnow(),
                     'shadowban': 0,
@@ -315,25 +319,28 @@ class Accounts(LatLongModel):
                 return False
         return accounts
 
+    # Parses the given accounts from the csv file into the Database.
+    # New aaccounts are added and accounts removed from the csv files,
+    # also will be deleted from the Database.
     @staticmethod
     def process_accounts(db_updates_queue):
-        accounts = Accounts.load_accounts(args)
+        accounts = Account.load_accounts(args)
         log.info('Loaded %d accounts from file.', len(accounts))
 
         new_accounts = {}
         if accounts:
 
             usernames = [a['username'] for a in accounts]
-            query = (Accounts
-                     .select(Accounts.username)
-                     .where(Accounts.username << usernames)
+            query = (Account
+                     .select(Account.username)
+                     .where(Account.username << usernames)
                      .dicts())
 
             db_usernames = [dbu['username'] for dbu in query]
 
-            query = (Accounts
-                     .select(Accounts.username)
-                     .where(~(Accounts.username << usernames))
+            query = (Account
+                     .select(Account.username)
+                     .where(~(Account.username << usernames))
                      .dicts())
 
             remove_db_usernames = [dbu['username'] for dbu in query]
@@ -345,14 +352,14 @@ class Accounts(LatLongModel):
                 new_accounts[a['username']] = a
 
             if(len(remove_db_usernames)):
-                query = (Accounts
+                query = (Account
                          .delete()
-                         .where(Accounts.username << remove_db_usernames))
+                         .where(Account.username << remove_db_usernames))
                 query.execute()
                 log.info('Removed %d deleted accounts from DB.', len(
                     remove_db_usernames))
 
-            db_updates_queue.put((Accounts, new_accounts))
+            db_updates_queue.put((Account, new_accounts))
 
         log.info('Inserted %d new accounts into the database.',
                  len(new_accounts))
@@ -360,20 +367,21 @@ class Accounts(LatLongModel):
     @staticmethod
     def get_hlvl_account(target_location):
         hlvl_account = None
-        query = (Accounts
+        query = (Account
                  .select()
-                 .where((Accounts.in_use == 0) &
-                        (Accounts.fail == 0) &
-                        (Accounts.shadowban == 0) &
-                        (Accounts.banned == 0) &
-                        (Accounts.level == 30))
-                 .order_by(Accounts.last_modified.asc())
+                 .where((Account.allocated == 0) &
+                        (Account.fail == 0) &
+                        (Account.shadowban == 0) &
+                        (Account.tempban == 0) &
+                        (Account.permban == 0) &
+                        (Account.level == 30))
+                 .order_by(Account.last_modified.asc())
                  .limit(10)  # Don't spend too much time checking accounts.
                  .dicts())
 
         if not query:
             log.warning('Found no available high-level accounts in database.')
-            return hlvl_account
+            return None
 
         min_distance = 100000000
         for account in query:
@@ -384,100 +392,78 @@ class Accounts(LatLongModel):
                 hlvl_account = account
 
         if hlvl_account:
-            (Accounts.update(in_use=True, instance_name=args.status_name)
-                     .where(Accounts.username == hlvl_account['username'])
-                     .execute())
+            (Account.update(allocated=True, instance_id=args.instance_id)
+                    .where(Account.username == hlvl_account['username'])
+                    .execute())
 
         return hlvl_account
 
-    # Updates the DB account after an action to show it's still in use.
-    @staticmethod
-    def heartbeat(account):
-        (Accounts(username=account['username'],
-                  in_use=True,
-                  instance_name=args.status_name,
-                  last_modified=datetime.utcnow())
-         .save())
-
     # Resets all instance-flagged accounts to set them free for re-use.
     @staticmethod
-    def reset_instance(keep_instance_name=False):
-        instance_name = args.status_name if keep_instance_name else None
-        (Accounts.update(in_use=False, instance_name=instance_name)
-                 .where(Accounts.instance_name == args.status_name)
-                 .execute())
+    def release_accounts(keep_instance_name=False):
+        instance_id = args.instance_id if keep_instance_name else None
+        (Account.update(allocated=False, instance_id=instance_id)
+                .where(Account.instance_id == args.instance_id)
+                .execute())
 
     # Resets instance-flags of accounts to set them free for re-use
     @staticmethod
     def release_account(account):
-        (Accounts(username=account['username'],
-                  in_use=False,
-                  instance_name=None)
+        (Account(username=account['username'],
+                 allocated=False,
+                 instance_id=None)
          .save())
-
-    # Sets the fail flag of an account when getting removed from queue for
-    # uncertain reason. Re-use is possible.
-    @staticmethod
-    def set_fail(account):
-        (Accounts(username=account['username'],
-                  in_use=False,
-                  fail=True)
-         .save())
-        (WorkerStatus
-         .delete()
-         .where((WorkerStatus.username == account['username']))
-         .execute())
 
     # Fetches all captcha'd accounts for captcha handling (later)
     @staticmethod
     def get_captchad():
-        query = Accounts.select().where((Accounts.captcha == 1)).dicts()
+        query = Account.select().where((Account.captcha == 1)).dicts()
         return list(query.values())
 
-    # Sets the shadowban flag of an account
     @staticmethod
-    def set_shadowban(account):
-        (Accounts(username=account['username'],
-                  in_use=False,
-                  shadowban=True)
-         .save())
-        (WorkerStatus
-         .delete()
-         .where((WorkerStatus.username == account['username']))
-         .execute())
+    def clean_account_stats():
+        while True:
+            try:
+                with Account.database().execution_context():
+                    # Some quite inactive Accounts in use? Reset them.
+                    # Caused by hard shut-down or more workers than needed.
+                    query = (Account
+                             .update(allocated=False)
+                             .where((Account.in_use == 1) &
+                                    (Account.last_modified <
+                                    (datetime.utcnow() - timedelta(minutes=15))
+                                     )))
+                    query.execute()
 
-    # Sets the warn flag of an account. Usage still possible in the future.
-    @staticmethod
-    def set_warn(account):
-        (Accounts(username=account['username'],
-                  warn=True)
-         .save())
+                    query = (Account
+                             .update(allocated=False, instance_name=None)
+                             .where((Account.instance_id.is_null(False)) &
+                                    (Account.last_modified <
+                                    (datetime.utcnow() - timedelta(minutes=60))
+                                     )))
+                    query.execute()
 
-    # Sets the ban flag of an account. Re-use possible after rest.
-    @staticmethod
-    def set_tempban(account):
-        (Accounts(username=account['username'],
-                  in_use=False,
-                  instance_name=None,
-                  tempban=True)
-         .save())
-        (WorkerStatus
-         .delete()
-         .where((WorkerStatus.username == account['username']))
-         .execute())
+                    # Resets failed accounts after rest time for re-use.
+                    query = (Account
+                             .update(allocated=False, instance_name=None,
+                                     fail=False)
+                             .where((Account.fail == 1) &
+                                    (Account.last_modified <
+                                    (datetime.utcnow() - timedelta(
+                                        seconds=args.account_rest_interval)))))
+                    query.execute()
 
-    # Sets the ban flag of an account. Re-use impossible.
-    @staticmethod
-    def set_permban(account):
-        (Accounts(username=account['username'],
-                  in_use=False,
-                  instance_name=None,
-                  permban=True)
-         .save())
-        (WorkerStatus
-         .delete()
-         .where((WorkerStatus.username == account['username']))
-         .execute())
+                    # Resets temp-banned accounts.
+                    query = (Account
+                             .update(shadowban=False, tempban=False)
+                             .where((Account.shadowban == 1) &
+                                    (Account.tempban == 1)) &
+                                   (Account.last_modified <
+                                    (datetime.utcnow() - timedelta(weeks=6))))
+                    query.execute()
+
+            except Exception as e:
+                log.exception('Exception while clearing accounts stats: %s', e)
 
     # Thread function for periodical account updating.
     @staticmethod
@@ -727,10 +713,10 @@ class Pokemon(LatLongModel):
     @classmethod
     def get_pokemons_nearby(cls, center, timestamp):
 
-        # Maximum distance, where we see pokemons nearby
+        # Maximum distance, where we see pokemons nearby.
         visible_distance = 200
 
-        # Get box of visible distance
+        # Get box of visible distance.
         start = geopy.distance.distance(meters=visible_distance-1)
         sw = start.destination(center, 225).format_decimal()
         sw = [float(s) for s in sw.split(',')]
@@ -742,7 +728,7 @@ class Pokemon(LatLongModel):
         neLat = ne[0]
         neLng = ne[1]
 
-        # Get active pokemons on those borders
+        # Get active pokemons on those borders.
         query = (Pokemon
                  .select(Pokemon.latitude.alias('lat'),
                          Pokemon.longitude.alias('lng'),
@@ -755,7 +741,7 @@ class Pokemon(LatLongModel):
                  .dicts())
         p = list(query)
 
-        # Remove pokemons outside visible circle
+        # Remove pokemons outside visible circle.
         pokemons = []
         for idx, sp in enumerate(p):
             if geopy.distance.distance(
@@ -2298,10 +2284,10 @@ def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
         for p in wild_pokemon:
             nearby_pokemon_ids.append(p.pokemon_data.pokemon_id)
 
-            # Remove common pokemons from seen
+        # Remove common pokemons from seen
         rare_finds = [p for p in nearby_pokemon_ids if p not in common_ids]
-    # Checking if found only common pokemons
 
+        # Checking if found only common pokemons
         if len(rare_finds) == 0:
             # Get nearby active pokemons from database
             status['nonrares'] += 1
@@ -2314,11 +2300,9 @@ def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
                         missed.append(p)
 
                 if missed:
-                    Accounts.set_shadowban(account)
-
+                    account['shadowban'] = True
             if status['nonrares'] >= 20:
-                Accounts.set_shadowban(account)
-
+                account['shadowban'] = True
         # reset counter if rares are found
         else:
             status['nonrares'] = 0
@@ -2776,7 +2760,7 @@ def encounter_pokemon(args, pokemon, account, api, status, key_scheduler):
             hlvl_api = api
         else:
             # Get account to use for IV and CP scanning.
-            hlvl_account = Accounts.get_hlvl_account(scan_location)
+            hlvl_account = Account.get_hlvl_account(scan_location)
 
         time.sleep(args.encounter_delay)
 
@@ -2860,15 +2844,11 @@ def encounter_pokemon(args, pokemon, account, api, status, key_scheduler):
                               hlvl_account['username'])
 
             if ('ENCOUNTER' in enc_responses and
-                    enc_responses['ENCOUNTER'].status == 0):
+                    enc_responses['ENCOUNTER'].status != 1):
                 log.error('There was an error encountering Pokemon ID %s with '
                           + 'account %s: %d.', pokemon_id,
                           hlvl_account['username'],
                           enc_responses['ENCOUNTER'].status)
-            # Placeholder for L30 shadowban/error handling.
-            # elif ('ENCOUNTER' in enc_responses and enc_responses[
-            #        'ENCOUNTER'].status == 2, 3, 4):
-            #
             else:
                 pokemon_info = enc_responses[
                     'ENCOUNTER'].wild_pokemon.pokemon_data
@@ -2892,7 +2872,7 @@ def encounter_pokemon(args, pokemon, account, api, status, key_scheduler):
     # We're done with the encounter. If it's from an
     # AccountSet, release account back to the pool.
     if using_db_account:
-        Accounts.release_account(hlvl_account)
+        Account.release_account(hlvl_account)
 
     return result
 
@@ -3084,40 +3064,8 @@ def clean_db_loop(args):
                                 (datetime.now() - timedelta(days=1))))
                 query.execute()
 
-                # Some quite inactive Accounts in use? Reset them.
-                # Caused by hard shut-down or more workers than needed.
-                # TODO: review account cleanup
-                query = (Accounts
-                         .update(in_use=False)
-                         .where((Accounts.in_use == 1) &
-                                (Accounts.last_modified <
-                                 (datetime.utcnow() - timedelta(minutes=15))))
-                         .execute())
-
-                query = (Accounts
-                         .update(in_use=False, instance_name=None)
-                         .where((Accounts.instance_name.is_null(False)) &
-                                (Accounts.last_modified <
-                                 (datetime.utcnow() - timedelta(minutes=60))))
-                         .execute())
-
-                # Resets failed accounts after rest time for re-use.
-                query = (Accounts
-                         .update(in_use=False, instance_name=None, fail=False)
-                         .where((Accounts.fail == 1) &
-                                (Accounts.last_modified <
-                                 (datetime.utcnow() - timedelta(
-                                     seconds=args.account_rest_interval))))
-                         .execute())
-
-                # Resets temp-banned accounts.
-                query = (Accounts
-                         .update(shadowban=False, tempban=False)
-                         .where((Accounts.shadowban == 1) &
-                                (Accounts.tempban == 1)) &
-                               (Accounts.last_modified <
-                                (datetime.utcnow() - timedelta(weeks=6)))
-                         .execute())
+                # Update Account model.
+                Account.clean_account_stats()
 
                 # If desired, clear old Pokemon spawns.
                 if args.purge_data > 0:
@@ -3191,7 +3139,7 @@ def bulk_upsert(cls, data, db):
 
 
 def create_tables(db):
-    tables = [Accounts, Pokemon, Pokestop, Gym, Raid, ScannedLocation,
+    tables = [Account, Pokemon, Pokestop, Gym, Raid, ScannedLocation,
               GymDetails, GymMember, GymPokemon, Trainer, MainWorker,
               WorkerStatus, SpawnPoint, ScanSpawnPoint,
               SpawnpointDetectionData, Token, LocationAltitude, PlayerLocale,
@@ -3207,7 +3155,7 @@ def create_tables(db):
 
 
 def drop_tables(db):
-    tables = [Accounts, Pokemon, Pokestop, Gym, Raid, ScannedLocation,
+    tables = [Account, Pokemon, Pokestop, Gym, Raid, ScannedLocation,
               Versions, GymDetails, GymMember, GymPokemon, Trainer, MainWorker,
               WorkerStatus, SpawnPoint, ScanSpawnPoint,
               SpawnpointDetectionData, LocationAltitude, PlayerLocale,
