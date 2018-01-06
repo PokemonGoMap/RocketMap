@@ -4,8 +4,6 @@
 import logging
 
 from pgoapi.utilities import get_cell_ids
-from .models import Accounts
-from pgoapi.utilities import f2i, get_cell_ids
 from pgoapi.hash_server import BadHashRequestException, HashingOfflineException
 
 log = logging.getLogger(__name__)
