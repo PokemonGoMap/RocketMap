@@ -188,7 +188,7 @@ class Account(LatLongModel):
         if len(query) != number:  # Not exact same config? Get new accounts.
             query = (Account
                      .select()
-                     .where((Account.in_use == 0) &
+                     .where((Account.allocated == 0) &
                             (Account.fail == 0) &
                             (Account.shadowban == 0) &
                             (Account.tempban == 0) &
