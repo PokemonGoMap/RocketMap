@@ -430,7 +430,7 @@ class Account(LatLongModel):
                     # Caused by hard shut-down or more workers than needed.
                     query = (Account
                              .update(allocated=False)
-                             .where((Account.in_use == 1) &
+                             .where((Account.allocated == 1) &
                                     (Account.last_modified <
                                     (datetime.utcnow() - timedelta(minutes=15))
                                      )))
