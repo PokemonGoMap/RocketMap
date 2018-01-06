@@ -859,7 +859,7 @@ def enc_list_refresher(enc_whitelist_file):
                     with open(enc_whitelist_file) as f:
                         args.enc_whitelist = frozenset(
                             [int(l.strip()) for l in f])
-                    log.info('New enc list is ' + args.enc_whitelist)
+                    log.info('New enc list is %s' + args.enc_whitelist)
 
             log.info('Regular encounter list refresh complete.')
         except Exception as e:
