@@ -1336,15 +1336,24 @@ function addListeners(marker) {
 function clearStaleMarkers() {
     const oldPokeMarkers = []
 
-    $.each(mapData.pokemons, function (key, value) {
-        const isPokeExpired = mapData.pokemons[key]['disappear_time'] < Date.now()
-        const isPokeExcluded = excludedPokemon.indexOf(mapData.pokemons[key]['pokemon_id']) !== -1
-        const isRarityExcluded = mapData.pokemons[key].hasOwnProperty('pokemon_rarity') ? (excludedRaritiesList[Store.get('excludedRarity')].indexOf(mapData.pokemons[key]['pokemon_rarity'].toLowerCase()) !== -1) : false
-        if (isPokeExpired || isPokeExcluded || isRarityExcluded) {
-            const oldMarker = mapData.pokemons[key].marker
+    $.each(mapData.pokemons, function (key, pokemon) {
+        const pokemon_id = pokemon['pokemon_id']
+        const isPokeExpired = pokemon['disappear_time'] < Date.now()
+        const isPokeExcluded = excludedPokemon.indexOf(pokemon_id) !== -1
+        // Limit choice to our options [0, 5].
+        const excludedRarityOption = Math.min(Math.max(Store.get('excludedRarity'), 0), 5)
+        const excludedRarity = excludedRaritiesList[excludedRarityOption]
+        const hasRarity = pokemon.hasOwnProperty('pokemon_rarity')
+        // Not beautiful code with null as fallback, but it's more readable than a one-liner.
+        const rarity = hasRarity ? pokemon['pokemon_rarity'].toLowerCase() : null
+        const isRarityExcluded = (hasRarity && excludedRarity.indexOf(rarity) !== -1)
 
-            if (isRarityExcluded && excludedPokemonByRarity.indexOf(mapData.pokemons[key]['pokemon_id']) === -1) {
-                excludedPokemonByRarity.push(mapData.pokemons[key]['pokemon_id'])
+        if (isPokeExpired || isPokeExcluded || isRarityExcluded) {
+            const oldMarker = pokemon.marker
+            const isPokeExcludedByRarity = excludedPokemonByRarity.indexOf(pokemon_id) !== -1
+
+            if (isRarityExcluded && !isPokeExcludedByRarity) {
+                excludedPokemonByRarity.push(pokemon_id)
             }
 
             if (oldMarker.rangeCircle) {
@@ -1365,18 +1374,18 @@ function clearStaleMarkers() {
 
     markerCluster.removeMarkers(oldPokeMarkers, true)
 
-    $.each(mapData.lurePokemons, function (key, value) {
-        if (mapData.lurePokemons[key]['lure_expiration'] < new Date().getTime() ||
-            excludedPokemon.indexOf(mapData.lurePokemons[key]['pokemon_id']) >= 0) {
-            mapData.lurePokemons[key].marker.setMap(null)
-            delete mapData.lurePokemons[key]
+    $.each(mapData.lurePokemons, function (key, lurePokemon) {
+        if (lurePokemon['lure_expiration'] < new Date().getTime() ||
+            excludedPokemon.indexOf(lurePokemon['pokemon_id']) >= 0) {
+                lurePokemon.marker.setMap(null)
+                delete mapData.lurePokemons[key]
         }
     })
 
-    $.each(mapData.scanned, function (key, value) {
+    $.each(mapData.scanned, function (key, scanned) {
         // If older than 15mins remove
-        if (mapData.scanned[key]['last_modified'] < (new Date().getTime() - 15 * 60 * 1000)) {
-            mapData.scanned[key].marker.setMap(null)
+        if (scanned['last_modified'] < (new Date().getTime() - 15 * 60 * 1000)) {
+            scanned.marker.setMap(null)
             delete mapData.scanned[key]
         }
     })
@@ -1582,15 +1591,22 @@ function processPokemonChunked(pokemon, chunkSize) {
 }
 
 function processPokemon(item) {
-    const isExcludedPoke = excludedPokemon.indexOf(item['pokemon_id']) !== -1
-    const isExcludedRarity = item.hasOwnProperty('pokemon_rarity') ? (excludedRaritiesList[Store.get('excludedRarity')].indexOf(item['pokemon_rarity'].toLowerCase()) !== -1) : false
+    const isPokeExcluded = excludedPokemon.indexOf(item['pokemon_id']) !== -1
     const isPokeAlive = item['disappear_time'] > Date.now()
+    // Limit choice to our options [0, 5].
+    const excludedRarityOption = Math.min(Math.max(Store.get('excludedRarity'), 0), 5)
+    const excludedRarity = excludedRaritiesList[excludedRarityOption]
+    const hasRarity = item.hasOwnProperty('pokemon_rarity')
+    // Not beautiful code with null as fallback, but it's more readable than a one-liner.
+    const rarity = hasRarity ? item['pokemon_rarity'].toLowerCase() : null
+    const isRarityExcluded = (hasRarity && excludedRarity.indexOf(rarity) !== -1)
+    const isPokeExcludedByRarity = excludedPokemonByRarity.indexOf(item['pokemon_id']) !== -1
 
     var oldMarker = null
     var newMarker = null
 
     if (!(item['encounter_id'] in mapData.pokemons) &&
-         !isExcludedPoke && !isExcludedRarity && isPokeAlive) {
+         !isPokeExcluded && !isRarityExcluded && isPokeAlive) {
         // Add marker to map and item to dict.
         if (!item.hidden) {
             const isBounceDisabled = Store.get('isBounceDisabled')
@@ -1609,7 +1625,7 @@ function processPokemon(item) {
         } else {
             oldMarker = item.marker
         }
-    } else if (!isExcludedPoke && isExcludedRarity && isPokeAlive && excludedPokemonByRarity.indexOf(item['pokemon_id']) === -1) {
+    } else if (isRarityExcluded && !isPokeExcludedByRarity) {
         excludedPokemonByRarity.push(item['pokemon_id'])
     }
 
