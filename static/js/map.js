@@ -2208,10 +2208,10 @@ function getSidebarGymMember(pokemon) {
                         <td>
                             <div class="gym pokemon" style="line-height:1em;"><span class="gym pokemon name">${pokemon.pokemon_name}</span></div>
                             <div>
-                            <span class="gym pokemon motivation decayed zone ${motivationZone[colorIdx].toLowerCase()}">${pokemon.cp_decayed}</span>
+                                <span class="gym pokemon motivation decayed zone ${motivationZone[colorIdx].toLowerCase()}">${pokemon.cp_decayed}</span>
                             </div>
                             <div>
-                            <span class="gym pokemon motivation cp">Max: ${pokemon.pokemon_cp}</span>
+                                <span class="gym pokemon motivation cp">Max: ${pokemon.pokemon_cp}</span>
                             </div>
                         </td>
                         <td width="190" align="center">
