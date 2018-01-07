@@ -90,7 +90,7 @@ args = get_args()
 
 # Abort if we don't have a hash key set.
 if not args.hash_key:
-    log.critical('Hash key is required for levelling up accounts. Exiting.')
+    log.critical('Hash key is required for leveling up accounts. Exiting.')
     sys.exit(1)
 
 fake_queue = FakeQueue()
