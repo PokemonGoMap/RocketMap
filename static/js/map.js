@@ -302,7 +302,7 @@ function initMap() { // eslint-disable-line no-unused-vars
 function updateLocationMarker(style) {
     // Don't do anything if it's disabled.
     if (!locationMarker) {
-        return locationMarker
+        return
     }
 
     if (style in searchMarkerStyles) {
@@ -318,6 +318,7 @@ function updateLocationMarker(style) {
         Store.set('locationMarkerStyle', style)
     }
 
+    // Return value is currently unused.
     return locationMarker
 }
 
