@@ -436,7 +436,7 @@ def search_overseer_thread(args, new_location_queue, control_flags, heartb,
             'skip': 0,
             'captcha': 0,
             'username': '',
-            'nonrares_total': 0,
+            'nonrares': 0,
             'proxy_display': proxy_display,
             'proxy_url': proxy_url,
         }
@@ -815,7 +815,7 @@ def search_worker_thread(args, account_queue, account_failures,
             account = {
                 'username': account['username'],
                 'allocated': True,
-                'instance_name': args.status_name,
+                'instance_id': args.instance_id,
                 'last_modified': datetime.utcnow()}
 
             log.info(status['message'])
@@ -1228,7 +1228,7 @@ def search_worker_thread(args, account_queue, account_failures,
             account_failures.append({'account': account,
                                      'last_fail_time': now(),
                                      'reason': 'exception'})
-            Account.set_fail(account)
+            account['fail'] = True
             add_accounts_to_queue(args, account_queue, dbq, 1, max_level=29)
             time.sleep(args.scan_delay)
 

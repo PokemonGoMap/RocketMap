@@ -41,7 +41,7 @@ args = get_args()
 flaskDb = FlaskDB()
 cache = TTLCache(maxsize=100, ttl=60 * 5)
 
-db_schema_version = 20
+db_schema_version = 21
 
 
 class MyRetryDB(RetryOperationalError, PooledMySQLDatabase):
@@ -124,8 +124,7 @@ class Account(LatLongModel):
     last_modified = DateTimeField(index=True, default=datetime.utcnow)
     shadowban = BooleanField(index=True, default=False)
     warning = BooleanField(index=True, default=False)
-    tempban = BooleanField(index=True, default=False)
-    permban = BooleanField(index=True, default=False)
+    banned = BooleanField(index=True, default=False)
 
     @staticmethod
     def db_format(account):
@@ -142,8 +141,7 @@ class Account(LatLongModel):
             'fail': account.get('fail', False),
             'shadowban': account.get('shadowban', False),
             'warning': account.get('warning', False),
-            'tempban': account.get('tempban', 0),
-            'permban': account.get('permban', 0),
+            'banned': account.get('banned', False),
             'level': account['level'],
             'last_scan': account.get('last_scan', None),
             'last_modified': account['last_modified']}
@@ -154,10 +152,9 @@ class Account(LatLongModel):
                  .select()
                  .where((Account.instance_id == args.instance_id) &
                         (Account.fail == 0) &
-                        (Account.allocated == 1) &
+                        (Account.allocated == 0) &
                         (Account.shadowban == 0) &
-                        (Account.tempban == 0) &
-                        (Account.permban == 0) &
+                        (Account.banned == 0) &
                         (Account.level >= min_level) &
                         (Account.level <= max_level))
                  .order_by(Account.level.asc(),
@@ -177,8 +174,7 @@ class Account(LatLongModel):
                      .where((Account.instance_id == args.instance_id) &
                             (Account.fail == 0) &
                             (Account.shadowban == 0) &
-                            (Account.tempban == 0) &
-                            (Account.permban == 0) &
+                            (Account.banned == 0) &
                             (Account.level >= min_level) &
                             (Account.level <= max_level))
                      .order_by(Account.level.asc(),
@@ -191,8 +187,7 @@ class Account(LatLongModel):
                      .where((Account.allocated == 0) &
                             (Account.fail == 0) &
                             (Account.shadowban == 0) &
-                            (Account.tempban == 0) &
-                            (Account.permban == 0) &
+                            (Account.banned == 0) &
                             (Account.level >= min_level) &
                             (Account.level <= max_level))
                      .order_by(Account.level.asc(),
@@ -214,7 +209,7 @@ class Account(LatLongModel):
 
             # Releases all instance-flagged accounts which are not used now.
             if init:
-                (Account.update(allocated=False, instance_name=None)
+                (Account.update(allocated=False, instance_id=None)
                         .where((Account.instance_id == args.instance_id) &
                                ~(Account.username << usernames))
                         .execute())
@@ -262,9 +257,9 @@ class Account(LatLongModel):
                     'instance_id': args.instance_id,
                     'fail': 0,
                     'last_modified': datetime.utcnow(),
-                    'shadowban': 0,
-                    'warning': 0,
-                    'banned': 0
+                    'shadowban': False,
+                    'banned': False,
+                    'warning': False,
                 }
                 accounts.append(account)
 
@@ -303,13 +298,13 @@ class Account(LatLongModel):
                     'captcha': 0,
                     'latitude': None,
                     'longitude': None,
-                    'allocated': 0,
+                    'allocated': False,
                     'instance_id': args.instance_id,
-                    'fail': 0,
+                    'fail': False,
                     'last_modified': datetime.utcnow(),
-                    'shadowban': 0,
-                    'warning': 0,
-                    'banned': 0
+                    'shadowban': False,
+                    'warning': False,
+                    'banned': False
                 }
                 accounts.append(account)
             else:
@@ -373,8 +368,7 @@ class Account(LatLongModel):
                  .where((Account.allocated == 0) &
                         (Account.fail == 0) &
                         (Account.shadowban == 0) &
-                        (Account.tempban == 0) &
-                        (Account.permban == 0) &
+                        (Account.banned == 0) &
                         (Account.level == 30))
                  .order_by(Account.last_modified.asc())
                  .limit(10)  # Don't spend too much time checking accounts.
@@ -430,14 +424,14 @@ class Account(LatLongModel):
                     # Caused by hard shut-down or more workers than needed.
                     query = (Account
                              .update(allocated=False)
-                             .where((Account.allocated == 1) &
+                             .where((Account.allocated == 0) &
                                     (Account.last_modified <
                                     (datetime.utcnow() - timedelta(minutes=15))
                                      )))
                     query.execute()
 
                     query = (Account
-                             .update(allocated=False, instance_name=None)
+                             .update(allocated=False, instance_id=None)
                              .where((Account.instance_id.is_null(False)) &
                                     (Account.last_modified <
                                     (datetime.utcnow() - timedelta(minutes=60))
@@ -446,9 +440,9 @@ class Account(LatLongModel):
 
                     # Resets failed accounts after rest time for re-use.
                     query = (Account
-                             .update(allocated=False, instance_name=None,
+                             .update(allocated=False, instance_id=None,
                                      fail=False)
-                             .where((Account.fail == 1) &
+                             .where((Account.fail == 0) &
                                     (Account.last_modified <
                                     (datetime.utcnow() - timedelta(
                                         seconds=args.account_rest_interval)))))
@@ -456,9 +450,9 @@ class Account(LatLongModel):
 
                     # Resets temp-banned accounts.
                     query = (Account
-                             .update(shadowban=False, tempban=False)
+                             .update(shadowban=False, banned=False)
                              .where((Account.shadowban == 1) &
-                                    (Account.tempban == 1)) &
+                                    (Account.banned == 1))
                                    (Account.last_modified <
                                     (datetime.utcnow() - timedelta(weeks=6))))
                     query.execute()
@@ -3066,7 +3060,7 @@ def clean_db_loop(args):
                 query.execute()
 
                 # Update Account model.
-                Account.clean_account_stats()
+                # Account.clean_account_stats()
 
                 # If desired, clear old Pokemon spawns.
                 if args.purge_data > 0:
