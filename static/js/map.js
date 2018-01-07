@@ -1337,9 +1337,9 @@ function clearStaleMarkers() {
     const oldPokeMarkers = []
 
     $.each(mapData.pokemons, function (key, pokemon) {
-        const pokemon_id = pokemon['pokemon_id']
+        const pokemonId = pokemon['pokemon_id']
         const isPokeExpired = pokemon['disappear_time'] < Date.now()
-        const isPokeExcluded = excludedPokemon.indexOf(pokemon_id) !== -1
+        const isPokeExcluded = excludedPokemon.indexOf(pokemonId) !== -1
         // Limit choice to our options [0, 5].
         const excludedRarityOption = Math.min(Math.max(Store.get('excludedRarity'), 0), 5)
         const excludedRarity = excludedRaritiesList[excludedRarityOption]
@@ -1350,10 +1350,10 @@ function clearStaleMarkers() {
 
         if (isPokeExpired || isPokeExcluded || isRarityExcluded) {
             const oldMarker = pokemon.marker
-            const isPokeExcludedByRarity = excludedPokemonByRarity.indexOf(pokemon_id) !== -1
+            const isPokeExcludedByRarity = excludedPokemonByRarity.indexOf(pokemonId) !== -1
 
             if (isRarityExcluded && !isPokeExcludedByRarity) {
-                excludedPokemonByRarity.push(pokemon_id)
+                excludedPokemonByRarity.push(pokemonId)
             }
 
             if (oldMarker.rangeCircle) {
@@ -1377,8 +1377,8 @@ function clearStaleMarkers() {
     $.each(mapData.lurePokemons, function (key, lurePokemon) {
         if (lurePokemon['lure_expiration'] < new Date().getTime() ||
             excludedPokemon.indexOf(lurePokemon['pokemon_id']) >= 0) {
-                lurePokemon.marker.setMap(null)
-                delete mapData.lurePokemons[key]
+            lurePokemon.marker.setMap(null)
+            delete mapData.lurePokemons[key]
         }
     })
 
