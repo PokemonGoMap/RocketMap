@@ -3,8 +3,10 @@ $(function () {
 
     /* Settings. */
 
-    const showLocationMarker = false // Show a marker on the map's scan location. Default: false.
-    const isLocationMarkerMovable = false // Let the user move the marker around. Doesn't do anything without --no-fixed-location. Default: false.
+    const showSearchMarker = true // Show a marker on the map's scan location. Default: false.
+    const isSearchMarkerMovable = false // Let the user move the scan location marker around. Doesn't do anything without --no-fixed-location. Default: false.
+    const showLocationMarker = true // Show a marker on the visitor's location. Default: false.
+    const isLocationMarkerMovable = false // Let the user move the visitor marker around. Default: false.
     const scaleByRarity = true // Enable scaling by rarity. Default: true.
     const upscalePokemon = false // Enable upscaling of certain Pokemon (upscaledPokemon and notify list). Default: false.
     const upscaledPokemon = [] // Add Pokémon IDs separated by commas (e.g. [1, 2, 3]) to upscale icons. Default: [].
@@ -76,6 +78,8 @@ $(function () {
     Store.set('scaleByRarity', scaleByRarity)
     Store.set('upscalePokemon', upscalePokemon)
     Store.set('upscaledPokemon', upscaledPokemon)
+    Store.set('showSearchMarker', showSearchMarker)
+    Store.set('isSearchMarkerMovable', isSearchMarkerMovable)
     Store.set('showLocationMarker', showLocationMarker)
     Store.set('isLocationMarkerMovable', isLocationMarkerMovable)
 

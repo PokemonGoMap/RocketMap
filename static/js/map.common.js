@@ -1035,10 +1035,18 @@ var StoreOptions = {
         type: StoreTypes.Boolean
     },
     'showLocationMarker': {
-        default: false,
+        default: true,
         type: StoreTypes.Boolean
     },
     'isLocationMarkerMovable': {
+        default: false,
+        type: StoreTypes.Boolean
+    },
+    'showSearchMarker': {
+        default: true,
+        type: StoreTypes.Boolean
+    },
+    'isSearchMarkerMovable': {
         default: false,
         type: StoreTypes.Boolean
     }

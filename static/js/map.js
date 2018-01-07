@@ -272,10 +272,15 @@ function initMap() { // eslint-disable-line no-unused-vars
         }, 500)
     })
 
-    searchMarker = createSearchMarker()
-
+    const showSearchMarker = Store.get('showSearchMarker')
     const showLocationMarker = Store.get('showLocationMarker')
     const isLocationMarkerMovable = Store.get('isLocationMarkerMovable')
+
+    if (showSearchMarker) {
+        // Whether marker is draggable or not is set in createSearchMarker().
+        searchMarker = createSearchMarker()
+    }
+
     if (showLocationMarker) {
         locationMarker = createLocationMarker()
         locationMarker.setDraggable(isLocationMarkerMovable)
@@ -360,6 +365,13 @@ function createLocationMarker() {
 
 function updateSearchMarker(style) {
     if (style in searchMarkerStyles) {
+        Store.set('searchMarkerStyle', style)
+
+        // If it's disabled, stop.
+        if (!searchMarker) {
+            return
+        }
+
         var url = searchMarkerStyles[style].icon
         if (url) {
             searchMarker.setIcon({
@@ -369,21 +381,21 @@ function updateSearchMarker(style) {
         } else {
             searchMarker.setIcon(url)
         }
-        Store.set('searchMarkerStyle', style)
     }
 
     return searchMarker
 }
 
 function createSearchMarker() {
-    var searchMarker = new google.maps.Marker({ // need to keep reference.
+    const isSearchMarkerMovable = Store.get('isSearchMarkerMovable')
+    const searchMarker = new google.maps.Marker({ // need to keep reference.
         position: {
             lat: centerLat,
             lng: centerLng
         },
         map: map,
         animation: google.maps.Animation.DROP,
-        draggable: !Store.get('lockMarker'),
+        draggable: !Store.get('lockMarker') && isSearchMarkerMovable,
         icon: null,
         optimized: false,
         zIndex: google.maps.Marker.MAX_ZINDEX + 1
@@ -2074,7 +2086,10 @@ function changeLocation(lat, lng) {
     var loc = new google.maps.LatLng(lat, lng)
     changeSearchLocation(lat, lng).done(function () {
         map.setCenter(loc)
-        searchMarker.setPosition(loc)
+
+        if (searchMarker) {
+            searchMarker.setPosition(loc)
+        }
     })
 }
 
@@ -2124,7 +2139,7 @@ function updateGeoLocation() {
             var center = new google.maps.LatLng(lat, lng)
 
             if (Store.get('geoLocate')) {
-                // the search function makes any small movements cause a loop. Need to increase resolution
+                // The search function makes any small movements cause a loop. Need to increase resolution.
                 if ((typeof searchMarker !== 'undefined') && (getPointDistance(searchMarker.getPosition(), center) > 40)) {
                     $.post('next_loc?lat=' + lat + '&lon=' + lng).done(function () {
                         map.panTo(center)
@@ -2911,7 +2926,10 @@ $(function () {
 
     $('#lock-marker-switch').change(function () {
         Store.set('lockMarker', this.checked)
-        searchMarker.setDraggable(!this.checked)
+
+        if (searchMarker) {
+            searchMarker.setDraggable(!this.checked)
+        }
     })
 
     $('#search-switch').change(function () {
