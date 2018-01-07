@@ -811,13 +811,6 @@ def search_worker_thread(args, account_queue, account_failures,
                     'Switching to account {}.'.format(account['username'])
             })
 
-            # Acount heartbeat.
-            account = {
-                'username': account['username'],
-                'allocated': True,
-                'instance_id': args.instance_id,
-                'last_modified': datetime.utcnow()}
-
             log.info(status['message'])
 
             # Sleep when consecutive_fails reaches max_failures, overall fails
@@ -1218,13 +1211,13 @@ def search_worker_thread(args, account_queue, account_failures,
         # Catch any process exceptions, log them, and continue the thread.
         except Exception as e:
             log.exception(
-                'Exception in search_worker under account %s.',
-                account['username'])
+                'Exception in search_worker under account %s.', account[
+                    'username'])
             status['active'] = False
             status['message'] = (
-                'Exception in search_worker using account {}. Restarting ' +
-                'with fresh account. See logs for details.').format(
-                    account['username'])
+                'Exception in search_worker using account %s. Restarting ' +
+                'with fresh account. See logs for details.', account[
+                    'username'])
             account_failures.append({'account': account,
                                      'last_fail_time': now(),
                                      'reason': 'exception'})
