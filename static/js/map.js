@@ -273,7 +273,14 @@ function initMap() { // eslint-disable-line no-unused-vars
     })
 
     searchMarker = createSearchMarker()
-    locationMarker = createLocationMarker()
+
+    const showLocationMarker = Store.get('showLocationMarker')
+    const isLocationMarkerMovable = Store.get('isLocationMarkerMovable')
+    if (showLocationMarker) {
+        locationMarker = createLocationMarker()
+        locationMarker.setDraggable(isLocationMarkerMovable)
+    }
+
     createMyLocationButton()
     initSidebar()
 
@@ -293,6 +300,11 @@ function initMap() { // eslint-disable-line no-unused-vars
 }
 
 function updateLocationMarker(style) {
+    // Don't do anything if it's disabled.
+    if (!locationMarker) {
+        return locationMarker
+    }
+
     if (style in searchMarkerStyles) {
         var url = searchMarkerStyles[style].icon
         if (url) {
@@ -2038,7 +2050,11 @@ function centerMapOnLocation() {
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(function (position) {
             var latlng = new google.maps.LatLng(position.coords.latitude, position.coords.longitude)
-            locationMarker.setPosition(latlng)
+
+            if (locationMarker) {
+                locationMarker.setPosition(latlng)
+            }
+
             map.setCenter(latlng)
             Store.set('followMyLocationPosition', {
                 lat: position.coords.latitude,
@@ -2911,7 +2927,17 @@ $(function () {
         } else {
             Store.set('followMyLocation', this.checked)
         }
-        locationMarker.setDraggable(!this.checked)
+
+        if (locationMarker) {
+            if (this.checked) {
+                // Follow our position programatically, so no dragging.
+                locationMarker.setDraggable(false)
+            } else {
+                // Go back to default non-follow.
+                const isMarkerMovable = Store.get('isLocationMarkerMovable')
+                locationMarker.setDraggable(isMarkerMovable)
+            }
+        }
     })
 
     $('#scan-here-switch').change(function () {
