@@ -1555,8 +1555,8 @@ class SpawnpointDetectionData(BaseModel):
         # Only ssss spawns from here below.
 
         sp['links'] = '+++-'
-        
-        # Cover all bases, make sure we're using values < 3600.		
+
+        # Cover all bases, make sure we're using values < 3600.
         # Warning: python uses modulo as the least residue, not as
         # remainder, so we don't apply it to the result.
         residue_unseen = sp['earliest_unseen'] % 3600
@@ -1644,7 +1644,7 @@ class SpawnpointDetectionData(BaseModel):
     def unseen(sp, now_secs):
 
         # Return if we already have a tth.
-        # Cover all bases, make sure we're using values < 3600.		
+        # Cover all bases, make sure we're using values < 3600.
         # Warning: python uses modulo as the least residue, not as
         # remainder, so we don't apply it to the result.
         residue_unseen = sp['earliest_unseen'] % 3600
@@ -1915,7 +1915,7 @@ def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
                     (p.last_modified_timestamp_ms +
                      p.time_till_hidden_ms) / 1000.0))
 
-                # Cover all bases, make sure we're using values < 3600.		
+                # Cover all bases, make sure we're using values < 3600.
                 # Warning: python uses modulo as the least residue, not as
                 # remainder, so we don't apply it to the result.
                 residue_unseen = sp['earliest_unseen'] % 3600
