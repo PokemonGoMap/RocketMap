@@ -40,7 +40,7 @@ args = get_args()
 flaskDb = FlaskDB()
 cache = TTLCache(maxsize=100, ttl=60 * 5)
 
-db_schema_version = 21
+db_schema_version = 22
 
 
 class MyRetryDB(RetryOperationalError, PooledMySQLDatabase):
@@ -1181,7 +1181,8 @@ class SpawnPoint(LatLongModel):
         indexes = ((('latitude', 'longitude'), False),)
         constraints = [Check('earliest_unseen >= 0'),
                        Check('earliest_unseen <= 3600'),
-                       Check('latest_seen >= 0'), Check('latest_seen <= 3600')]
+                       Check('latest_seen >= 0'),
+                       Check('latest_seen <= 3600')]
 
     # Returns the spawnpoint dict from ID, or a new dict if not found.
     @staticmethod
@@ -3092,6 +3093,20 @@ def database_migrate(db, old_ver):
         db.execute_sql('DROP TABLE `spawnpoint_old`;')
         db.execute_sql('DROP TABLE `gymmember_old`;')
         db.execute_sql('DROP TABLE `gympokemon_old`;')
+
+    if old_ver < 22:
+        # Drop and add CONSTRAINT_2 with the <= fix.
+        db.execute_sql('ALTER TABLE `spawnpoint` '
+                       'DROP CONSTRAINT CONSTRAINT_2;')
+        db.execute_sql('ALTER TABLE `spawnpoint` '
+                       'ADD CONSTRAINT CONSTRAINT_2 CHECK (`earliest_unseen` <= 3600);')
+
+        # Drop and add CONSTRAINT_4 with the <= fix.
+        db.execute_sql('ALTER TABLE `spawnpoint` '
+                       'DROP CONSTRAINT CONSTRAINT_4;')
+        db.execute_sql('ALTER TABLE `spawnpoint` '
+                       'ADD CONSTRAINT CONSTRAINT_4 CHECK (`latest_seen` <= 3600);')
+
     # Always log that we're done.
     log.info('Schema upgrade complete.')
     return True
