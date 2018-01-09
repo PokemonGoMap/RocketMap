@@ -14,6 +14,8 @@ Speed Scheduler is an alternative scheduler to Hex Scan or Spawnpoint Scan with 
 
 To use Speed Scheduler, always put -speed in the command line or set `speed-scan` in your config file.
 
+Please note: Speed Scheduler does not work for gym only scanning.
+
 ## Commands and configs
 
 What command line args should I use for Speed Scheduler?
