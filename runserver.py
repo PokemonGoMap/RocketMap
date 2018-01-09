@@ -252,12 +252,6 @@ def main():
 
     set_log_and_verbosity(log)
 
-    if args.no_version_check:
-        log.warning('You are running RocketMap in No Version Check mode. '
-                    'If you don\'t know what you\'re doing, this mode '
-                    'can have consequences, and you will not receive support '
-                    'running in NoVC mode. You have been warned.')
-
     # Abort if only-server and no-server are used together
     if args.only_server and args.no_server:
         log.critical(
@@ -281,6 +275,13 @@ def main():
     # Let's not forget to run Grunt / Only needed when running with webserver.
     if not args.no_server and not validate_assets(args):
         sys.exit(1)
+
+    if args.no_version_check:
+        if not args.only_server:
+            log.warning('You are running RocketMap in No Version Check mode. '
+                        'If you don\'t know what you\'re doing, this mode '
+                        'can have consequences, and you will not receive support '
+                        'running in NoVC mode. You have been warned.')
 
     position = extract_coordinates(args.location)
 
