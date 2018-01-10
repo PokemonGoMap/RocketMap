@@ -914,11 +914,7 @@ def dottedQuadToNum(ip):
 
 # Generate random device info.
 # Original by Noctem.
-IPHONES = {'iPhone5,1': 'N41AP',
-           'iPhone5,2': 'N42AP',
-           'iPhone5,3': 'N48AP',
-           'iPhone5,4': 'N49AP',
-           'iPhone6,1': 'N51AP',
+IPHONES = {'iPhone6,1': 'N51AP',
            'iPhone6,2': 'N53AP',
            'iPhone7,1': 'N56AP',
            'iPhone7,2': 'N61AP',
