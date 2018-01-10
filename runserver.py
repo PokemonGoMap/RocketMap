@@ -276,8 +276,7 @@ def main():
     if not args.no_server and not validate_assets(args):
         sys.exit(1)
 
-    if args.no_version_check:
-        if not args.only_server:
+    if args.no_version_check and not args.only_server:
             log.warning('You are running RocketMap in No Version Check mode. '
                         'If you don\'t know what you\'re doing, this mode '
                         'can have consequences, and you will not receive '
