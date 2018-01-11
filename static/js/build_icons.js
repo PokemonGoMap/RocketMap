@@ -525,12 +525,12 @@ function buildGymIcon(iconDetails, resources) {
                                                           .background(0x0)
 
                     icon = icon.composite(unknownRaidBossBkg,
-                                          10,
+                                          5,
                                           icon.bitmap.height -
                                           unknownRaidBossBkg.bitmap.height)
                     icon.print(font,
                                (unknownRaidBossBkg.bitmap.width / 2) -
-                               (textWidth(font, unknownRaidBossText) / 2) + 10,
+                               (textWidth(font, unknownRaidBossText) / 2) + 5,
                                icon.bitmap.height -
                                (unknownRaidBossBkg.bitmap.height / 2) -
                                (textHeight(font, unknownRaidBossText) / 2),
@@ -538,7 +538,7 @@ function buildGymIcon(iconDetails, resources) {
                 } else {
                     const raidBossIcon = resources['raid_boss']
                     icon = icon.composite(raidBossIcon,
-                                          10,
+                                          5,
                                           icon.bitmap.height -
                                           raidBossIcon.bitmap.height)
                 }
