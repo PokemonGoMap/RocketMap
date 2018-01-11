@@ -14,7 +14,7 @@ Speed Scheduler is an alternative scheduler to Hex Scan or Spawnpoint Scan with 
 
 To use Speed Scheduler, always put -speed in the command line or set `speed-scan` in your config file.
 
-Speed Scheduler is optomized for scanning for Pokemon so it does not work well for gym/pokestop only scanning. If you are interested in scanning for just gyms/pokestops consider using Hex Scheduler.
+Speed Scheduler is optimized for scanning for Pokémon so it doesn't work well for gym/pokéstop only scanning. If you are interested in scanning for just gyms/pokéstops consider using Hex Scheduler.
 
 ## Commands and configs
 
