@@ -33,16 +33,17 @@ const unknownRaidBoss = 'unknown'
 const unknownRaidBossText = '?'
 
 const raidBosses = {
-    '1': [2, 5, 8, 11],
-    /* Ivysaur, Charmeleon, Wartortle, Metapod */
+    '1': [2, 5, 8, 11, 320],
+    /* Ivysaur, Charmeleon, Wartortle, Metapod, Wailmer */
     '2': [28, 73, 82, 91, 105, 302],
-    /* Sandslash, Tentacruel, Magneton, Cloyster, Marowak, Sableye */
-    '3': [38, 65, 68, 94, 123, 137, 139],
+    /* Sandslash, Tentacruel, Magneton, Cloyster, Marowak, Sableye, Mawile */
+    '3': [38, 65, 68, 94, 123, 137, 139, 303],
     /* Ninetales, Alakazam, Machamp, Gengar, Scyther, Porygon, Omastar */
-    '4': [31, 34, 62, 71, 76, 131, 143, 248],
-    /* Nidoqueen, Nidoking, Poliwrath, Victreebel, Golem, Lapras, Snorlax, Tyranitar */
-    '5': [144, 145, 146, 150, 243, 244, 245, 249, 250]
-    /* Articuno, Zapdos, Moltres, Mewtwo, Raikou, Entei, Suicune, Lugia, Ho-Oh */
+    '4': [31, 34, 62, 71, 76, 131, 143, 248, 359 ],
+    /* Nidoqueen, Nidoking, Poliwrath, Victreebel, Golem, Lapras, Snorlax, Tyranitar, Absol */
+    '5': [144, 145, 146, 150, 243, 244, 245, 249, 250, 382, 383, 384]
+    /* Articuno, Zapdos, Moltres, Mewtwo, Raikou, Entei, Suicune, Lugia, Ho-Oh,
+       Groudon, Kyogre, Rayquaza */
 }
 
 const batchSize = 50
@@ -141,13 +142,13 @@ function pokemonResourceDetails(pokemon, form) {
         resourceDetails.push({
             type: 'font',
             name: 'font',
-            path: `${fontsDir}/open-sans-bold-60-white.fnt`
+            path: `${fontsDir}/open-sans-bold-66-white.fnt`
         })
     } else {
         resourceDetails.push({
             type: 'font',
             name: 'font',
-            path: `${fontsDir}/open-sans-bold-72-white.fnt`
+            path: `${fontsDir}/open-sans-bold-86-white.fnt`
         })
     }
 
@@ -166,7 +167,7 @@ function gymResourceDetails(teamId, gymStrength, raidLevel, raidBoss) {
             type: 'icon',
             name: 'large_circle',
             path: `${partsDir}/circle.png`,
-            size: [150, 150]
+            size: [115, 115]
         },
         {
             type: 'icon',
@@ -219,14 +220,14 @@ function gymResourceDetails(teamId, gymStrength, raidLevel, raidBoss) {
             resourceDetails.push({
                 type: 'font',
                 name: 'font',
-                path: `${fontsDir}/open-sans-bold-72-white.fnt`
+                path: `${fontsDir}/open-sans-bold-86-white.fnt`
             })
         } else {
             resourceDetails.push({
                 type: 'icon',
                 name: 'raid_boss',
                 path: `${pokemonDir}/${raidBoss}.png`,
-                size: [150, 150]
+                size: [115, 115]
             })
         }
     }
@@ -524,12 +525,12 @@ function buildGymIcon(iconDetails, resources) {
                                                           .background(0x0)
 
                     icon = icon.composite(unknownRaidBossBkg,
-                                          0,
+                                          10,
                                           icon.bitmap.height -
                                           unknownRaidBossBkg.bitmap.height)
                     icon.print(font,
                                (unknownRaidBossBkg.bitmap.width / 2) -
-                               (textWidth(font, unknownRaidBossText) / 2),
+                               (textWidth(font, unknownRaidBossText) / 2) + 10,
                                icon.bitmap.height -
                                (unknownRaidBossBkg.bitmap.height / 2) -
                                (textHeight(font, unknownRaidBossText) / 2),
@@ -537,7 +538,7 @@ function buildGymIcon(iconDetails, resources) {
                 } else {
                     const raidBossIcon = resources['raid_boss']
                     icon = icon.composite(raidBossIcon,
-                                          0,
+                                          10,
                                           icon.bitmap.height -
                                           raidBossIcon.bitmap.height)
                 }

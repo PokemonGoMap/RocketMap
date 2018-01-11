@@ -100,21 +100,18 @@ module.exports = function () {
             sprites: spriteInfo
         }
 
-        console.log('HERE 1')
         return writeSpritesheetToFile(spritesheetData.image, spritesheetFile)
         .then(function () {
-            console.log('HERE 2')
             return writeSpritesheetScssToFile(spritesheetMap, spritesheetScssFile)
         })
         .then(function () {
-            console.log('HERE 3')
             return writeSpritesheetMapToFile(spritesheetMap, spritesheetMapFile)
         })
-        /*return Promise.all([
+        return Promise.all([
             writeSpritesheetToFile(spritesheetData.image, spritesheetFile),
             writeSpritesheetScssToFile(spritesheetMap, spritesheetScssFile),
             writeSpritesheetMapToFile(spritesheetMap, spritesheetMapFile)
-        ])*/
+        ])
     })
     .then(function () {
         console.log('>> '['green'] + 'spritesheet built.')
