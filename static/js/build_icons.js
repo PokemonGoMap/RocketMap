@@ -33,8 +33,8 @@ const unknownRaidBoss = 'unknown'
 const unknownRaidBossText = '?'
 
 const raidBosses = {
-    '1': [2, 5, 8, 11, 320],
-    /* Ivysaur, Charmeleon, Wartortle, Metapod, Wailmer */
+    '1': [2, 5, 8, 11, 129, 320],
+    /* Ivysaur, Charmeleon, Wartortle, Metapod, Magikarp, Wailmer */
     '2': [28, 73, 82, 91, 105, 302],
     /* Sandslash, Tentacruel, Magneton, Cloyster, Marowak, Sableye, Mawile */
     '3': [38, 65, 68, 94, 123, 137, 139, 303],
