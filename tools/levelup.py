@@ -28,11 +28,15 @@ class FakeQueue:
 
 def get_location_forts(api, account, location):
     response = gmo(api, account, location)
+    if len(response['responses']['CHECK_CHALLENGE'].challenge_url) > 1:
+        log.error('account: %s got captcha: %s', account['username'],
+                  response['responses']['CHECK_CHALLENGE'].challenge_url)
+        return ([], True)
     cells = response['responses']['GET_MAP_OBJECTS'].map_cells
     forts = []
     for i, cell in enumerate(cells):
         forts += cell.forts
-    return forts
+    return (forts, False)
 
 
 def level_up_account(args, location, accounts, errors):
@@ -64,7 +68,11 @@ def level_up_account(args, location, accounts, errors):
             check_login(args, account, api, status['proxy_url'])
             log.info('Account %s level %d', account['username'],
                      account['level'])
-            forts = get_location_forts(api, account, location)
+            (forts, captcha) = get_location_forts(api, account, location)
+            if captcha:
+                errors['captcha'].append(account)
+                accounts.task_done()
+                continue
             log.info('%d stops in range', len(forts))
             for fort in forts:
                 if pokestop_spinnable(fort, location):
@@ -77,7 +85,7 @@ def level_up_account(args, location, accounts, errors):
                 log.exception('Exception in worker: %s retrying.', e)
                 accounts.put((account, error_count+1))
             else:
-                errors.append(account)
+                errors['generic'].append(account)
 
         accounts.task_done()
 
@@ -106,7 +114,7 @@ if not args.player_locale:
 
 initialize_proxies(args)
 account_queue = Queue()
-errors = []
+errors = {'generic': [], 'captcha': []}
 
 for i, account in enumerate(args.accounts):
     account_queue.put((account, 0))
@@ -131,7 +139,8 @@ except KeyboardInterrupt:
 
 account_queue.join()
 log.info('Process finished')
-if len(errors) > 0:
-    log.info('Some accounts did not finish properly:')
-    for account in errors:
-        log.info('\t%s', account['username'])
+for error_type in errors:
+    if len(errors[error_type]) > 0:
+        log.info('Some accounts did not finish properly (%s):', error_type)
+        for account in errors[error_type]:
+            log.info('\t%s', account['username'])
