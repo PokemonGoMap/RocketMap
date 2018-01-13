@@ -223,7 +223,8 @@ A `pokemon` event is sent every time RocketMap detects that a Pokémon has spawn
 | `seconds_until_despawn` | The current number of seconds remaining before the Pokémon disappears |    `1772` |
 | `spawn_start`           | The number of seconds past the hour at which the Pokémon appears      |     `911` |
 | `spawn_end`             | The number of seconds past the hour at which the Pokémon disappears   |    `2710` |
-| `gender`                | The Pokémon's gender<sup>1</sup>                                    |       `2` |
+| `gender`                | The Pokémon's gender<sup>1</sup>                                      |       `2` |
+| `costume`               | The Pokémon's costume id                                              |       `0` |
 | `cp`                    | The Pokémon's CP<sup>2</sup>                                          |      `""` |
 | `form`                  | The Pokémon's form<sup>2</sup>                                        |      `""` |
 | `individual_attack`     | The Pokémon's attack IV<sup>2</sup>                                   |      `""` |

@@ -135,6 +135,7 @@ def parse_inventory(account, api_response):
                     'height': p_data.height_m,
                     'weight': p_data.weight_kg,
                     'gender': p_data.pokemon_display.gender,
+                    'costume': p_data.pokemon_display.costume,
                     'cp': p_data.cp,
                     'cp_multiplier': p_data.cp_multiplier
                 }

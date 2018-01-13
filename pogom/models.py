@@ -123,6 +123,7 @@ class Pokemon(LatLongModel):
     height = FloatField(null=True)
     gender = SmallIntegerField(null=True)
     form = SmallIntegerField(null=True)
+    costume = SmallIntegerField(null=True)
     last_modified = DateTimeField(
         null=True, index=True, default=datetime.utcnow)
 
@@ -511,6 +512,8 @@ class Gym(LatLongModel):
                            GymMember.deployment_time,
                            GymMember.last_scanned,
                            GymPokemon.pokemon_id,
+                           GymPokemon.costume,
+                           GymPokemon.form,
                            Trainer.name.alias('trainer_name'),
                            Trainer.level.alias('trainer_level'))
                        .join(Gym, on=(GymMember.gym_id == Gym.gym_id))
@@ -593,6 +596,8 @@ class Gym(LatLongModel):
                            GymPokemon.iv_attack,
                            GymPokemon.iv_defense,
                            GymPokemon.iv_stamina,
+                           GymPokemon.costume,
+                           GymPokemon.form,
                            Trainer.name.alias('trainer_name'),
                            Trainer.level.alias('trainer_level'))
                    .join(Gym, on=(GymMember.gym_id == Gym.gym_id))
@@ -1977,6 +1982,14 @@ def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
                 'height': None,
                 'weight': None,
                 'gender': p.pokemon_data.pokemon_display.gender,
+<<<<<<< HEAD
+<<<<<<< HEAD
+=======
+                'costume': p.pokemon_data.pokemon_display.costume,
+>>>>>>> d75633d... Switching `costume` to be gathered on all pokemon
+=======
+                'costume': p.pokemon_data.pokemon_display.costume,
+>>>>>>> 352f3a23c22e6d47d4131207977fdc8d9c5fe937
                 'form': None
             }
 
@@ -1985,6 +1998,16 @@ def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
                 pokemon[p.encounter_id]['form'] = (p.pokemon_data
                                                     .pokemon_display.form)
 
+<<<<<<< HEAD
+<<<<<<< HEAD
+=======
+            # Check for Pika family costumes.
+            if ( pokemon_id == 25 ) or ( pokemon_id == 26 ) or ( pokemon_id == 172 ):
+                pokemon[p.encounter_id]['costume'] = (p.pokemon_data.pokemon_display.costume)
+
+>>>>>>> 51139ce... Adding  to  data gathering
+=======
+>>>>>>> d75633d... Switching `costume` to be gathered on all pokemon
             # We need to check if exist and is not false due to a request error
             if pokemon_info:
                 pokemon[p.encounter_id].update({
@@ -2481,6 +2504,8 @@ def parse_gyms(args, gym_responses, wh_update_queue, db_update_queue):
                 'iv_defense': pokemon.individual_defense,
                 'iv_stamina': pokemon.individual_stamina,
                 'iv_attack': pokemon.individual_attack,
+                'costume': pokemon.pokemon_display.costume,
+                'form': pokemon.pokemon_display.form,
                 'last_seen': datetime.utcnow(),
             }
 
@@ -2988,6 +3013,15 @@ def database_migrate(db, old_ver):
                                     null=False, default=datetime.utcnow())),
             migrator.add_column('gym', 'total_cp',
                                 SmallIntegerField(null=False, default=0)))
+    if old_ver < 21:
+        migrate(
+            migrator.add_column('pokemon', 'costume',
+                                SmallIntegerField(null=True)),
+            migrator.add_column('gympokemon', 'costume',
+                                SmallIntegerField(null=True)),
+            migrator.add_column('gympokemon', 'form',
+                                SmallIntegerField(null=True))
+            )
 
     if old_ver < 21:
         # First rename all tables being modified.
