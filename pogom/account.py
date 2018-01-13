@@ -176,7 +176,8 @@ def rpc_login_sequence(args, api, account):
                                            app_version=app_version)
         send_generic_request(req, account, settings=True, buddy=False,
                              inbox=False)
-
+        if 'remote_config' not in account:
+            account['banned'] = 2
         total_req += 1
         time.sleep(random.uniform(.53, 1.1))
     except Exception as e:

@@ -26,7 +26,7 @@ from timeit import default_timer
 from .utils import (get_pokemon_name, get_pokemon_rarity, get_pokemon_types,
                     get_args, cellid, in_radius, date_secs, clock_between,
                     get_move_name, get_move_damage, get_move_energy,
-                    get_move_type, calc_pokemon_level)
+                    get_move_type, calc_pokemon_level, distance)
 from .transform import transform_from_wgs_to_gcj, get_new_coords
 from .customLog import printPokemon
 
@@ -101,6 +101,372 @@ class LatLongModel(BaseModel):
                     transform_from_wgs_to_gcj(
                         result['latitude'], result['longitude'])
         return results
+
+
+class Account(LatLongModel):
+    auth_service = Utf8mb4CharField(max_length=6, default='ptc')
+    username = Utf8mb4CharField(primary_key=True, max_length=26)
+    password = Utf8mb4CharField(max_length=64)
+    level = SmallIntegerField(default=1)
+    captcha = BooleanField(index=True, default=False)
+    latitude = DoubleField(null=True)
+    longitude = DoubleField(null=True)
+    allocated = BooleanField(index=True, default=False)
+    instance_id = CharField(index=True, null=True, max_length=32)
+    fail = BooleanField(index=True, default=False)
+    last_scan = DateTimeField(index=True, null=True)
+    last_modified = DateTimeField(index=True, default=datetime.utcnow)
+    shadowban = BooleanField(index=True, default=False)
+    warning = BooleanField(index=True, default=False)
+    banned = BooleanField(index=True, default=False)
+
+    @staticmethod
+    def db_format(account):
+        account['last_modified'] = datetime.utcnow()
+        return {
+            'auth_service': account['auth_service'],
+            'username': account['username'],
+            'password': account['password'],
+            'instance_id': account.get('instance_id', None),
+            'allocated': account.get('allocated', False),
+            'latitude': account.get('latitude', None),
+            'longitude': account.get('longitude', None),
+            'captcha': account.get('captcha', False),
+            'fail': account.get('fail', False),
+            'shadowban': account.get('shadowban', False),
+            'warning': account.get('warning', False),
+            'banned': account.get('banned', False),
+            'level': account['level'],
+            'last_scan': account.get('last_scan', None),
+            'last_modified': account['last_modified']}
+
+    @staticmethod
+    def get_accounts_in_use(min_level=1, max_level=40):
+        query = (Account
+                 .select()
+                 .where((Account.instance_id == args.instance_id) &
+                        (Account.fail == 0) &
+                        (Account.allocated == 0) &
+                        (Account.shadowban == 0) &
+                        (Account.banned == 0) &
+                        (Account.level >= min_level) &
+                        (Account.level <= max_level))
+                 .order_by(Account.level.asc(),
+                           Account.last_modified.asc())
+                 .dicts())
+        return query
+
+    @staticmethod
+    def get_accounts(number, min_level=1, max_level=40, init=False):
+        query = []
+        accounts = []
+        # Try to re-use previous accounts for this instance.
+        if init:
+            Account.release_accounts(keep_instance_name=True)
+            query = (Account
+                     .select()
+                     .where((Account.instance_id == args.instance_id) &
+                            (Account.fail == 0) &
+                            (Account.shadowban == 0) &
+                            (Account.banned == 0) &
+                            (Account.level >= min_level) &
+                            (Account.level <= max_level))
+                     .order_by(Account.level.asc(),
+                               Account.last_modified.asc())
+                     .limit(number)
+                     .dicts())
+        if len(query) != number:  # Not exact same config? Get new accounts.
+            query = (Account
+                     .select()
+                     .where((Account.allocated == 0) &
+                            (Account.fail == 0) &
+                            (Account.shadowban == 0) &
+                            (Account.banned == 0) &
+                            (Account.level >= min_level) &
+                            (Account.level <= max_level))
+                     .order_by(Account.level.asc(),
+                               Account.last_modified.asc())
+                     .limit(number)
+                     .dicts())
+
+        if len(query):
+            # Directly set accounts to allocated with the instance_name.
+            usernames = [dba['username'] for dba in query]
+            (Account.update(allocated=True,
+                            instance_id=args.instance_id)
+             .where((Account.username << usernames))
+             .execute())
+
+            for a in query:
+                accounts.append(a)
+                a['db_level'] = a['level']
+
+            # Releases all instance-flagged accounts which are not used now.
+            if init:
+                (Account.update(allocated=False, instance_id=None)
+                        .where((Account.instance_id == args.instance_id) &
+                               ~(Account.username << usernames))
+                        .execute())
+
+        log.debug('Got {} accounts.'.format(len(accounts)))
+
+        return accounts
+
+    @staticmethod
+    # Load accounts and return a list which we are parsing into the DB.
+    def load_accounts(args):
+        csv_lines = []
+        with open(args.accountcsv, 'r') as file:
+            csv_lines = file.read().splitlines()
+
+        if not csv_lines:
+            log.error('Accounts CSV file "%s" could not be read.',
+                      args.accountcsv)
+            return False
+
+        accounts = []
+        num_fields = -1
+        for num, line in enumerate(csv_lines, 1):
+            line = line.strip()
+
+            # Ignore blank lines and comment lines.
+            if len(line) == 0 or line.startswith('#'):
+                continue
+
+            fields = line.split(",")
+            fields = map(str.strip, fields)
+            if num_fields < 0:
+                num_fields = len(fields)
+
+            if num_fields == 2:
+                account = {
+                    'auth_service': 'ptc',
+                    'username': fields[0],
+                    'password': fields[1],
+                    'level': 1,
+                    'captcha': 0,
+                    'latitude': None,
+                    'longitude': None,
+                    'allocated': 0,
+                    'instance_id': args.instance_id,
+                    'fail': 0,
+                    'last_modified': datetime.utcnow(),
+                    'shadowban': False,
+                    'banned': False,
+                    'warning': False,
+                }
+                accounts.append(account)
+
+            elif num_fields == 3 or num_fields == 4:
+                auth_service = fields[0].lower()
+                if auth_service != 'ptc' and auth_service != 'google':
+                    log.error((
+                        'File "%s" has an error on line "%d": ' +
+                        'first field must be either "ptc" or "google."'),
+                        args.accountcsv, num)
+                    return False
+
+                level = 1
+                # Check if account level is present.
+                if num_fields == 4 and fields[3]:
+                    if not fields[3].isdigit():
+                        log.error((
+                            'File "%s" has an error on line "%d": ' +
+                            'last field must contain the account level.'),
+                            args.accountcsv, num)
+                        return False
+
+                    level = int(fields[3])
+                    if level < 1 or level > 40:
+                        log.error((
+                            'File "%s" has an error on line "%d": ' +
+                            'account level must be between 1 and 40.'),
+                            args.accountcsv, num)
+                        return False
+
+                account = {
+                    'auth_service': fields[0],
+                    'username': fields[1],
+                    'password': fields[2],
+                    'level': level,
+                    'captcha': 0,
+                    'latitude': None,
+                    'longitude': None,
+                    'allocated': False,
+                    'instance_id': args.instance_id,
+                    'fail': False,
+                    'last_modified': datetime.utcnow(),
+                    'shadowban': False,
+                    'warning': False,
+                    'banned': False
+                }
+                accounts.append(account)
+            else:
+                log.error((
+                    'File "%s" has an error on line "%d": ' +
+                    'invalid field count, check syntax.'), args.accountcsv,
+                    num)
+                return False
+        return accounts
+
+    # Parses the given accounts from the csv file into the Database.
+    # New aaccounts are added and accounts removed from the csv files,
+    # also will be deleted from the Database.
+    @staticmethod
+    def process_accounts(db_updates_queue):
+        accounts = Account.load_accounts(args)
+        log.info('Loaded %d accounts from file.', len(accounts))
+
+        new_accounts = {}
+        if accounts:
+
+            usernames = [a['username'] for a in accounts]
+            query = (Account
+                     .select(Account.username)
+                     .where(Account.username << usernames)
+                     .dicts())
+
+            db_usernames = [dbu['username'] for dbu in query]
+
+            query = (Account
+                     .select(Account.username)
+                     .where(~(Account.username << usernames))
+                     .dicts())
+
+            remove_db_usernames = [dbu['username'] for dbu in query]
+
+            for a in accounts:
+                if a['username'] in db_usernames:
+                    # Skip accounts already in database.
+                    continue
+                new_accounts[a['username']] = a
+
+            if(len(remove_db_usernames)):
+                query = (Account
+                         .delete()
+                         .where(Account.username << remove_db_usernames))
+                query.execute()
+                log.info('Removed %d deleted accounts from DB.', len(
+                    remove_db_usernames))
+
+            db_updates_queue.put((Account, new_accounts))
+
+        log.info('Inserted %d new accounts into the database.',
+                 len(new_accounts))
+
+    @staticmethod
+    def get_hlvl_account(target_location):
+        hlvl_account = None
+        query = (Account
+                 .select()
+                 .where((Account.allocated == 0) &
+                        (Account.fail == 0) &
+                        (Account.shadowban == 0) &
+                        (Account.banned == 0) &
+                        (Account.level == 30))
+                 .order_by(Account.last_modified.asc())
+                 .limit(10)  # Don't spend too much time checking accounts.
+                 .dicts())
+
+        if not query:
+            log.warning('Found no available high-level accounts in database.')
+            return None
+
+        min_distance = 100000000
+        for account in query:
+            location = (account['latitude'], account['longitude'])
+            meters = distance(target_location, location)
+            if meters < min_distance:
+                min_distance = meters
+                hlvl_account = account
+
+        if hlvl_account:
+            (Account.update(allocated=True, instance_id=args.instance_id)
+                    .where(Account.username == hlvl_account['username'])
+                    .execute())
+
+        return hlvl_account
+
+    # Resets all instance-flagged accounts to set them free for re-use.
+    @staticmethod
+    def release_accounts(keep_instance_name=False):
+        instance_id = args.instance_id if keep_instance_name else None
+        (Account.update(allocated=False, instance_id=instance_id)
+                .where(Account.instance_id == args.instance_id)
+                .execute())
+
+    # Resets instance-flags of accounts to set them free for re-use
+    @staticmethod
+    def release_account(account):
+        (Account(username=account['username'],
+                 allocated=False,
+                 instance_id=None)
+         .save())
+
+    # Fetches all captcha'd accounts for captcha handling (later)
+    @staticmethod
+    def get_captchad():
+        query = Account.select().where((Account.captcha == 1)).dicts()
+        return list(query.values())
+
+    @staticmethod
+    def clean_account_stats():
+        while True:
+            try:
+                with Account.database().execution_context():
+                    # Some quite inactive Accounts in use? Reset them.
+                    # Caused by hard shut-down or more workers than needed.
+                    query = (Account
+                             .update(allocated=False)
+                             .where((Account.allocated == 0) &
+                                    (Account.last_modified <
+                                    (datetime.utcnow() - timedelta(minutes=15))
+                                     )))
+                    query.execute()
+
+                    query = (Account
+                             .update(allocated=False, instance_id=None)
+                             .where((Account.instance_id.is_null(False)) &
+                                    (Account.last_modified <
+                                    (datetime.utcnow() - timedelta(minutes=60))
+                                     )))
+                    query.execute()
+
+                    # Resets failed accounts after rest time for re-use.
+                    query = (Account
+                             .update(allocated=False, instance_id=None,
+                                     fail=False)
+                             .where((Account.fail == 0) &
+                                    (Account.last_modified <
+                                    (datetime.utcnow() - timedelta(
+                                        seconds=args.account_rest_interval)))))
+                    query.execute()
+
+                    # Resets temp-banned accounts.
+                    query = (Account
+                             .update(shadowban=False, banned=False)
+                             .where((Account.shadowban == 1) &
+                                    (Account.banned == 1))
+                                   (Account.last_modified <
+                                    (datetime.utcnow() - timedelta(weeks=6))))
+                    query.execute()
+
+            except Exception as e:
+                log.exception('Exception while clearing accounts stats: %s', e)
+
+    # Thread function for periodical account updating.
+    @staticmethod
+    def account_refresher(args, db_updates_queue, load_accounts,
+                          process_accounts):
+        while True:
+            # Wait before refresh, because initial refresh is done at startup.
+            time.sleep(args.account_refresh)
+
+            try:
+                process_accounts(db_updates_queue)
+                log.info('Regular account refresh complete.')
+            except Exception as e:
+                log.exception('Exception while refreshing accounts: %s.', e)
 
 
 class Pokemon(LatLongModel):
@@ -244,15 +610,15 @@ class Pokemon(LatLongModel):
         # and should use the disappear_time index and hopefully
         # improve performance
         pokemon_count_query = (Pokemon
-                               .select((Pokemon.pokemon_id+0).alias(
-                                           'pokemon_id'),
-                                       fn.COUNT((Pokemon.pokemon_id+0)).alias(
-                                           'count'),
-                                       fn.MAX(Pokemon.disappear_time).alias(
-                                           'lastappeared')
-                                       )
+                               .select((Pokemon.pokemon_id + 0).alias(
+                                   'pokemon_id'),
+                                   fn.COUNT((Pokemon.pokemon_id + 0)).alias(
+                                   'count'),
+                                   fn.MAX(Pokemon.disappear_time).alias(
+                                   'lastappeared')
+                               )
                                .where(Pokemon.disappear_time > timediff)
-                               .group_by((Pokemon.pokemon_id+0))
+                               .group_by((Pokemon.pokemon_id + 0))
                                .alias('counttable')
                                )
         query = (Pokemon
@@ -313,7 +679,6 @@ class Pokemon(LatLongModel):
     @staticmethod
     def get_appearances_times_by_spawnpoint(pokemon_id, spawnpoint_id,
                                             timediff):
-
         '''
         :param pokemon_id: id of Pokemon that we need appearances times for.
         :param spawnpoint_id: spawnpoint id we need appearances times for.
@@ -333,6 +698,46 @@ class Pokemon(LatLongModel):
                  )
 
         return list(itertools.chain(*query))
+
+    @classmethod
+    def get_pokemons_nearby(cls, center, timestamp):
+
+        # Maximum distance, where we see pokemons nearby.
+        visible_distance = 200
+
+        # Get box of visible distance.
+        start = geopy.distance.distance(meters=visible_distance-1)
+        sw = start.destination(center, 225).format_decimal()
+        sw = [float(s) for s in sw.split(',')]
+        ne = start.destination(center, 45).format_decimal()
+        ne = [float(s) for s in ne.split(',')]
+
+        swLat = sw[0]
+        swLng = sw[1]
+        neLat = ne[0]
+        neLng = ne[1]
+
+        # Get active pokemons on those borders.
+        query = (Pokemon
+                 .select(Pokemon.latitude.alias('lat'),
+                         Pokemon.longitude.alias('lng'),
+                         Pokemon.pokemon_id)
+                 .where((Pokemon.disappear_time >= timestamp) &
+                        ((Pokemon.latitude >= swLat) &
+                         (Pokemon.longitude >= swLng) &
+                         (Pokemon.latitude <= neLat) &
+                         (Pokemon.longitude <= neLng)))
+                 .dicts())
+        p = list(query)
+
+        # Remove pokemons outside visible circle.
+        pokemons = []
+        for idx, sp in enumerate(p):
+            if geopy.distance.distance(
+                    center, (sp['lat'], sp['lng'])).meters <= visible_distance:
+                pokemons.append(p[idx]['pokemon_id'])
+
+        return pokemons
 
 
 class Pokestop(LatLongModel):
@@ -1214,7 +1619,7 @@ class SpawnPoint(LatLongModel):
                 SpawnPoint.latitude, SpawnPoint.longitude, SpawnPoint.id,
                 SpawnPoint.links, SpawnPoint.kind, SpawnPoint.latest_seen,
                 SpawnPoint.earliest_unseen, ScannedLocation.done)
-                     .join(ScanSpawnPoint).join(ScannedLocation).dicts())
+                .join(ScanSpawnPoint).join(ScannedLocation).dicts())
 
             if timestamp > 0:
                 query = (
@@ -1757,7 +2162,7 @@ class HashKeys(BaseModel):
         # Obfuscate hashing keys before we sent them to the front-end.
         hashkeys = HashKeys.get_all()
         for i, s in enumerate(hashkeys):
-            hashkeys[i]['key'] = s['key'][:-9] + '*'*9
+            hashkeys[i]['key'] = s['key'][:-9] + '*' * 9
         return hashkeys
 
     @staticmethod
@@ -1782,8 +2187,7 @@ def hex_bounds(center, steps=None, radius=None):
 
 # todo: this probably shouldn't _really_ be in "models" anymore, but w/e.
 def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
-              wh_update_queue, key_scheduler, api, status, now_date, account,
-              account_sets):
+              wh_update_queue, key_scheduler, api, status, now_date, account):
     pokemon = {}
     pokestops = {}
     gyms = {}
@@ -1795,12 +2199,18 @@ def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
     forts_count = 0
     wild_pokemon = []
     wild_pokemon_count = 0
-    nearby_pokemon = 0
+    nearby_pokemon = []
+    nearby_pokemon_ids = []
+    nearby_pokemon_count = 0
     spawn_points = {}
     scan_spawn_points = {}
     sightings = {}
     new_spawn_points = []
     sp_id_list = []
+    missed = []
+    common_ids = [16, 19, 23, 27, 29, 32, 41, 43, 46, 52, 54, 60, 69,
+                  72, 74, 77, 81, 98, 118, 120, 129, 161, 165, 167,
+                  177, 183, 187, 191, 194, 198, 209, 218]
 
     # Consolidate the individual lists in each cell into two lists of Pokemon
     # and a list of forts.
@@ -1816,13 +2226,14 @@ def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
             now_date = datetime.utcfromtimestamp(
                 cell.current_timestamp_ms / 1000)
 
-        nearby_pokemon += len(cell.nearby_pokemons)
+        nearby_pokemon_count += len(cell.nearby_pokemons)
         # Parse everything for stats (counts).  Future enhancement -- we don't
         # necessarily need to know *how many* forts/wild/nearby were found but
         # we'd like to know whether or not *any* were found to help determine
         # if a scan was actually bad.
         if not args.no_pokemon:
             wild_pokemon += cell.wild_pokemons
+            nearby_pokemon += cell.nearby_pokemons
 
         if not args.no_pokestops or not args.no_gyms:
             forts += cell.forts
@@ -1835,7 +2246,7 @@ def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
     del map_dict['responses']['GET_MAP_OBJECTS']
 
     # If there are no wild or nearby Pokemon...
-    if not wild_pokemon and not nearby_pokemon:
+    if not wild_pokemon and not nearby_pokemon_count:
         # ...and there are no gyms/pokestops then it's unusable/bad.
         if not forts:
             log.warning('Bad scan. Parsing found absolutely nothing.')
@@ -1852,6 +2263,38 @@ def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
     done_already = scan_location['done']
     ScannedLocation.update_band(scan_location, now_date)
     just_completed = not done_already and scan_location['done']
+
+    # Checking if account is shadowbanned.
+    if (nearby_pokemon or wild_pokemon) and not args.no_pokemon:
+
+        # Create list of present pokemon IDs for blinded check.
+        for p in nearby_pokemon:
+            nearby_pokemon_ids.append(p.pokemon_id)
+        for p in wild_pokemon:
+            nearby_pokemon_ids.append(p.pokemon_data.pokemon_id)
+
+        # Remove common pokemons from seen.
+        rare_finds = [p for p in nearby_pokemon_ids if p not in common_ids]
+
+        # Checking if found only common pokemons.
+        if len(rare_finds) == 0:
+            # Get nearby active pokemons from database.
+            status['nonrares'] += 1
+            if status['nonrares'] >= 3:
+                encountered_pokemon_ids = Pokemon.get_pokemons_nearby(
+                    scan_location, now_date + timedelta(seconds=10))
+
+                for p in encountered_pokemon_ids:
+                    if p not in nearby_pokemon_ids and p not in common_ids:
+                        missed.append(p)
+
+                if missed:
+                    account['shadowban'] = True
+            if status['nonrares'] >= 20:
+                account['shadowban'] = True
+        # reset counter if rares are found.
+        else:
+            status['nonrares'] = 0
 
     if wild_pokemon and not args.no_pokemon:
         encounter_ids = [p.encounter_id for p in wild_pokemon]
@@ -1958,7 +2401,7 @@ def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
             pokemon_info = False
             if args.encounter and (pokemon_id in args.enc_whitelist):
                 pokemon_info = encounter_pokemon(
-                    args, p, account, api, account_sets, status, key_scheduler)
+                    args, p, account, api, status, key_scheduler)
 
             pokemon[p.encounter_id] = {
                 'encounter_id': p.encounter_id,
@@ -2033,7 +2476,7 @@ def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
                     encountered_pokestops = [(f['pokestop_id'], int(
                         (f['last_modified'] - datetime(1970, 1,
                                                        1)).total_seconds()))
-                                             for f in query]
+                        for f in query]
 
         for f in forts:
             if not args.no_pokestops and f.type == 1:  # Pokestops.
@@ -2116,7 +2559,7 @@ def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
                         'occupied_since':
                             calendar.timegm((datetime.utcnow() - timedelta(
                                 milliseconds=gym_display.occupied_millis)
-                                            ).timetuple()),
+                            ).timetuple()),
                         'last_modified':
                             f.last_modified_timestamp_ms,
                         'raid_active_until':
@@ -2200,7 +2643,7 @@ def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
              'pokestops: %d, gyms: %d, raids: %d.',
              len(pokemon) + skipped,
              filtered,
-             nearby_pokemon,
+             nearby_pokemon_count,
              len(pokestops) + stopsskipped,
              len(gyms),
              len(raids))
@@ -2211,7 +2654,7 @@ def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
     # can narrow down tth window.
     for sp in ScannedLocation.linked_spawn_points(scan_location['cellid']):
         if sp['missed_count'] > 5:
-                continue
+            continue
 
         if sp['id'] in sp_id_list:
             # Don't overwrite changes from this parse with DB version.
@@ -2266,7 +2709,7 @@ def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
         if sightings:
             db_update_queue.put((SpawnpointDetectionData, sightings))
 
-    if not nearby_pokemon and not wild_pokemon:
+    if not nearby_pokemon_count and not wild_pokemon:
         # After parsing the forts, we'll mark this scan as bad due to
         # a possible speed violation.
         return {
@@ -2286,9 +2729,8 @@ def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
     }
 
 
-def encounter_pokemon(args, pokemon, account, api, account_sets, status,
-                      key_scheduler):
-    using_accountset = False
+def encounter_pokemon(args, pokemon, account, api, status, key_scheduler):
+    using_db_account = False
     hlvl_account = None
     pokemon_id = None
     result = False
@@ -2303,8 +2745,7 @@ def encounter_pokemon(args, pokemon, account, api, account_sets, status,
             hlvl_api = api
         else:
             # Get account to use for IV and CP scanning.
-            hlvl_account = account_sets.next('30', scan_location)
-            using_accountset = True
+            hlvl_account = Account.get_hlvl_account(scan_location)
 
         time.sleep(args.encounter_delay)
 
@@ -2322,7 +2763,7 @@ def encounter_pokemon(args, pokemon, account, api, account_sets, status,
         # If not args.no_api_store is enabled, we need to
         # re-use an old API object if it's stored and we're
         # using an account from the AccountSet.
-        if not args.no_api_store and using_accountset:
+        if not args.no_api_store and using_db_account:
             hlvl_api = hlvl_account.get('api', None)
 
         # Make new API for this account if we're not using an
@@ -2350,7 +2791,7 @@ def encounter_pokemon(args, pokemon, account, api, account_sets, status,
             hlvl_api.activate_hash_server(key)
 
         # We have an API object now. If necessary, store it.
-        if using_accountset and not args.no_api_store:
+        if using_db_account and not args.no_api_store:
             hlvl_account['api'] = hlvl_api
 
         # Set location.
@@ -2415,8 +2856,8 @@ def encounter_pokemon(args, pokemon, account, api, account_sets, status,
 
     # We're done with the encounter. If it's from an
     # AccountSet, release account back to the pool.
-    if using_accountset:
-        account_sets.release(hlvl_account)
+    if using_db_account:
+        Account.release_account(hlvl_account)
 
     return result
 
@@ -2547,7 +2988,6 @@ def db_updater(q, db):
             # Loop the queue.
             while True:
                 model, data = q.get()
-
                 start_timer = default_timer()
                 bulk_upsert(model, data, db)
                 q.task_done()
@@ -2608,6 +3048,9 @@ def clean_db_loop(args):
                          .where(HashKeys.expires <
                                 (datetime.now() - timedelta(days=1))))
                 query.execute()
+
+                # Update Account model.
+                # Account.clean_account_stats()
 
                 # If desired, clear old Pokemon spawns.
                 if args.purge_data > 0:
@@ -2673,10 +3116,11 @@ def bulk_upsert(cls, data, db):
 
 
 def create_tables(db):
-    tables = [Pokemon, Pokestop, Gym, Raid, ScannedLocation, GymDetails,
-              GymMember, GymPokemon, Trainer, MainWorker, WorkerStatus,
-              SpawnPoint, ScanSpawnPoint, SpawnpointDetectionData,
-              Token, LocationAltitude, PlayerLocale, HashKeys]
+    tables = [Account, Pokemon, Pokestop, Gym, Raid, ScannedLocation,
+              GymDetails, GymMember, GymPokemon, Trainer, MainWorker,
+              WorkerStatus, SpawnPoint, ScanSpawnPoint,
+              SpawnpointDetectionData, Token, LocationAltitude, PlayerLocale,
+              HashKeys]
     with db.execution_context():
         for table in tables:
             if not table.table_exists():
@@ -2688,8 +3132,8 @@ def create_tables(db):
 
 
 def drop_tables(db):
-    tables = [Pokemon, Pokestop, Gym, Raid, ScannedLocation, Versions,
-              GymDetails, GymMember, GymPokemon, Trainer, MainWorker,
+    tables = [Account, Pokemon, Pokestop, Gym, Raid, ScannedLocation,
+              Versions, GymDetails, GymMember, GymPokemon, Trainer, MainWorker,
               WorkerStatus, SpawnPoint, ScanSpawnPoint,
               SpawnpointDetectionData, LocationAltitude, PlayerLocale,
               Token, HashKeys]

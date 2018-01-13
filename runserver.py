@@ -18,12 +18,14 @@ from flask_cache_bust import init_cache_busting
 
 from pogom.app import Pogom
 from pogom.utils import (get_args, now, gmaps_reverse_geolocate,
-                         log_resource_usage_loop, get_debug_dump_link)
+                         log_resource_usage_loop, get_debug_dump_link,
+                         generate_instance_id)
 from pogom.altitude import get_gmaps_altitude
 
-from pogom.models import (init_database, create_tables, drop_tables,
-                          PlayerLocale, db_updater, clean_db_loop,
-                          verify_table_encoding, verify_database_schema)
+from pogom.models import (Account, init_database, create_tables,
+                          drop_tables, PlayerLocale, SpawnPoint, db_updater,
+                          clean_db_loop, verify_table_encoding,
+                          verify_database_schema)
 from pogom.webhook import wh_updater
 
 from pogom.proxy import initialize_proxies
@@ -384,11 +386,31 @@ def main():
             t.start()
 
     if not args.only_server:
+        # Generate a unique identifier for this instance.
+        generate_instance_id(args)
+
+        # Import accounts from .csv file into db on startup.
+        # But not for server only instances.
+        Account.process_accounts(db_updates_queue)
+
         # Check if we are able to scan.
         if not can_start_scanning(args):
             sys.exit(1)
 
         initialize_proxies(args)
+
+        # Run periodical CSV refresh thread.
+        if (args.accountcsv is not None) and (args.account_refresh > 0):
+            log.info('Starting account-refresher thread.')
+            t = Thread(target=Account.account_refresher,
+                       name='account-refresher', args=(args, db_updates_queue,
+                                                       Account.load_accounts,
+                                                       Account.
+                                                       process_accounts))
+            t.daemon = True
+            t.start()
+        else:
+            log.info('Account refresh disabled.')
 
         # Update player locale if not set correctly, yet.
         args.player_locale = PlayerLocale.get_locale(args.location)

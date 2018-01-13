@@ -24,7 +24,7 @@ from pgoapi import PGoApi
 from .fakePogoApi import FakePogoApi
 from .pgoapiwrapper import PGoApiWrapper
 
-from .models import Token
+from .models import Token, Account
 from .transform import jitter_location
 from .account import check_login
 from .proxy import get_new_proxy
@@ -34,8 +34,7 @@ from .utils import now
 log = logging.getLogger(__name__)
 
 
-def captcha_overseer_thread(args, account_queue, account_captchas,
-                            key_scheduler, wh_queue):
+def captcha_overseer_thread(args, account_captchas, key_scheduler, wh_queue):
     solverId = 0
     while True:
         # Run once every 15 seconds.
@@ -55,8 +54,8 @@ def captcha_overseer_thread(args, account_queue, account_captchas,
 
                 t = Thread(target=captcha_solver_thread,
                            name='captcha-solver-{}'.format(solverId),
-                           args=(args, account_queue, account_captchas,
-                                 hash_key, wh_queue, tokens[i]))
+                           args=(args, account_captchas, hash_key, wh_queue,
+                                 tokens[i]))
                 t.daemon = True
                 t.start()
 
@@ -89,8 +88,8 @@ def captcha_overseer_thread(args, account_queue, account_captchas,
 
                         t = Thread(target=captcha_solver_thread,
                                    name='captcha-solver-{}'.format(solverId),
-                                   args=(args, account_queue, account_captchas,
-                                         hash_key, wh_queue))
+                                   args=(args, account_captchas, hash_key,
+                                         wh_queue))
                         t.daemon = True
                         t.start()
 
@@ -105,8 +104,8 @@ def captcha_overseer_thread(args, account_queue, account_captchas,
         time.sleep(sleep_timer)
 
 
-def captcha_solver_thread(args, account_queue, account_captchas, hash_key,
-                          wh_queue, token=None):
+def captcha_solver_thread(args, account_captchas, hash_key, wh_queue,
+                          token=None):
     status, account, captcha_url = account_captchas.popleft()
 
     status['message'] = 'Waking up account {} to verify captcha token.'.format(
@@ -156,7 +155,8 @@ def captcha_solver_thread(args, account_queue, account_captchas, hash_key,
             "Account {} successfully uncaptcha'd, returning to " +
             'active duty.').format(account['username'])
         log.info(status['message'])
-        account_queue.put(account)
+        Account.set_captcha(account, captcha=False)
+        Account.release_account(account)
     else:
         status['message'] = (
             'Account {} failed verifyChallenge, putting back ' +
@@ -187,6 +187,7 @@ def handle_captcha(args, status, api, account, account_failures,
 
     if len(captcha_url) > 1:
         status['captcha'] += 1
+        Account.set_captcha(account)
         if not args.captcha_solving:
             status['message'] = (
                 'Account {} has encountered a captcha. ' +
@@ -212,6 +213,7 @@ def handle_captcha(args, status, api, account, account_failures,
         if args.captcha_key and args.manual_captcha_timeout == 0:
             if automatic_captcha_solve(args, status, api, captcha_url, account,
                                        whq):
+                Account.set_captcha(account, captcha=False)
                 return True
             else:
                 account_failures.append({
@@ -286,6 +288,7 @@ def automatic_captcha_solve(args, status, api, captcha_url, account, wh_queue):
         if success:
             status['message'] = "Account {} successfully uncaptcha'd.".format(
                 account['username'])
+            Account.set_captcha(account, captcha=False)
         else:
             status['message'] = (
                 'Account {} failed verifyChallenge, putting away ' +
