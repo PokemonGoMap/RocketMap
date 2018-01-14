@@ -174,7 +174,7 @@ def rpc_login_sequence(args, api, account):
         req = api.create_request()
         req.download_remote_config_version(
             platform=1,
-            device_model=api.device_info['hardware_model'],
+            device_model=api.device_info['device_model_boot'],
             app_version=app_version)
         send_generic_request(
             req, account, settings=True, buddy=False, inbox=False)
