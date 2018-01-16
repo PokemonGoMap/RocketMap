@@ -7,13 +7,14 @@ import time
 
 from threading import Thread
 from queue import Queue, Empty
+from enum import Enum
 
 sys.path.append('.')
 from pogom.schedulers import KeyScheduler  # noqa: E402
 from pogom.account import (check_login, setup_api, pokestop_spinnable,
-                           spin_pokestop)  # noqa: E402
+                           spin_pokestop, TooManyLoginAttempts, LoginSequenceFail)  # noqa: E402
 from pogom.utils import get_args, gmaps_reverse_geolocate  # noqa: E402
-from pogom.apiRequests import get_map_objects as gmo  # noqa: E402
+from pogom.apiRequests import (get_map_objects as gmo, AccountBannedException)  # noqa: E402
 from runserver import (set_log_and_verbosity, startup_db,
                        extract_coordinates)  # noqa: E402
 from pogom.proxy import initialize_proxies  # noqa: E402
@@ -26,17 +27,27 @@ class FakeQueue:
         pass
 
 
+class ErrorType(Enum):
+    generic = 1
+    captcha = 2
+    noStops = 3
+    banned = 4
+    loginError = 5
+
+
 def get_location_forts(api, account, location):
     response = gmo(api, account, location)
     if len(response['responses']['CHECK_CHALLENGE'].challenge_url) > 1:
         log.error('account: %s got captcha: %s', account['username'],
                   response['responses']['CHECK_CHALLENGE'].challenge_url)
-        return ([], True)
+        return (ErrorType.captcha, None)
     cells = response['responses']['GET_MAP_OBJECTS'].map_cells
     forts = []
     for i, cell in enumerate(cells):
         forts += cell.forts
-    return (forts, False)
+    if not forts:
+        return (ErrorType.noStops, None)
+    return (None, forts)
 
 
 def level_up_account(args, location, accounts, errors):
@@ -68,24 +79,28 @@ def level_up_account(args, location, accounts, errors):
             check_login(args, account, api, status['proxy_url'])
             log.info('Account %s level %d', account['username'],
                      account['level'])
-            (forts, captcha) = get_location_forts(api, account, location)
-            if captcha:
-                errors['captcha'].append(account)
+            (error, forts) = get_location_forts(api, account, location)
+            if error:
+                errors[error].append(account)
                 accounts.task_done()
                 continue
             log.info('%d stops in range', len(forts))
             for fort in forts:
                 if pokestop_spinnable(fort, location):
                     spin_pokestop(api, account, args, fort, location)
-            log.info('Ended with account %s', account['username'])
-            log.info('Account %s level %d', account['username'],
+            log.info('Ended with account %s.', account['username'])
+            log.info('Account %s, level %d.', account['username'],
                      account['level'])
+        except TooManyLoginAttempts:
+                errors[ErrorType.loginError].append(account)
+        except AccountBannedException:
+                errors[ErrorType.banned].append(account)
         except Exception as e:
             if error_count < 2:
-                log.exception('Exception in worker: %s retrying.', e)
+                log.exception('Exception in worker: %s. retrying.', e)
                 accounts.put((account, error_count+1))
             else:
-                errors['generic'].append(account)
+                errors[ErrorType.generic].append(account)
 
         accounts.task_done()
 
@@ -114,7 +129,9 @@ if not args.player_locale:
 
 initialize_proxies(args)
 account_queue = Queue()
-errors = {'generic': [], 'captcha': []}
+errors = {}
+for error in ErrorType:
+    errors[error] = []
 
 for i, account in enumerate(args.accounts):
     account_queue.put((account, 0))
@@ -139,8 +156,9 @@ except KeyboardInterrupt:
 
 account_queue.join()
 log.info('Process finished')
-for error_type in errors:
+for error_type in ErrorType:
     if len(errors[error_type]) > 0:
-        log.info('Some accounts did not finish properly (%s):', error_type)
+        log.warning('Some accounts did not finish properly (%s):',
+                    error_type.name)
         for account in errors[error_type]:
-            log.info('\t%s', account['username'])
+            log.warning('\t%s', account['username'])
