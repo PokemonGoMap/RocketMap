@@ -75,7 +75,6 @@ const unownForm = ['unset', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K
 const pokemonWithImages = [
     2, 3, 5, 6, 8, 9, 11, 28, 31, 34, 38, 59, 62, 65, 68, 71, 73, 76, 82, 89, 91, 94, 103, 105, 110, 112, 123, 125, 126, 129, 131, 134, 135, 136, 137, 139, 143, 144, 145, 146, 150, 153, 156, 159, 243, 244, 245, 248, 249, 250, 302, 303, 359, 382, 383, 384
 ]
-var raidImage
 
 /*
  text place holders:
@@ -674,6 +673,7 @@ function gymLabel(gym, includeMembers = true) {
     if ((isUpcomingRaid || isRaidStarted) && isRaidFilterOn && isGymSatisfiesRaidMinMaxFilter(raid)) {
         const raidColor = ['252,112,176', '255,158,22', '184,165,221']
         const levelStr = '★'.repeat(raid['level'])
+        let raidImage = ''
 
         if (isRaidStarted) {
             // set Pokémon-specific image if we have one.
