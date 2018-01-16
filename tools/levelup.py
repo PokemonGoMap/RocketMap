@@ -77,7 +77,7 @@ def level_up_account(args, location, accounts, errors):
             key = key_scheduler.next()
             api.activate_hash_server(key)
             check_login(args, account, api, status['proxy_url'])
-            log.info('Account %s level %d', account['username'],
+            log.info('Account %s, level %d.', account['username'],
                      account['level'])
             (error, forts) = get_location_forts(api, account, location)
             if error:
