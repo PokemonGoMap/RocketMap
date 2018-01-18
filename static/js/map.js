@@ -2261,10 +2261,8 @@ function getSidebarGymMember(pokemon) {
     if (pokemon.deployment_time) {
         let deploymentTime = moment(pokemon.deployment_time)
         relativeTime = deploymentTime.fromNow()
-        /*  Append as string so we show nothing when the time is Unknown.
-            We use a "bad practice" <br> to avoid having to add an additional
-            div unnecessarily, which would be empty if we'd have no time. */
-        absoluteTime = '<br>(' + deploymentTime.format('MMM Do HH:mm') + ')'
+        // Append as string so we show nothing when the time is Unknown.
+        absoluteTime = '<div class="gym pokemon">(' + deploymentTime.format('MMM Do HH:mm') + ')</div>'
     }
 
     return `
@@ -2283,7 +2281,8 @@ function getSidebarGymMember(pokemon) {
                         </td>
                         <td width="190" align="center">
                             <div class="gym pokemon">${pokemon.trainer_name} (${pokemon.trainer_level})</div>
-                            <div class="gym pokemon">Deployed ${relativeTime}${absoluteTime}</div>
+                            <div class="gym pokemon">Deployed ${relativeTime}</div>
+                            ${absoluteTime}
                         </td>
                         <td width="10">
                             <!--<a href="#" onclick="toggleGymPokemonDetails(this)">-->
