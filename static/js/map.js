@@ -2893,7 +2893,8 @@ $(function () {
         markerCluster.repaint()
     })
     $('#pokemon-stats-switch').change(function () {
-        Store.set('showPokemonStats', this.checked)
+        Store.set('showPokemonStats, this.checked)
+		updateMap()
     })
     $('#scanned-switch').change(function () {
         buildSwitchChangeListener(mapData, ['scanned'], 'showScanned').bind(this)()
