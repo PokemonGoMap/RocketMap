@@ -692,6 +692,11 @@ class AccountSet(object):
             # Loop all accounts for a good one.
             now = default_timer()
 
+            # We set a big default distance value to get the best one
+            empty_account = False
+            best_account = False
+            best_distance = 1000000
+
             for i in range(len(account_set)):
                 account = account_set[i]
 
@@ -706,25 +711,38 @@ class AccountSet(object):
                 # Check if we're below speed limit for account.
                 last_scanned = account.get('last_scanned', False)
 
-                if last_scanned:
+                # If account has never been used we save it in case we don't
+                # have another account available
+                if not last_scanned:
+                    if not empty_account:
+                        empty_account = account
+                    continue
+
+                else:
                     seconds_passed = now - last_scanned
                     old_coords = account.get('last_coords', coords_to_scan)
-
                     distance_m = distance(old_coords, coords_to_scan)
                     cooldown_time_sec = distance_m / self.kph * 3.6
 
-                    # Not enough time has passed for this one.
-                    if seconds_passed < cooldown_time_sec:
-                        continue
+                    # Closer account? Great!
+                    if (seconds_passed >= cooldown_time_sec and
+                            distance_m < best_distance):
+                        best_distance = distance_m
+                        best_account = account
 
-                # We've found an account that's ready.
-                account['last_scanned'] = now
-                account['last_coords'] = coords_to_scan
-                account['in_use'] = True
+            if best_account:
+                account = best_account
+            elif empty_account:
+                account = empty_account
+            else:
+                # TODO: Instead of returning False, return the amount of min.
+                # seconds the instance needs to wait until the first account
+                # becomes available, so it doesn't need to keep asking if we
+                # know we need to wait.
+                return False
 
-                return account
+            account['last_scanned'] = now
+            account['last_coords'] = coords_to_scan
+            account['in_use'] = True
 
-        # TODO: Instead of returning False, return the amount of min. seconds
-        # the instance needs to wait until the first account becomes available,
-        # so it doesn't need to keep asking if we know we need to wait.
-        return False
+            return account
