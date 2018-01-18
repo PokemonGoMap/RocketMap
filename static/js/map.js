@@ -2262,7 +2262,7 @@ function getSidebarGymMember(pokemon) {
         let deploymentTime = moment(pokemon.deployment_time)
         relativeTime = deploymentTime.fromNow()
         // Append as string so we show nothing when the time is Unknown.
-        absoluteTime = ' (' + deploymentTime.format('HH:mm') + ')'
+        absoluteTime = ' (' + deploymentTime.format('MMM Do HH:mm') + ')'
     }
 
     return `
