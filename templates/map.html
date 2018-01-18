@@ -257,7 +257,19 @@
                 <option value="5">Ultra Rare and below</option>
               </select>
             </div>
+              {% if show.encounter %}
+            <div class="form-control switch-container">
+              <h3>Pokémon Stats</h3>
+              <div class="onoffswitch">
+                <input id="pokemon-stats-switch" type="checkbox" name="pokemon-stats-switch" class="onoffswitch-checkbox" checked>
+                <label class="onoffswitch-label" for="pokemon-stats-switch">
+                <span class="switch-label" data-on="On" data-off="Off"></span>
+                <span class="switch-handle"></span>
+                </label>
+              </div>
+            </div>
               {% endif %}
+			  {% endif %}
           </div>
 
           <h3><i class="fa fa-location-arrow fa-fw"></i>Location &amp; Search Settings</h3>

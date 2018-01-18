@@ -918,6 +918,10 @@ var StoreOptions = {
         default: true,
         type: StoreTypes.Boolean
     },
+    'showPokemonStats': {
+        default: true,
+        type: StoreTypes.Boolean
+    },
     'showPokestops': {
         default: true,
         type: StoreTypes.Boolean
