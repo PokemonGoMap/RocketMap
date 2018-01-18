@@ -2261,8 +2261,10 @@ function getSidebarGymMember(pokemon) {
     if (pokemon.deployment_time) {
         let deploymentTime = moment(pokemon.deployment_time)
         relativeTime = deploymentTime.fromNow()
-        // Append as string so we show nothing when the time is Unknown.
-        absoluteTime = ' (' + deploymentTime.format('MMM Do HH:mm') + ')'
+        /*  Append as string so we show nothing when the time is Unknown.
+            We use a "bad practice" <br> to avoid having to add an additional
+            div unnecessarily, which would be empty if we'd have no time. */
+        absoluteTime = '<br>(' + deploymentTime.format('MMM Do HH:mm') + ')'
     }
 
     return `
@@ -2271,7 +2273,7 @@ function getSidebarGymMember(pokemon) {
                             <img class="gym pokemon sprite" src="static/icons/${pokemon.pokemon_id}.png">
                         </td>
                         <td>
-                            <div class="gym pokemon" style="line-height:1em;"><span class="gym pokemon name">${pokemon.pokemon_name}</span></div>
+                            <div class="gym pokemon"><span class="gym pokemon name">${pokemon.pokemon_name}</span></div>
                             <div>
                                 <span class="gym pokemon motivation decayed zone ${motivationZone[colorIdx].toLowerCase()}">${pokemon.cp_decayed}</span>
                             </div>
@@ -2280,7 +2282,7 @@ function getSidebarGymMember(pokemon) {
                             </div>
                         </td>
                         <td width="190" align="center">
-                            <div class="gym pokemon" style="line-height:1em;">${pokemon.trainer_name} (${pokemon.trainer_level})</div>
+                            <div class="gym pokemon">${pokemon.trainer_name} (${pokemon.trainer_level})</div>
                             <div class="gym pokemon">Deployed ${relativeTime}${absoluteTime}</div>
                         </td>
                         <td width="10">
