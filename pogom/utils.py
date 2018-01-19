@@ -859,11 +859,11 @@ def enc_list_refresher(enc_whitelist_file):
                     with open(enc_whitelist_file) as f:
                         args.enc_whitelist = frozenset(
                             [int(l.strip()) for l in f])
-                    log.info('New enc list is %s' + args.enc_whitelist)
+                    log.info('New encounter whitelist is: %s.', args.enc_whitelist))
 
-            log.info('Regular encounter list refresh complete.')
+            log.info('Updated encounter whitelist.')
         except Exception as e:
-            log.exception('Exception while refreshing enc_list: %s.', e)
+            log.exception('Exception occurred while updating encounter whitelist: %s', e)
 
 
 def get_pokemon_data(pokemon_id):

@@ -397,9 +397,9 @@ def main():
                        name='dynamic-enclist', args=(args.enc_whitelist_file,))
             t.daemon = True
             t.start()
-            log.info('Encounter is enabled.')
+            log.info('Encounters are enabled.')
         else:
-            log.info('Encounter is disabled.')
+            log.info('Encounters are disabled.')
         # Update player locale if not set correctly, yet.
         args.player_locale = PlayerLocale.get_locale(args.location)
         if not args.player_locale:
