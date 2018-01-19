@@ -840,7 +840,7 @@ def i8ln(word):
 
 
 # Thread function for periodical enc list updating.
-def enc_list_refresher(enc_whitelist_file):
+def dynamic_loading_refresher(file_list):
     # We're on a 60-second timer.
     refresh_time_sec = 60
 
@@ -849,19 +849,30 @@ def enc_list_refresher(enc_whitelist_file):
         time.sleep(refresh_time_sec-1)
 
         try:
-            # IV/CP scanning.
-            if enc_whitelist_file:
-                current_time_sec = time.time()
-                file_modified_time_sec = os.path.getmtime(enc_whitelist_file)
-                time_diff_sec = current_time_sec - file_modified_time_sec
-                if (time_diff_sec < refresh_time_sec):
-                    args = get_args()
-                    with open(enc_whitelist_file) as f:
-                        args.enc_whitelist = frozenset(
-                            [int(l.strip()) for l in f])
-                    log.info('New encounter whitelist is: %s.', args.enc_whitelist))
-
-            log.info('Updated encounter whitelist.')
+            for name, __file in file_list.items():
+                # IV/CP scanning.
+                if __file:
+                    current_time_sec = time.time()
+                    file_modified_time_sec = os.path.getmtime(__file)
+                    time_diff_sec = current_time_sec - file_modified_time_sec
+                    if (time_diff_sec < refresh_time_sec):
+                        args = get_args()
+                        with open(__file) as f:
+                            if name == 'Encounters':
+                                args.enc_whitelist = frozenset(
+                                    [int(l.strip()) for l in f])
+                                log.info('New encounter whitelist is: %s.', args.enc_whitelist)
+                            elif name == 'Wh_blacklist':
+                                args.webhook_blacklist = frozenset(
+                                    [int(l.strip()) for l in f])
+                                log.info('New webhook blacklist is: %s.', args.webhook_blacklist)
+                            elif name == 'Wh_whitelist':
+                                args.webhook_whitelist = frozenset(
+                                    [int(l.strip()) for l in f])
+                                log.info('New webhook whitelist is: %s.', args.webhook_whitelist)
+                        log.info('Updated dynamic list.')
+                    else:
+                        log.debug('No change found in %s.', __file)
         except Exception as e:
             log.exception('Exception occurred while updating encounter whitelist: %s', e)
 
