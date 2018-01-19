@@ -861,20 +861,24 @@ def dynamic_loading_refresher(file_list):
                             if name == 'Encounters':
                                 args.enc_whitelist = frozenset(
                                     [int(l.strip()) for l in f])
-                                log.info('New encounter whitelist is: %s.', args.enc_whitelist)
+                                log.info('New encounter whitelist is: %s.', 
+                                        args.enc_whitelist)
                             elif name == 'Wh_blacklist':
                                 args.webhook_blacklist = frozenset(
                                     [int(l.strip()) for l in f])
-                                log.info('New webhook blacklist is: %s.', args.webhook_blacklist)
+                                log.info('New webhook blacklist is: %s.', 
+                                        args.webhook_blacklist)
                             elif name == 'Wh_whitelist':
                                 args.webhook_whitelist = frozenset(
                                     [int(l.strip()) for l in f])
-                                log.info('New webhook whitelist is: %s.', args.webhook_whitelist)
+                                log.info('New webhook whitelist is: %s.', 
+                                        args.webhook_whitelist)
                         log.info('Updated dynamic list.')
                     else:
                         log.debug('No change found in %s.', __file)
         except Exception as e:
-            log.exception('Exception occurred while updating encounter whitelist: %s', e)
+            log.exception(
+                'Exception occurred while updating encounter whitelist: %s', e)
 
 
 def get_pokemon_data(pokemon_id):

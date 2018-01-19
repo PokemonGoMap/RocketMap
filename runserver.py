@@ -398,7 +398,7 @@ def main():
             log.info('Encounters are enabled.')
         else:
             log.info('Encounters are disabled.')
-            
+
         if args.webhook_blacklist_file:
             args_list['Wh_blacklist'] = args.webhook_blacklist_file
             log.info('Webhook blacklist is enabled.')
