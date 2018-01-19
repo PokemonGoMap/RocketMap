@@ -877,8 +877,8 @@ def dynamic_loading_refresher(file_list):
                     else:
                         log.debug('No change found in %s.', __file)
         except Exception as e:
-            log.exception('Exception occurred while updating encounter
-                          whitelist: %s', e)
+            log.exception('Exception occurred while' +
+                          ' updating encounterwhitelist: %s.', e)
 
 
 def get_pokemon_data(pokemon_id):
