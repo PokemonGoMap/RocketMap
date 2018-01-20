@@ -1021,8 +1021,7 @@ class SpeedScan(HexSearch):
                           min_parked_time_remaining,
                           min_fresh_band_time_remaining)
             else:
-                log.debug('Enumerating queue found best location: %s.',
-                          repr(best))
+                log.debug('Enumerating queue found best location: %s.', best)
 
             loc = best.get('loc', [])
             step = best.get('step', 0)
@@ -1061,8 +1060,9 @@ class SpeedScan(HexSearch):
                 return -1, 0, 0, 0, messages, 0
 
             meters = distance(loc, worker_loc) if worker_loc else 0
-            if (meters > (now_date - last_action).total_seconds() *
-                    self.args.kph / 3.6):
+            if self.args.kph > 0 and (meters >
+                                      (now_date - last_action).total_seconds()
+                                      * self.args.kph / 3.6):
                 # Flag item as "parked" by a specific thread, because
                 # we're waiting for it. This will avoid all threads "walking"
                 # to the same item.
