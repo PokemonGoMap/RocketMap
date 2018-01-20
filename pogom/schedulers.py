@@ -457,7 +457,7 @@ class SpawnScan(BaseScheduler):
         wait_msg = 'Waiting for item from queue.'
 
         worker_loc = (status['latitude'], status['longitude'])
-        if worker_loc[0] and worker_loc[1] and self.args.kph:
+        if worker_loc[0] and worker_loc[1] and self.args.kph > 0:
             now_date = datetime.utcnow()
             last_action = status['last_scan_date']
             meters = distance(step_location, worker_loc)
@@ -974,12 +974,16 @@ class SpeedScan(HexSearch):
                 loc = item['loc']
                 if worker_loc:
                     meters = distance(loc, worker_loc)
-                    secs_to_arrival = meters / self.args.kph * 3.6
+                    if self.args.kph > 0:
+                        secs_to_arrival = meters / self.args.kph * 3.6
+                    else:
+                        secs_to_arrival = 0
                     secs_waited = (now_date - last_action).total_seconds()
                     secs_to_arrival = max(secs_to_arrival - secs_waited, 0)
                 else:
                     meters = 0
                     secs_to_arrival = 0
+
                 if ms + secs_to_arrival < item['start']:
                     count_early += 1
                     continue
