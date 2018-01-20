@@ -2894,7 +2894,11 @@ $(function () {
     })
     $('#pokemon-stats-switch').change(function () {
         Store.set('showPokemonStats', this.checked)
-		updateMap()
+        redrawPokemon(mapData.pokemons)
+        redrawPokemon(mapData.lurePokemons)
+
+        // We're done processing the list. Repaint.
+        markerCluster.repaint()
     })
     $('#scanned-switch').change(function () {
         buildSwitchChangeListener(mapData, ['scanned'], 'showScanned').bind(this)()
