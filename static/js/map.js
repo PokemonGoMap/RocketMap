@@ -471,6 +471,7 @@ function initSidebar() {
     $('#scanned-switch').prop('checked', Store.get('showScanned'))
     $('#spawnpoints-switch').prop('checked', Store.get('showSpawnpoints'))
     $('#ranges-switch').prop('checked', Store.get('showRanges'))
+    $('#notify-perfection-wrapper').toggle(Store.get('showPokemonStats'))
     $('#sound-switch').prop('checked', Store.get('playSound'))
     $('#pokemoncries').toggle(Store.get('playSound'))
     $('#cries-switch').prop('checked', Store.get('playCries'))
@@ -565,7 +566,7 @@ function pokemonLabel(item) {
       ${name} <span class='pokemon name pokedex'><a href='http://pokemon.gameinfo.io/en/pokemon/${id}' target='_blank' title='View in Pokédex'>#${id}</a></span> ${formString} <span class='pokemon gender rarity'>${genderType[gender - 1]} ${rarityDisplay}</span> ${typesDisplay}
     </div>`
 
-    if (cp !== null && cpMultiplier !== null && Store.get('showPokemonStats')) {
+    if (Store.get('showPokemonStats') && cp !== null && cpMultiplier !== null) {
         var pokemonLevel = getPokemonLevel(cpMultiplier)
 
         if (atk !== null && def !== null && sta !== null) {
@@ -643,25 +644,16 @@ function pokemonLabel(item) {
     return contentstring
 }
 
-function isInfoWindowOpen(infoWindow) {
-    var map = infoWindow.getMap()
-    return (map !== null && typeof map !== "undefined")
+function updatePokemonLabel(item) {
+    //only update label when pokemon has been encountered
+    if(item['cp'] !== null && item['cpMultiplier'] !== null) {
+        item.marker.infoWindow.setContent(pokemonLabel(item))
+    }
 }
 
 function updatePokemonLabels(pokemonList) {
     $.each(pokemonList, function (key, value) {
-        var item = pokemonList[key]
-        var marker = item.marker
-
-        marker.infoWindow = new google.maps.InfoWindow({
-            content: pokemonLabel(item),
-            disableAutoPan: true
-        })
-
-        if(isInfoWindowOpen(marker.infoWindow)) {
-            marker.infoWindow.close()
-            marker.infoWindow.open(map, marker)
-        }
+        updatePokemonLabel(pokemonList[key])
     })
 }
 
@@ -1019,7 +1011,7 @@ function getNotifyText(item) {
     var find = ['<prc>', '<pkm>', '<atk>', '<def>', '<sta>']
     var replace = [((iv) ? iv.toFixed(1) : ''), item['pokemon_name'], item['individual_attack'],
         item['individual_defense'], item['individual_stamina']]
-    var ntitle = repArray(((iv) ? notifyIvTitle : notifyNoIvTitle), find, replace)
+    var ntitle = repArray(((Store.get('showPokemonStats') && iv) ? notifyIvTitle : notifyNoIvTitle), find, replace)
     var dist = moment(item['disappear_time']).format('HH:mm:ss')
     var until = getTimeUntil(item['disappear_time'])
     var udist = (until.hour > 0) ? until.hour + ':' : ''
@@ -1067,7 +1059,7 @@ function isNotifyPoke(poke) {
     const isOnNotifyList = notifiedPokemon.indexOf(poke['pokemon_id']) > -1 || notifiedRarity.indexOf(poke['pokemon_rarity']) > -1
     var hasHighIV = false
 
-    if (poke['individual_attack'] != null) {
+    if (Store.get('showPokemonStats') && poke['individual_attack'] != null) {
         const perfection = getIv(poke['individual_attack'], poke['individual_defense'], poke['individual_stamina'])
         hasHighIV = notifiedMinPerfection > 0 && perfection >= notifiedMinPerfection
     }
@@ -1936,7 +1928,6 @@ function redrawPokemon(pokemonList) {
         if (!item.hidden) {
             const scaleByRarity = Store.get('scaleByRarity')
             const isNotifyPkmn = isNotifyPoke(item)
-
             updatePokemonMarker(item, map, scaleByRarity, isNotifyPkmn)
         }
     })
@@ -2916,7 +2907,21 @@ $(function () {
     })
     $('#pokemon-stats-switch').change(function () {
         Store.set('showPokemonStats', this.checked)
+        var options = {
+            'duration': 500
+        }
+        var wrapper = $('#notify-perfection-wrapper')
+        if (this.checked) {
+            wrapper.show(options)
+        } else {
+            wrapper.hide(options)
+        }
         updatePokemonLabels(mapData.pokemons)
+        redrawPokemon(mapData.pokemons)
+        redrawPokemon(mapData.lurePokemons)
+
+        // We're done processing the list. Repaint.
+        markerCluster.repaint()
     })
     $('#scanned-switch').change(function () {
         buildSwitchChangeListener(mapData, ['scanned'], 'showScanned').bind(this)()
