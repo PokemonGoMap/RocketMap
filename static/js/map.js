@@ -643,6 +643,17 @@ function pokemonLabel(item) {
     return contentstring
 }
 
+function updatePokemonLabels(pokemonList) {
+    $.each(pokemonList, function (key, value) {
+        var item = pokemonList[key]
+
+        item.marker.infoWindow = new google.maps.InfoWindow({
+            content: pokemonLabel(item),
+            disableAutoPan: true
+        })
+    })
+}
+
 function isOngoingRaid(raid) {
     return raid && Date.now() < raid.end && Date.now() > raid.start
 }
@@ -2894,11 +2905,7 @@ $(function () {
     })
     $('#pokemon-stats-switch').change(function () {
         Store.set('showPokemonStats', this.checked)
-        redrawPokemon(mapData.pokemons)
-        redrawPokemon(mapData.lurePokemons)
-
-        // We're done processing the list. Repaint.
-        markerCluster.repaint()
+        updatePokemonLabels(mapData.pokemons)
     })
     $('#scanned-switch').change(function () {
         buildSwitchChangeListener(mapData, ['scanned'], 'showScanned').bind(this)()

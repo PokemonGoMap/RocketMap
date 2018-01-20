@@ -1174,6 +1174,7 @@ function setupPokemonMarker(item, map, isBounceDisabled, scaleByRarity = true, i
 function updatePokemonMarker(item, map, scaleByRarity = true, isNotifyPkmn = false) {
     // Scale icon size up with the map exponentially, also size with rarity.
     const markerDetails = setupPokemonMarkerDetails(item, map, scaleByRarity, isNotifyPkmn)
+	customizePokemonMarker(markerDetails, item)
     const icon = markerDetails.icon
     const marker = item.marker
 
