@@ -722,34 +722,34 @@ function gymLabel(gym, includeMembers = true) {
                 image = `
                     ${raidImage}
                     <div class='raid'>
-                    <span style='color:rgb(${raidColor[Math.floor((raid.level - 1) / 2)]})'>
-                    ${levelStr}
-                    </span>
-                    <span class='raid countdown label-countdown' disappears-at='${raid.end}'></span> left (${moment(raid.end).format('HH:mm')})
+                        <span style='color:rgb(${raidColor[Math.floor((raid.level - 1) / 2)]})'>
+                            ${levelStr}
+                        </span>
+                        <span class='raid countdown label-countdown' disappears-at='${raid.end}'></span> left (${moment(raid.end).format('HH:mm')})
                     </div>
                 `
             } else {
                 image = `
                     <div class='raid container'>
-                    <div class='raid container content-left'>
-                        <div>
-                        ${raidImage}
+                        <div class='raid container content-left'>
+                            <div>
+                                ${raidImage}
+                            </div>
                         </div>
-                    </div>
-                    <div class='raid container content-right'>
-                        <div>
-                        <div class='raid pokemon'>
-                            ${raid['pokemon_name']} <a href='http://pokemon.gameinfo.io/en/pokemon/${raid['pokemon_id']}' target='_blank' title='View in Pokédex'>#${raid['pokemon_id']}</a> | CP: ${raid['cp']}
-                        </div>
-                            ${raidStr}
-                        </div>
+                        <div class='raid container content-right'>
+                            <div>
+                                <div class='raid pokemon'>
+                                    ${raid['pokemon_name']} <a href='http://pokemon.gameinfo.io/en/pokemon/${raid['pokemon_id']}' target='_blank' title='View in Pokédex'>#${raid['pokemon_id']}</a> | CP: ${raid['cp']}
+                                </div>
+                                ${raidStr}
+                            </div>
                         </div>
                     </div>
                     <div class='raid'>
-                    <span style='color:rgb(${raidColor[Math.floor((raid.level - 1) / 2)]})'>
-                    ${levelStr}
-                    </span>
-                    <span class='raid countdown label-countdown' disappears-at='${raid.end}'></span> left (${moment(raid.end).format('HH:mm')})
+                        <span style='color:rgb(${raidColor[Math.floor((raid.level - 1) / 2)]})'>
+                            ${levelStr}
+                        </span>
+                        <span class='raid countdown label-countdown' disappears-at='${raid.end}'></span> left (${moment(raid.end).format('HH:mm')})
                     </div>
                 `
             }
