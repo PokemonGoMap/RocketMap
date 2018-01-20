@@ -643,14 +643,25 @@ function pokemonLabel(item) {
     return contentstring
 }
 
+function isInfoWindowOpen(infoWindow) {
+    var map = infoWindow.getMap()
+    return (map !== null && typeof map !== "undefined")
+}
+
 function updatePokemonLabels(pokemonList) {
     $.each(pokemonList, function (key, value) {
         var item = pokemonList[key]
+        var marker = item.marker
 
-        item.marker.infoWindow = new google.maps.InfoWindow({
+        marker.infoWindow = new google.maps.InfoWindow({
             content: pokemonLabel(item),
             disableAutoPan: true
         })
+
+        if(isInfoWindowOpen(marker.infoWindow)) {
+            marker.infoWindow.close()
+            marker.infoWindow.open(map, marker)
+        }
     })
 }
 
