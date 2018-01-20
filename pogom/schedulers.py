@@ -972,12 +972,9 @@ class SpeedScan(HexSearch):
 
                 # If we are going to get there before it starts then ignore.
                 loc = item['loc']
-                if worker_loc:
+                if worker_loc and self.args.kph > 0:
                     meters = distance(loc, worker_loc)
-                    if self.args.kph > 0:
-                        secs_to_arrival = meters / self.args.kph * 3.6
-                    else:
-                        secs_to_arrival = 0
+                    secs_to_arrival = meters / self.args.kph * 3.6
                     secs_waited = (now_date - last_action).total_seconds()
                     secs_to_arrival = max(secs_to_arrival - secs_waited, 0)
                 else:
