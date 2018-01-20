@@ -458,7 +458,7 @@ function initSidebar() {
     $('#max-level-gyms-filter-switch').val(Store.get('maxGymLevel'))
     $('#last-update-gyms-switch').val(Store.get('showLastUpdatedGymsOnly'))
     $('#pokemon-switch').prop('checked', Store.get('showPokemon'))
-	$('#pokemon-stats-switch').prop('checked', Store.get('showPokemonStats'))
+    $('#pokemon-stats-switch').prop('checked', Store.get('showPokemonStats'))
     $('#pokestops-switch').prop('checked', Store.get('showPokestops'))
     $('#lured-pokestops-only-switch').val(Store.get('showLuredPokestopsOnly'))
     $('#lured-pokestops-only-wrapper').toggle(Store.get('showPokestops'))
@@ -645,8 +645,8 @@ function pokemonLabel(item) {
 }
 
 function updatePokemonLabel(item) {
-    //only update label when pokemon has been encountered
-    if(item['cp'] !== null && item['cpMultiplier'] !== null) {
+    // only update label when pokemon has been encountered
+    if (item['cp'] !== null && item['cpMultiplier'] !== null) {
         item.marker.infoWindow.setContent(pokemonLabel(item))
     }
 }
