@@ -720,9 +720,7 @@ function gymLabel(gym, includeMembers = true) {
             }
             if (raid.pokemon_id === null) {
                 image = `
-                        ${raidImage}
-
-
+                    ${raidImage}
                     <div class='raid'>
                     <span style='color:rgb(${raidColor[Math.floor((raid.level - 1) / 2)]})'>
                     ${levelStr}
