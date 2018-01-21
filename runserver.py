@@ -392,31 +392,35 @@ def main():
         else:
             log.info('Periodical proxies refresh disabled.')
 
-        args_list = {}
+        # Monitor files, update data if they've changed recently.
+        # Keys are 'args' object keys, values are filenames to load.
+        files_to_monitor = {}
+
         if args.encounter:
-            args_list['Encounters'] = args.enc_whitelist_file
+            files_to_monitor['enc_whitelist'] = args.enc_whitelist_file
             log.info('Encounters are enabled.')
         else:
             log.info('Encounters are disabled.')
 
         if args.webhook_blacklist_file:
-            args_list['Wh_blacklist'] = args.webhook_blacklist_file
+            files_to_monitor['webhook_blacklist'] = args.webhook_blacklist_file
             log.info('Webhook blacklist is enabled.')
         elif args.webhook_whitelist_file:
-            args_list['Wh_whitelist'] = args.webhook_whitelist_file
+            files_to_monitor['webhook_whitelist'] = args.webhook_whitelist_file
             log.info('Webhook whitelist is enabled.')
         else:
             log.info('Webhook whitelist/blacklist is disabled.')
 
-        if args_list:
+        if files_to_monitor:
             t = Thread(target=dynamic_loading_refresher,
-                       name='dynamic-enclist', args=(args_list,))
+                       name='dynamic-enclist', args=(files_to_monitor,))
             t.daemon = True
             t.start()
             log.info('Dynamic list refresher is enabled.')
         else:
             log.info('Dynamic list refresher is disabled.')
-        # Update player locale if not set correctly, yet.
+
+        # Update player locale if not set correctly yet.
         args.player_locale = PlayerLocale.get_locale(args.location)
         if not args.player_locale:
             args.player_locale = gmaps_reverse_geolocate(
