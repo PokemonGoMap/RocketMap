@@ -1197,7 +1197,7 @@ function setPokemonAnimation(item, enable) {
     if (enable) {
         item.marker.animationDisabled = false
         item.marker.setAnimation(google.maps.Animation.BOUNCE)
-    } else if (!enable) {
+    } else {
         item.marker.animationDisabled = true
         item.marker.setAnimation(null)
     }

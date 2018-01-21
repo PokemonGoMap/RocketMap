@@ -1934,6 +1934,7 @@ function redrawPokemon(pokemonList) {
         if (!item.hidden) {
             const scaleByRarity = Store.get('scaleByRarity')
             const isNotifyPkmn = isNotifyPoke(item)
+
             updatePokemonMarker(item, map, scaleByRarity, isNotifyPkmn)
         }
     })
