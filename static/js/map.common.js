@@ -1181,7 +1181,7 @@ function updatePokemonMarker(item, map, scaleByRarity = true, isNotifyPkmn = fal
 }
 
 function updatePokemonLabel(item) {
-    // only update label when pokemon has been encountered
+    // Only update label when Pokémon has been encountered
     if (item['cp'] !== null && item['cpMultiplier'] !== null) {
         item.marker.infoWindow.setContent(pokemonLabel(item))
     }
