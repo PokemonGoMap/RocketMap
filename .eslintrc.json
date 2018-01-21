@@ -59,6 +59,11 @@
     "countMarkers": true,
     "skel": true,
     "setupPokemonMarker": true,
-    "updatePokemonMarker": true
+    "updatePokemonMarker": true,
+
+    "setPokemonAnimation": true,
+    "setPokemonAnimations": true,
+    "updatePokemonLabel": true,
+    "updatePokemonLabels": true
   }
 }
