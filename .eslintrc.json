@@ -61,9 +61,6 @@
     "setupPokemonMarker": true,
     "updatePokemonMarker": true,
 
-    "setPokemonAnimation": true,
-    "setPokemonAnimations": true,
-    
     "pokemonLabel": true,
     "updatePokemonLabel": true,
     "updatePokemonLabels": true
