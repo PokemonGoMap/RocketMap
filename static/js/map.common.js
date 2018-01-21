@@ -1211,17 +1211,6 @@ function setPokemonAnimations(pokemonList, enable) {
     })
 }
 
-function getNotifyPerfectionPokemons(pokemonList) {
-    var notifyPerfectionPkmn = []
-    $.each(pokemonList, function (key, value) {
-        if (isNotifyPerfectionPoke(pokemonList[key])) {
-            notifyPerfectionPkmn.push(pokemonList[key])
-        }
-    })
-    console.log(notifyPerfectionPkmn)
-    return notifyPerfectionPkmn
-}
-
 function isTouchDevice() {
     // Should cover most browsers
     return 'ontouchstart' in window || navigator.maxTouchPoints

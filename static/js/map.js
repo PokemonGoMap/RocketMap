@@ -1059,6 +1059,16 @@ function isNotifyPoke(poke) {
     return isOnNotifyList || (Store.get('showPokemonStats') && isNotifyPerfectionPoke(poke))
 }
 
+function getNotifyPerfectionPokemons(pokemonList) {
+    var notifyPerfectionPkmn = []
+    $.each(pokemonList, function (key, value) {
+        if (isNotifyPerfectionPoke(pokemonList[key])) {
+            notifyPerfectionPkmn.push(pokemonList[key])
+        }
+    })
+    return notifyPerfectionPkmn
+}
+
 function customizePokemonMarker(marker, item, skipNotification) {
     var notifyText = getNotifyText(item)
     marker.addListener('click', function () {
