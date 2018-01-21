@@ -1066,10 +1066,13 @@ function isNotifyPoke(poke) {
 function getNotifyPerfectionPokemons(pokemonList) {
     var notifyPerfectionPkmn = []
     $.each(pokemonList, function (key, value) {
+        var item = pokemonList[key]
+
         if (isNotifyPerfectionPoke(pokemonList[key])) {
-            notifyPerfectionPkmn.push(pokemonList[key])
+            notifyPerfectionPkmn.push(item)
         }
     })
+
     return notifyPerfectionPkmn
 }
 
@@ -2921,15 +2924,12 @@ $(function () {
         var notifyPerfectionPkmn = getNotifyPerfectionPokemons(mapData.pokemons)
         if (this.checked) {
             wrapper.show(options)
-            setPokemonAnimations(notifyPerfectionPkmn, true)
         } else {
             wrapper.hide(options)
-            setPokemonAnimations(notifyPerfectionPkmn, false)
         }
         updatePokemonLabels(mapData.pokemons)
         redrawPokemon(notifyPerfectionPkmn)
 
-        // We're done processing the list. Repaint.
         markerCluster.redraw()
     })
     $('#scanned-switch').change(function () {

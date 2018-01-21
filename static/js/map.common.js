@@ -1189,23 +1189,9 @@ function updatePokemonLabel(item) {
 
 function updatePokemonLabels(pokemonList) {
     $.each(pokemonList, function (key, value) {
+        var item = pokemonList[key]
+        
         updatePokemonLabel(pokemonList[key])
-    })
-}
-
-function setPokemonAnimation(item, enable) {
-    if (enable) {
-        item.marker.animationDisabled = false
-        item.marker.setAnimation(google.maps.Animation.BOUNCE)
-    } else {
-        item.marker.animationDisabled = true
-        item.marker.setAnimation(null)
-    }
-}
-
-function setPokemonAnimations(pokemonList, enable) {
-    $.each(pokemonList, function (key, value) {
-        setPokemonAnimation(pokemonList[key], enable)
     })
 }
 
