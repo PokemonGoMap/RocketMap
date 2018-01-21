@@ -1193,6 +1193,22 @@ function updatePokemonLabels(pokemonList) {
     })
 }
 
+function setPokemonAnimation(item, enable) {
+    if (item.marker.animationDisabled && enable) {
+        item.marker.animationDisabled = false
+        item.marker.setAnimation(google.maps.Animation.BOUNCE)
+    } else if (!item.marker.animationDisabled && !enable) {
+        item.marker.animationDisabled = true
+        item.marker.setAnimation(null)
+    }
+}
+
+function setPokemonAnimations(pokemonList, enable) {
+    $.each(pokemonList, function (key, value) {
+        setPokemonAnimation(pokemonList[key], enable)
+    })
+}
+
 function isTouchDevice() {
     // Should cover most browsers
     return 'ontouchstart' in window || navigator.maxTouchPoints
