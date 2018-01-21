@@ -1180,6 +1180,19 @@ function updatePokemonMarker(item, map, scaleByRarity = true, isNotifyPkmn = fal
     marker.setIcon(icon)
 }
 
+function updatePokemonLabel(item) {
+    // only update label when pokemon has been encountered
+    if (item['cp'] !== null && item['cpMultiplier'] !== null) {
+        item.marker.infoWindow.setContent(pokemonLabel(item))
+    }
+}
+
+function updatePokemonLabels(pokemonList) {
+    $.each(pokemonList, function (key, value) {
+        updatePokemonLabel(pokemonList[key])
+    })
+}
+
 function isTouchDevice() {
     // Should cover most browsers
     return 'ontouchstart' in window || navigator.maxTouchPoints

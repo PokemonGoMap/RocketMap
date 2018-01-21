@@ -644,19 +644,6 @@ function pokemonLabel(item) {
     return contentstring
 }
 
-function updatePokemonLabel(item) {
-    // only update label when pokemon has been encountered
-    if (item['cp'] !== null && item['cpMultiplier'] !== null) {
-        item.marker.infoWindow.setContent(pokemonLabel(item))
-    }
-}
-
-function updatePokemonLabels(pokemonList) {
-    $.each(pokemonList, function (key, value) {
-        updatePokemonLabel(pokemonList[key])
-    })
-}
-
 function isOngoingRaid(raid) {
     return raid && Date.now() < raid.end && Date.now() > raid.start
 }
