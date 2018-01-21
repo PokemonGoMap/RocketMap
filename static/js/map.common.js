@@ -1195,11 +1195,9 @@ function updatePokemonLabels(pokemonList) {
 
 function setPokemonAnimation(item, enable) {
     if (enable) {
-        console.log('jump!')
         item.marker.animationDisabled = false
         item.marker.setAnimation(google.maps.Animation.BOUNCE)
     } else if (!enable) {
-        console.log('don\'t jump')
         item.marker.animationDisabled = true
         item.marker.setAnimation(null)
     }
