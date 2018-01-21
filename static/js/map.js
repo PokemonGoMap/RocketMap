@@ -1000,7 +1000,7 @@ function getNotifyText(item) {
     var replace = [((iv) ? iv.toFixed(1) : ''), item['pokemon_name'], item['individual_attack'],
         item['individual_defense'], item['individual_stamina']]
     const showStats = Store.get('showPokemonStats')
-	var ntitle = repArray(((showStats && iv) ? notifyIvTitle : notifyNoIvTitle), find, replace)
+    var ntitle = repArray(((showStats && iv) ? notifyIvTitle : notifyNoIvTitle), find, replace)
     var dist = moment(item['disappear_time']).format('HH:mm:ss')
     var until = getTimeUntil(item['disappear_time'])
     var udist = (until.hour > 0) ? until.hour + ':' : ''
@@ -1057,7 +1057,7 @@ function isNotifyPerfectionPoke(poke) {
 
 function isNotifyPoke(poke) {
     const isOnNotifyList = notifiedPokemon.indexOf(poke['pokemon_id']) > -1 || notifiedRarity.indexOf(poke['pokemon_rarity']) > -1
-	const isNotifyPerfectionPkmn = isNotifyPerfectionPoke(poke)
+    const isNotifyPerfectionPkmn = isNotifyPerfectionPoke(poke)
     const showStats = Store.get('showPokemonStats')
 
     return isOnNotifyList || (showStats && isNotifyPerfectionPkmn)
