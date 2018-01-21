@@ -2904,12 +2904,12 @@ $(function () {
         }
         var wrapper = $('#notify-perfection-wrapper')
         var notifyPerfectionPkmn = getNotifyPerfectionPokemons(mapData.pokemons)
-		if (this.checked) {
+        if (this.checked) {
             wrapper.show(options)
-			setPokemonAnimations(notifyPerfectionPkmn, true)
+            setPokemonAnimations(notifyPerfectionPkmn, true)
         } else {
             wrapper.hide(options)
-			setPokemonAnimations(notifyPerfectionPkmn, false)
+            setPokemonAnimations(notifyPerfectionPkmn, false)
         }
         updatePokemonLabels(mapData.pokemons)
         redrawPokemon(notifyPerfectionPkmn)
