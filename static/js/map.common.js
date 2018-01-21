@@ -1194,10 +1194,12 @@ function updatePokemonLabels(pokemonList) {
 }
 
 function setPokemonAnimation(item, enable) {
-    if (item.marker.animationDisabled && enable) {
+    if (enable) {
+        console.log('jump!')
         item.marker.animationDisabled = false
         item.marker.setAnimation(google.maps.Animation.BOUNCE)
-    } else if (!item.marker.animationDisabled && !enable) {
+    } else if (!enable) {
+        console.log('don\'t jump')
         item.marker.animationDisabled = true
         item.marker.setAnimation(null)
     }
@@ -1207,6 +1209,17 @@ function setPokemonAnimations(pokemonList, enable) {
     $.each(pokemonList, function (key, value) {
         setPokemonAnimation(pokemonList[key], enable)
     })
+}
+
+function getNotifyPerfectionPokemons(pokemonList) {
+    var notifyPerfectionPkmn = []
+    $.each(pokemonList, function (key, value) {
+        if (isNotifyPerfectionPoke(pokemonList[key])) {
+            notifyPerfectionPkmn.push(pokemonList[key])
+        }
+    })
+    console.log(notifyPerfectionPkmn)
+    return notifyPerfectionPkmn
 }
 
 function isTouchDevice() {

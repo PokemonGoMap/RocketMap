@@ -1042,16 +1042,21 @@ function playPokemonSound(pokemonID, cryFileTypes) {
     }
 }
 
-function isNotifyPoke(poke) {
-    const isOnNotifyList = notifiedPokemon.indexOf(poke['pokemon_id']) > -1 || notifiedRarity.indexOf(poke['pokemon_rarity']) > -1
+function isNotifyPerfectionPoke(poke) {
     var hasHighIV = false
 
-    if (Store.get('showPokemonStats') && poke['individual_attack'] != null) {
+    if (poke['individual_attack'] != null) {
         const perfection = getIv(poke['individual_attack'], poke['individual_defense'], poke['individual_stamina'])
         hasHighIV = notifiedMinPerfection > 0 && perfection >= notifiedMinPerfection
     }
 
-    return isOnNotifyList || hasHighIV
+    return hasHighIV
+}
+
+function isNotifyPoke(poke) {
+    const isOnNotifyList = notifiedPokemon.indexOf(poke['pokemon_id']) > -1 || notifiedRarity.indexOf(poke['pokemon_rarity']) > -1
+
+    return isOnNotifyList || (Store.get('showPokemonStats') && isNotifyPerfectionPoke(poke))
 }
 
 function customizePokemonMarker(marker, item, skipNotification) {
@@ -2898,17 +2903,19 @@ $(function () {
             'duration': 500
         }
         var wrapper = $('#notify-perfection-wrapper')
-        if (this.checked) {
+        var notifyPerfectionPkmn = getNotifyPerfectionPokemons(mapData.pokemons)
+		if (this.checked) {
             wrapper.show(options)
+			setPokemonAnimations(notifyPerfectionPkmn, true)
         } else {
             wrapper.hide(options)
+			setPokemonAnimations(notifyPerfectionPkmn, false)
         }
         updatePokemonLabels(mapData.pokemons)
-        redrawPokemon(mapData.pokemons)
-        redrawPokemon(mapData.lurePokemons)
+        redrawPokemon(notifyPerfectionPkmn)
 
         // We're done processing the list. Repaint.
-        markerCluster.repaint()
+        markerCluster.redraw()
     })
     $('#scanned-switch').change(function () {
         buildSwitchChangeListener(mapData, ['scanned'], 'showScanned').bind(this)()
