@@ -1191,7 +1191,7 @@ function updatePokemonLabels(pokemonList) {
     $.each(pokemonList, function (key, value) {
         var item = pokemonList[key]
 
-        updatePokemonLabel(pokemonList[key])
+        updatePokemonLabel(item)
     })
 }
 
