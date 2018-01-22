@@ -2920,14 +2920,15 @@ $(function () {
         var options = {
             'duration': 500
         }
-        var wrapper = $('#notify-perfection-wrapper')
-        var notifyPerfectionPkmn = getNotifyPerfectionPokemons(mapData.pokemons)
+        const $wrapper = $('#notify-perfection-wrapper')
         if (this.checked) {
-            wrapper.show(options)
+            $wrapper.show(options)
         } else {
-            wrapper.hide(options)
+            $wrapper.hide(options)
         }
         updatePokemonLabels(mapData.pokemons)
+        // Only redraw Pokémon which are notified of perfection.
+        var notifyPerfectionPkmn = getNotifyPerfectionPokemons(mapData.pokemons)
         redrawPokemon(notifyPerfectionPkmn)
 
         markerCluster.redraw()
