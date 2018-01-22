@@ -1068,7 +1068,7 @@ function getNotifyPerfectionPokemons(pokemonList) {
     $.each(pokemonList, function (key, value) {
         var item = pokemonList[key]
 
-        if (isNotifyPerfectionPoke(item) {
+        if (isNotifyPerfectionPoke(item)) {
             notifyPerfectionPkmn.push(item)
         }
     })
