@@ -25,6 +25,30 @@ from .blacklist import fingerprints, get_ip_blacklist
 log = logging.getLogger(__name__)
 compress = Compress()
 
+def get_rarity(pokemon_id):
+    seen = Pokemon.get_seen(48)
+    total = seen['total']
+    found = 0
+    spawn_group = ''
+    for pokemon in seen['pokemon']:
+            if pokemon['pokemon_id'] == pokemon_id:
+                found = 1
+                pokemon_count = pokemon['count']
+    if found == 0:
+        pokemon_count = 0
+    spawn_rate = round(100 * pokemon_count / float(total), 4)
+    if spawn_rate < 0.01:
+       spawn_group = 'Ultra Rare'
+    elif spawn_rate < 0.03:
+       spawn_group = 'Very Rare'
+    elif spawn_rate < 0.5:
+       spawn_group = 'Rare'
+    elif spawn_rate < 1:
+       spawn_group = 'Uncommon'
+    else:   # anything >= 1
+       spawn_group = 'Common'
+
+    return spawn_group
 
 def convert_pokemon_list(pokemon):
     args = get_args()
@@ -35,7 +59,7 @@ def convert_pokemon_list(pokemon):
     pokemon_result = []
     for p in pokemon:
         p['pokemon_name'] = get_pokemon_name(p['pokemon_id'])
-        p['pokemon_rarity'] = get_pokemon_rarity(p['pokemon_id'])
+        p['pokemon_rarity'] = get_rarity(p['pokemon_id'])
         p['pokemon_types'] = get_pokemon_types(p['pokemon_id'])
         p['encounter_id'] = str(p['encounter_id'])
         if args.china:
