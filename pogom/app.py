@@ -17,13 +17,14 @@ from bisect import bisect_left
 from .models import (Pokemon, Gym, Pokestop, ScannedLocation,
                      MainWorker, WorkerStatus, Token, HashKeys,
                      SpawnPoint)
-from .utils import (get_pokemon_name, get_pokemon_types, get_pokemon_rarity,
+from .utils import (get_pokemon_name, get_pokemon_types,
                     now, dottedQuadToNum)
 from .transform import transform_from_wgs_to_gcj
 from .blacklist import fingerprints, get_ip_blacklist
 
 log = logging.getLogger(__name__)
 compress = Compress()
+
 
 def get_rarity(pokemon_id):
     seen = Pokemon.get_seen(48)
@@ -38,17 +39,18 @@ def get_rarity(pokemon_id):
         pokemon_count = 0
     spawn_rate = round(100 * pokemon_count / float(total), 4)
     if spawn_rate < 0.01:
-       spawn_group = 'Ultra Rare'
+        spawn_group = 'Ultra Rare'
     elif spawn_rate < 0.03:
-       spawn_group = 'Very Rare'
+        spawn_group = 'Very Rare'
     elif spawn_rate < 0.5:
-       spawn_group = 'Rare'
+        spawn_group = 'Rare'
     elif spawn_rate < 1:
-       spawn_group = 'Uncommon'
+        spawn_group = 'Uncommon'
     else:   # anything >= 1
-       spawn_group = 'Common'
+        spawn_group = 'Common'
 
     return spawn_group
+
 
 def convert_pokemon_list(pokemon):
     args = get_args()
