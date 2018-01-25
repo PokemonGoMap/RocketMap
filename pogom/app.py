@@ -36,11 +36,13 @@ def get_rarity(pokemon_id):
         now_time = default_timer()
 
         rarity_is_loaded = hasattr(get_rarity, 'last_seen')
+        should_refresh = False
 
-        # Refresh once in a while.
-        rarity_refresh_seconds = 60 * 60  # Once an hour.
-        time_diff = now_time - get_rarity.last_seen_time
-        should_refresh = time_diff > rarity_refresh_seconds
+        if rarity_is_loaded:
+            # Refresh once in a while.
+            rarity_refresh_seconds = 60 * 60  # Once an hour.
+            time_diff = now_time - get_rarity.last_seen_time
+            should_refresh = time_diff > rarity_refresh_seconds
 
         # Load or refresh.
         if not rarity_is_loaded or should_refresh:
