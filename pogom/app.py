@@ -11,13 +11,14 @@ from flask.json import JSONEncoder
 from flask_compress import Compress
 from datetime import datetime
 from s2sphere import LatLng
-from pogom.utils import get_args
 from bisect import bisect_left
+from threading import Lock
+from timeit import default_timer
 
 from .models import (Pokemon, Gym, Pokestop, ScannedLocation,
                      MainWorker, WorkerStatus, Token, HashKeys,
                      SpawnPoint)
-from .utils import (get_pokemon_name, get_pokemon_types,
+from .utils import (get_args, get_pokemon_name, get_pokemon_types,
                     now, dottedQuadToNum)
 from .transform import transform_from_wgs_to_gcj
 from .blacklist import fingerprints, get_ip_blacklist
@@ -25,16 +26,38 @@ from .blacklist import fingerprints, get_ip_blacklist
 log = logging.getLogger(__name__)
 compress = Compress()
 
+rarity_lock = Lock()
+
 
 def get_rarity(pokemon_id):
-    seen = Pokemon.get_seen(48)
+    # Data shared by several threads. Only one should be here to check/update.
+    with rarity_lock:
+        # Can't call it "now" because utils has a now() method...
+        now_time = default_timer()
+
+        rarity_is_loaded = hasattr(get_rarity, 'last_seen')
+
+        # Refresh once in a while.
+        rarity_refresh_seconds = 60 * 60  # Once an hour.
+        time_diff = now_time - get_rarity.last_seen_time
+        should_refresh = time_diff > rarity_refresh_seconds
+
+        # Load or refresh.
+        if not rarity_is_loaded or should_refresh:
+            log.info('Updating dynamic rarity...')
+            get_rarity.last_seen = Pokemon.get_seen(48)
+            get_rarity.last_seen_time = now_time
+            log.info('Updated dynamic rarity.')
+
+    # State checking is done. Code here is thread safe.
+    seen = get_rarity.last_seen
     total = seen['total']
     found = 0
     spawn_group = ''
     for pokemon in seen['pokemon']:
-            if pokemon['pokemon_id'] == pokemon_id:
-                found = 1
-                pokemon_count = pokemon['count']
+        if pokemon['pokemon_id'] == pokemon_id:
+            found = 1
+            pokemon_count = pokemon['count']
     if found == 0:
         pokemon_count = 0
     spawn_rate = round(100 * pokemon_count / float(total), 4)
