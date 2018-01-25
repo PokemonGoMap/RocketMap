@@ -136,6 +136,10 @@ def get_args():
     parser.add_argument('-sd', '--scan-delay',
                         help='Time delay between requests in scan threads.',
                         type=float, default=10)
+    parser.add_argument('-rt', '--raritytime',
+                        help='Number of previous hours ' + 
+                             'used to calculate rarity.', type=int,
+                        default=48)
     parser.add_argument('--spawn-delay',
                         help=('Number of seconds after spawn time to wait ' +
                               'before scanning to be sure the Pokemon ' +
