@@ -137,7 +137,7 @@ def get_args():
                         help='Time delay between requests in scan threads.',
                         type=float, default=10)
     parser.add_argument('-rt', '--raritytime',
-                        help='Number of previous hours ' + 
+                        help='Number of previous hours ' +
                              'used to calculate rarity.', type=int,
                         default=48)
     parser.add_argument('--spawn-delay',
