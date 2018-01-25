@@ -30,6 +30,8 @@ rarity_lock = Lock()
 
 
 def get_rarity(pokemon_id):
+    args = get_args()
+    raritytime = args.raritytime
     # Data shared by several threads. Only one should be here to check/update.
     with rarity_lock:
         # Can't call it "now" because utils has a now() method...
@@ -47,7 +49,7 @@ def get_rarity(pokemon_id):
         # Load or refresh.
         if not rarity_is_loaded or should_refresh:
             log.info('Updating dynamic rarity...')
-            get_rarity.last_seen = Pokemon.get_seen(48)
+            get_rarity.last_seen = Pokemon.get_seen(raritytime)
             get_rarity.last_seen_time = now_time
             log.info('Updated dynamic rarity.')
 
