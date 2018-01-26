@@ -2689,7 +2689,7 @@ def bulk_upsert(cls, data, db):
     # placeholders for VALUES(%s, %s, ...) so we can use executemany().
     # We use peewee's InsertQuery to retrieve the fields because it
     # takes care of peewee's internals (e.g. required default fields).
-    query = InsertQuery(cls, rows=[ rows[0] ])
+    query = InsertQuery(cls, rows=[rows[0]])
     # Take the first row. We need to call _iter_rows() for peewee internals.
     # Using next() for a single item is not considered "pythonic".
     first_row = {}
@@ -2699,7 +2699,7 @@ def bulk_upsert(cls, data, db):
     # Convert the row to its fields, sorted by peewee.
     row_fields = sorted(first_row.keys(), key=lambda x: x._sort_key)
     row_fields = map(lambda x: x.name, row_fields)
-     # Translate to proper column name, e.g. foreign keys.
+    # Translate to proper column name, e.g. foreign keys.
     db_columns = [peewee_attr_to_col(cls, f) for f in row_fields]
 
     # Store defaults so we can fall back to them if a value
@@ -2710,16 +2710,7 @@ def bulk_upsert(cls, data, db):
         # Use DB column name as key.
         field_name = f.name
         field_default = cls._meta.defaults.get(f, None)
-
-        # peewee's defaults can be callable, e.g. current time.
-        if callable(field_default):
-            field_default = field_default()
-
         defaults[field_name] = field_default
-
-    log.debug('Fields: %s.', row_fields)
-    log.debug('DB columns: %s.', db_columns)
-    log.debug('Defaults: %s.', defaults)
 
     # Assign fields, placeholders and assignments after defaults
     # so our lists/keys stay in order.
@@ -2770,9 +2761,16 @@ def bulk_upsert(cls, data, db):
                         # Take a default if we need it.
                         if field not in row:
                             default = defaults.get(field, None)
+
+                            # peewee's defaults can be callable, e.g. current
+                            # time. We only call when needed to insert.
+                            if callable(default):
+                                default = default()
+
                             row[field] = default
 
-                        # Append to keep the exact order, and only these fields.
+                        # Append to keep the exact order, and only these
+                        # fields.
                         row_data.append(row[field])
                     # Done preparing, add it to the batch.
                     batch.append(row_data)
