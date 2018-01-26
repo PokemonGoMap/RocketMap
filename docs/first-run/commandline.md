@@ -126,11 +126,11 @@ which override config file values which override defaults.
                             POGOMAP_SCAN_DELAY]
       -Rh RARITY_HOURS, --rarity-hours RARITY_HOURS
                             Number of hours of Pokemon data to use to calculate
-                            dynamic rarity. Default: 48. 0 to use all data.
-                            [env var: POGOMAP_RARITY_HOURS]
+                            dynamic rarity. Decimals allowed. Default: 48. 0 to use
+                            all data. [env var: POGOMAP_RARITY_HOURS]
       -Rf RARITY_UPDATE_FREQUENCY, --rarity-update-frequency RARITY_UPDATE_FREQUENCY
                             How often (in minutes) the dynamic rarity should be
-                            updated. Default: 60. 0 to disable.
+                            updated. Decimals allowed. Default: 0. 0 to disable.
                             [env var: POGOMAP_RARITY_UPDATE_FREQUENCY]
       --spawn-delay SPAWN_DELAY
                             Number of seconds after spawn time to wait before

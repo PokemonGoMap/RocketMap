@@ -139,14 +139,14 @@ def get_args():
                         type=float, default=10)
     parser.add_argument('-Rh', '--rarity-hours',
                         help=('Number of hours of Pokemon data to use' +
-                              ' to calculate dynamic rarity. Default: 48.' +
-                              ' 0 to use all data.'),
-                        type=int, default=48)
+                              ' to calculate dynamic rarity. Decimals' +
+                              ' allowed. Default: 48. 0 to use all data.'),
+                        type=float, default=48)
     parser.add_argument('-Rf', '--rarity-update-frequency',
                         help=('How often (in minutes) the dynamic rarity' +
-                              ' should be updated. Default: 60.' +
-                              ' 0 to disable.'),
-                        type=int, default=60)
+                              ' should be updated. Decimals allowed.' +
+                              ' Default: 0. 0 to disable.'),
+                        type=float, default=0)
     parser.add_argument('--spawn-delay',
                         help=('Number of seconds after spawn time to wait ' +
                               'before scanning to be sure the Pokemon ' +
