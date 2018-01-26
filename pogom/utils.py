@@ -23,7 +23,6 @@ from requests.adapters import HTTPAdapter
 from cHaversine import haversine
 from pprint import pformat
 from timeit import default_timer
-from pogom.models import Pokemon
 
 log = logging.getLogger(__name__)
 
@@ -1352,6 +1351,10 @@ def get_pokemon_rarity(total_spawns_all, total_spawns_pokemon):
 
 
 def dynamic_rarity_refresher():
+    # If we import at the top, pogom.models will import pogom.utils,
+    # causing the cyclic import to make some things unavailable.
+    from pogom.models import Pokemon
+
     # Refresh every x hours.
     args = get_args()
     hours = args.rarity_hours
