@@ -185,6 +185,7 @@
 #verbosity                      # Show debug messages from RocketMap and PGoApi. Values are 1,2,3 (default=0)
 #no-file-logs                   # Disables logging to files except for access.log. (default=False)
 #log-path:                      # Defines the path logs are saved at. (default=logs/)
+#log-filename:                  # Defines the log filename to be saved. (default='{}_{}.log'.format(strftime('%Y%m%d_%H%M'),str(os.getpid()))
 #no-version-check               # Disable API version check. (default=False)
 #version-check-interval:        # Interval to check API version in seconds (Default: in range [60, 300]).
 #mock:                          # Mock mode - point to a fpgo endpoint instead of using the real PogoApi,

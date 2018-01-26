@@ -388,6 +388,9 @@ environment variables which override config file values which override defaults.
                             logs. [env var: POGOMAP_NO_FILE_LOGS]
       --log-path LOG_PATH   Defines directory to save log files to. [env var:
                             POGOMAP_LOG_PATH]
+      --log-filename FILENAME
+                            Defines the log filename to be saved. [env var:
+                            POGOMAP_LOG_FILENAME]
       --dump                Dump censored debug info about the environment and
                             auto-upload to hastebin.com. [env var: POGOMAP_DUMP]
       -exg, --ex-gyms       Fetch OSM parks within geofence and flag gyms that are

@@ -22,6 +22,7 @@ from requests.packages.urllib3.util.retry import Retry
 from requests.adapters import HTTPAdapter
 from cHaversine import haversine
 from pprint import pformat
+from time import strftime
 from timeit import default_timer
 
 log = logging.getLogger(__name__)
@@ -512,6 +513,9 @@ def get_args():
     parser.add_argument('--log-path',
                         help=('Defines directory to save log files to.'),
                         default='logs/')
+    parser.add_argument('--log-filename',
+                        help=('Defines the log filename to be saved.'),
+                        default=None),
     parser.add_argument('--dump',
                         help=('Dump censored debug info about the ' +
                               'environment and auto-upload to ' +
@@ -553,6 +557,11 @@ def get_args():
 
     args = parser.parse_args()
 
+    if args.log_filename is None:
+        date = strftime('%Y%m%d_%H%M')
+        log_tail = args.status_name if args.status_name else str(os.getpid())
+        args.log_filename = '{}_{}.log'.format(date,log_tail)
+        
     if args.only_server:
         if args.location is None:
             parser.print_usage()
@@ -1257,6 +1266,7 @@ def _censor_args_namespace(args, censored_tag):
         'db',
         'proxy_file',
         'log_path',
+        'log_filename',
         'encrypt_lib',
         'ssl_certificate',
         'ssl_privatekey',
