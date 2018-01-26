@@ -19,7 +19,7 @@ from flask_cache_bust import init_cache_busting
 from pogom.app import Pogom
 from pogom.utils import (get_args, now, gmaps_reverse_geolocate,
                          log_resource_usage_loop, get_debug_dump_link,
-                         dynamic_loading_refresher)
+                         dynamic_loading_refresher, dynamic_rarity_refresher)
 from pogom.altitude import get_gmaps_altitude
 
 from pogom.models import (init_database, create_tables, drop_tables,
@@ -429,6 +429,16 @@ def main():
             log.info('Dynamic list refresher is enabled.')
         else:
             log.info('Dynamic list refresher is disabled.')
+
+        # Dynamic rarity.
+        if args.rarity_update_frequency:
+            t = Thread(target=dynamic_rarity_refresher,
+                       name='dynamic-rarity')
+            t.daemon = True
+            t.start()
+            log.info('Dynamic rarity is enabled.')
+        else:
+            log.info('Dynamic rarity is disabled.')
 
         # Update player locale if not set correctly yet.
         args.player_locale = PlayerLocale.get_locale(args.location)

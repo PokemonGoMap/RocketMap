@@ -124,10 +124,14 @@ which override config file values which override defaults.
       -sd SCAN_DELAY, --scan-delay SCAN_DELAY
                             Time delay between requests in scan threads. [env var:
                             POGOMAP_SCAN_DELAY]
-      -rh RARITY_HOURS, --rarity-hours RARITY_HOURS
+      -Rh RARITY_HOURS, --rarity-hours RARITY_HOURS
                             Number of hours of Pokemon data to use to calculate
                             dynamic rarity. Default: 48. 0 to use all data.
                             [env var: POGOMAP_RARITY_HOURS]
+      -Rf RARITY_UPDATE_FREQUENCY, --rarity-update-frequency RARITY_UPDATE_FREQUENCY
+                            How often (in minutes) the dynamic rarity should be
+                            updated. Default: 60. 0 to disable.
+                            [env var: POGOMAP_RARITY_UPDATE_FREQUENCY]
       --spawn-delay SPAWN_DELAY
                             Number of seconds after spawn time to wait before
                             scanning to be sure the Pokemon is there. [env var:

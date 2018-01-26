@@ -34,7 +34,6 @@ def convert_pokemon_list(pokemon):
     pokemon_result = []
     for p in pokemon:
         p['pokemon_name'] = get_pokemon_name(p['pokemon_id'])
-        p['pokemon_rarity'] = Pokemon.get_rarity(p['pokemon_id'])
         p['pokemon_types'] = get_pokemon_types(p['pokemon_id'])
         p['encounter_id'] = str(p['encounter_id'])
         if args.china:

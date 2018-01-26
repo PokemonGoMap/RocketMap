@@ -22,8 +22,6 @@ from datetime import datetime, timedelta
 from cachetools import TTLCache
 from cachetools import cached
 from timeit import default_timer
-from threading import Lock
-from bisect import bisect_left
 
 from .utils import (get_pokemon_name, get_pokemon_types,
                     get_args, cellid, in_radius, date_secs, clock_between,
@@ -128,9 +126,6 @@ class Pokemon(LatLongModel):
     last_modified = DateTimeField(
         null=True, index=True, default=datetime.utcnow)
 
-    # Thread safety.
-    rarity_lock = Lock()
-
     class Meta:
         indexes = ((('latitude', 'longitude'), False),)
 
@@ -203,83 +198,13 @@ class Pokemon(LatLongModel):
 
         return list(query)
 
-    # Get a Pokémon's rarity by Pokémon ID. This method is cached
-    # locally by keeping a reference to the result for x time.
-    @staticmethod
-    def get_rarity(pokemon_id):
-        args = get_args()
-        hours = args.rarity_hours
-
-        # Shorter reference. Python would see get_rarity as a global if we
-        # don't do this.
-        get_rarity = Pokemon.get_rarity
-
-        # Data shared by several threads. Only one should be here to
-        # check/update.
-        with Pokemon.rarity_lock:
-            now = default_timer()
-            rarity_is_loaded = hasattr(get_rarity, 'last_seen')
-            should_refresh = False
-
-            # Refresh once in a while.
-            # TODO: Move to background task so queries aren't interrupted
-            # once #2445 is merged.
-            if rarity_is_loaded:
-                rarity_refresh_seconds = 60 * 60  # Once an hour.
-                time_diff = now - get_rarity.last_seen_time
-                should_refresh = time_diff > rarity_refresh_seconds
-
-            # Load or refresh.
-            if not rarity_is_loaded or should_refresh:
-                log.info('Updating dynamic rarity...')
-                get_rarity.last_seen = Pokemon.query_rarity(hours)
-                get_rarity.last_seen_time = now
-                log.info('Updated dynamic rarity.')
-
-                # Sort by Pokémon ID for binary search.
-                def cmp_pokeid(x, y):
-                    return x['pokemon_id'] - y['pokemon_id']
-
-                pokemon = get_rarity.last_seen['pokemon']
-                get_rarity.last_seen['pokemon'] = sorted(pokemon,
-                                                         cmp_pokeid)
-                # Store Pokémon IDs for searching.
-                get_rarity.last_seen_ids = [x['pokemon_id'] for x in pokemon]
-
-        # State checking is done. Code here is thread safe.
-        seen = get_rarity.last_seen
-        seen_ids = get_rarity.last_seen_ids
-
-        spawn_group = 'Common'
-        pokemon_count = 0
-        total = seen['total']
-        pokemon = seen['pokemon']
-
-        # Use spawn count if the Pokémon is in our list.
-        poke_idx = bisect_left(seen_ids, pokemon_id)
-
-        if (poke_idx != len(seen_ids) and
-                pokemon[poke_idx]['pokemon_id'] == pokemon_id):
-            pokemon_count = pokemon[poke_idx]['count']
-
-        spawn_rate_pct = round(100 * pokemon_count / float(total), 4)
-        if spawn_rate_pct < 0.01:
-            spawn_group = 'Ultra Rare'
-        elif spawn_rate_pct < 0.03:
-            spawn_group = 'Very Rare'
-        elif spawn_rate_pct < 0.5:
-            spawn_group = 'Rare'
-        elif spawn_rate_pct < 1:
-            spawn_group = 'Uncommon'
-
-        return spawn_group
-
-    # Get all Pokémon rarity based on the last x hours.
+    # Get all Pokémon spawn counts based on the last x hours.
     # More efficient than get_seen(): we don't do any unnecessary mojo.
-    # Returns a list of dicts: { 'pokemon_id': x, 'count': y }.
+    # Returns a dict:
+    #   { 'pokemon': [ {'pokemon_id': '', 'count': 1} ], 'total': 1 }.
     @staticmethod
-    def query_rarity(hours):
-        # Allow 0 to disable.
+    def get_spawn_counts(hours):
+        # Allow 0 to query everything.
         if hours:
             hours = datetime.utcnow() - timedelta(hours=hours)
 
