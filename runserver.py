@@ -203,6 +203,12 @@ def can_start_scanning(args):
         log.critical(api_version_error)
         return False
 
+    # Only allow dynamic rarity on -os.
+    if args.rarity_update_frequency:
+        log.critical(
+            'Dynamic rarity can only be enabled on -os instances.')
+        return False
+
     return True
 
 
@@ -254,7 +260,7 @@ def main():
 
     set_log_and_verbosity(log)
 
-    # Abort if only-server and no-server are used together
+    # Abort if only-server and no-server are used together.
     if args.only_server and args.no_server:
         log.critical(
             "You can't use no-server and only-server at the same time, silly.")
@@ -430,16 +436,6 @@ def main():
         else:
             log.info('Dynamic list refresher is disabled.')
 
-        # Dynamic rarity.
-        if args.rarity_update_frequency:
-            t = Thread(target=dynamic_rarity_refresher,
-                       name='dynamic-rarity')
-            t.daemon = True
-            t.start()
-            log.info('Dynamic rarity is enabled.')
-        else:
-            log.info('Dynamic rarity is disabled.')
-
         # Update player locale if not set correctly yet.
         args.player_locale = PlayerLocale.get_locale(args.location)
         if not args.player_locale:
@@ -467,6 +463,18 @@ def main():
                                name='search-overseer', args=argset)
         search_thread.daemon = True
         search_thread.start()
+    else:
+        # -os only.
+
+        # Dynamic rarity.
+        if args.rarity_update_frequency:
+            t = Thread(target=dynamic_rarity_refresher,
+                       name='dynamic-rarity')
+            t.daemon = True
+            t.start()
+            log.info('Dynamic rarity is enabled.')
+        else:
+            log.info('Dynamic rarity is disabled.')
 
     if args.no_server:
         # This loop allows for ctrl-c interupts to work since flask won't be
