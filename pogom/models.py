@@ -279,12 +279,14 @@ class Pokemon(LatLongModel):
     # Returns a list of dicts: { 'pokemon_id': x, 'count': y }.
     @staticmethod
     def query_rarity(hours):
-        timediff = datetime.utcnow() - timedelta(hours=hours)
+        # Allow 0 to disable.
+        if hours:
+            hours = datetime.utcnow() - timedelta(hours=hours)
 
         query = (Pokemon
                  .select(Pokemon.pokemon_id,
                          fn.Count(Pokemon.pokemon_id).alias('count'))
-                 .where(Pokemon.disappear_time > timediff)
+                 .where(Pokemon.disappear_time > hours)
                  .group_by(Pokemon.pokemon_id)
                  .dicts())
 
