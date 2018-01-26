@@ -137,8 +137,9 @@ def get_args():
                         help='Time delay between requests in scan threads.',
                         type=float, default=10)
     parser.add_argument('-rh', '--rarity-hours',
-                        help=('Number of hours of Pokemon data to use ' +
-                              'to calculate dynamic rarity. Default: 48.'),
+                        help=('Number of hours of Pokemon data to use' +
+                              ' to calculate dynamic rarity. Default: 48.' +
+                              ' 0 to use all data.'),
                         type=int, default=48)
     parser.add_argument('--spawn-delay',
                         help=('Number of seconds after spawn time to wait ' +

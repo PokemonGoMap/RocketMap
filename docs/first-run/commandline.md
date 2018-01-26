@@ -7,7 +7,7 @@
                     [-hlvl HIGH_LVL_ACCOUNTS] [-bh] [-wph WORKERS_PER_HIVE]
                     [-l LOCATION] [-alt ALTITUDE] [-altv ALTITUDE_VARIANCE]
                     [-uac] [-j] [-al] [-st STEP_LIMIT] [-gf GEOFENCE_FILE]
-                    [-gef GEOFENCE_EXCLUDED_FILE] [-sd SCAN_DELAY]
+                    [-gef GEOFENCE_EXCLUDED_FILE] [-sd SCAN_DELAY] [-rh RARITY_HOURS]
                     [--spawn-delay SPAWN_DELAY] [-enc] [-cs] [-ck CAPTCHA_KEY]
                     [-cds CAPTCHA_DSK] [-mcd MANUAL_CAPTCHA_DOMAIN]
                     [-mcr MANUAL_CAPTCHA_REFRESH]
@@ -124,6 +124,10 @@ which override config file values which override defaults.
       -sd SCAN_DELAY, --scan-delay SCAN_DELAY
                             Time delay between requests in scan threads. [env var:
                             POGOMAP_SCAN_DELAY]
+      -rh RARITY_HOURS, --rarity-hours RARITY_HOURS
+                            Number of hours of Pokemon data to use to calculate
+                            dynamic rarity. Default: 48. 0 to use all data.
+                            [env var: POGOMAP_RARITY_HOURS]
       --spawn-delay SPAWN_DELAY
                             Number of seconds after spawn time to wait before
                             scanning to be sure the Pokemon is there. [env var:
