@@ -2677,8 +2677,12 @@ def bulk_upsert(cls, data, db):
         return
 
     # We used to support SQLite and it has a default max 999 parameters,
-    # so we need to limit how many rows we insert for it.
-    step = 250
+    # so we limited how many rows we insert for it.
+    # Oracle: 64000
+    # MySQL: 65535
+    # PostgreSQL: 34464
+    # Sqlite: 999
+    step = 500
 
     # Prepare for our query.
     conn = db.get_conn()
