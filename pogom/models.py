@@ -2776,9 +2776,6 @@ def verify_database_schema(db):
 
 
 def database_migrate(db, old_ver):
-    # Update database schema version.
-    Versions.update(val=db_schema_version).where(
-        Versions.key == 'schema_version').execute()
 
     log.info('Detected database version %i, updating to %i...',
              old_ver, db_schema_version)
@@ -2786,12 +2783,12 @@ def database_migrate(db, old_ver):
     # Perform migrations here.
     migrator = MySQLMigrator(db)
 
-    if old_ver < 2:
+    def migrate_2(db, migrator):
         migrate(migrator.add_column('pokestop', 'encounter_id',
                                     Utf8mb4CharField(max_length=50,
                                                      null=True)))
 
-    if old_ver < 3:
+    def migrate_3(db, migrator):
         migrate(
             migrator.add_column('pokestop', 'active_fort_modifier',
                                 Utf8mb4CharField(max_length=50, null=True)),
@@ -2799,10 +2796,10 @@ def database_migrate(db, old_ver):
             migrator.drop_column('pokestop', 'active_pokemon_id')
         )
 
-    if old_ver < 4:
+    def migrate_4(db, migrator):
         db.drop_tables([ScannedLocation])
 
-    if old_ver < 5:
+    def migrate_5(db, migrator):
         # Some Pokemon were added before the 595 bug was "fixed".
         # Clean those up for a better UX.
         query = (Pokemon
@@ -2811,20 +2808,20 @@ def database_migrate(db, old_ver):
                         (datetime.utcnow() - timedelta(hours=24))))
         query.execute()
 
-    if old_ver < 6:
+    def migrate_6(db, migrator):
         migrate(
             migrator.add_column('gym', 'last_scanned',
                                 DateTimeField(null=True)),
         )
 
-    if old_ver < 7:
+    def migrate_7(db, migrator):
         migrate(
             migrator.drop_column('gymdetails', 'description'),
             migrator.add_column('gymdetails', 'description',
                                 TextField(null=True, default=""))
         )
 
-    if old_ver < 8:
+    def migrate_8(db, migrator):
         migrate(
             migrator.add_column('pokemon', 'individual_attack',
                                 IntegerField(null=True, default=0)),
@@ -2838,7 +2835,7 @@ def database_migrate(db, old_ver):
                                 IntegerField(null=True, default=0))
         )
 
-    if old_ver < 9:
+    def migrate_9(db, migrator):
         migrate(
             migrator.add_column('pokemon', 'last_modified',
                                 DateTimeField(null=True, index=True)),
@@ -2846,23 +2843,20 @@ def database_migrate(db, old_ver):
                                 DateTimeField(null=True, index=True))
         )
 
-    if old_ver < 10:
+    def migrate_10(db, migrator):
         # Information in ScannedLocation and Member Status is probably
         # out of date.  Drop and recreate with new schema.
-
         db.drop_tables([ScannedLocation])
         db.drop_tables([WorkerStatus])
 
-    if old_ver < 11:
-
+    def migrate_11(db, migrator):
         db.drop_tables([ScanSpawnPoint])
 
-    if old_ver < 13:
-
+    def migrate_13(db, migrator):
         db.drop_tables([WorkerStatus])
         db.drop_tables([MainWorker])
 
-    if old_ver < 14:
+    def migrate_14(db, migrator):
         migrate(
             migrator.add_column('pokemon', 'weight',
                                 DoubleField(null=True, default=0)),
@@ -2872,14 +2866,14 @@ def database_migrate(db, old_ver):
                                 IntegerField(null=True, default=0))
         )
 
-    if old_ver < 15:
+    def migrate_15(db, migrator):
         db.execute_sql('ALTER TABLE `pokemon` '
                        'MODIFY COLUMN `weight` FLOAT NULL DEFAULT NULL,'
                        'MODIFY COLUMN `height` FLOAT NULL DEFAULT NULL,'
                        'MODIFY COLUMN `gender` SMALLINT NULL DEFAULT NULL'
                        ';')
 
-    if old_ver < 16:
+    def migrate_16(db, migrator):
         log.info('This DB schema update can take some time. '
                  'Please be patient.')
 
@@ -2967,25 +2961,25 @@ def database_migrate(db, old_ver):
                 migrator.add_index('pokestop', ('last_updated',), False)
             )
 
-    if old_ver < 17:
+    def migrate_17(db, migrator):
         migrate(
             migrator.add_column('pokemon', 'form',
                                 SmallIntegerField(null=True))
         )
 
-    if old_ver < 18:
+    def migrate_18(db, migrator):
         migrate(
             migrator.add_column('pokemon', 'cp',
                                 SmallIntegerField(null=True))
         )
 
-    if old_ver < 19:
+    def migrate_19(db, migrator):
         migrate(
             migrator.add_column('pokemon', 'cp_multiplier',
                                 FloatField(null=True))
         )
 
-    if old_ver < 20:
+    def migrate_20(db, migrator):
         migrate(
             migrator.drop_column('gym', 'gym_points'),
             migrator.add_column('gym', 'slots_available',
@@ -2998,7 +2992,7 @@ def database_migrate(db, old_ver):
             migrator.add_column('gym', 'total_cp',
                                 SmallIntegerField(null=False, default=0)))
 
-    if old_ver < 21:
+    def migrate_21(db, migrator):
         # First rename all tables being modified.
         db.execute_sql('RENAME TABLE `pokemon` TO `pokemon_old`;')
         db.execute_sql(
@@ -3070,7 +3064,7 @@ def database_migrate(db, old_ver):
         db.execute_sql('DROP TABLE `gymmember_old`;')
         db.execute_sql('DROP TABLE `gympokemon_old`;')
 
-    if old_ver < 22:
+    def migrate_22(db, migrator):
         # Drop and add CONSTRAINT_2 with the <= fix.
         db.execute_sql('ALTER TABLE `spawnpoint` '
                        'DROP CONSTRAINT CONSTRAINT_2;')
@@ -3085,10 +3079,58 @@ def database_migrate(db, old_ver):
                        'ADD CONSTRAINT CONSTRAINT_4 CHECK ' +
                        '(`latest_seen` <= 3600);')
 
-    if old_ver < 23:
+    def migrate_23(db, migrator):
         db.drop_tables([WorkerStatus])
         db.drop_tables([MainWorker])
 
-    # Always log that we're done.
+    migrations = {
+        2: migrate_2,
+        3: migrate_3,
+        4: migrate_4,
+        5: migrate_5,
+        6: migrate_6,
+        7: migrate_7,
+        8: migrate_8,
+        9: migrate_9,
+        10: migrate_10,
+        11: migrate_11,
+        13: migrate_13,
+        14: migrate_14,
+        15: migrate_15,
+        16: migrate_16,
+        17: migrate_17,
+        18: migrate_18,
+        19: migrate_19,
+        20: migrate_20,
+        21: migrate_21,
+        22: migrate_22,
+        23: migrate_23
+    }
+
+    for new_ver, query in migrations.iteritems():
+        result = migrate_transaction(db, migrator, old_ver, new_ver, query)
+        if not result:
+            # Something failed in migration, quiting
+            return False
+
+    # Update database schema version.
+    Versions.update(val=db_schema_version).where(
+        Versions.key == 'schema_version').execute()
+    # Always log that we're done.lk
     log.info('Schema upgrade complete.')
+    return True
+
+
+def migrate_transaction(db, migrator, old_ver, new_ver, query):
+    if old_ver < new_ver:
+        with db.atomic():
+            try:
+                query(db, migrator)
+                # Update database schema version.
+                Versions.update(val=new_ver).where(
+                    Versions.key == 'schema_version').execute()
+            except Exception as e:
+                db.rollback()
+                log.exception(e)
+                return False
     return True
