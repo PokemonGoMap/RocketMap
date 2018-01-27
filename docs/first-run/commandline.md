@@ -7,7 +7,7 @@
                     [-hlvl HIGH_LVL_ACCOUNTS] [-bh] [-wph WORKERS_PER_HIVE]
                     [-l LOCATION] [-alt ALTITUDE] [-altv ALTITUDE_VARIANCE]
                     [-uac] [-j] [-al] [-st STEP_LIMIT] [-gf GEOFENCE_FILE]
-                    [-gef GEOFENCE_EXCLUDED_FILE] [-sd SCAN_DELAY] [-rh RARITY_HOURS]
+                    [-gef GEOFENCE_EXCLUDED_FILE] [-sd SCAN_DELAY]
                     [--spawn-delay SPAWN_DELAY] [-enc] [-cs] [-ck CAPTCHA_KEY]
                     [-cds CAPTCHA_DSK] [-mcd MANUAL_CAPTCHA_DOMAIN]
                     [-mcr MANUAL_CAPTCHA_REFRESH]
@@ -43,16 +43,19 @@
                     [--disable-blacklist] [-tp TRUSTED_PROXIES]
                     [--api-version API_VERSION] [--no-file-logs]
                     [--log-path LOG_PATH] [--dump] [-v | --verbosity VERBOSE]
+                    [-Rh RARITY_HOURS] [-Rf RARITY_UPDATE_FREQUENCY]
 
 Args that start with '--' (eg. -a) can also be set in a config file
-(config/config.ini or specified via
--cf or -scf). Config file syntax allows: key=value, flag=true, stuff=[a,b,c]
-(for details, see syntax at https://goo.gl/R74nmi). If an arg is specified in
-more than one place, then commandline values override environment variables
-which override config file values which override defaults.
+(config/config.ini or specified via -cf or -scf). The recognized syntax
+for setting (key, value) pairs is based on the INI and YAML formats
+(e.g. key=value or foo=TRUE). For full documentation of the differences
+from the standards please refer to the ConfigArgParse documentation. If an
+arg is specified in more than one place, then commandline values override
+environment variables which override config file values which override defaults.
 
     optional arguments:
-      -h, --help            show this help message and exit
+      -h, --help            show this help message and exit [env var:
+                            POGOMAP_HELP]
       -cf CONFIG, --config CONFIG
                             Set configuration file
       -scf SHARED_CONFIG, --shared-config SHARED_CONFIG
@@ -124,14 +127,6 @@ which override config file values which override defaults.
       -sd SCAN_DELAY, --scan-delay SCAN_DELAY
                             Time delay between requests in scan threads. [env var:
                             POGOMAP_SCAN_DELAY]
-      -Rh RARITY_HOURS, --rarity-hours RARITY_HOURS
-                            Number of hours of Pokemon data to use to calculate
-                            dynamic rarity. Decimals allowed. Default: 48. 0 to use
-                            all data. [env var: POGOMAP_RARITY_HOURS]
-      -Rf RARITY_UPDATE_FREQUENCY, --rarity-update-frequency RARITY_UPDATE_FREQUENCY
-                            How often (in minutes) the dynamic rarity should be
-                            updated. Decimals allowed. Default: 0. 0 to disable.
-                            [env var: POGOMAP_RARITY_UPDATE_FREQUENCY]
       --spawn-delay SPAWN_DELAY
                             Number of seconds after spawn time to wait before
                             scanning to be sure the Pokemon is there. [env var:
@@ -269,12 +264,12 @@ which override config file values which override defaults.
       -ams ACCOUNT_MAX_SPINS, --account-max-spins ACCOUNT_MAX_SPINS
                             Maximum number of Pokestop spins per hour. [env var:
                             POGOMAP_ACCOUNT_MAX_SPINS]
-      -kph KPH, --kph KPH   Set a maximum speed in km/hour for scanner movement.
-                            0 to disable. Default: 35. [env var: POGOMAP_KPH]
+      -kph KPH, --kph KPH   Set a maximum speed in km/hour for scanner movement. 0
+                            to disable. Default: 35. [env var: POGOMAP_KPH]
       -hkph HLVL_KPH, --hlvl-kph HLVL_KPH
                             Set a maximum speed in km/hour for scanner movement,
-                            for high-level (L30) accounts. 0 to disable.
-                            Default: 25. [env var: POGOMAP_HLVL_KPH]
+                            for high-level (L30) accounts. 0 to disable. Default:
+                            25. [env var: POGOMAP_HLVL_KPH]
       -ldur LURE_DURATION, --lure-duration LURE_DURATION
                             Change duration for lures set on pokestops. This is
                             useful for events that extend lure duration. [env var:
@@ -415,3 +410,13 @@ which override config file values which override defaults.
       --db-threads DB_THREADS
                             Number of db threads; increase if the db queue falls
                             behind. [env var: POGOMAP_DB_THREADS]
+
+    Dynamic Rarity:
+      -Rh RARITY_HOURS, --rarity-hours RARITY_HOURS
+                            Number of hours of Pokemon data to use to calculate
+                            dynamic rarity. Decimals allowed. Default: 48. 0 to
+                            use all data. [env var: POGOMAP_RARITY_HOURS]
+      -Rf RARITY_UPDATE_FREQUENCY, --rarity-update-frequency RARITY_UPDATE_FREQUENCY
+                            How often (in minutes) the dynamic rarity should be
+                            updated. Decimals allowed. Default: 0. 0 to disable.
+                            [env var: POGOMAP_RARITY_UPDATE_FREQUENCY]

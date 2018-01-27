@@ -137,16 +137,6 @@ def get_args():
     parser.add_argument('-sd', '--scan-delay',
                         help='Time delay between requests in scan threads.',
                         type=float, default=10)
-    parser.add_argument('-Rh', '--rarity-hours',
-                        help=('Number of hours of Pokemon data to use' +
-                              ' to calculate dynamic rarity. Decimals' +
-                              ' allowed. Default: 48. 0 to use all data.'),
-                        type=float, default=48)
-    parser.add_argument('-Rf', '--rarity-update-frequency',
-                        help=('How often (in minutes) the dynamic rarity' +
-                              ' should be updated. Decimals allowed.' +
-                              ' Default: 0. 0 to disable.'),
-                        type=float, default=0)
     parser.add_argument('--spawn-delay',
                         help=('Number of seconds after spawn time to wait ' +
                               'before scanning to be sure the Pokemon ' +
@@ -515,6 +505,17 @@ def get_args():
                          help=('Show debug messages from RocketMap ' +
                                'and pgoapi.'),
                          type=int, dest='verbose')
+    rarity = parser.add_argument_group('Dynamic Rarity')
+    rarity.add_argument('-Rh', '--rarity-hours',
+                        help=('Number of hours of Pokemon data to use' +
+                              ' to calculate dynamic rarity. Decimals' +
+                              ' allowed. Default: 48. 0 to use all data.'),
+                        type=float, default=48)
+    rarity.add_argument('-Rf', '--rarity-update-frequency',
+                        help=('How often (in minutes) the dynamic rarity' +
+                              ' should be updated. Decimals allowed.' +
+                              ' Default: 0. 0 to disable.'),
+                        type=float, default=0)
     parser.set_defaults(DEBUG=False)
 
     args = parser.parse_args()

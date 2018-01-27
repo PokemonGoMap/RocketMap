@@ -3119,7 +3119,8 @@ def database_migrate(db, old_ver):
     if old_ver < 24:
         migrate(
             migrator.drop_index('pokemon', 'pokemon_disappear_time'),
-            migrator.add_index('pokemon', ('disappear_time', 'pokemon_id'), False)
+            migrator.add_index('pokemon',
+                               ('disappear_time', 'pokemon_id'), False)
         )
 
     # Always log that we're done.

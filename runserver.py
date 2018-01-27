@@ -463,9 +463,13 @@ def main():
                                name='search-overseer', args=argset)
         search_thread.daemon = True
         search_thread.start()
-    else:
-        # -os only.
 
+    if args.no_server:
+        # This loop allows for ctrl-c interupts to work since flask won't be
+        # holding the program open.
+        while search_thread.is_alive():
+            time.sleep(60)
+    else:
         # Dynamic rarity.
         if args.rarity_update_frequency:
             t = Thread(target=dynamic_rarity_refresher,
@@ -475,13 +479,6 @@ def main():
             log.info('Dynamic rarity is enabled.')
         else:
             log.info('Dynamic rarity is disabled.')
-
-    if args.no_server:
-        # This loop allows for ctrl-c interupts to work since flask won't be
-        # holding the program open.
-        while search_thread.is_alive():
-            time.sleep(60)
-    else:
 
         if args.cors:
             CORS(app)
