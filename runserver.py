@@ -203,12 +203,6 @@ def can_start_scanning(args):
         log.critical(api_version_error)
         return False
 
-    # Only allow dynamic rarity on -os.
-    if args.rarity_update_frequency:
-        log.critical(
-            'Dynamic rarity can only be enabled on -os instances.')
-        return False
-
     return True
 
 
