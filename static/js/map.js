@@ -584,7 +584,6 @@ function pokemonLabel(item) {
             <div class='pokemon container content-left'>
               <div>
                 <img class='pokemon sprite' src='static/icons/${id}.png'>
-                <span class='pokemon'>Level: </span><span class='pokemon'>${pokemonLevel}</span>
                 <span class='pokemon links exclude'><a href='javascript:excludePokemon(${id})'>Exclude</a></span>
                 <span class='pokemon links notify'><a href='javascript:notifyAboutPokemon(${id})'>Notify</a></span>
                 <span class='pokemon links remove'><a href='javascript:removePokemonMarker("${encounterId}")'>Remove</a></span>
@@ -596,13 +595,16 @@ function pokemonLabel(item) {
                 <span class='label-countdown' disappears-at='${disappearTime}'>00m00s</span> left (${moment(disappearTime).format('HH:mm')})
               </div>
               <div class='pokemon'>
-                CP: <span class='pokemon encounter'>${cp}/${iv.toFixed(1)}%</span> (A${atk}/D${def}/S${sta})
+                IV: <span class='pokemon encounter'>${iv.toFixed(1)}% (${atk}/${def}/${sta})</span>
               </div>
               <div class='pokemon'>
-                Moveset: <span class='pokemon encounter'>${pMove1}/${pMove2}</span>
+                CP: <span class='pokemon encounter'>${cp}</span> | Level: <span class='pokemon encounter'>${pokemonLevel}</span>
               </div>
               <div class='pokemon'>
-                Weight: ${weight.toFixed(2)}kg | Height: ${height.toFixed(2)}m
+                Moves: <span class='pokemon encounter'>${pMove1} / ${pMove2}</span>
+              </div>
+              <div class='pokemon'>
+                Weight: <span class='pokemon encounter'>${weight.toFixed(2)}kg</span> | Height: <span class='pokemon encounter'>${height.toFixed(2)}m</span>
               </div>
               <div>
                 <span class='pokemon navigate'><a href='javascript:void(0);' onclick='javascript:openMapDirections(${latitude},${longitude});' title='Open in Google Maps'>${latitude.toFixed(6)}, ${longitude.toFixed(7)}</a></span>
@@ -616,10 +618,6 @@ function pokemonLabel(item) {
         <div class='pokemon container content-left'>
           <div>
             <img class='pokemon sprite' src='static/icons/${id}.png'>
-            <span class='pokemon'>Level: </span><span class='pokemon no-encounter'>n/a</span>
-            <span class='pokemon links exclude'><a href='javascript:excludePokemon(${id})'>Exclude</a></span>
-            <span class='pokemon links notify'><a href='javascript:notifyAboutPokemon(${id})'>Notify</a></span>
-            <span class='pokemon links remove'><a href='javascript:removePokemonMarker("${encounterId}")'>Remove</a></span>
           </div>
       </div>
       <div class='pokemon container content-right'>
@@ -627,17 +625,9 @@ function pokemonLabel(item) {
           <div class='pokemon disappear'>
             <span class='label-countdown' disappears-at='${disappearTime}'>00m00s</span> left (${moment(disappearTime).format('HH:mm')})
           </div>
-          <div class='pokemon'>
-            CP: <span class='pokemon no-encounter'>No information</span>
-          </div>
-          <div class='pokemon'>
-            Moveset: <span class='pokemon no-encounter'>No information</span>
-          </div>
-          <div class='pokemon'>
-            Weight: <span class='pokemon no-encounter'>n/a</span> | Height: <span class='pokemon no-encounter'>n/a</span>
-          </div>
           <div>
             <span class='pokemon navigate'><a href='javascript:void(0);' onclick='javascript:openMapDirections(${latitude},${longitude});' title='Open in Google Maps'>${latitude.toFixed(6)}, ${longitude.toFixed(7)}</a></span>
+            <span class='pokemon links'><a href='javascript:excludePokemon(${id})'>Exclude</a> <a href='javascript:notifyAboutPokemon(${id})'>Notify</a> <a href='javascript:removePokemonMarker("${encounterId}")'>Remove</a></span>
           </div>
       </div>
     </div>
