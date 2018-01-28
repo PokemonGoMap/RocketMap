@@ -40,7 +40,7 @@ args = get_args()
 flaskDb = FlaskDB()
 cache = TTLCache(maxsize=100, ttl=60 * 5)
 
-db_schema_version = 24
+db_schema_version = 25
 
 
 class MyRetryDB(RetryOperationalError, PooledMySQLDatabase):
@@ -125,6 +125,7 @@ class Pokemon(LatLongModel):
     form = SmallIntegerField(null=True)
     last_modified = DateTimeField(
         null=True, index=True, default=datetime.utcnow)
+    weather_boosted_condition = SmallIntegerField(null=True)
 
     class Meta:
         indexes = (
@@ -2005,7 +2006,9 @@ def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
                 'height': None,
                 'weight': None,
                 'gender': p.pokemon_data.pokemon_display.gender,
-                'form': None
+                'form': None,
+                'weather_boosted_condition':
+                    p.pokemon_data.pokemon_display.weather_boosted_condition
             }
 
             # Check for Unown's alphabetic character.
@@ -3224,6 +3227,12 @@ def database_migrate(db, old_ver):
             migrator.drop_index('pokemon', 'pokemon_disappear_time'),
             migrator.add_index('pokemon',
                                ('disappear_time', 'pokemon_id'), False)
+        )
+
+    if old_ver < 25:
+        migrate(
+            migrator.add_column('pokemon', 'weather_boosted_condition',
+                                SmallIntegerField(null=True))
         )
 
     # Always log that we're done.
