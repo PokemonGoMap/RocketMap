@@ -90,6 +90,8 @@ const excludedRaritiesList = [
   ['common', 'uncommon', 'rare', 'very rare', 'ultra rare']
 ]
 
+const weatherBoosts = ['None', 'Clear', 'Rain', 'Partly Cloudy', 'Cloudy', 'Windy', 'Snow', 'Fog']
+
 /*
  text place holders:
  <pkm> - pokemon name
@@ -552,6 +554,7 @@ function pokemonLabel(item) {
     var form = item['form']
     var cp = item['cp']
     var cpMultiplier = item['cp_multiplier']
+    var weatherBoostedCondition = item['weather_boosted_condition']
     const showStats = Store.get('showPokemonStats')
 
     $.each(types, function (index, type) {
@@ -571,6 +574,14 @@ function pokemonLabel(item) {
     <div class='pokemon name'>
       ${name} <span class='pokemon name pokedex'><a href='http://pokemon.gameinfo.io/en/pokemon/${id}' target='_blank' title='View in Pokédex'>#${id}</a></span> ${formString} <span class='pokemon gender rarity'>${genderType[gender - 1]} ${rarityDisplay}</span> ${typesDisplay}
     </div>`
+
+    if (weatherBoostedCondition !== null) {
+        var boost = weatherBoosts[weatherBoostedCondition]
+        contentstring += `
+        <div class='pokemon'>
+          Weather Boost: ${boost}
+        </div>`
+    }
 
     if (showStats && cp !== null && cpMultiplier !== null) {
         var pokemonLevel = getPokemonLevel(cpMultiplier)
