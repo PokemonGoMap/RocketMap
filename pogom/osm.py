@@ -5,7 +5,7 @@ from overpy import Overpass
 from geofence import Geofences
 from models import Gym, init_database
 from utils import get_args
-from s2sphere import LatLng, Cap, RegionCoverer
+from s2sphere import LatLng, CellId
 
 args = get_args
 app = None
@@ -69,11 +69,9 @@ def exgyms(geofence):
                                                         len(ex_gyms.ways)))
 
     for gym in gyms.items():
-        gympoint = {'lat': float(gym[1]['latitude']),
-                    'lon': float(gym[1]['longitude'])}
-        # get s2 cell corners for each gym
-        s2_center = get_s2_cell_center(
-                     gympoint['lat'], gympoint['lon'], 0, 20)
+        gympoint = [float(gym[1]['latitude']), float(gym[1]['longitude'])]
+        # get s2 cell center
+        s2_center = get_s2_cell_center(gympoint[0], gympoint[1], 20)
 
         for way in ex_gyms.ways:
             data = []
@@ -83,8 +81,7 @@ def exgyms(geofence):
             if Geofences.is_point_in_polygon_custom(s2_center, data):
                 # Try to get Gym name, but default to id if missing
                 try:
-                    gymname = Gym.get_gym(gym[0])['name'].encode(
-                        'utf8')
+                    gymname = Gym.get_gym(gym[0])['name'].encode('utf8')
                 except AttributeError:
                     gymname = gym[0]
                 log.info('{} is eligible for EX raid'.format(gymname))
@@ -92,16 +89,9 @@ def exgyms(geofence):
                 break
 
 
-def get_s2_cell_center(lat, lng, radius, parent_level):
-    radius_radians = earthMetersToRadians(radius)
-    latlng = LatLng.from_degrees(float(lat),
-                                 float(lng)).normalized().to_point()
-    region = Cap.from_axis_height(latlng, (radius_radians*radius_radians)/2)
-    coverer = RegionCoverer()
-    coverer.min_level = int(parent_level)
-    coverer.max_level = int(parent_level)
-    coverer.max_cells = 1
-    covering = coverer.get_covering(region)
-    center = covering[0].to_lat_lng()
+def get_s2_cell_center(lat, lng, level):
+    lat_lng = LatLng.from_degrees(lat, lng)
+    cell_id = CellId.from_lat_lng(lat_lng).parent(level)
+    center = cell_id.to_lat_lng()
     return {'lat': float(center.lat().degrees),
             'lon': float(center.lng().degrees)}
