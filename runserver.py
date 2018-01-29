@@ -18,7 +18,8 @@ from flask_cache_bust import init_cache_busting
 
 from pogom.app import Pogom
 from pogom.utils import (get_args, now, gmaps_reverse_geolocate,
-                         log_resource_usage_loop, get_debug_dump_link)
+                         log_resource_usage_loop, get_debug_dump_link,
+                         dynamic_loading_refresher, dynamic_rarity_refresher)
 from pogom.altitude import get_gmaps_altitude
 
 from pogom.models import (init_database, create_tables, drop_tables,
@@ -190,7 +191,8 @@ def can_start_scanning(args):
     api_version_map = {
         8302: 8300,
         8501: 8500,
-        8705: 8700
+        8705: 8700,
+        8901: 8900
     }
     mapped_version_int = api_version_map.get(api_version_int, api_version_int)
 
@@ -253,7 +255,7 @@ def main():
 
     set_log_and_verbosity(log)
 
-    # Abort if only-server and no-server are used together
+    # Abort if only-server and no-server are used together.
     if args.only_server and args.no_server:
         log.critical(
             "You can't use no-server and only-server at the same time, silly.")
@@ -268,9 +270,9 @@ def main():
     # Stop if we're just looking for a debug dump.
     if args.dump:
         log.info('Retrieving environment info...')
-        hastebin = get_debug_dump_link()
+        hastebin_id = get_debug_dump_link()
         log.info('Done! Your debug link: https://hastebin.com/%s.txt',
-                 hastebin)
+                 hastebin_id)
         sys.exit(1)
 
     # Let's not forget to run Grunt / Only needed when running with webserver.
@@ -278,10 +280,11 @@ def main():
         sys.exit(1)
 
     if args.no_version_check and not args.only_server:
-            log.warning('You are running RocketMap in No Version Check mode. '
-                        'If you don\'t know what you\'re doing, this mode '
-                        'can have consequences, and you will not receive '
-                        'support running in NoVC mode. You have been warned.')
+        log.warning('You are running RocketMap in No Version Check mode. '
+                    "If you don't know what you're doing, this mode "
+                    'can have negative consequences, and you will not '
+                    'receive support running in NoVC mode. '
+                    'You have been warned.')
 
     position = extract_coordinates(args.location)
 
@@ -289,7 +292,7 @@ def main():
     (altitude, status) = get_gmaps_altitude(position[0], position[1],
                                             args.gmaps_key)
     if altitude is not None:
-        log.debug('Local altitude is: %sm', altitude)
+        log.debug('Local altitude is: %sm.', altitude)
         position = (position[0], position[1], altitude)
     else:
         if status == 'REQUEST_DENIED':
@@ -302,17 +305,18 @@ def main():
             log.error('Unable to retrieve altitude from Google APIs' +
                       'setting to 0')
 
-    log.info('Parsed location is: %.4f/%.4f/%.4f (lat/lng/alt)',
+    log.info('Parsed location is: %.4f/%.4f/%.4f (lat/lng/alt).',
              position[0], position[1], position[2])
 
-    if args.no_pokemon:
-        log.info('Parsing of Pokemon disabled.')
-    if args.no_pokestops:
-        log.info('Parsing of Pokestops disabled.')
-    if args.no_gyms:
-        log.info('Parsing of Gyms disabled.')
-    if args.encounter:
-        log.info('Encountering pokemon enabled.')
+    # Scanning toggles.
+    log.info('Parsing of Pokemon %s.',
+             'disabled' if args.no_pokemon else 'enabled')
+    log.info('Parsing of Pokestops %s.',
+             'disabled' if args.no_pokestops else 'enabled')
+    log.info('Parsing of Gyms %s.',
+             'disabled' if args.no_gyms else 'enabled')
+    log.info('Pokemon encounters %s.',
+             'enabled' if args.encounter else 'disabled')
 
     app = None
     if not args.no_server and not args.clear_db:
@@ -378,7 +382,7 @@ def main():
     wh_updates_queue = Queue()
     wh_key_cache = {}
 
-    if len(args.wh_types) == 0:
+    if not args.wh_types:
         log.info('Webhook disabled.')
     else:
         log.info('Webhook enabled for events: sending %s to %s.',
@@ -394,13 +398,49 @@ def main():
             t.start()
 
     if not args.only_server:
+        # Speed limit.
+        log.info('Scanning speed limit %s.',
+                 'set to {} km/h'.format(args.kph)
+                 if args.kph > 0 else 'disabled')
+        log.info('High-level speed limit %s.',
+                 'set to {} km/h'.format(args.hlvl_kph)
+                 if args.hlvl_kph > 0 else 'disabled')
+
         # Check if we are able to scan.
         if not can_start_scanning(args):
             sys.exit(1)
 
         initialize_proxies(args)
 
-        # Update player locale if not set correctly, yet.
+        # Monitor files, update data if they've changed recently.
+        # Keys are 'args' object keys, values are filenames to load.
+        files_to_monitor = {}
+
+        if args.encounter:
+            files_to_monitor['enc_whitelist'] = args.enc_whitelist_file
+            log.info('Encounters are enabled.')
+        else:
+            log.info('Encounters are disabled.')
+
+        if args.webhook_blacklist_file:
+            files_to_monitor['webhook_blacklist'] = args.webhook_blacklist_file
+            log.info('Webhook blacklist is enabled.')
+        elif args.webhook_whitelist_file:
+            files_to_monitor['webhook_whitelist'] = args.webhook_whitelist_file
+            log.info('Webhook whitelist is enabled.')
+        else:
+            log.info('Webhook whitelist/blacklist is disabled.')
+
+        if files_to_monitor:
+            t = Thread(target=dynamic_loading_refresher,
+                       name='dynamic-enclist', args=(files_to_monitor,))
+            t.daemon = True
+            t.start()
+            log.info('Dynamic list refresher is enabled.')
+        else:
+            log.info('Dynamic list refresher is disabled.')
+
+        # Update player locale if not set correctly yet.
         args.player_locale = PlayerLocale.get_locale(args.location)
         if not args.player_locale:
             args.player_locale = gmaps_reverse_geolocate(
@@ -434,6 +474,15 @@ def main():
         while search_thread.is_alive():
             time.sleep(60)
     else:
+        # Dynamic rarity.
+        if args.rarity_update_frequency:
+            t = Thread(target=dynamic_rarity_refresher,
+                       name='dynamic-rarity')
+            t.daemon = True
+            t.start()
+            log.info('Dynamic rarity is enabled.')
+        else:
+            log.info('Dynamic rarity is disabled.')
 
         if args.cors:
             CORS(app)

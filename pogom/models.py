@@ -2115,6 +2115,12 @@ def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
                 gym_display = f.gym_display
                 raid_info = f.raid_info
                 # Send gyms to webhooks.
+
+                with Gym.database().execution_context():
+                    Query = Gym.select().where(Gym.gym_id == f.id).dicts()
+                    park_id = None
+                    for gym in list(Query):
+                        park_id = gym['park']
                 if 'gym' in args.wh_types:
                     raid_active_until = 0
                     raid_battle_ms = raid_info.raid_battle_ms
@@ -2135,6 +2141,8 @@ def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
                             f.guard_pokemon_id,
                         'slots_available':
                             gym_display.slots_available,
+                        'park':
+                            park_id,
                         'total_cp':
                             gym_display.total_gym_cp,
                         'enabled':
@@ -2158,6 +2166,8 @@ def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
                 gyms[f.id] = {
                     'gym_id':
                         f.id,
+                    'park':
+                        park_id,
                     'team_id':
                         f.owned_by_team,
                     'guard_pokemon_id':
@@ -2181,6 +2191,7 @@ def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
                     if f.HasField('raid_info'):
                         raids[f.id] = {
                             'gym_id': f.id,
+                            'park': park_id,
                             'level': raid_info.raid_level,
                             'spawn': datetime.utcfromtimestamp(
                                 raid_info.raid_spawn_ms / 1000.0),
@@ -3229,9 +3240,11 @@ def database_migrate(db, old_ver):
             migrator.add_index('pokemon',
                                ('disappear_time', 'pokemon_id'), False)
         )
+
     if old_ver < 25:
         migrate(
         migrator.add_column('gym', 'park', BooleanField()))
+
     # Always log that we're done.
     log.info('Schema upgrade complete.')
     return True
