@@ -561,7 +561,7 @@ def get_args():
         date = strftime('%Y%m%d_%H%M')
         log_tail = args.status_name if args.status_name else str(os.getpid())
         args.log_filename = '{}_{}.log'.format(date, log_tail)
-        
+
     if args.only_server:
         if args.location is None:
             parser.print_usage()
