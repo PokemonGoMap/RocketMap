@@ -624,7 +624,7 @@ class Gym(LatLongModel):
         return result
 
     @staticmethod
-    def is_gym_park(id, park):
+    def set_gym_in_park(id, park):
         Gym.update(park=park).where(Gym.gym_id == str(id)).execute()
 
 
@@ -2115,6 +2115,13 @@ def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
                 b64_gym_id = str(f.id)
                 gym_display = f.gym_display
                 raid_info = f.raid_info
+                # try to get recorded value for Gyms.park, default to false
+                try:
+                    park = Gym.select(Gym.park).where(
+                        Gym.gym_id == f.id).dicts()[0]['park']
+                except IndexError:
+                    park = False
+
                 # Send gyms to webhooks.
 
                 if 'gym' in args.wh_types:
@@ -2156,10 +2163,11 @@ def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
                         'raid_active_until':
                             raid_active_until
                     }))
-
                 gyms[f.id] = {
                     'gym_id':
                         f.id,
+                    'park':
+                        park,
                     'team_id':
                         f.owned_by_team,
                     'guard_pokemon_id':
@@ -2177,6 +2185,7 @@ def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
                     'last_modified':
                         datetime.utcfromtimestamp(
                             f.last_modified_timestamp_ms / 1000.0),
+
                 }
 
                 if not args.no_raids and f.type == 0:

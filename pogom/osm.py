@@ -11,11 +11,11 @@ args = get_args
 app = None
 log = logging.getLogger(__name__)
 db = init_database(app)
-earthCircumferenceMeters = 1000 * 40075.017
+EARTH_CIRCUMFERENCE_METERS = 400750170
 
 
 def earthMetersToRadians(meters):
-    return (2 * math.pi) * (float(meters) / earthCircumferenceMeters)
+    return (2 * math.pi) * (float(meters) / EARTH_CIRCUMFERENCE_METERS)
 
 
 def ex_query(s, w, n, e):
@@ -88,7 +88,7 @@ def exgyms(geofence):
                 except AttributeError:
                     gymname = gym[0]
                 log.info('{} is eligible for EX raid'.format(gymname))
-                Gym.is_gym_park(gym[0], True)
+                Gym.set_gym_in_park(gym[0], True)
                 break
 
 
