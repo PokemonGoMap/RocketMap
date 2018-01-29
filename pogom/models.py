@@ -23,10 +23,10 @@ from cachetools import TTLCache
 from cachetools import cached
 from timeit import default_timer
 
-from .utils import (get_pokemon_name, get_pokemon_rarity, get_pokemon_types,
+from .utils import (get_pokemon_name, get_pokemon_types,
                     get_args, cellid, in_radius, date_secs, clock_between,
                     get_move_name, get_move_damage, get_move_energy,
-                    get_move_type, calc_pokemon_level)
+                    get_move_type, calc_pokemon_level, peewee_attr_to_col)
 from .transform import transform_from_wgs_to_gcj, get_new_coords
 from .customLog import printPokemon
 
@@ -40,7 +40,7 @@ args = get_args()
 flaskDb = FlaskDB()
 cache = TTLCache(maxsize=100, ttl=60 * 5)
 
-db_schema_version = 23
+db_schema_version = 25
 
 
 class MyRetryDB(RetryOperationalError, PooledMySQLDatabase):
@@ -111,7 +111,7 @@ class Pokemon(LatLongModel):
     pokemon_id = SmallIntegerField(index=True)
     latitude = DoubleField()
     longitude = DoubleField()
-    disappear_time = DateTimeField(index=True)
+    disappear_time = DateTimeField()
     individual_attack = SmallIntegerField(null=True)
     individual_defense = SmallIntegerField(null=True)
     individual_stamina = SmallIntegerField(null=True)
@@ -127,7 +127,10 @@ class Pokemon(LatLongModel):
         null=True, index=True, default=datetime.utcnow)
 
     class Meta:
-        indexes = ((('latitude', 'longitude'), False),)
+        indexes = (
+            (('latitude', 'longitude'), False),
+            (('disappear_time', 'pokemon_id'), False)
+        )
 
     @staticmethod
     def get_active(swLat, swLng, neLat, neLng, timestamp=0, oSwLat=None,
@@ -175,26 +178,7 @@ class Pokemon(LatLongModel):
                               (Pokemon.latitude <= neLat) &
                               (Pokemon.longitude <= neLng))))
                      .dicts())
-
-        # Performance:  disable the garbage collector prior to creating a
-        # (potentially) large dict with append().
-        gc.disable()
-
-        pokemon = []
-        for p in list(query):
-
-            p['pokemon_name'] = get_pokemon_name(p['pokemon_id'])
-            p['pokemon_rarity'] = get_pokemon_rarity(p['pokemon_id'])
-            p['pokemon_types'] = get_pokemon_types(p['pokemon_id'])
-            if args.china:
-                p['latitude'], p['longitude'] = \
-                    transform_from_wgs_to_gcj(p['latitude'], p['longitude'])
-            pokemon.append(p)
-
-        # Re-enable the GC.
-        gc.enable()
-
-        return pokemon
+        return list(query)
 
     @staticmethod
     def get_active_by_id(ids, swLat, swLng, neLat, neLng):
@@ -215,24 +199,31 @@ class Pokemon(LatLongModel):
                             (Pokemon.longitude <= neLng))
                      .dicts())
 
-        # Performance:  disable the garbage collector prior to creating a
-        # (potentially) large dict with append().
-        gc.disable()
+        return list(query)
 
-        pokemon = []
-        for p in query:
-            p['pokemon_name'] = get_pokemon_name(p['pokemon_id'])
-            p['pokemon_rarity'] = get_pokemon_rarity(p['pokemon_id'])
-            p['pokemon_types'] = get_pokemon_types(p['pokemon_id'])
-            if args.china:
-                p['latitude'], p['longitude'] = \
-                    transform_from_wgs_to_gcj(p['latitude'], p['longitude'])
-            pokemon.append(p)
+    # Get all Pokémon spawn counts based on the last x hours.
+    # More efficient than get_seen(): we don't do any unnecessary mojo.
+    # Returns a dict:
+    #   { 'pokemon': [ {'pokemon_id': '', 'count': 1} ], 'total': 1 }.
+    @staticmethod
+    def get_spawn_counts(hours):
+        query = (Pokemon
+                 .select(Pokemon.pokemon_id,
+                         fn.Count(Pokemon.pokemon_id).alias('count')))
 
-        # Re-enable the GC.
-        gc.enable()
+        # Allow 0 to query everything.
+        if hours:
+            hours = datetime.utcnow() - timedelta(hours=hours)
+            # Not using WHERE speeds up the query.
+            query = query.where(Pokemon.disappear_time > hours)
 
-        return pokemon
+        query = query.group_by(Pokemon.pokemon_id).dicts()
+
+        # We need a total count. Use reduce() instead of sum() for O(n)
+        # instead of O(2n) caused by list comprehension.
+        total = reduce(lambda x, y: x + y['count'], query, 0)
+
+        return {'pokemon': query, 'total': total}
 
     @staticmethod
     @cached(cache)
@@ -565,7 +556,6 @@ class Gym(LatLongModel):
                               GymDetails.description,
                               Gym.guard_pokemon_id,
                               Gym.slots_available,
-                              Gym.park,
                               Gym.latitude,
                               Gym.longitude,
                               Gym.last_modified,
@@ -636,7 +626,6 @@ class Gym(LatLongModel):
     @staticmethod
     def is_gym_park(id, park):
         Gym.update(park=park).where(Gym.gym_id == str(id)).execute()
-
 
 class Raid(BaseModel):
     gym_id = Utf8mb4CharField(primary_key=True, max_length=50)
@@ -1075,6 +1064,13 @@ class MainWorker(BaseModel):
     accounts_working = IntegerField()
     accounts_captcha = IntegerField()
     accounts_failed = IntegerField()
+    success = IntegerField(default=0)
+    fail = IntegerField(default=0)
+    empty = IntegerField(default=0)
+    skip = IntegerField(default=0)
+    captcha = IntegerField(default=0)
+    start = IntegerField(default=0)
+    elapsed = IntegerField(default=0)
 
     @staticmethod
     def get_account_stats():
@@ -2119,14 +2115,6 @@ def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
                 gym_display = f.gym_display
                 raid_info = f.raid_info
                 # Send gyms to webhooks.
-
-                with Gym.database().execution_context():
-                    Query = Gym.select().where(Gym.gym_id == f.id).dicts()
-                    park_id = None
-                    for gym in list(Query):
-                        park_id = gym['park']
-                    log.debug(park_id)
-
                 if 'gym' in args.wh_types:
                     raid_active_until = 0
                     raid_battle_ms = raid_info.raid_battle_ms
@@ -2147,8 +2135,6 @@ def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
                             f.guard_pokemon_id,
                         'slots_available':
                             gym_display.slots_available,
-                        'park':
-                            park_id,
                         'total_cp':
                             gym_display.total_gym_cp,
                         'enabled':
@@ -2172,8 +2158,6 @@ def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
                 gyms[f.id] = {
                     'gym_id':
                         f.id,
-                    'park':
-                        park_id,
                     'team_id':
                         f.owned_by_team,
                     'guard_pokemon_id':
@@ -2197,7 +2181,6 @@ def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
                     if f.HasField('raid_info'):
                         raids[f.id] = {
                             'gym_id': f.id,
-                            'park': park_id,
                             'level': raid_info.raid_level,
                             'spawn': datetime.utcfromtimestamp(
                                 raid_info.raid_spawn_ms / 1000.0),
@@ -2461,10 +2444,13 @@ def encounter_pokemon(args, pokemon, account, api, account_sets, status,
                 result = pokemon_info
 
     except Exception as e:
-        log.exception('There was an error encountering Pokemon ID %s with ' +
-                      'account %s: %s.',
+        # Account may not be selected yet.
+        if hlvl_account:
+            log.warning('Exception occured during encounter with'
+                        ' high-level account %s.',
+                        hlvl_account['username'])
+        log.exception('There was an error encountering Pokemon ID %s: %s.',
                       pokemon_id,
-                      hlvl_account['username'],
                       e)
 
     # We're done with the encounter. If it's from an
@@ -2484,6 +2470,7 @@ def parse_gyms(args, gym_responses, wh_update_queue, db_update_queue):
     for g in gym_responses.values():
         gym_state = g.gym_status_and_defenders
         gym_id = gym_state.pokemon_fort_proto.id
+
         gym_details[gym_id] = {
             'gym_id': gym_id,
             'name': g.name,
@@ -2685,13 +2672,79 @@ def clean_db_loop(args):
 
 
 def bulk_upsert(cls, data, db):
-    num_rows = len(data.values())
+    rows = data.values()
+    num_rows = len(rows)
     i = 0
-    step = 250
 
+    # This shouldn't happen, ever, but anyways...
+    if num_rows < 1:
+        return
+
+    # We used to support SQLite and it has a default max 999 parameters,
+    # so we limited how many rows we insert for it.
+    # Oracle: 64000
+    # MySQL: 65535
+    # PostgreSQL: 34464
+    # Sqlite: 999
+    step = 500
+
+    # Prepare for our query.
+    conn = db.get_conn()
+    cursor = db.get_cursor()
+
+    # We build our own INSERT INTO ... ON DUPLICATE KEY UPDATE x=VALUES(x)
+    # query, making sure all data is properly escaped. We use
+    # placeholders for VALUES(%s, %s, ...) so we can use executemany().
+    # We use peewee's InsertQuery to retrieve the fields because it
+    # takes care of peewee's internals (e.g. required default fields).
+    query = InsertQuery(cls, rows=[rows[0]])
+    # Take the first row. We need to call _iter_rows() for peewee internals.
+    # Using next() for a single item is not considered "pythonic".
+    first_row = {}
+    for row in query._iter_rows():
+        first_row = row
+        break
+    # Convert the row to its fields, sorted by peewee.
+    row_fields = sorted(first_row.keys(), key=lambda x: x._sort_key)
+    row_fields = map(lambda x: x.name, row_fields)
+    # Translate to proper column name, e.g. foreign keys.
+    db_columns = [peewee_attr_to_col(cls, f) for f in row_fields]
+
+    # Store defaults so we can fall back to them if a value
+    # isn't set.
+    defaults = {}
+
+    for f in cls._meta.fields.values():
+        # Use DB column name as key.
+        field_name = f.name
+        field_default = cls._meta.defaults.get(f, None)
+        defaults[field_name] = field_default
+
+    # Assign fields, placeholders and assignments after defaults
+    # so our lists/keys stay in order.
+    table = '`'+conn.escape_string(cls._meta.db_table)+'`'
+    escaped_fields = ['`'+conn.escape_string(f)+'`' for f in db_columns]
+    placeholders = ['%s' for escaped_field in escaped_fields]
+    assignments = ['{x} = VALUES({x})'.format(
+        x=escaped_field
+    ) for escaped_field in escaped_fields]
+
+    # We build our own MySQL query because peewee only supports
+    # REPLACE INTO for upserting, which deletes the old row before
+    # adding the new one, giving a serious performance hit.
+    query_string = ('INSERT INTO {table} ({fields}) VALUES'
+                    + ' ({placeholders}) ON DUPLICATE KEY UPDATE'
+                    + ' {assignments}')
+
+    # Prepare transaction.
     with db.atomic():
         while i < num_rows:
-            log.debug('Inserting items %d to %d.', i, min(i + step, num_rows))
+            start = i
+            end = min(i + step, num_rows)
+            name = cls.__name__
+
+            log.debug('Inserting items %d to %d for %s.', start, end, name)
+
             try:
                 # Turn off FOREIGN_KEY_CHECKS on MySQL, because apparently it's
                 # unable to recognize strings to update unicode keys for
@@ -2699,9 +2752,46 @@ def bulk_upsert(cls, data, db):
                 # constraint errors.
                 db.execute_sql('SET FOREIGN_KEY_CHECKS=0;')
 
-                # Use peewee's own implementation of the insert_many() method.
-                InsertQuery(cls, rows=data.values()[
-                            i:min(i + step, num_rows)]).upsert().execute()
+                # Time to bulk upsert our data. Convert objects to a list of
+                # values for executemany(), and fall back to defaults if
+                # necessary.
+                batch = []
+                batch_rows = rows[i:min(i + step, num_rows)]
+
+                # We pop them off one by one so we can gradually release
+                # memory as we pass each item. No duplicate memory usage.
+                while len(batch_rows) > 0:
+                    row = batch_rows.pop()
+                    row_data = []
+
+                    # Parse rows, build arrays of values sorted via row_fields.
+                    for field in row_fields:
+                        # Take a default if we need it.
+                        if field not in row:
+                            default = defaults.get(field, None)
+
+                            # peewee's defaults can be callable, e.g. current
+                            # time. We only call when needed to insert.
+                            if callable(default):
+                                default = default()
+
+                            row[field] = default
+
+                        # Append to keep the exact order, and only these
+                        # fields.
+                        row_data.append(row[field])
+                    # Done preparing, add it to the batch.
+                    batch.append(row_data)
+
+                # Format query and go.
+                formatted_query = query_string.format(
+                    table=table,
+                    fields=', '.join(escaped_fields),
+                    placeholders=', '.join(placeholders),
+                    assignments=', '.join(assignments)
+                )
+
+                cursor.executemany(formatted_query, batch)
 
                 db.execute_sql('SET FOREIGN_KEY_CHECKS=1;')
 
@@ -3115,7 +3205,6 @@ def database_migrate(db, old_ver):
         db.execute_sql('DROP TABLE `gympokemon_old`;')
 
     if old_ver < 22:
-
         # Drop and add CONSTRAINT_2 with the <= fix.
         db.execute_sql('ALTER TABLE `spawnpoint` '
                        'DROP CONSTRAINT CONSTRAINT_2;')
@@ -3129,10 +3218,20 @@ def database_migrate(db, old_ver):
         db.execute_sql('ALTER TABLE `spawnpoint` '
                        'ADD CONSTRAINT CONSTRAINT_4 CHECK ' +
                        '(`latest_seen` <= 3600);')
-    if old_ver < 23:
-        migrate(
-            migrator.add_column('gym', 'park', BooleanField(default=False)))
 
+    if old_ver < 23:
+        db.drop_tables([WorkerStatus])
+        db.drop_tables([MainWorker])
+
+    if old_ver < 24:
+        migrate(
+            migrator.drop_index('pokemon', 'pokemon_disappear_time'),
+            migrator.add_index('pokemon',
+                               ('disappear_time', 'pokemon_id'), False)
+        )
+    if old_ver < 25:
+        migrate(
+        migrator.add_column('gym', 'park', BooleanField()))
     # Always log that we're done.
     log.info('Schema upgrade complete.')
     return True
