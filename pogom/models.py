@@ -627,6 +627,7 @@ class Gym(LatLongModel):
     def is_gym_park(id, park):
         Gym.update(park=park).where(Gym.gym_id == str(id)).execute()
 
+
 class Raid(BaseModel):
     gym_id = Utf8mb4CharField(primary_key=True, max_length=50)
     level = IntegerField(index=True)
@@ -3243,7 +3244,7 @@ def database_migrate(db, old_ver):
 
     if old_ver < 25:
         migrate(
-        migrator.add_column('gym', 'park', BooleanField()))
+            migrator.add_column('gym', 'park', BooleanField()))
 
     # Always log that we're done.
     log.info('Schema upgrade complete.')
