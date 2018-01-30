@@ -3243,7 +3243,7 @@ def database_migrate(db, old_ver):
 
     if old_ver < 25:
         migrate(
-            migrator.add_column('gym', 'park', BooleanField()))
+            migrator.add_column('gym', 'park', BooleanField(default=False)))
 
     # Always log that we're done.
     log.info('Schema upgrade complete.')
