@@ -506,7 +506,7 @@ function initSidebar() {
 }
 
 function getTypeSpan(type) {
-    return `<span style='padding: 2px 5px; text-transform: uppercase; color: white; margin-right: 2px; border-radius: 4px; font-size: 0.6em; vertical-align: middle; background-color: ${type['color']}'>${type['type']}</span>`
+    return `<span style='padding: 2px 5px; text-transform: uppercase; color: white; margin-right: 2px; border-radius: 4px; font-size: 0.8em; vertical-align: middle; background-color: ${type['color']}'>${type['type']}</span>`
 }
 
 function openMapDirections(lat, lng) { // eslint-disable-line no-unused-vars
@@ -569,7 +569,7 @@ function pokemonLabel(item) {
 
     contentstring += `
     <div class='pokemon name'>
-      ${name} <span class='pokemon name pokedex'><a href='http://pokemon.gameinfo.io/en/pokemon/${id}' target='_blank' title='View in Pokédex'>#${id}</a></span> ${formString} <span class='pokemon gender rarity'>${genderType[gender - 1]} ${rarityDisplay}</span> ${typesDisplay}
+      ${name} ${genderType[gender - 1]} <span class='pokemon name pokedex'><a href='http://pokemon.gameinfo.io/en/pokemon/${id}' target='_blank' title='View in Pokédex'>#${id}</a></span> ${formString} <span class='pokemon rarity'>${rarityDisplay}</span> ${typesDisplay}
     </div>`
 
     if (showStats && cp !== null && cpMultiplier !== null) {
@@ -625,9 +625,13 @@ function pokemonLabel(item) {
           <div class='pokemon disappear'>
             <span class='label-countdown' disappears-at='${disappearTime}'>00m00s</span> left (${moment(disappearTime).format('HH:mm')})
           </div>
+          <div class='pokemon'>
+            <span class='pokemon links exclude'><a href='javascript:excludePokemon(${id})'>Exclude</a></span>
+            <span class='pokemon links notify'><a href='javascript:notifyAboutPokemon(${id})'>Notify</a></span>
+            <span class='pokemon links remove'><a href='javascript:removePokemonMarker("${encounterId}")'>Remove</a></span>
+          </div>
           <div>
             <span class='pokemon navigate'><a href='javascript:void(0);' onclick='javascript:openMapDirections(${latitude},${longitude});' title='Open in Google Maps'>${latitude.toFixed(6)}, ${longitude.toFixed(7)}</a></span>
-            <span class='pokemon links'><a href='javascript:excludePokemon(${id})'>Exclude</a> <a href='javascript:notifyAboutPokemon(${id})'>Notify</a> <a href='javascript:removePokemonMarker("${encounterId}")'>Remove</a></span>
           </div>
       </div>
     </div>

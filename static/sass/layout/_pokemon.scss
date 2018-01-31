@@ -19,9 +19,11 @@
   &.name {
     font-size: 13px;
     font-weight: 900;
+    margin-bottom: 13px;
 
     &.pokedex {
       font-size: 12px;
+      margin: 0px 6px 0px 6px;
     }
   }
 
@@ -33,14 +35,14 @@
     font-weight: 300;
   }
 
-  &.gender.rarity {
+  &.rarity {
     font-size: 11px;
   }
 
   &.disappear {
     font-size: 14px;
     font-weight: 900;
-    margin: 10px 0px 10px 0px;
+    margin: 0px 0px 10px 0px;
 
     &:before {
       content: '\f017';
@@ -54,6 +56,7 @@
 
   &.links {
     color: rgb(93,109,126);
+    margin-right: 3px;
 
     &.exclude:before {
       content: '\f056';
@@ -78,13 +81,11 @@
   }
 
   &.navigate {
-    position: absolute;
 
     &.navigate:before {
       content: '\f018';
       display: inline-block;
       font-family: FontAwesome;
-      margin: 6px 3px 0px 0px;
       height: 16px;
       width: 16px;
       -webkit-font-smoothing: antialiased;
