@@ -13,7 +13,7 @@ Place your custom code into 'custom.js' in the folder 'static/js'. *Examples are
 Examples for a MOTD, google analytics and disabling scaling icons by rarity are included in custom.js.example!
 The example below is how to set default options usually done by editing core files.
 
-**Set a new map style by default.**
+* **Set a new map style by default.**  
 First we set a variable for it and pick which style we want as default.
 ```
 const map_style = 'satellite'
@@ -22,6 +22,26 @@ Next we have to tell the script to store the value to set it.
 ```
 Store.set('map_style', map_style)
 ```
+* **Add default Pokémon to "Hide Pokémon".**  
+First we need to retrieve what has already been set so we don't overwrite anything excluded in the interface.
+```
+const totalExcluded = Store.get('remember_select_exclude')
+```
+And then add the Pokémon we want to hide by default.
+```
+const excludedPokemon = [] // Add Pokémon IDs separated by commas (e.g. [1, 2, 3])
+```
+Finally we have to tell the script to store the value to set it.
+```
+excludedPokemon.forEach((id) => {
+    if (totalExcluded.indexOf(id) === -1) {
+        totalExcluded.push(id)
+    }
+})
+
+Store.set('remember_select_exclude', totalExcluded)
+``` 
+
 Whenever you edit custom.js you will have to run `npm run build` to set the changes.
 When you load the map it will be set to satellite as default.
 
