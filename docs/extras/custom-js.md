@@ -22,6 +22,14 @@ Next we have to tell the script to store the value to set it.
 ```
 Store.set('map_style', map_style)
 ```
+
+Whenever you edit custom.js you will have to run `npm run build` to set the changes.
+When you load the map it will be set to satellite style and Pidgey + Weedle will be hidden as default.
+
+Setting options in this way forces that setting on page load, so even if a user changes the setting it will revert back to what you have set in custom.js every time, keep this in mind when forcing settings.  
+
+If you don't want to revert back to what you have set in custom.js every time, you can do it like in the example below.  
+
 * **Add default Pokémon to "Hide Pokémon".**  
 First we need to retrieve what has already been set so we don't overwrite anything excluded in the interface.
 ```
@@ -41,10 +49,5 @@ excludedPokemon.forEach((id) => {
 
 Store.set('remember_select_exclude', totalExcluded)
 ``` 
-
-Whenever you edit custom.js you will have to run `npm run build` to set the changes.
-When you load the map it will be set to satellite style and Pidgey + Weedle will be hidden as default.
-
-Setting options in this way forces that setting on page load, so even if a user changes the setting it will revert back to what you have set in custom.js every time, keep this in mind when forcing settings.
 
 See 'custom.js.example' for more information.
