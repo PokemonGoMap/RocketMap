@@ -24,7 +24,7 @@ Store.set('map_style', map_style)
 ```
 
 Whenever you edit custom.js you will have to run `npm run build` to set the changes.
-When you load the map it will be set to satellite style and Pidgey + Weedle will be hidden as default.
+When you load the map it will be set to satellite as default.
 
 Setting options in this way forces that setting on page load, so even if a user changes the setting it will revert back to what you have set in custom.js every time, keep this in mind when forcing settings.  
 
@@ -49,5 +49,6 @@ excludedPokemon.forEach((id) => {
 
 Store.set('remember_select_exclude', totalExcluded)
 ``` 
+When you load the map Weedle and Pidgey will be hidden as default.
 
 See 'custom.js.example' for more information.
