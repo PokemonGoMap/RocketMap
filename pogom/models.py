@@ -40,7 +40,7 @@ args = get_args()
 flaskDb = FlaskDB()
 cache = TTLCache(maxsize=100, ttl=60 * 5)
 
-db_schema_version = 25
+db_schema_version = 26
 
 
 class MyRetryDB(RetryOperationalError, PooledMySQLDatabase):
@@ -122,6 +122,7 @@ class Pokemon(LatLongModel):
     weight = FloatField(null=True)
     height = FloatField(null=True)
     gender = SmallIntegerField(null=True)
+    costume = SmallIntegerField(null=True)
     form = SmallIntegerField(null=True)
     last_modified = DateTimeField(
         null=True, index=True, default=datetime.utcnow)
@@ -503,6 +504,8 @@ class Gym(LatLongModel):
                            GymMember.deployment_time,
                            GymMember.last_scanned,
                            GymPokemon.pokemon_id,
+                           GymPokemon.costume,
+                           GymPokemon.form,
                            Trainer.name.alias('trainer_name'),
                            Trainer.level.alias('trainer_level'))
                        .join(Gym, on=(GymMember.gym_id == Gym.gym_id))
@@ -585,6 +588,8 @@ class Gym(LatLongModel):
                            GymPokemon.iv_attack,
                            GymPokemon.iv_defense,
                            GymPokemon.iv_stamina,
+                           GymPokemon.costume,
+                           GymPokemon.form,
                            Trainer.name.alias('trainer_name'),
                            Trainer.level.alias('trainer_level'))
                    .join(Gym, on=(GymMember.gym_id == Gym.gym_id))
@@ -1703,6 +1708,8 @@ class GymPokemon(BaseModel):
     iv_defense = SmallIntegerField(null=True)
     iv_stamina = SmallIntegerField(null=True)
     iv_attack = SmallIntegerField(null=True)
+    costume = SmallIntegerField(null=True)
+    form = SmallIntegerField(null=True)
     last_seen = DateTimeField(default=datetime.utcnow)
 
 
@@ -2010,13 +2017,9 @@ def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
                 'height': None,
                 'weight': None,
                 'gender': p.pokemon_data.pokemon_display.gender,
-                'form': None
+                'costume': p.pokemon_data.pokemon_display.costume,
+                'form': p.pokemon_data.pokemon_display.form
             }
-
-            # Check for Unown's alphabetic character.
-            if pokemon_id == 201:
-                pokemon[p.encounter_id]['form'] = (p.pokemon_data
-                                                    .pokemon_display.form)
 
             # We need to check if exist and is not false due to a request error
             if pokemon_info:
@@ -2532,6 +2535,8 @@ def parse_gyms(args, gym_responses, wh_update_queue, db_update_queue):
                 'iv_defense': pokemon.individual_defense,
                 'iv_stamina': pokemon.individual_stamina,
                 'iv_attack': pokemon.individual_attack,
+                'costume': pokemon.pokemon_display.costume,
+                'form': pokemon.pokemon_display.form,
                 'last_seen': datetime.utcnow(),
             }
 
@@ -3243,6 +3248,19 @@ def database_migrate(db, old_ver):
 
     if old_ver < 25:
         migrate(
+            # Add `costume` column to `pokemon`
+            migrator.add_column('pokemon', 'costume',
+                                SmallIntegerField(null=True)),
+            # Add `form` column to `gympokemon`
+            migrator.add_column('gympokemon', 'form',
+                                SmallIntegerField(null=True)),
+            # Add `costume` column to `gympokemon`
+            migrator.add_column('gympokemon', 'costume',
+                                SmallIntegerField(null=True)))
+
+    if old_ver < 26:
+        migrate(
+            # Add `park` column to `gym`
             migrator.add_column('gym', 'park', BooleanField(default=False)))
 
     # Always log that we're done.
