@@ -45,7 +45,7 @@ excludedPokemon.forEach((id) => {
     }
 })
 
-Store.set('remember_select_exclude', totalExcluded) //Tell the script to store the value to set it.
+Store.set('remember_select_exclude', totalExcluded) // Tell the script to store the value to set it.
 ``` 
 When you load the map Weedle and Pidgey will be hidden as default.
 
