@@ -17,7 +17,7 @@ from .models import (Pokemon, Gym, Pokestop, ScannedLocation,
                      MainWorker, WorkerStatus, Token, HashKeys,
                      SpawnPoint)
 from .utils import (get_args, get_pokemon_name, get_pokemon_types,
-                    now, dottedQuadToNum)
+                    get_pokemon_gen, now, dottedQuadToNum)
 from .transform import transform_from_wgs_to_gcj
 from .blacklist import fingerprints, get_ip_blacklist
 
@@ -34,6 +34,7 @@ def convert_pokemon_list(pokemon):
     pokemon_result = []
     for p in pokemon:
         p['pokemon_name'] = get_pokemon_name(p['pokemon_id'])
+        p['pokemon_gen'] = get_pokemon_gen(p['pokemon_id'])
         p['pokemon_types'] = get_pokemon_types(p['pokemon_id'])
         p['encounter_id'] = str(p['encounter_id'])
         if args.china:
