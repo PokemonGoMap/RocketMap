@@ -568,7 +568,7 @@ function pokemonLabel(item) {
     }
 
     if (id === 29 || id === 32) {
-      name = name.slice(0, -1);
+        name = name.slice(0, -1)
     }
 
     contentstring += `
