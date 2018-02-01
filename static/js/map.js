@@ -506,7 +506,7 @@ function initSidebar() {
 }
 
 function getTypeSpan(type) {
-    return `<span style='padding: 2px 5px; text-transform: uppercase; color: white; margin-right: 2px; border-radius: 4px; font-size: 0.8em; vertical-align: middle; background-color: ${type['color']}'>${type['type']}</span>`
+    return `<span style='padding: 2px 5px; text-transform: uppercase; color: white; margin-right: 2px; border-radius: 4px; font-size: 0.75em; vertical-align: middle; background-color: ${type['color']}'>${type['type']}</span>`
 }
 
 function openMapDirections(lat, lng) { // eslint-disable-line no-unused-vars
@@ -567,6 +567,10 @@ function pokemonLabel(item) {
         formString += `(${unownForm[item['form']]})`
     }
 
+    if (id === 29 || id === 32) {
+      name = name.slice(0, -1);
+    }
+
     contentstring += `
     <div class='pokemon name'>
       ${name} ${genderType[gender - 1]} <span class='pokemon name pokedex'><a href='http://pokemon.gameinfo.io/en/pokemon/${id}' target='_blank' title='View in Pokédex'>#${id}</a></span> ${formString} <span class='pokemon rarity'>${rarityDisplay}</span> ${typesDisplay}
@@ -584,9 +588,15 @@ function pokemonLabel(item) {
             <div class='pokemon container content-left'>
               <div>
                 <img class='pokemon sprite' src='static/icons/${id}.png'>
-                <span class='pokemon links exclude'><a href='javascript:excludePokemon(${id})'>Exclude</a></span>
-                <span class='pokemon links notify'><a href='javascript:notifyAboutPokemon(${id})'>Notify</a></span>
-                <span class='pokemon links remove'><a href='javascript:removePokemonMarker("${encounterId}")'>Remove</a></span>
+                <div class='pokemon'>
+                  <span class='pokemon links exclude'><a href='javascript:excludePokemon(${id})'>Exclude</a></span>
+                </div>
+                <div class='pokemon'>
+                  <span class='pokemon links notify'><a href='javascript:notifyAboutPokemon(${id})'>Notify</a></span>
+                </div>
+                <div class='pokemon'>
+                  <span class='pokemon links remove'><a href='javascript:removePokemonMarker("${encounterId}")'>Remove</a></span>
+                </div>
               </div>
           </div>
           <div class='pokemon container content-right'>

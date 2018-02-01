@@ -1,5 +1,6 @@
 .pokemon.container {
   display: flex;
+  margin-bottom: 0px;
 
   &.content-left {
     width:64px;
@@ -23,7 +24,7 @@
 
     &.pokedex {
       font-size: 12px;
-      margin: 0px 6px 0px 6px;
+      margin-right: 5px;
     }
   }
 
@@ -31,12 +32,9 @@
     font-weight: 900;
   }
 
-  &.no-encounter {
-    font-weight: 300;
-  }
-
   &.rarity {
     font-size: 11px;
+    margin-right: 5px;
   }
 
   &.disappear {
@@ -96,5 +94,6 @@
     display: block;
     height: 48px;
     width: 48px;
+    margin-bottom: 11px;
   }
 }
