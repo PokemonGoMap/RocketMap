@@ -79,11 +79,13 @@
   }
 
   &.navigate {
+    position: absolute;
 
     &.navigate:before {
       content: '\f018';
       display: inline-block;
       font-family: FontAwesome;
+      margin-top: 5px;
       height: 16px;
       width: 16px;
       -webkit-font-smoothing: antialiased;
@@ -94,6 +96,6 @@
     display: block;
     height: 48px;
     width: 48px;
-    margin-bottom: 11px;
+    margin-bottom: 15px;
   }
 }
