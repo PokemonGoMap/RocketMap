@@ -605,7 +605,7 @@ function pokemonLabel(item) {
                 <span class='label-countdown' disappears-at='${disappearTime}'>00m00s</span> left (${moment(disappearTime).format('HH:mm')})
               </div>
               <div class='pokemon'>
-                IV: <span class='pokemon encounter'>${iv.toFixed(1)}% (${atk}/${def}/${sta})</span>
+                IV: <span class='pokemon encounter'>${iv.toFixed(1)}% (A${atk}/D${def}/S${sta})</span>
               </div>
               <div class='pokemon'>
                 CP: <span class='pokemon encounter'>${cp}</span> | Level: <span class='pokemon encounter'>${pokemonLevel}</span>
