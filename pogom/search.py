@@ -661,7 +661,7 @@ def get_stats_message(threadStatus, search_items_queue_array, db_updates_queue,
         'Fails: {} ({:.1f}/hr) | ' +
         'Empties: {} ({:.1f}/hr) | ' +
         'Skips {} ({:.1f}/hr) | ' +
-        'Captchas: {} ({:.2f}/hr)|${:.1f}/hr|${:.2f}/mo | ' +
+        'Captchas: {} ({:.2f}/hr)|${:.2f}/hr|${:.2f}/mo | ' +
         'Elapsed: {:.1f}h'
     ).format(overseer['active_accounts'], overseer['busy_accounts'],
              (overseer['active_accounts'] - overseer['busy_accounts']),
