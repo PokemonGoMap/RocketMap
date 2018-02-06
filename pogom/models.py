@@ -2118,7 +2118,7 @@ def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
                 b64_gym_id = str(f.id)
                 gym_display = f.gym_display
                 raid_info = f.raid_info
-                # try to get recorded value for Gyms.park, default to false
+                # try to get recorded value for Gyms.park, default to false.
                 try:
                     park = Gym.select(Gym.park).where(
                         Gym.gym_id == f.id).dicts()[0]['park']

@@ -332,11 +332,11 @@ def main():
 
     if args.ex_gyms:
         if args.geofence_file == '':
-            log.critical('A geofence is required to find EX-gyms')
+            log.critical('A geofence is required to find EX-gyms.')
             sys.exit(1)
         else:
             exgyms(args.geofence_file)
-            log.info('Finished checking gyms against OSM parks, exiting')
+            log.info('Finished checking gyms against OSM parks, exiting.')
             sys.exit(1)
 
     # Control the search status (running or not) across threads.
