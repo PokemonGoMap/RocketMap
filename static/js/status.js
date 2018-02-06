@@ -368,12 +368,6 @@ function getStats(i, worker) {
     elapsedHours = elapsedSecs / 3600
 }
 
-function getAccountStats(i, account) {
-
-    idle += (account['message'] == 'Nothing to scan.') ? 1 : 0
-    busy += (account['message'] != 'Nothing to scan.') ? 1 : 0
-}
-
 function addTotalStats(result) {
     var statmsg, title
     scansSuccess = 0
