@@ -656,15 +656,15 @@ def get_stats_message(threadStatus, search_items_queue_array, db_updates_queue,
              len(account_failures), len(account_captchas))
 
     message += (
-        'Total active: {}, busy: {}, idle: {} | ' + 
+        'Total active: {}, busy: {}, idle: {} | ' +
         'Success: {} ({:.1f}/hr) | ' +
-        'Fails: {} ({:.1f}/hr) | ' + 
+        'Fails: {} ({:.1f}/hr) | ' +
         'Empties: {} ({:.1f}/hr) | ' +
-        'Skips {} ({:.1f}/hr) | ' + 
+        'Skips {} ({:.1f}/hr) | ' +
         'Captchas: {} ({:.1f}/hr)|${:.5f}/hr|${:.3f}/mo | ' +
         'Elapsed: {:.1f}h'
-    ).format(overseer['active_accounts'], overseer['busy_accounts'], 
-             (overseer['active_accounts'] - overseer['busy_accounts']), 
+    ).format(overseer['active_accounts'], overseer['busy_accounts'],
+             (overseer['active_accounts'] - overseer['busy_accounts']),
              overseer['success_total'], sph,
              overseer['fail_total'], fph, overseer['empty_total'], eph,
              overseer['skip_total'], skph, overseer['captcha_total'], cph,

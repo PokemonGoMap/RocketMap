@@ -372,9 +372,8 @@ function getStats(i, worker) {
 }
 
 function getAccountStats(i, account) {
-
-    idle += (account['message'] == 'Nothing to scan.') ? 1 : 0
-    busy += (account['message'] != 'Nothing to scan.') ? 1 : 0
+    idle += (account['message'] === 'Nothing to scan.') ? 1 : 0
+    busy += (account['message'] !== 'Nothing to scan.') ? 1 : 0
 }
 
 function addTotalStats(result) {
