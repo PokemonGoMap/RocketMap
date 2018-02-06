@@ -15,7 +15,7 @@ Output for running with `-exg` should be similar to:
 
   ![Sample Image](../_static/img/exg.png)  
 
-If your are scanning for [gym-info](gyminfo.md) the output will contain the name of the gym instead of its ID.  
+If you're scanning for [gym-info](gyminfo.md) the output will contain the name of the gym instead of its ID.  
 Please note, your geofence will be used to determine what area is queried from overpass. Do not use a larger geofence than necessary as it will take longer to query results and check your existing gyms.
 
 Once your check is completed, you can check for gyms or raids in confirmed park areas by these toggles:  
