@@ -66,7 +66,7 @@ def exgyms(geofence):
 
     gyms = Gym.get_gyms(south, west, north, east)
     log.info('Checking {} gyms against {} parks.'.format(len(gyms),
-                                                        len(ex_gyms.ways)))
+                                                         len(ex_gyms.ways)))
 
     for gym in gyms.items():
         gympoint = [float(gym[1]['latitude']), float(gym[1]['longitude'])]
