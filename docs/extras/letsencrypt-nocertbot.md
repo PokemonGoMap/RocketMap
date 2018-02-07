@@ -1,5 +1,4 @@
-Let's Encrypt Without Certbot
-===================
+# Let's Encrypt Without Certbot
 
 This page is for operating systems such as Windows where ACME clients are not currently well implemented compared to operating systems like Linux.
 
@@ -11,8 +10,7 @@ Please note that in order to use Let's Encrypt or any other public certificate a
 
 The demonstration images use CloudFlare's DNS panel as an example. This method should work regardless of DNS provider, and the instructions are more or less the same, but your interface may look a little bit different. Consult your DNS provider's help pages if you are unsure how to navigate your provider's interface.
 
-Part 1: Begin Validation Procedure
-----------------------------------
+## Part 1: Begin Validation Procedure
 
 We will be using [SSL For Free](https://www.sslforfree.com/), but there are multiple sites you could use that operate similarly.
 
@@ -34,8 +32,7 @@ Next, you'll be greeted with the following:
 
 If you are a more experienced user, you can feel free to follow these instructions. If you aren't, not to worry. I'll walk you through it.
 
-Part 2: Adding TXT Records
---------------------------
+## Part 2: Adding TXT Records
 
 In a new tab, open up your domain in your DNS provider panel, and find the DNS Records area. You should have something similar to this:
 
@@ -53,8 +50,7 @@ When you're done, click Add Record, Finish, or whatever option your DNS Provider
 
 Once you have added both records, return to SSL For Free, and click "Download SSL Certificate". If you receive errors, restart the process, making sure you entered everything correctly. If you have everything entered correctly, check if your DNS provider has a save button, and make sure that you've pressed it if so. Otherwise, wait about 10 minutes before clicking download, as the records may not have propagated yet.
 
-Part 3: Download the certificate
---------------------------------
+## Part 3: Download the certificate
 
 After clicking download, you'll receive the following screen:
 
