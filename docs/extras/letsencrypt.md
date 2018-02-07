@@ -12,8 +12,6 @@ Before continuing, be sure to create backups of your web server configurations a
 
 Certbot can automatically detect your webserver's webroot, and complete the verification automatically, in addition to updating your webserver configuration itself.
 
-After making a backup of your webserver config, you can use the following commands:
-
 For Nginx users:
 ```
 sudo certbot --authenticator webroot --installer nginx
