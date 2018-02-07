@@ -6,7 +6,7 @@ This method is the simplest as it does not require spinning up any webservers, h
 
 For these reasons, it is heavily advised you use Certbot if possible.
 
-Please note that in order to use Let's Encrypt or any other public certificate authority, you will need to own a domain. No, IP addresses, HOST file redirects or local DNS will not suffice. It must be a publicly accessible domain.
+Please note that in order to use Let's Encrypt or any other public certificate authority, you will need to own a domain. No: IP addresses, HOST file redirects or local DNS will not suffice. It must be a publicly accessible domain.
 
 The demonstration images use CloudFlare's DNS panel as an example. This method should work regardless of DNS provider, and the instructions are more or less the same, but your interface may look a little bit different. Consult your DNS provider's help pages if you are unsure how to navigate your provider's interface.
 
@@ -40,7 +40,7 @@ In a new tab, open up your domain in your DNS provider panel, and find the DNS R
 
 Next, create a new TXT record. The process once again varies with providers, but typically you will have an "Add Record" button, "Add TXT Record", or a dropdown which you can select TXT from.
 
-For the name of the TXT record, copy and paste the value provided by SSL For Free. It should look something like this: `_acme-challenge.rocketmap.org`. For the value, copy and paste the value provided by SSL For Free. It should be random and look something like this: `CbcjJVoP-lzidytcIE_GZV18___1KdBOiihQCYmmwjE`. For the TTL, or Time To Live, you can choose "Automatic". If there isn't an automatic value, enter 1 hour, or 3600 seconds.
+For the name of the TXT record, copy and paste the value provided by SSL For Free. It should look something like this: `_acme-challenge.yourdomain.tld`. For the value, copy and paste the value provided by SSL For Free. It should be random and look something like this: `CbcjJVoP-lzidytcIE_GZV18___1KdBOiihQCYmmwjE`. For the TTL, or Time To Live, you can choose "Automatic". If there isn't an automatic value, enter 1 hour, or 3600 seconds.
 
 Your final record should look similar to the image below:
 

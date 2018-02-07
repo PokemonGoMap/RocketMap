@@ -6,6 +6,8 @@ To begin, you will need to install certbot on your system. Use [this great page]
 
 After installing certbot, you can use one of many methods to obtain a certificate.
 
+Before continuing, be sure to create backups of your web server configurations as it cannot be guaranteed that certbot will not break them.
+
 # Webroot
 
 Certbot can automatically detect your webserver's webroot, and complete the verification automatically, in addition to updating your webserver configuration itself.
@@ -37,14 +39,7 @@ sudo certbot certonly --webroot -w /var/www/example.com/ -d example.com
 # Standalone Webserver
 You can also have Certbot generate a certificate using its own webserver. If you want to keep certbot's grubby hands off your webserver, this is the best method.
 
-This method is slightly different from the webroot method, as it requires you to stop your webserver so that certbot can spin up its own. You can do this manually:
-```
-sudo service nginx stop; [certbot command]; sudo service nginx start
-```
-
-However, certbot supports pre and post hooks, allowing you to specify your webserver start and stop commands for certbot to execute itself. 
-
-After making a backup of your webserver config, you can use the following commands:
+This method is slightly different from the webroot method, as it requires you to stop your webserver so that certbot can spin up its own. The best method to do this is with pre and post hooks. For example:
 
 For Nginx users:
 ```
@@ -55,7 +50,15 @@ For Apache users:
 sudo certbot --authenticator standalone --installer apache --pre-hook "service apache2 stop" --post-hook "service apache2 start"
 ```
 
-Note that both of these examples will automatically edit the webserver configuration. If you wish to update the configuration yourself, simply remove --installer apache/nginx from the command.
+This is a much nicer method, as it consolidates everything into a single command and passes it all to certbot, which will take care of everything by itself. In addition, if you decide to setup automatic renewals, this will make your crontab considerably cleaner. However, if you wish, you can start/stop your webserver manually as such:
+
+```
+sudo service nginx/apache2 stop
+[certbot command]
+sudo service nginx/apache2 start
+```
+
+Note that these examples will automatically edit the webserver configuration. If you wish to update the configuration yourself, simply remove --installer apache/nginx from the command.
 
 # Renewing Certificates
 Let's Encrypt will send you emails when the certificate is reaching expiration. If your certificate is reaching expiration, you will need to renew it. The command for renewing certificates will vary depending on the method you used to generate the certificate.
