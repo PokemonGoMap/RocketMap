@@ -564,7 +564,7 @@ function pokemonLabel(item) {
     var formString = ''
 
     if (form !== null && form > 0 && forms.length > form) {
-        formString += `(${form[item['form']]})`
+        formString += `(${forms[item['form']]})`
     }
 
     contentstring += `
