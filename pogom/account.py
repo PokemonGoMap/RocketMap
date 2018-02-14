@@ -315,7 +315,7 @@ def rpc_login_sequence(args, api, account):
     try:  # 8 - Make an empty request to fetch all News.
         req = api.create_request()
         req.fetch_all_news()
-        req.call(False)
+        send_generic_request(req, account, settings=True)
 
         total_req += 1
         time.sleep(random.uniform(.45, .7))
