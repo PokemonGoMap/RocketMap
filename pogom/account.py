@@ -320,8 +320,8 @@ def rpc_login_sequence(args, api, account):
         total_req += 1
         time.sleep(random.uniform(.45, .7))
     except Exception as e:
-        log.exception('Login for account %s failed. Exception in ' +
-                      'Fetch all News: %s.', account['username'],
+        log.exception('Login for account %s failed. Exception while ' +
+                      'fetching all news: %s.', account['username'],
                       e)
         raise LoginSequenceFail('Failed during login sequence.')
 
