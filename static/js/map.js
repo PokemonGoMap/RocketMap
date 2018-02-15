@@ -1229,7 +1229,9 @@ function drawCircle(ctx, x, y, radius, stroke, fill) {
     ctx.beginPath()
     ctx.arc(x, y, radius, 0, 2 * Math.PI)
     ctx.fillStyle = fill
+    ctx.shadowColor = 'rgba(0,0,0,.5)'
     ctx.fill()
+    ctx.shadowColor = 'transparent'
     ctx.lineWidth = 2
     ctx.strokeStyle = stroke
     ctx.stroke()
@@ -1285,12 +1287,16 @@ function createGymImage(item, callback) {
         canvas.height = 96
         var ctx = canvas.getContext('2d')
         ctx.miterLimit = 2
+        ctx.shadowBlur = 3
         // Draw base image
         ctx.drawImage(results[0], 0, 0)
         if (isValidRaid(item.raid)) {
             // Draw egg
-            ctx.drawImage(results[1], 0, 0, 64, 64, 47, 35, 55, 55)
+            ctx.shadowColor = 'rgba(0,0,0,.5)'
+            ctx.drawImage(results[1], 0, 0, 64, 64, 45, 35, 55, 55)
+            ctx.shadowColor = 'transparent'
             if (isOngoingRaid(item.raid)) {
+                ctx.shadowColor = 'rgba(0,0,0,.5)'
                 if (item.raid.pokemon_id) {
                     // Draw raid boss
                     let coords = getSpriteCoordinates(item.raid.pokemon_id)
@@ -1299,6 +1305,7 @@ function createGymImage(item, callback) {
                     // Draw questionmark
                     drawStroked(ctx, '?', 18, 87, 60, '#33363a', '#d8e5ea')
                 }
+                ctx.shadowColor = 'transparent'
             }
             if (!isOngoingRaid(item.raid) && getGymLevel(item) > 0) {
                 // Draw gym level
