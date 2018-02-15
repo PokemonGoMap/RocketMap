@@ -1265,7 +1265,7 @@ function createGymImage(item, callback) {
     }
 
     var baseImage = 'static/images/gym/' + gymTypes[item.team_id] + '.png'
-    var raidImage = 'static/icons-large-sprite-old.png'
+    var raidImage = 'static/icons-large-sprite.png'
 
     var eggImage
     if (isValidRaid(item.raid)) {
