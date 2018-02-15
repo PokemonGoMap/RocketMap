@@ -42,6 +42,11 @@
     margin: 5px 0px 5px 0px;
   }
 
+  &.pokemon-large-sprite {
+    transform: scale(.75);
+    top: 3px;
+  }
+
   &.info {
 
     &.last-modified:before {

@@ -72,6 +72,9 @@ var updateWorker
 var lastUpdateTime
 var redrawTimeout = null
 
+var fontsLoaded = false
+WebFont.load({ active: function() { fontsLoaded = true }, google: { families: ['Roboto:700'] } });
+
 const gymTypes = ['Uncontested', 'Mystic', 'Valor', 'Instinct']
 
 const audio = new Audio('static/sounds/ding.mp3')
@@ -79,9 +82,9 @@ const cryFileTypes = ['wav', 'mp3']
 
 const genderType = ['♂', '♀', '⚲']
 const forms = ['unset', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '!', '?', '👤', '☀️', '☔️', '⛄️', '👤', '⚔️', '🛡️', '⚡️']
-const pokemonWithImages = [
-    2, 3, 5, 6, 8, 9, 11, 28, 31, 34, 38, 59, 62, 65, 68, 71, 73, 76, 80, 82, 87, 89, 91, 94, 103, 105, 110, 112, 121, 123, 124, 125, 126, 129, 131, 134, 135, 136, 137, 139, 142, 143, 144, 145, 146, 150, 153, 156, 159, 160, 184, 221, 243, 244, 245, 248, 249, 250, 302, 303, 306, 320, 333, 344, 359, 361, 382, 383, 384
-]
+
+const raidColors = ['#fc70b0', '#fc70b0', '#ff9e16', '#ff9e16', '#b8a5dd']
+const teamColors = ['#fcfcfc', '#00aaff', '#ff1a1a', '#ffbe08']
 
 const excludedRaritiesList = [
   [],
@@ -485,6 +488,7 @@ function initSidebar() {
     $('#pokemoncries').toggle(Store.get('playSound'))
     $('#cries-switch').prop('checked', Store.get('playCries'))
     $('#map-service-provider').val(Store.get('mapServiceProvider'))
+    $('#cache-gym-images-switch').prop('checked', Store.get('cacheGymImages'))
 
     // Only create the Autocomplete element if it's enabled in template.
     var elSearchBox = document.getElementById('next-location')
@@ -678,7 +682,7 @@ function isGymSatisfiesRaidMinMaxFilter(raid) {
     }
 }
 
-function gymLabel(gym, includeMembers = true) {
+function gymLabel(gym, gymImage, includeMembers = true) {
     const raid = gym.raid
     var raidStr = ''
     if (raid && raid.end > Date.now()) {
@@ -726,23 +730,24 @@ function gymLabel(gym, includeMembers = true) {
         </div>`
     }
 
+    image = `<img class='gym sprite' src='${gymImage}'>`
+
     if ((isUpcomingRaid || isRaidStarted) && isRaidFilterOn && isGymSatisfiesRaidMinMaxFilter(raid)) {
-        const raidColor = ['252,112,176', '255,158,22', '184,165,221']
         const levelStr = '★'.repeat(raid['level'])
         let raidImage = ''
 
         if (isRaidStarted) {
             // set Pokémon-specific image if we have one.
-            if (raid.pokemon_id !== null && pokemonWithImages.indexOf(raid.pokemon_id) !== -1) {
-                raidImage = `<img class='gym sprite' src='static/icons/${raid.pokemon_id}.png'>`
+            if (raid.pokemon_id !== null) {
+                raidImage = `<span class="gym pokemon-large-sprite n${raid.pokemon_id}"></span>`
             } else {
-                raidImage = `<img class='gym sprite' src='static/images/raid/${gymTypes[gym.team_id]}_${raid.level}_unknown.png'>`
+                raidImage = `<img class='gym sprite' src='${gymImage}'>`
             }
             if (raid.pokemon_id === null) {
                 image = `
                     ${raidImage}
                     <div class='raid'>
-                        <span style='color:rgb(${raidColor[Math.floor((raid.level - 1) / 2)]})'>
+                        <span style='color:${raidColors[raid.level - 1]}'>
                             ${levelStr}
                         </span>
                         <span class='raid countdown label-countdown' disappears-at='${raid.end}'></span> left (${moment(raid.end).format('HH:mm')})
@@ -766,28 +771,24 @@ function gymLabel(gym, includeMembers = true) {
                         </div>
                     </div>
                     <div class='raid'>
-                        <span style='color:rgb(${raidColor[Math.floor((raid.level - 1) / 2)]})'>
+                        <span style='color:${raidColors[raid.level - 1]}'>
                             ${levelStr}
                         </span>
                         <span class='raid countdown label-countdown' disappears-at='${raid.end}'></span> left (${moment(raid.end).format('HH:mm')})
                     </div>
                 `
             }
-        } else {
-            image = `<img class='gym sprite' src='static/images/gym/${gymTypes[gym.team_id]}_${getGymLevel(gym)}_${raid.level}.png'>`
         }
 
         if (isUpcomingRaid) {
             imageLbl = `
                 <div class='raid'>
-                  <span style='color:rgb(${raidColor[Math.floor((raid.level - 1) / 2)]})'>
+                  <span style='color:${raidColors[raid.level - 1]}'>
                   ${levelStr}
                   </span>
                   Raid in <span class='raid countdown label-countdown' disappears-at='${raid.start}'> (${moment(raid.start).format('HH:mm')})</span>
                 </div>`
         }
-    } else {
-        image = `<img class='gym sprite' src='static/images/gym/${teamName}_${getGymLevel(gym)}.png'>`
     }
 
 
@@ -1156,6 +1157,11 @@ function setupGymMarker(item) {
             lat: item['latitude'],
             lng: item['longitude']
         },
+        icon: {
+            url: 'static/images/gym/Uncontested.png',
+            anchor: new google.maps.Point(24, 24),
+            scaledSize: new google.maps.Size(48, 48)
+        },
         map: map
     })
     marker.infoWindow = new google.maps.InfoWindow({
@@ -1204,35 +1210,137 @@ function setupGymMarker(item) {
     return marker
 }
 
-function updateGymMarker(item, marker) {
-    let raidLevel = getRaidLevel(item.raid)
-    const hasActiveRaid = item.raid && item.raid.end > Date.now()
-    const raidLevelVisible = raidLevel >= Store.get('showRaidMinLevel') && raidLevel <= Store.get('showRaidMaxLevel')
-    const showRaidSetting = Store.get('showRaids') && (!Store.get('showActiveRaidsOnly') || !Store.get('showParkRaidsOnly'))
+function getSpriteCoordinates(pokemon_id) {
+    var icon_size = 80
+    var icons_per_row = 28
+    var total_icons = 493
+    var x = icon_size * ((pokemon_id - 1) % icons_per_row)
+    var y = icon_size * Math.floor((pokemon_id - 1) / icons_per_row)
+    return { x: x, y: y }
+}
 
-    if (item.raid && isOngoingRaid(item.raid) && Store.get('showRaids') && raidLevelVisible) {
-        let markerImage = 'static/images/raid/' + gymTypes[item.team_id] + '_' + item.raid.level + '_unknown.png'
-        if (pokemonWithImages.indexOf(item.raid.pokemon_id) !== -1) {
-            markerImage = 'static/images/raid/' + gymTypes[item.team_id] + '_' + item['raid']['pokemon_id'] + '.png'
+function getGymImageId(item) {
+    return gymTypes[item.team_id] + '_' + getGymLevel(item) + (isValidRaid(item.raid) ? ('_' + item.raid.level + (isOngoingRaid(item.raid) ? '_' + item.raid.pokemon_id : '')) : '') + '_' + item.is_in_battle
+}
+
+function drawCircle(ctx, x, y, radius, stroke, fill) {
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, 2 * Math.PI);
+    ctx.fillStyle = fill;
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = stroke;
+    ctx.stroke();
+}
+
+function drawStroked(ctx, text, x, y, size, stroke, fill) {
+    ctx.font = '700 ' + size + 'px Roboto'
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = 5;
+    ctx.strokeText(text, x, y);
+    ctx.fillStyle = fill;
+    ctx.fillText(text, x, y);
+}
+
+function getImage(url) {
+    return new Promise(function(resolve, reject) {
+        var img = new Image()
+        if (!url) {
+            resolve(img)
+        } else {
+            img.src = url
+            img.onload = function() {
+                resolve(this)
+            }
+            img.onerror = function() {
+                resolve(new Image())
+            }
         }
-        marker.setIcon({
-            url: markerImage,
-            scaledSize: new google.maps.Size(48, 48)
-        })
+    });
+}
+
+function createGymImage(item, callback) {
+    var gymImageId = getGymImageId(item)
+    var gymImageCache = Store.get('gymImageCache')
+    var cachedGymImage = gymImageCache[gymImageId]
+
+    if (Store.get('cacheGymImages') && cachedGymImage) {
+        callback.call(this, cachedGymImage)
+        return
+    }
+
+    var baseImage = 'static/images/gym/' + gymTypes[item.team_id] + '.png'
+    var raidImage = 'static/icons-large-sprite-old.png'
+
+    var eggImage
+    if (isValidRaid(item.raid)) {
+        eggImage = 'static/images/raid/Egg_' + (item.raid.level < 3 ? 1 : item.raid.level < 5 ? 2 : 3) + (isOngoingRaid(item.raid) ? 's' : '') + '.png'
+    }
+
+    var promises = []
+    promises.push(getImage(baseImage))
+    promises.push(getImage(eggImage))
+    promises.push(getImage(raidImage))
+    Promise.all(promises).then(function(results) {
+        var canvas = document.createElement('canvas')
+        canvas.width = 96
+        canvas.height = 96
+        var ctx = canvas.getContext('2d')
+        ctx.miterLimit = 2
+        // Draw base image
+        ctx.drawImage(results[0], 0, 0)
+        if (isValidRaid(item.raid)) {
+            // Draw egg
+            ctx.drawImage(results[1], 0, 0, 64, 64, 47, 35, 55, 55)
+            if (isOngoingRaid(item.raid)) {
+                if (item.raid.pokemon_id) {
+                    // Draw raid boss
+                    let coords = getSpriteCoordinates(item.raid.pokemon_id)
+                    ctx.drawImage(results[2], coords.x, coords.y, 80, 80, 8, 40, 49, 49)
+                } else {
+                    // Draw questionmark
+                    drawStroked(ctx, '?', 18, 87, 60, '#33363a', '#d8e5ea')
+                }
+            }
+            if (!isOngoingRaid(item.raid) && getGymLevel(item) > 0) {
+                // Draw gym level
+                drawCircle(ctx, 47, 72, 14, '#33363a', teamColors[item.team_id])
+                drawStroked(ctx, getGymLevel(item), 41, 79, 20, '#33363a', '#d8e5ea')
+            }
+            // Draw raid level
+            drawCircle(ctx, 64 + (!isOngoingRaid(item.raid) ? 6 : 0), 80, 14, '#33363a', raidColors[item.raid.level - 1])
+            drawStroked(ctx, item.raid.level, 58 + (!isOngoingRaid(item.raid) ? 6 : 0), 87, 20, '#33363a', '#d8e5ea')
+        } else if (getGymLevel(item) > 0) {
+            // Draw gym level
+            drawCircle(ctx, 47, 72, 14, '#33363a', teamColors[item.team_id])
+            drawStroked(ctx, getGymLevel(item), 41, 79, 20, '#33363a', '#d8e5ea')
+        }
+
+        var gymImage = canvas.toDataURL('image/png')
+
+        if (Store.get('cacheGymImages') && fontsLoaded) {
+            gymImageCache[gymImageId] = gymImage
+            Store.set('gymImageCache', gymImageCache)
+        }
+
+        callback.call(this, gymImage)
+    })
+}
+
+function updateGymMarker(item, marker) {
+    if (item.raid && isOngoingRaid(item.raid) && Store.get('showRaids') && isGymSatisfiesRaidMinMaxFilter(item.raid)) {
         marker.setZIndex(google.maps.Marker.MAX_ZINDEX + 1)
-    } else if (hasActiveRaid && raidLevelVisible && showRaidSetting) {
-        marker.setIcon({
-            url: 'static/images/gym/' + gymTypes[item.team_id] + '_' + getGymLevel(item) + '_' + item['raid']['level'] + '.png',
-            scaledSize: new google.maps.Size(48, 48)
-        })
-    } else {
-        marker.setIcon({
-            url: 'static/images/gym/' + gymTypes[item.team_id] + '_' + getGymLevel(item) + '.png',
-            scaledSize: new google.maps.Size(48, 48)
-        })
+    } else if (!isValidRaid(item.raid) || !Store.get('showRaids') || Store.get('showActiveRaidsOnly') || !isGymSatisfiesRaidMinMaxFilter(item.raid)) {
         marker.setZIndex(1)
     }
-    marker.infoWindow.setContent(gymLabel(item))
+    createGymImage(item, function(gymImage) {
+        marker.infoWindow.setContent(gymLabel(item, gymImage))
+        marker.setIcon({
+            url: gymImage,
+            anchor: new google.maps.Point(24, 24),
+            scaledSize: new google.maps.Size(48, 48)
+        })
+    })
     return marker
 }
 
@@ -2308,20 +2416,21 @@ function showGymDetails(id) { // eslint-disable-line no-unused-vars
             `
         }
 
-        var topPart = gymLabel(result, false)
-        sidebar.innerHTML = `${topPart}${pokemonHtml}`
-
-        sidebarClose = document.createElement('a')
-        sidebarClose.href = '#'
-        sidebarClose.className = 'close'
-        sidebarClose.tabIndex = 0
-        sidebar.appendChild(sidebarClose)
-
-        sidebarClose.addEventListener('click', function (event) {
-            event.preventDefault()
-            event.stopPropagation()
-            sidebar.classList.remove('visible')
+        createGymImage(result, function(gymImage) {
+            var topPart = gymLabel(result, gymImage, false)
+            sidebar.innerHTML = `${topPart}${pokemonHtml}`
+            sidebarClose = document.createElement('a')
+            sidebarClose.href = '#'
+            sidebarClose.className = 'close'
+            sidebarClose.tabIndex = 0
+            sidebar.appendChild(sidebarClose)    
+            sidebarClose.addEventListener('click', function (event) {
+                event.preventDefault()
+                event.stopPropagation()
+                sidebar.classList.remove('visible')
+            })
         })
+
     })
 }
 
@@ -3123,6 +3232,13 @@ $(function () {
         }
         $('#scan-here').toggle(this.checked)
         Store.set('scanHere', this.checked)
+    })
+
+    $('#cache-gym-images-switch').change(function () {
+        Store.set('cacheGymImages', this.checked)
+        if (!this.checked) {
+            Store.set('gymImageCache', {})
+        }
     })
 
     if ($('#nav-accordion').length) {
