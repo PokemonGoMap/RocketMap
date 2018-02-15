@@ -73,7 +73,7 @@ var lastUpdateTime
 var redrawTimeout = null
 
 var fontsLoaded = false
-WebFont.load({ active: function() { fontsLoaded = true }, google: { families: ['Roboto:700'] } });
+WebFont.load({ active: function () { fontsLoaded = true }, google: { families: ['Roboto:700'] } })
 
 const gymTypes = ['Uncontested', 'Mystic', 'Valor', 'Instinct']
 
@@ -1210,12 +1210,11 @@ function setupGymMarker(item) {
     return marker
 }
 
-function getSpriteCoordinates(pokemon_id) {
-    var icon_size = 80
-    var icons_per_row = 28
-    var total_icons = 493
-    var x = icon_size * ((pokemon_id - 1) % icons_per_row)
-    var y = icon_size * Math.floor((pokemon_id - 1) / icons_per_row)
+function getSpriteCoordinates(pokemonId) {
+    var iconSize = 80
+    var iconsPerRow = 28
+    var x = iconSize * ((pokemonId - 1) % iconsPerRow)
+    var y = iconSize * Math.floor((pokemonId - 1) / iconsPerRow)
     return { x: x, y: y }
 }
 
@@ -1224,39 +1223,35 @@ function getGymImageId(item) {
 }
 
 function drawCircle(ctx, x, y, radius, stroke, fill) {
-    ctx.beginPath();
-    ctx.arc(x, y, radius, 0, 2 * Math.PI);
-    ctx.fillStyle = fill;
-    ctx.fill();
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = stroke;
-    ctx.stroke();
+    ctx.beginPath()
+    ctx.arc(x, y, radius, 0, 2 * Math.PI)
+    ctx.fillStyle = fill
+    ctx.fill()
+    ctx.lineWidth = 2
+    ctx.strokeStyle = stroke
+    ctx.stroke()
 }
 
 function drawStroked(ctx, text, x, y, size, stroke, fill) {
     ctx.font = '700 ' + size + 'px Roboto'
-    ctx.strokeStyle = stroke;
-    ctx.lineWidth = 5;
-    ctx.strokeText(text, x, y);
-    ctx.fillStyle = fill;
-    ctx.fillText(text, x, y);
+    ctx.strokeStyle = stroke
+    ctx.lineWidth = 5
+    ctx.strokeText(text, x, y)
+    ctx.fillStyle = fill
+    ctx.fillText(text, x, y)
 }
 
 function getImage(url) {
-    return new Promise(function(resolve, reject) {
+    return new Promise(function (resolve, reject) {
         var img = new Image()
         if (!url) {
             resolve(img)
         } else {
             img.src = url
-            img.onload = function() {
-                resolve(this)
-            }
-            img.onerror = function() {
-                resolve(new Image())
-            }
+            img.onload = function () { resolve(this) }
+            img.onerror = function () { resolve(new Image()) }
         }
-    });
+    })
 }
 
 function createGymImage(item, callback) {
@@ -1281,7 +1276,7 @@ function createGymImage(item, callback) {
     promises.push(getImage(baseImage))
     promises.push(getImage(eggImage))
     promises.push(getImage(raidImage))
-    Promise.all(promises).then(function(results) {
+    Promise.all(promises).then(function (results) {
         var canvas = document.createElement('canvas')
         canvas.width = 96
         canvas.height = 96
@@ -1333,7 +1328,7 @@ function updateGymMarker(item, marker) {
     } else if (!isValidRaid(item.raid) || !Store.get('showRaids') || Store.get('showActiveRaidsOnly') || !isGymSatisfiesRaidMinMaxFilter(item.raid)) {
         marker.setZIndex(1)
     }
-    createGymImage(item, function(gymImage) {
+    createGymImage(item, function (gymImage) {
         marker.infoWindow.setContent(gymLabel(item, gymImage))
         marker.setIcon({
             url: gymImage,
@@ -2416,21 +2411,20 @@ function showGymDetails(id) { // eslint-disable-line no-unused-vars
             `
         }
 
-        createGymImage(result, function(gymImage) {
+        createGymImage(result, function (gymImage) {
             var topPart = gymLabel(result, gymImage, false)
             sidebar.innerHTML = `${topPart}${pokemonHtml}`
             sidebarClose = document.createElement('a')
             sidebarClose.href = '#'
             sidebarClose.className = 'close'
             sidebarClose.tabIndex = 0
-            sidebar.appendChild(sidebarClose)    
+            sidebar.appendChild(sidebarClose)
             sidebarClose.addEventListener('click', function (event) {
                 event.preventDefault()
                 event.stopPropagation()
                 sidebar.classList.remove('visible')
             })
         })
-
     })
 }
 

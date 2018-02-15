@@ -66,6 +66,8 @@
     "updatePokemonLabels": true,
 
     "getPokemonRarity": true,
-    "updatePokemonRarities": true
+    "updatePokemonRarities": true,
+
+    "WebFont": true
   }
 }
