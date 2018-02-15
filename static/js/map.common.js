@@ -1065,6 +1065,14 @@ var StoreOptions = {
     'isSearchMarkerMovable': {
         default: false,
         type: StoreTypes.Boolean
+    },
+    'cacheGymImages': {
+        default: true,
+        type: StoreTypes.Boolean
+    },
+    'gymImageCache': {
+        default: {},
+        type: StoreTypes.JSON
     }
 }
 

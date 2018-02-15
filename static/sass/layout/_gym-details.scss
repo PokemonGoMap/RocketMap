@@ -359,6 +359,13 @@
         }
       }
 
+      &.pokemon-large-sprite {
+        @media screen and (max-width: 480px) {
+          transform: scale(.8);
+        }
+        transform: scale(1.2);
+      }
+
       &.info {
 
         &.last-modified:before {

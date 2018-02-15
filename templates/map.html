@@ -458,6 +458,16 @@
               <h3>Location Icon Marker</h3>
               <select name="locationmarker-style" id="locationmarker-style"></select>
             </div>
+            <div class="form-control switch-container" >
+              <h3>Cache Gym Images</h3>
+              <div class="onoffswitch">
+                <input id="cache-gym-images-switch" type="checkbox" name="cache-gym-images-switch" class="onoffswitch-checkbox" checked/>
+                <label class="onoffswitch-label" for="cache-gym-images-switch">
+                <span class="switch-label" data-on="On" data-off="Off"></span>
+                <span class="switch-handle"></span>
+                </label>
+              </div>
+            </div>
           </div>
         </div>
       <div>
@@ -512,6 +522,7 @@
     <script src="{{ url_for('static', filename='dist/js/vendor/markerclusterer.min.js').lstrip('/') }}"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/webfont/1.6.28/webfontloader.js"></script>
     <script>
       var centerLat = {{lat}};
       var centerLng = {{lng}};
