@@ -26,6 +26,16 @@
       font-size: 12px;
       margin-right: 5px;
     }
+
+    &.type {
+      padding: 2px 5px;
+      text-transform: uppercase;
+      color: white;
+      border-radius: 4px;
+      font-size: 0.7em;
+      vertical-align: middle;
+      margin-right: 2px;
+    }
   }
 
   &.encounter {

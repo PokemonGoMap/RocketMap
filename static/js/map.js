@@ -505,10 +505,6 @@ function initSidebar() {
     $('#pokemon-icon-size').val(Store.get('iconSizeModifier'))
 }
 
-function getTypeSpan(type) {
-    return `<span style='padding: 2px 5px; text-transform: uppercase; color: white; margin-right: 2px; border-radius: 4px; font-size: 0.75em; vertical-align: middle; background-color: ${type['color']}'>${type['type']}</span>`
-}
-
 function openMapDirections(lat, lng) { // eslint-disable-line no-unused-vars
     var url = ''
     if (Store.get('mapServiceProvider') === 'googlemaps') {
@@ -555,7 +551,7 @@ function pokemonLabel(item) {
     const showStats = Store.get('showPokemonStats')
 
     $.each(types, function (index, type) {
-        typesDisplay += getTypeSpan(type)
+        typesDisplay += `<span class='pokemon name type' style='background-color: ${type['color']}'>${type['type']}</span>`
     })
 
     var details = ''
