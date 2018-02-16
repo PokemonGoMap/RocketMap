@@ -1211,15 +1211,15 @@ function setupGymMarker(item) {
 }
 
 function getSpriteCoordinates(pokemonId) {
-    var iconSize = 80
-    var iconsPerRow = 28
-    var x = iconSize * ((pokemonId - 1) % iconsPerRow)
-    var y = iconSize * Math.floor((pokemonId - 1) / iconsPerRow)
+    const iconSize = 80
+    const iconsPerRow = 28
+    const x = iconSize * ((pokemonId - 1) % iconsPerRow)
+    const y = iconSize * Math.floor((pokemonId - 1) / iconsPerRow)
     return { x: x, y: y }
 }
 
 function getGymImageId(item) {
-    return gymTypes[item.team_id] + '_' + getGymLevel(item) + (isValidRaid(item.raid) ? ('_' + item.raid.level + (isOngoingRaid(item.raid) ? '_' + item.raid.pokemon_id : '')) : '') + '_' + item.is_in_battle
+    return gymTypes[item.team_id] + '_' + getGymLevel(item) + (isValidRaid(item.raid) ? ('_' + getRaidLevel(item.raid) + (isOngoingRaid(item.raid) ? '_' + item.raid.pokemon_id : '')) : '') + '_' + item.is_in_battle
 }
 
 function drawCircle(ctx, x, y, radius, stroke, fill) {
@@ -1251,27 +1251,34 @@ function getImage(url) {
         } else {
             img.src = url
             img.onload = function () { resolve(this) }
-            img.onerror = function () { resolve(new Image()) }
+            img.onerror = function () { resolve(null) }
         }
     })
 }
 
 function createGymImage(item, callback) {
-    var gymImageId = getGymImageId(item)
-    var gymImageCache = Store.get('gymImageCache')
-    var cachedGymImage = gymImageCache[gymImageId]
+    const gymTeam = item.team_id
+    const gymLevel = getGymLevel(item)
+    const raidLevel = getRaidLevel(item.raid)
+    const validRaid = isValidRaid(item.raid)
+    const ongoingRaid = isOngoingRaid(item.raid)
+    const raidPokemon = validRaid && item.raid.pokemon_id
+
+    const gymImageId = getGymImageId(item)
+    const gymImageCache = Store.get('gymImageCache')
+    const cachedGymImage = gymImageCache[gymImageId]
 
     if (Store.get('cacheGymImages') && cachedGymImage) {
         callback.call(this, cachedGymImage)
         return
     }
 
-    var baseImage = 'static/images/gym/' + gymTypes[item.team_id] + '.png'
-    var raidImage = 'static/icons-large-sprite.png'
+    const baseImage = 'static/images/gym/' + gymTypes[gymTeam] + '.png'
+    const raidImage = 'static/icons-large-sprite.png'
 
     var eggImage
-    if (isValidRaid(item.raid)) {
-        eggImage = 'static/images/raid/Egg_' + (item.raid.level < 3 ? 1 : item.raid.level < 5 ? 2 : 3) + (isOngoingRaid(item.raid) ? 's' : '') + '.png'
+    if (validRaid) {
+        eggImage = 'static/images/raid/Egg_' + (raidLevel < 3 ? 1 : raidLevel < 5 ? 2 : 3) + (ongoingRaid ? 's' : '') + '.png'
     }
 
     var promises = []
@@ -1286,41 +1293,41 @@ function createGymImage(item, callback) {
         ctx.miterLimit = 2
         ctx.shadowBlur = 3
         // Draw base image
-        ctx.drawImage(results[0], 0, 0)
-        if (isValidRaid(item.raid)) {
+        if (results[0]) ctx.drawImage(results[0], 0, 0)
+        if (validRaid) {
             // Draw egg
             ctx.shadowColor = 'rgba(0,0,0,.5)'
-            ctx.drawImage(results[1], 0, 0, 64, 64, 45, 35, 55, 55)
+            if (results[1]) ctx.drawImage(results[1], 0, 0, 64, 64, 45, 35, 55, 55)
             ctx.shadowColor = 'transparent'
             if (isOngoingRaid(item.raid)) {
                 ctx.shadowColor = 'rgba(0,0,0,.5)'
-                if (item.raid.pokemon_id) {
+                if (raidPokemon) {
                     // Draw raid boss
-                    let coords = getSpriteCoordinates(item.raid.pokemon_id)
-                    ctx.drawImage(results[2], coords.x, coords.y, 80, 80, 8, 40, 49, 49)
+                    let coords = getSpriteCoordinates(raidPokemon)
+                    if (results[2]) ctx.drawImage(results[2], coords.x, coords.y, 80, 80, 8, 40, 49, 49)
                 } else {
                     // Draw questionmark
                     drawStroked(ctx, '?', 18, 87, 60, '#33363a', '#d8e5ea')
                 }
                 ctx.shadowColor = 'transparent'
             }
-            if (!isOngoingRaid(item.raid) && getGymLevel(item) > 0) {
+            if (!ongoingRaid && gymLevel > 0) {
                 // Draw gym level
-                drawCircle(ctx, 47, 72, 14, '#33363a', teamColors[item.team_id])
-                drawStroked(ctx, getGymLevel(item), 41, 79, 20, '#33363a', '#d8e5ea')
+                drawCircle(ctx, 47, 72, 14, '#33363a', teamColors[gymTeam])
+                drawStroked(ctx, gymLevel, 41, 79, 20, '#33363a', '#d8e5ea')
             }
             // Draw raid level
-            drawCircle(ctx, 64 + (!isOngoingRaid(item.raid) ? 6 : 0), 80, 14, '#33363a', raidColors[item.raid.level - 1])
-            drawStroked(ctx, item.raid.level, 58 + (!isOngoingRaid(item.raid) ? 6 : 0), 87, 20, '#33363a', '#d8e5ea')
-        } else if (getGymLevel(item) > 0) {
+            drawCircle(ctx, 64 + (!ongoingRaid ? 6 : 0), 80, 14, '#33363a', raidColors[raidLevel - 1])
+            drawStroked(ctx, raidLevel, 58 + (!ongoingRaid ? 6 : 0), 87, 20, '#33363a', '#d8e5ea')
+        } else if (gymLevel > 0) {
             // Draw gym level
-            drawCircle(ctx, 47, 72, 14, '#33363a', teamColors[item.team_id])
-            drawStroked(ctx, getGymLevel(item), 41, 79, 20, '#33363a', '#d8e5ea')
+            drawCircle(ctx, 47, 72, 14, '#33363a', teamColors[gymTeam])
+            drawStroked(ctx, gymLevel, 41, 79, 20, '#33363a', '#d8e5ea')
         }
 
-        var gymImage = canvas.toDataURL('image/png')
+        const gymImage = canvas.toDataURL('image/png')
 
-        if (Store.get('cacheGymImages') && fontsLoaded) {
+        if (result[0] && result[1] && result[2] && Store.get('cacheGymImages') && fontsLoaded) {
             gymImageCache[gymImageId] = gymImage
             Store.set('gymImageCache', gymImageCache)
         }
