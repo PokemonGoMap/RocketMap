@@ -1327,7 +1327,7 @@ function createGymImage(item, callback) {
 
         const gymImage = canvas.toDataURL('image/png')
 
-        if (result[0] && result[1] && result[2] && Store.get('cacheGymImages') && fontsLoaded) {
+        if (results[0] && results[1] && results[2] && Store.get('cacheGymImages') && fontsLoaded) {
             gymImageCache[gymImageId] = gymImage
             Store.set('gymImageCache', gymImageCache)
         }
