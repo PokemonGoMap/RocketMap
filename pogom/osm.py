@@ -1,4 +1,3 @@
-import json
 import logging
 import math
 from overpy import Overpass
@@ -51,11 +50,11 @@ def ex_query(s, w, n, e):
     return result
 
 
-def exgyms(geofence):
+def update_ex_gyms(geofence):
     # Parse geofence file.
     log.info('Finding border points from geofence.')
-    f = json.loads(json.dumps(Geofences.parse_geofences_file(geofence, '')))
-    fence = f[0]['polygon']
+    geofence = Geofences.parse_geofences_file(geofence, '')
+    fence = geofence[0]['polygon']
     # Figure out borders for bounding box.
     south = min(fence, key=lambda ev: ev['lat'])['lat']
     west = min(fence, key=lambda ev: ev['lon'])['lon']
@@ -63,30 +62,29 @@ def exgyms(geofence):
     east = max(fence, key=lambda ev: ev['lon'])['lon']
     log.info('Finding parks within zone.')
     ex_gyms = ex_query(south, west, north, east)
-
     gyms = Gym.get_gyms(south, west, north, east)
     log.info('Checking {} gyms against {} parks.'.format(len(gyms),
                                                          len(ex_gyms.ways)))
+    confirmed_ex_gyms = filter(lambda gym: __gym_is_ex_gym(gym, ex_gyms),
+                               gyms.values())
+    Gym.set_gyms_in_park(confirmed_ex_gyms, True)
 
-    for gym in gyms.items():
-        gympoint = [float(gym[1]['latitude']), float(gym[1]['longitude'])]
-        # get s2 cell center.
-        s2_center = get_s2_cell_center(gympoint[0], gympoint[1], 20)
 
-        for way in ex_gyms.ways:
-            data = []
-            for node in way.nodes:
-                data.append({'lat': float(node.lat),
-                             'lon': float(node.lon)})
-            if Geofences.is_point_in_polygon_custom(s2_center, data):
-                # Try to get Gym name, but default to id if missing.
-                try:
-                    gymname = Gym.get_gym(gym[0])['name'].encode('utf8')
-                except AttributeError:
-                    gymname = gym[0]
-                log.info('{} is eligible for EX raid.'.format(gymname))
-                Gym.set_gym_in_park(gym[0], True)
-                break
+def __gym_is_ex_gym(gym, ex_gyms):
+    gympoint = [float(gym['latitude']),
+                float(gym['longitude'])]
+    s2_center = get_s2_cell_center(gympoint[0], gympoint[1], 20)
+    for way in ex_gyms.ways:
+        data = []
+        for node in way.nodes:
+            data.append({'lat': float(node.lat),
+                         'lon': float(node.lon)})
+        if Geofences.is_point_in_polygon_custom(s2_center, data):
+            gymname = gym['name'] or gym['gym_id']
+            log.info('{} is eligible for EX raid.'.format(
+                gymname.encode('utf8')))
+            return True
+    return False
 
 
 def get_s2_cell_center(lat, lng, level):

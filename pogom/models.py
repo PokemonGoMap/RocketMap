@@ -629,8 +629,9 @@ class Gym(LatLongModel):
         return result
 
     @staticmethod
-    def set_gym_in_park(id, park):
-        Gym.update(park=park).where(Gym.gym_id == str(id)).execute()
+    def set_gyms_in_park(gyms, park):
+        for gym in gyms:
+            Gym.update(park=park).where(Gym.gym_id == str(gym)).execute()
 
 
 class Raid(BaseModel):
@@ -2118,12 +2119,9 @@ def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
                 b64_gym_id = str(f.id)
                 gym_display = f.gym_display
                 raid_info = f.raid_info
-                # try to get recorded value for Gyms.park, default to false.
-                try:
-                    park = Gym.select(Gym.park).where(
-                        Gym.gym_id == f.id).dicts()[0]['park']
-                except IndexError:
-                    park = False
+                # Try to get recorded value for Gyms.park, default to false.
+                park = Gym.select(Gym.park).where(Gym.gym_id == f.id).dicts()[
+                    0].get('park', False)
 
                 # Send gyms to webhooks.
 

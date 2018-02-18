@@ -1,6 +1,6 @@
 # Exclusive Raids
 
-EX-raids in Pokemon Go appear at gyms in parks, playgrounds and leisure areas.
+EX-raids in Pokémon Go appear at gyms in parks, playgrounds and leisure areas.
 
 RocketMap includes a built-in tool to check if existing gyms fall inside these areas.
 
@@ -11,7 +11,7 @@ RocketMap includes a built-in tool to check if existing gyms fall inside these a
   `python runserver.py -exg -gf geofences/yourGeofence.txt`
   - Remove the `-exg` flag and run normally.
 
-Output for running with `-exg` should be similar to:
+Output for running with `-exg`(`--ex-gyms`) should be similar to:
 
   ![Sample Image](../_static/img/exg.png)  
 
