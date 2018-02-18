@@ -3,10 +3,8 @@ import math
 from overpy import Overpass
 from geofence import Geofences
 from models import Gym, init_database
-from utils import get_args
 from s2sphere import LatLng, CellId
 
-args = get_args
 app = None
 log = logging.getLogger(__name__)
 db = init_database(app)
