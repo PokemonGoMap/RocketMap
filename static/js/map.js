@@ -1225,7 +1225,7 @@ function getGymImageId(item) {
     var parts = []
     parts.push(gymTypes[item.team_id])
     parts.push(getGymLevel(item))
-    if (Store.get('showRaids') && isValidRaid(item.raid) && isGymSatisfiesRaidMinMaxFilter(item.raid) && (!Store.get('showActiveRaidsOnly') || isOngoingRaid(raid))) {
+    if (Store.get('showRaids') && isValidRaid(item.raid) && isGymSatisfiesRaidMinMaxFilter(item.raid) && (!Store.get('showActiveRaidsOnly') || isOngoingRaid(item.raid))) {
         parts.push(getRaidLevel(item.raid))
         if (isOngoingRaid(item.raid)) parts.push(item.raid.pokemon_id)
     }
