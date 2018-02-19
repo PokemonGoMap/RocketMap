@@ -1219,7 +1219,14 @@ function getSpriteCoordinates(pokemonId) {
 }
 
 function getGymImageId(item) {
-    return gymTypes[item.team_id] + '_' + getGymLevel(item) + (isValidRaid(item.raid) ? ('_' + getRaidLevel(item.raid) + (isOngoingRaid(item.raid) ? '_' + item.raid.pokemon_id : '')) : '') + '_' + item.is_in_battle
+    var parts = []
+    parts.push(gymTypes[item.team_id])
+    parts.push(getGymLevel(item))
+    if (Store.get('showRaids') && isValidRaid(item.raid) && isGymSatisfiesRaidMinMaxFilter(item.raid) && (!Store.get('showActiveRaidsOnly') || isOngoingRaid(raid))) {
+        parts.push(getRaidLevel(item.raid))
+        if (isOngoingRaid(item.raid)) parts.push(item.raid.pokemon_id)
+    }
+    return parts.join('_')
 }
 
 function drawCircle(ctx, x, y, radius, stroke, fill) {
@@ -1257,21 +1264,20 @@ function getImage(url) {
 }
 
 function createGymImage(item, callback) {
-    const gymTeam = item.team_id
-    const gymLevel = getGymLevel(item)
-    const raidLevel = getRaidLevel(item.raid)
-    const validRaid = isValidRaid(item.raid)
-    const ongoingRaid = isOngoingRaid(item.raid)
-    const raidPokemon = validRaid && item.raid.pokemon_id
-
     const gymImageId = getGymImageId(item)
-    const gymImageCache = Store.get('gymImageCache')
-    const cachedGymImage = gymImageCache[gymImageId]
+    const cachedGymImage = Store.get('gymImageCache')[gymImageId]
 
     if (Store.get('cacheGymImages') && cachedGymImage) {
         callback.call(this, cachedGymImage)
         return
     }
+
+    const gymTeam = item.team_id
+    const gymLevel = getGymLevel(item)
+    const raidLevel = getRaidLevel(item.raid)
+    const validRaid = Store.get('showRaids') && isValidRaid(item.raid) && isGymSatisfiesRaidMinMaxFilter(item.raid) && (!Store.get('showActiveRaidsOnly') || isOngoingRaid(item.raid))
+    const ongoingRaid = isOngoingRaid(item.raid)
+    const raidPokemon = validRaid && item.raid.pokemon_id
 
     const baseImage = 'static/images/gym/' + gymTypes[gymTeam] + '.png'
     const raidImage = 'static/icons-large-sprite.png'
@@ -1328,6 +1334,7 @@ function createGymImage(item, callback) {
         const gymImage = canvas.toDataURL('image/png')
 
         if (results[0] && results[1] && results[2] && Store.get('cacheGymImages') && fontsLoaded) {
+            let gymImageCache = Store.get('gymImageCache')
             gymImageCache[gymImageId] = gymImage
             Store.set('gymImageCache', gymImageCache)
         }
