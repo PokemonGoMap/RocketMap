@@ -631,7 +631,8 @@ class Gym(LatLongModel):
     @staticmethod
     def set_gyms_in_park(gyms, park):
         for gym in gyms:
-            Gym.update(park=park).where(Gym.gym_id == str(gym)).execute()
+            Gym.update(park=park).where(
+                Gym.gym_id == str(gym['gym_id'])).execute()
 
 
 class Raid(BaseModel):
