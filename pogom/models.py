@@ -40,7 +40,7 @@ args = get_args()
 flaskDb = FlaskDB()
 cache = TTLCache(maxsize=100, ttl=60 * 5)
 
-db_schema_version = 27
+db_schema_version = 28
 
 
 class MyRetryDB(RetryOperationalError, PooledMySQLDatabase):
@@ -3260,8 +3260,9 @@ def database_migrate(db, old_ver):
 
     if old_ver < 24:
         migrate(
-            migrator.add_column('pokemon', 'weather_boosted_condition',
-                                SmallIntegerField(null=True))
+            migrator.drop_index('pokemon', 'pokemon_disappear_time'),
+            migrator.add_index('pokemon',
+                               ('disappear_time', 'pokemon_id'), False)
         )
 
     if old_ver < 25:
@@ -3275,15 +3276,7 @@ def database_migrate(db, old_ver):
             # Add `costume` column to `gympokemon`
             migrator.add_column('gympokemon', 'costume',
                                 SmallIntegerField(null=True))
-	)
-
-    if old_ver < 26:
-        migrate(
-            migrator.drop_index('pokemon', 'pokemon_disappear_time'),
-            migrator.add_index('pokemon',
-                               ('disappear_time', 'pokemon_id'), False)
         )
-
 
     if old_ver < 26:
         migrate(
@@ -3295,6 +3288,12 @@ def database_migrate(db, old_ver):
         migrate(
             # Add `shiny` column to `gympokemon`
             migrator.add_column('gympokemon', 'shiny',
+                                SmallIntegerField(null=True))
+        )
+
+    if old_ver < 28:
+        migrate(
+            migrator.add_column('pokemon', 'weather_boosted_condition',
                                 SmallIntegerField(null=True))
         )
 
