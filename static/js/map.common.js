@@ -1086,12 +1086,15 @@ var Store = {
     },
     get: function (key) {
         var option = this.getOption(key)
-        var optionType = option.type
+        if (option.value !== undefined) {
+            return option.value
+        }
         var rawValue = localStorage[key]
         if (rawValue === null || rawValue === undefined) {
             return option.default
         }
-        var value = optionType.parse(rawValue)
+        var value = option.type.parse(rawValue)
+        option.value = value
         return value
     },
     set: function (key, value) {
@@ -1099,8 +1102,11 @@ var Store = {
         var optionType = option.type || StoreTypes.String
         var rawValue = optionType.stringify(value)
         localStorage[key] = rawValue
+        option.value = value
     },
     reset: function (key) {
+        var option = this.getOption(key)
+        delete option.value
         localStorage.removeItem(key)
     }
 }
