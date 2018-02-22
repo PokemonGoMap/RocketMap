@@ -1336,7 +1336,17 @@ function createGymImage(item, callback) {
         if (results[0] && results[1] && results[2] && Store.get('cacheGymImages') && fontsLoaded) {
             let gymImageCache = Store.get('gymImageCache')
             gymImageCache[gymImageId] = gymImage
-            Store.set('gymImageCache', gymImageCache)
+            try {
+                Store.set('gymImageCache', gymImageCache)
+            }
+            catch (e) {
+                // LocalStorage quota exceeded -> remove some entries
+                let cacheKeys = Object.keys(gymImageCache)
+                for (let i = 0; i < 10; i++) {
+                    delete gymImageCache[cacheKeys[i]]
+                }
+                Store.set('gymImageCache', gymImageCache)
+            }
         }
 
         callback.call(this, gymImage)
