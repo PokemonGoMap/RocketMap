@@ -1301,22 +1301,20 @@ function createGymImage(item, callback) {
         // Draw base image
         if (results[0]) ctx.drawImage(results[0], 0, 0)
         if (validRaid) {
-            // Draw egg
             ctx.shadowColor = 'rgba(0,0,0,.5)'
+            // Draw egg
             if (results[1]) ctx.drawImage(results[1], 0, 0, 64, 64, 45, 35, 55, 55)
-            ctx.shadowColor = 'transparent'
-            if (isOngoingRaid(item.raid)) {
-                ctx.shadowColor = 'rgba(0,0,0,.5)'
+            if (ongoingRaid) {
                 if (raidPokemon) {
                     // Draw raid boss
                     let coords = getSpriteCoordinates(raidPokemon)
                     if (results[2]) ctx.drawImage(results[2], coords.x, coords.y, 80, 80, 8, 40, 49, 49)
                 } else {
-                    // Draw questionmark
+                    // Draw question mark
                     drawStroked(ctx, '?', 18, 87, 60, '#33363a', '#d8e5ea')
                 }
-                ctx.shadowColor = 'transparent'
             }
+            ctx.shadowColor = 'transparent'
             if (!ongoingRaid && gymLevel > 0) {
                 // Draw gym level
                 drawCircle(ctx, 47, 72, 14, '#33363a', teamColors[gymTeam])
@@ -1333,13 +1331,14 @@ function createGymImage(item, callback) {
 
         const gymImage = canvas.toDataURL('image/png')
 
+        callback.call(this, gymImage)
+
         if (results[0] && results[1] && results[2] && Store.get('cacheGymImages') && fontsLoaded) {
             let gymImageCache = Store.get('gymImageCache')
             gymImageCache[gymImageId] = gymImage
             try {
                 Store.set('gymImageCache', gymImageCache)
-            }
-            catch (e) {
+            } catch (e) {
                 // LocalStorage quota exceeded -> remove some entries
                 let cacheKeys = Object.keys(gymImageCache)
                 for (let i = 0; i < 10; i++) {
@@ -1348,8 +1347,6 @@ function createGymImage(item, callback) {
                 Store.set('gymImageCache', gymImageCache)
             }
         }
-
-        callback.call(this, gymImage)
     })
 }
 
