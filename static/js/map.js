@@ -1229,6 +1229,7 @@ function getGymImageId(item) {
         parts.push(getRaidLevel(item.raid))
         if (isOngoingRaid(item.raid)) parts.push(item.raid.pokemon_id)
     }
+    if (item.is_in_battle) parts.push('battle')
     return parts.join('_')
 }
 
@@ -1290,10 +1291,16 @@ function createGymImage(item, callback) {
         eggImage = 'static/images/raid/Egg_' + (raidLevel < 3 ? 1 : raidLevel < 5 ? 2 : 3) + (ongoingRaid ? 's' : '') + '.png'
     }
 
+    var battleImage
+    if (item.is_in_battle) {
+        battleImage = 'static/images/gym/Battle.png'
+    }
+
     var promises = []
     promises.push(getImage(baseImage))
     promises.push(getImage(eggImage))
     promises.push(getImage(raidImage))
+    promises.push(getImage(battleImage))
     Promise.all(promises).then(function (results) {
         var canvas = document.createElement('canvas')
         canvas.width = 96
@@ -1304,12 +1311,10 @@ function createGymImage(item, callback) {
         // Draw base image
         if (results[0]) ctx.drawImage(results[0], 0, 0)
         if (validRaid) {
-            // Draw egg
             ctx.shadowColor = 'rgba(0,0,0,.5)'
+            // Draw egg
             if (results[1]) ctx.drawImage(results[1], 0, 0, 64, 64, 45, 35, 55, 55)
-            ctx.shadowColor = 'transparent'
-            if (isOngoingRaid(item.raid)) {
-                ctx.shadowColor = 'rgba(0,0,0,.5)'
+            if (ongoingRaid) {
                 if (raidPokemon) {
                     // Draw raid boss
                     let coords = getSpriteCoordinates(raidPokemon)
@@ -1318,8 +1323,8 @@ function createGymImage(item, callback) {
                     // Draw questionmark
                     drawStroked(ctx, '?', 18, 87, 60, '#33363a', '#d8e5ea')
                 }
-                ctx.shadowColor = 'transparent'
             }
+            ctx.shadowColor = 'transparent'
             if (!ongoingRaid && gymLevel > 0) {
                 // Draw gym level
                 drawCircle(ctx, 47, 72, 14, '#33363a', teamColors[gymTeam])
@@ -1333,16 +1338,21 @@ function createGymImage(item, callback) {
             drawCircle(ctx, 47, 72, 14, '#33363a', teamColors[gymTeam])
             drawStroked(ctx, gymLevel, 41, 79, 20, '#33363a', '#d8e5ea')
         }
+        // Draw battle mark
+        ctx.shadowColor = 'rgba(0,0,0,.5)'
+        if (results[3]) ctx.drawImage(results[3], 0, 0, 50, 50, 35, 0, 60, 60)
+        ctx.shadowColor = 'transparent'
 
         const gymImage = canvas.toDataURL('image/png')
 
-        if (results[0] && results[1] && results[2] && Store.get('cacheGymImages') && fontsLoaded) {
+        callback.call(this, gymImage)
+
+        if (results[0] && results[1] && results[2] && results[3] && Store.get('cacheGymImages') && fontsLoaded) {
             let gymImageCache = Store.get('gymImageCache')
             gymImageCache[gymImageId] = gymImage
             try {
                 Store.set('gymImageCache', gymImageCache)
-            }
-            catch (e) {
+            } catch (e) {
                 // LocalStorage quota exceeded -> remove some entries
                 let cacheKeys = Object.keys(gymImageCache)
                 for (let i = 0; i < 10; i++) {
@@ -1351,8 +1361,6 @@ function createGymImage(item, callback) {
                 Store.set('gymImageCache', gymImageCache)
             }
         }
-
-        callback.call(this, gymImage)
     })
 }
 
