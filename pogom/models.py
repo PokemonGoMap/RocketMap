@@ -630,9 +630,8 @@ class Gym(LatLongModel):
 
     @staticmethod
     def set_gyms_in_park(gyms, park):
-        for gym in gyms:
-            Gym.update(park=park).where(
-                Gym.gym_id == str(gym['gym_id'])).execute()
+        gym_ids = [gym['gym_id'] for gym in gyms]
+        Gym.update(park=park).where(Gym.gym_id << gym_ids).execute()
 
 
 class Raid(BaseModel):
@@ -2121,8 +2120,11 @@ def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
                 gym_display = f.gym_display
                 raid_info = f.raid_info
                 # Try to get recorded value for Gyms.park, default to false.
-                park = Gym.select(Gym.park).where(Gym.gym_id == f.id).dicts()[
-                    0].get('park', False)
+                park = False
+                gym_by_id = Gym.select(Gym.park).where(
+                    Gym.gym_id == f.id).dicts()
+                if(gym_by_id):
+                    park = gym_by_id[0]['park']
 
                 # Send gyms to webhooks.
 
@@ -2142,6 +2144,8 @@ def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
                             b64_gym_id,
                         'team_id':
                             f.owned_by_team,
+                        'park':
+                            park,
                         'guard_pokemon_id':
                             f.guard_pokemon_id,
                         'slots_available':
@@ -2168,10 +2172,10 @@ def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
                 gyms[f.id] = {
                     'gym_id':
                         f.id,
-                    'park':
-                        park,
                     'team_id':
                         f.owned_by_team,
+                    'park':
+                        park,
                     'guard_pokemon_id':
                         f.guard_pokemon_id,
                     'slots_available':

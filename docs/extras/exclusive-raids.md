@@ -49,8 +49,12 @@ You can manually check for what areas are considered parks [here](http://overpas
         way[landuse=grass];
         way[landuse=greenfield];
         way[natural=scrub];
+        way[natural=heath];
         way[natural=grassland];
         way[landuse=farmyard];
+        way[landuse=vineyard];
+        way[landuse=farmland];
+        way[landuse=orchard];
     );
     out body;
     >;
