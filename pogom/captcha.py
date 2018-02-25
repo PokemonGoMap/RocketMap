@@ -34,75 +34,52 @@ from .utils import now
 log = logging.getLogger(__name__)
 
 
-def captcha_overseer_thread(args, account_queue, account_captchas,
-                            key_scheduler, wh_queue):
-    solverId = 0
-    while True:
-        # Run once every 15 seconds.
-        sleep_timer = 15
+def start_solvers_task(args, account_queue, account_captchas, key_scheduler,
+                       wh_queue):
+    tokens_needed = len(account_captchas)
+    if tokens_needed > 0:
+        tokens = Token.get_valid(tokens_needed)
+        tokens_available = len(tokens)
+        solvers = min(tokens_needed, tokens_available)
+        log.debug('Captcha overseer running. Captchas: %d - Tokens: %d',
+                  tokens_needed, tokens_available)
+        for i in range(0, solvers):
+            hash_key = None
+            if args.hash_key:
+                hash_key = key_scheduler.next()
 
-        tokens_needed = len(account_captchas)
-        if tokens_needed > 0:
-            tokens = Token.get_valid(tokens_needed)
-            tokens_available = len(tokens)
-            solvers = min(tokens_needed, tokens_available)
-            log.debug('Captcha overseer running. Captchas: %d - Tokens: %d',
-                      tokens_needed, tokens_available)
-            for i in range(0, solvers):
-                hash_key = None
-                if args.hash_key:
-                    hash_key = key_scheduler.next()
+            t = Thread(target=captcha_solver_thread,
+                       args=(args, account_queue, account_captchas,
+                             hash_key, wh_queue, tokens[i]))
+            t.daemon = True
+            t.start()
 
-                t = Thread(target=captcha_solver_thread,
-                           name='captcha-solver-{}'.format(solverId),
-                           args=(args, account_queue, account_captchas,
-                                 hash_key, wh_queue, tokens[i]))
-                t.daemon = True
-                t.start()
+        # Hybrid mode
+        if args.captcha_key and args.manual_captcha_timeout > 0:
+            tokens_remaining = tokens_needed - tokens_available
+            # Safety guard
+            tokens_remaining = min(tokens_remaining, 5)
+            for i in range(0, tokens_remaining):
+                account = account_captchas[0][1]
+                last_active = account['last_active']
+                hold_time = (datetime.utcnow() -
+                             last_active).total_seconds()
+                if hold_time > args.manual_captcha_timeout:
+                    log.debug('Account %s waited %ds for captcha token ' +
+                              'and reached the %ds timeout.',
+                              account['username'], hold_time,
+                              args.manual_captcha_timeout)
+                    if args.hash_key:
+                        hash_key = key_scheduler.next()
 
-                solverId += 1
-                if solverId > 999:
-                    solverId = 0
-                # Wait a bit before launching next thread
-                time.sleep(1)
+                    t = Thread(target=captcha_solver_thread,
+                               args=(args, account_queue, account_captchas,
+                                     hash_key, wh_queue))
+                    t.daemon = True
+                    t.start()
 
-            # Adjust captcha-overseer sleep timer
-            sleep_timer -= 1 * solvers
-
-            # Hybrid mode
-            if args.captcha_key and args.manual_captcha_timeout > 0:
-                tokens_remaining = tokens_needed - tokens_available
-                # Safety guard
-                tokens_remaining = min(tokens_remaining, 5)
-                for i in range(0, tokens_remaining):
-                    account = account_captchas[0][1]
-                    last_active = account['last_active']
-                    hold_time = (datetime.utcnow() -
-                                 last_active).total_seconds()
-                    if hold_time > args.manual_captcha_timeout:
-                        log.debug('Account %s waited %ds for captcha token ' +
-                                  'and reached the %ds timeout.',
-                                  account['username'], hold_time,
-                                  args.manual_captcha_timeout)
-                        if args.hash_key:
-                            hash_key = key_scheduler.next()
-
-                        t = Thread(target=captcha_solver_thread,
-                                   name='captcha-solver-{}'.format(solverId),
-                                   args=(args, account_queue, account_captchas,
-                                         hash_key, wh_queue))
-                        t.daemon = True
-                        t.start()
-
-                        solverId += 1
-                        if solverId > 999:
-                            solverId = 0
-                        # Wait a bit before launching next thread
-                        time.sleep(1)
-                    else:
-                        break
-
-        time.sleep(sleep_timer)
+                else:
+                    break
 
 
 def captcha_solver_thread(args, account_queue, account_captchas, hash_key,

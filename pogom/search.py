@@ -28,7 +28,7 @@ import requests
 import schedulers
 import terminalsize
 import timeit
-import threading
+import schedule
 
 from datetime import datetime
 from threading import Thread, Lock
@@ -46,7 +46,7 @@ from .models import (parse_map, GymDetails, parse_gyms, MainWorker,
 from .utils import now, distance
 from .transform import get_new_coords
 from .account import setup_api, check_login, AccountSet
-from .captcha import captcha_overseer_thread, handle_captcha
+from .captcha import start_solvers_task, handle_captcha
 from .proxy import get_new_proxy
 from .apiRequests import gym_get_info, get_map_objects as gmo
 from .transform import jitter_location
@@ -54,15 +54,17 @@ from .transform import jitter_location
 log = logging.getLogger(__name__)
 
 loginDelayLock = Lock()
-gym_cache_lock = threading.Lock()
+gym_cache_lock = Lock()
 
 
 # Thread to handle user input.
-def switch_status_printer(display_type, current_page, mainlog,
-                          loglevel, logmode):
+def switch_status_printer(display_type, current_page):
+    mainlog = logging.getLogger()
+    loglevel = mainlog.getEffectiveLevel()
+
     # Disable logging of the first handler - the stream handler, and disable
     # it's output.
-    if (logmode != 'logs'):
+    if (display_type[0] != 'logs'):
         mainlog.handlers[0].setLevel(logging.CRITICAL)
 
     while True:
@@ -96,239 +98,204 @@ def switch_status_printer(display_type, current_page, mainlog,
 
 
 # Thread to print out the status of each worker.
-def status_printer(threadStatus, account_failures, logmode, hash_key,
-                   key_scheduler):
+def status_printer(threadStatus, account_failures,
+                   key_scheduler, current_page, display_type):
 
-    if (logmode == 'logs'):
-        display_type = ['logs']
-    else:
-        display_type = ['workers']
+    if display_type[0] == 'logs':
+        # In log display mode, we don't want to show anything.
+        return
 
-    current_page = [1]
-    # Grab current log / level.
-    mainlog = logging.getLogger()
-    loglevel = mainlog.getEffectiveLevel()
+    # Create a list to hold all the status lines, so they can be printed
+    # all at once to reduce flicker.
+    status_text = []
 
-    # Start another thread to get user input.
-    t = Thread(target=switch_status_printer,
-               name='switch_status_printer',
-               args=(display_type, current_page, mainlog, loglevel, logmode))
-    t.daemon = True
-    t.start()
+    if display_type[0] == 'workers':
 
-    while True:
-        time.sleep(1)
+        # Get the terminal size.
+        width, height = terminalsize.get_terminal_size()
+        # Queue and overseer take 2 lines.  Switch message takes up 2
+        # lines.  Remove an extra 2 for things like screen status lines.
+        usable_height = height - 6
+        # Prevent people running terminals only 6 lines high from getting a
+        # divide by zero.
+        if usable_height < 1:
+            usable_height = 1
 
-        if display_type[0] == 'logs':
-            # In log display mode, we don't want to show anything.
-            continue
+        # Print status of overseer.
+        status_text.append('{} Overseer: {}'.format(
+            threadStatus['Overseer']['scheduler'],
+            threadStatus['Overseer']['message']))
 
-        # Create a list to hold all the status lines, so they can be printed
-        # all at once to reduce flicker.
-        status_text = []
+        # Calculate the total number of pages.  Subtracting for the
+        # overseer.
+        overseer_line_count = (threadStatus['Overseer']['message'].count('\n'))
+        total_pages = math.ceil((len(threadStatus) - 1 - overseer_line_count) /
+                                float(usable_height))
 
-        if display_type[0] == 'workers':
+        # Prevent moving outside the valid range of pages.
+        if current_page[0] > total_pages:
+            current_page[0] = total_pages
+        if current_page[0] < 1:
+            current_page[0] = 1
 
-            # Get the terminal size.
-            width, height = terminalsize.get_terminal_size()
-            # Queue and overseer take 2 lines.  Switch message takes up 2
-            # lines.  Remove an extra 2 for things like screen status lines.
-            usable_height = height - 6
-            # Prevent people running terminals only 6 lines high from getting a
-            # divide by zero.
-            if usable_height < 1:
-                usable_height = 1
+        # Calculate which lines to print.
+        start_line = usable_height * (current_page[0] - 1)
+        end_line = start_line + usable_height
+        current_line = 1
 
-            # Print status of overseer.
-            status_text.append('{} Overseer: {}'.format(
-                threadStatus['Overseer']['scheduler'],
-                threadStatus['Overseer']['message']))
+        # Find the longest username and proxy.
+        userlen = 4
+        proxylen = 5
+        for item in threadStatus:
+            if threadStatus[item]['type'] == 'Worker':
+                userlen = max(userlen, len(threadStatus[item]['username']))
+                if 'proxy_display' in threadStatus[item]:
+                    proxylen = max(proxylen, len(
+                        str(threadStatus[item]['proxy_display'])))
 
-            # Calculate the total number of pages.  Subtracting for the
-            # overseer.
-            overseer_line_count = (
-                threadStatus['Overseer']['message'].count('\n'))
-            total_pages = math.ceil(
-                (len(threadStatus) - 1 - overseer_line_count) /
-                float(usable_height))
+        # How pretty.
+        status = '{:10} | {:5} | {:' + str(userlen) + '} | {:' + str(
+            proxylen) + '} | {:7} | {:6} | {:5} | {:7} | {:8} | {:10}'
 
-            # Prevent moving outside the valid range of pages.
-            if current_page[0] > total_pages:
-                current_page[0] = total_pages
-            if current_page[0] < 1:
-                current_page[0] = 1
+        # Print the worker status.
+        status_text.append(status.format('Worker ID', 'Start', 'User',
+                                         'Proxy', 'Success', 'Failed',
+                                         'Empty', 'Skipped', 'Captchas',
+                                         'Message'))
+        for item in sorted(threadStatus):
+            if(threadStatus[item]['type'] == 'Worker'):
+                current_line += 1
 
-            # Calculate which lines to print.
-            start_line = usable_height * (current_page[0] - 1)
-            end_line = start_line + usable_height
-            current_line = 1
+                # Skip over items that don't belong on this page.
+                if current_line < start_line:
+                    continue
+                if current_line > end_line:
+                    break
 
-            # Find the longest username and proxy.
-            userlen = 4
-            proxylen = 5
-            for item in threadStatus:
-                if threadStatus[item]['type'] == 'Worker':
-                    userlen = max(userlen, len(threadStatus[item]['username']))
-                    if 'proxy_display' in threadStatus[item]:
-                        proxylen = max(proxylen, len(
-                            str(threadStatus[item]['proxy_display'])))
-
-            # How pretty.
-            status = '{:10} | {:5} | {:' + str(userlen) + '} | {:' + str(
-                proxylen) + '} | {:7} | {:6} | {:5} | {:7} | {:8} | {:10}'
-
-            # Print the worker status.
-            status_text.append(status.format('Worker ID', 'Start', 'User',
-                                             'Proxy', 'Success', 'Failed',
-                                             'Empty', 'Skipped', 'Captchas',
-                                             'Message'))
-            for item in sorted(threadStatus):
-                if(threadStatus[item]['type'] == 'Worker'):
-                    current_line += 1
-
-                    # Skip over items that don't belong on this page.
-                    if current_line < start_line:
-                        continue
-                    if current_line > end_line:
-                        break
-
-                    status_text.append(status.format(
-                        item,
-                        time.strftime('%H:%M',
-                                      time.localtime(
-                                          threadStatus[item]['starttime'])),
-                        threadStatus[item]['username'],
-                        threadStatus[item]['proxy_display'],
-                        threadStatus[item]['success'],
-                        threadStatus[item]['fail'],
-                        threadStatus[item]['noitems'],
-                        threadStatus[item]['skip'],
-                        threadStatus[item]['captcha'],
-                        threadStatus[item]['message']))
-
-        elif display_type[0] == 'failedaccounts':
-            status_text.append('-----------------------------------------')
-            status_text.append('Accounts on hold:')
-            status_text.append('-----------------------------------------')
-
-            # Find the longest account name.
-            userlen = 4
-            for account in account_failures:
-                userlen = max(userlen, len(account['account']['username']))
-
-            status = '{:' + str(userlen) + '} | {:10} | {:20}'
-            status_text.append(status.format('User', 'Hold Time', 'Reason'))
-
-            for account in account_failures:
                 status_text.append(status.format(
-                    account['account']['username'],
-                    time.strftime('%H:%M:%S',
-                                  time.localtime(account['last_fail_time'])),
-                    account['reason']))
+                    item,
+                    time.strftime('%H:%M',
+                                  time.localtime(
+                                      threadStatus[item]['starttime'])),
+                    threadStatus[item]['username'],
+                    threadStatus[item]['proxy_display'],
+                    threadStatus[item]['success'],
+                    threadStatus[item]['fail'],
+                    threadStatus[item]['noitems'],
+                    threadStatus[item]['skip'],
+                    threadStatus[item]['captcha'],
+                    threadStatus[item]['message']))
 
-        elif display_type[0] == 'hashstatus':
-            status_text.append(
-                '----------------------------------------------------------')
-            status_text.append('Hash key status:')
-            status_text.append(
-                '----------------------------------------------------------')
+    elif display_type[0] == 'failedaccounts':
+        status_text.append('-----------------------------------------')
+        status_text.append('Accounts on hold:')
+        status_text.append('-----------------------------------------')
 
-            status = '{:21} | {:9} | {:9} | {:9}'
-            status_text.append(status.format('Key', 'Remaining', 'Maximum',
-                                             'Peak'))
-            if hash_key is not None:
-                for key in hash_key:
-                    key_instance = key_scheduler.keys[key]
-                    key_text = key
+        # Find the longest account name.
+        userlen = 4
+        for account in account_failures:
+            userlen = max(userlen, len(account['account']['username']))
 
-                    if key_scheduler.current() == key:
-                        key_text += '*'
+        status = '{:' + str(userlen) + '} | {:10} | {:20}'
+        status_text.append(status.format('User', 'Hold Time', 'Reason'))
 
-                    status_text.append(status.format(
-                        key_text,
-                        key_instance['remaining'],
-                        key_instance['maximum'],
-                        key_instance['peak']))
+        for account in account_failures:
+            status_text.append(status.format(
+                account['account']['username'],
+                time.strftime('%H:%M:%S',
+                              time.localtime(account['last_fail_time'])),
+                account['reason']))
 
-        # Print the status_text for the current screen.
-        status_text.append((
-            'Page {}/{}. Page number to switch pages. F to show on hold ' +
-            'accounts. H to show hash status. <ENTER> alone to switch ' +
-            'between status and log view').format(current_page[0],
-                                                  total_pages))
-        # Clear the screen.
-        os.system('cls' if os.name == 'nt' else 'clear')
-        # Print status.
-        print '\n'.join(status_text)
+    elif display_type[0] == 'hashstatus':
+        status_text.append(
+            '----------------------------------------------------------')
+        status_text.append('Hash key status:')
+        status_text.append(
+            '----------------------------------------------------------')
+
+        status = '{:21} | {:9} | {:9} | {:9}'
+        status_text.append(status.format('Key', 'Remaining', 'Maximum',
+                                         'Peak'))
+        if key_scheduler is not None:
+            for key in key_scheduler.keys:
+                status_text.append(status.format(
+                    key['key'],
+                    key['remaining'],
+                    key['maximum'],
+                    key['peak']))
+
+    # Print the status_text for the current screen.
+    status_text.append((
+        'Page {}/{}. Page number to switch pages. F to show on hold ' +
+        'accounts. H to show hash status. <ENTER> alone to switch ' +
+        'between status and log view').format(current_page[0],
+                                              total_pages))
+    # Clear the screen.
+    os.system('cls' if os.name == 'nt' else 'clear')
+    # Print status.
+    print '\n'.join(status_text)
 
 
 # The account recycler monitors failed accounts and places them back in the
 #  account queue 2 hours after they failed.
 # This allows accounts that were soft banned to be retried after giving
 # them a chance to cool down.
-def account_recycler(args, accounts_queue, account_failures):
-    while True:
-        # Run once a minute.
-        time.sleep(60)
-        log.info('Account recycler running. Checking status of %d accounts.',
-                 len(account_failures))
+def account_recycler(account_rest_interval, accounts_queue, account_failures):
+    log.info('Account recycler running. Checking status of %d accounts.',
+             len(account_failures))
 
-        # Create a new copy of the failure list to search through, so we can
-        # iterate through it without it changing.
-        failed_temp = list(account_failures)
+    # Create a new copy of the failure list to search through, so we can
+    # iterate through it without it changing.
+    failed_temp = list(account_failures)
 
-        # Search through the list for any item that last failed before
-        # -ari/--account-rest-interval seconds.
-        ok_time = now() - args.account_rest_interval
-        for a in failed_temp:
-            if a['last_fail_time'] <= ok_time:
-                # Remove the account from the real list, and add to the account
-                # queue.
-                log.info('Account {} returning to active duty.'.format(
-                    a['account']['username']))
-                account_failures.remove(a)
-                accounts_queue.put(a['account'])
-            else:
-                if 'notified' not in a:
-                    log.info((
-                        'Account {} needs to cool off for {} minutes due ' +
-                        'to {}.').format(
-                            a['account']['username'],
-                            round((a['last_fail_time'] - ok_time) / 60, 0),
-                            a['reason']))
-                    a['notified'] = True
+    # Search through the list for any item that last failed before
+    # -ari/--account-rest-interval seconds.
+    ok_time = now() - account_rest_interval
+    for a in failed_temp:
+        if a['last_fail_time'] <= ok_time:
+            # Remove the account from the real list, and add to the account
+            # queue.
+            log.info('Account {} returning to active duty.'.format(
+                a['account']['username']))
+            account_failures.remove(a)
+            accounts_queue.put(a['account'])
+        else:
+            if 'notified' not in a:
+                log.info(('Account {} needs to cool off for {} minutes due ' +
+                          'to {}.').format(
+                              a['account']['username'],
+                              round((a['last_fail_time'] - ok_time) / 60,
+                                    0), a['reason']))
+                a['notified'] = True
 
 
-def worker_status_db_thread(threads_status, name, db_updates_queue):
-
-    while True:
-        workers = {}
-        overseer = None
-        for status in threads_status.values():
-            if status['type'] == 'Overseer':
-                overseer = {
-                    'worker_name': name,
-                    'message': status['message'],
-                    'method': status['scheduler'],
-                    'last_modified': datetime.utcnow(),
-                    'accounts_working': status['active_accounts'],
-                    'accounts_captcha': status['accounts_captcha'],
-                    'accounts_failed': status['accounts_failed'],
-                    'success': status['success_total'],
-                    'fail': status['fail_total'],
-                    'empty': status['empty_total'],
-                    'skip': status['skip_total'],
-                    'captcha': status['captcha_total'],
-                    'start': status['starttime'],
-                    'elapsed': status['elapsed']
-                }
-            elif status['type'] == 'Worker':
-                workers[status['username']] = WorkerStatus.db_format(
-                    status, name)
-        if overseer is not None:
-            db_updates_queue.put((MainWorker, {0: overseer}))
-            db_updates_queue.put((WorkerStatus, workers))
-        time.sleep(3)
+def worker_status_db_task(threads_status, name, db_updates_queue):
+    workers = {}
+    overseer = None
+    for status in threads_status.values():
+        if status['type'] == 'Overseer':
+            overseer = {
+                'worker_name': name,
+                'message': status['message'],
+                'method': status['scheduler'],
+                'last_modified': datetime.utcnow(),
+                'accounts_working': status['active_accounts'],
+                'accounts_captcha': status['accounts_captcha'],
+                'accounts_failed': status['accounts_failed'],
+                'success': status['success_total'],
+                'fail': status['fail_total'],
+                'empty': status['empty_total'],
+                'skip': status['skip_total'],
+                'captcha': status['captcha_total'],
+                'start': status['starttime'],
+                'elapsed': status['elapsed']
+            }
+        elif status['type'] == 'Worker':
+            workers[status['username']] = WorkerStatus.db_format(
+                status, name)
+    if overseer is not None:
+        db_updates_queue.put((MainWorker, {0: overseer}))
+        db_updates_queue.put((WorkerStatus, workers))
 
 
 # The main search loop that keeps an eye on the over all process.
@@ -399,38 +366,40 @@ def search_overseer_thread(args, new_location_queue, control_flags, heartb,
                                                 db_updates_queue)
 
     if (args.print_status):
+        if (args.print_status == 'logs'):
+            display_type = ['logs']
+        else:
+            display_type = ['workers']
+
+        current_page = [1]
+        # Grab current log / level.
         log.info('Starting status printer thread...')
-        t = Thread(
-            target=status_printer,
-            name='status_printer',
-            args=(threadStatus, account_failures, args.print_status,
-                  args.hash_key, key_scheduler))
+        # Start another thread to get user input.
+        t = Thread(target=switch_status_printer,
+                   name='switch_status_printer',
+                   args=(display_type, current_page))
         t.daemon = True
         t.start()
+        schedule.every(1).second.do(status_printer, threadStatus,
+                                    account_failures, key_scheduler,
+                                    current_page, display_type)
 
     # Create account recycler thread.
     log.info('Starting account recycler thread...')
-    t = Thread(target=account_recycler, name='account-recycler',
-               args=(args, account_queue, account_failures))
-    t.daemon = True
-    t.start()
+    schedule.every().minute.do(account_recycler, args.account_rest_interval,
+                               account_queue, account_failures)
 
     # Create captcha overseer thread.
     if args.captcha_solving:
         log.info('Starting captcha overseer thread...')
-        t = Thread(target=captcha_overseer_thread, name='captcha-overseer',
-                   args=(args, account_queue, account_captchas, key_scheduler,
-                         wh_queue))
-        t.daemon = True
-        t.start()
+        schedule.every(15).seconds.do(start_solvers_task, args, account_queue,
+                                      account_captchas, key_scheduler,
+                                      wh_queue)
 
     if args.status_name is not None:
         log.info('Starting status database thread...')
-        t = Thread(target=worker_status_db_thread,
-                   name='status_worker_db',
-                   args=(threadStatus, args.status_name, db_updates_queue))
-        t.daemon = True
-        t.start()
+        schedule.every(3).seconds.do(worker_status_db_task, threadStatus,
+                                     args.status_name, db_updates_queue)
 
     # Create specified number of search_worker_thread.
     log.info('Starting search worker threads...')

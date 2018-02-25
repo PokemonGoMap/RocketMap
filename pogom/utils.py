@@ -1166,26 +1166,6 @@ def log_resource_usage(log_method):
     log_method('Resource usage: %s.', usage)
 
 
-# Generic method to support periodic background tasks. Thread sleep could be
-# replaced by a tiny sleep, and time measuring, but we're using sleep() for
-# now to keep resource overhead to an absolute minimum.
-def periodic_loop(f, loop_delay_ms):
-    while True:
-        # Do the thing.
-        f()
-        # zZz :bed:
-        time.sleep(loop_delay_ms / 1000)
-
-
-# Periodically log resource usage every 'loop_delay_ms' ms.
-def log_resource_usage_loop(loop_delay_ms=60000):
-    # Helper method to log to specific log level.
-    def log_resource_usage_to_debug():
-        log_resource_usage(log.debug)
-
-    periodic_loop(log_resource_usage_to_debug, loop_delay_ms)
-
-
 # Return shell call output as string, replacing any errors with the
 # error's string representation.
 def check_output_catch(command):
