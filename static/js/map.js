@@ -76,7 +76,7 @@ const audio = new Audio('static/sounds/ding.mp3')
 const cryFileTypes = ['wav', 'mp3']
 
 const genderType = ['♂', '♀', '⚲']
-const forms = ['unset', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '!', '?', i8ln('Normal'), i8ln('Sunny'), i8ln('Rainy'), i8ln('Snowy'), i8ln('Normal'), i8ln('Attack'), i8ln('Defense'), i8ln('Speed')]
+const forms = ['unset', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '!', '?', '👤', '☀️', '☔️', '☃️', '👤', '⚔️', '🛡️', '⚡️')]
 const pokemonWithImages = [
     2, 3, 5, 6, 8, 9, 11, 28, 31, 34, 38, 59, 62, 65, 68, 71, 73, 76, 82, 89, 91, 94, 103, 105, 110, 112, 123, 125, 126, 129, 131, 134, 135, 136, 137, 139, 143, 144, 145, 146, 150, 153, 156, 159, 243, 244, 245, 248, 249, 250, 302, 303, 306, 320, 359, 382, 383, 384
 ]
