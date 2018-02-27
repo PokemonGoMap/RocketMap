@@ -82,10 +82,7 @@ def __gym_is_ex_gym(gym, ex_gyms):
     s2_center = get_s2_cell_center(gympoint[0], gympoint[1], 20)
 
     for way in ex_gyms.ways:
-        data = []
-        for node in way.nodes:
-            data.append({'lat': float(node.lat),
-                         'lon': float(node.lon)})
+        data = [{'lat': float(e.lat), 'lon': float(e.lon)} for e in way.nodes]
 
         if Geofences.is_point_in_polygon_custom(s2_center, data):
             gymname = gym['name'] or gym['gym_id']
