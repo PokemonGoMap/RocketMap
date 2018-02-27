@@ -5,6 +5,7 @@ from geofence import Geofences
 from models import Gym, init_database
 from s2sphere import LatLng, CellId
 
+# Specify app for a database connection and log to show module name in logs
 app = None
 log = logging.getLogger(__name__)
 db = init_database(app)
