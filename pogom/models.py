@@ -633,6 +633,14 @@ class Gym(LatLongModel):
         gym_ids = [gym['gym_id'] for gym in gyms]
         Gym.update(park=park).where(Gym.gym_id << gym_ids).execute()
 
+    @staticmethod
+    def get_gyms_park(id):
+        gym_by_id = Gym.select(Gym.park).where(
+            Gym.gym_id == id).dicts()
+        if gym_by_id:
+            return gym_by_id[0]['park']
+        return False
+
 
 class Raid(BaseModel):
     gym_id = Utf8mb4CharField(primary_key=True, max_length=50)
@@ -2119,12 +2127,7 @@ def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
                 b64_gym_id = str(f.id)
                 gym_display = f.gym_display
                 raid_info = f.raid_info
-                # Try to get recorded value for Gyms.park, default to false.
-                park = False
-                gym_by_id = Gym.select(Gym.park).where(
-                    Gym.gym_id == f.id).dicts()
-                if gym_by_id:
-                    park = gym_by_id[0]['park']
+                park = Gym.get_gyms_park(f.id)
 
                 # Send gyms to webhooks.
 
