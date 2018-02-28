@@ -430,7 +430,7 @@ class Gym(LatLongModel):
     guard_pokemon_id = SmallIntegerField()
     slots_available = SmallIntegerField()
     enabled = BooleanField()
-    park = BooleanField()
+    park = BooleanField(default=False)
     latitude = DoubleField()
     longitude = DoubleField()
     total_cp = SmallIntegerField()
@@ -2123,7 +2123,7 @@ def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
                 park = False
                 gym_by_id = Gym.select(Gym.park).where(
                     Gym.gym_id == f.id).dicts()
-                if(gym_by_id):
+                if gym_by_id:
                     park = gym_by_id[0]['park']
 
                 # Send gyms to webhooks.

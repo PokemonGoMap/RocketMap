@@ -86,7 +86,7 @@ def __gym_is_ex_gym(gym, ex_gyms):
 
         if Geofences.is_point_in_polygon_custom(s2_center, data):
             gymname = gym['name'] or gym['gym_id']
-            log.info('{} is eligible for EX raid.'.format(
+            log.info('{} is eligible for EX raids.'.format(
                 gymname.encode('utf8')))
             return True
     return False
