@@ -5,7 +5,7 @@ from geofence import Geofences
 from models import Gym, init_database
 from s2sphere import LatLng, CellId
 
-# Specify app for a database connection and log to show module name in logs
+# Specify app for a database connection and log to show module name in logs.
 app = None
 log = logging.getLogger(__name__)
 db = init_database(app)
@@ -17,7 +17,6 @@ def earthMetersToRadians(meters):
 
 
 def ex_query(s, w, n, e):
-
     # Query Overpass for known gym areas.
     api = Overpass()
     result = api.query("""
@@ -68,21 +67,22 @@ def update_ex_gyms(geofence):
     log.info('Finding parks within zone.')
     ex_gyms = ex_query(south, west, north, east)
     gyms = Gym.get_gyms(south, west, north, east)
-    if (gyms):
-        log.info(
-            'Checking {} gyms against {} parks.'.format(len(gyms),
-                                                        len(ex_gyms.ways)))
-        # Retrieve list of confirmed EX gyms to update the DB.
-        confirmed_ex_gyms = filter(lambda gym: __gym_is_ex_gym(gym, ex_gyms),
-                                   gyms.values())
 
-        if confirmed_ex_gyms:
-            Gym.set_gyms_in_park(confirmed_ex_gyms, True)
-        else:
-            log.info('No EX-eligible gyms found.')
-    else:
+    if not gyms:
         log.error('No gyms detected within geofence, exiting.')
         exit(1)
+
+    log.info(
+        'Checking {} gyms against {} parks.'.format(len(gyms),
+                                                    len(ex_gyms.ways)))
+    # Retrieve list of confirmed EX gyms to update the DB.
+    confirmed_ex_gyms = filter(lambda gym: __gym_is_ex_gym(gym, ex_gyms),
+                               gyms.values())
+
+    if not confirmed_ex_gyms:
+        log.info('No EX-eligible gyms found.')
+        exit(1)
+    Gym.set_gyms_in_park(confirmed_ex_gyms, True)
 
 
 def __gym_is_ex_gym(gym, ex_gyms):
