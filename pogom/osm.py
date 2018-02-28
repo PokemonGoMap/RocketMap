@@ -68,13 +68,16 @@ def update_ex_gyms(geofence):
     log.info('Finding parks within zone.')
     ex_gyms = ex_query(south, west, north, east)
     gyms = Gym.get_gyms(south, west, north, east)
-    log.info('Checking {} gyms against {} parks.'.format(len(gyms),
+    if (gyms):
+        log.info('Checking {} gyms against {} parks.'.format(len(gyms),
                                                          len(ex_gyms.ways)))
-    # Retrieve list of confirmed EX gyms to update the DB.
-    confirmed_ex_gyms = filter(lambda gym: __gym_is_ex_gym(gym, ex_gyms),
-                               gyms.values())
-    Gym.set_gyms_in_park(confirmed_ex_gyms, True)
-
+        # Retrieve list of confirmed EX gyms to update the DB.
+        confirmed_ex_gyms = filter(lambda gym: __gym_is_ex_gym(gym, ex_gyms),
+                                   gyms.values())
+        Gym.set_gyms_in_park(confirmed_ex_gyms, True)
+    else:
+        log.error('No gyms detected within geofence, exiting.')
+        exit(1)
 
 def __gym_is_ex_gym(gym, ex_gyms):
     gympoint = [float(gym['latitude']),
