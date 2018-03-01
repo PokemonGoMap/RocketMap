@@ -1332,7 +1332,7 @@ class SpawnPoint(LatLongModel):
 
         for sp in linked_spawn_points:
 
-            if sp['missed_count'] > args.missed_count and args.missed_count:
+            if args.missed_count and sp['missed_count'] > args.missed_count:
                 continue
 
             endpoints = SpawnPoint.start_end(sp, scan_delay)
@@ -2277,7 +2277,7 @@ def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
     # Look for spawnpoints within scan_loc that are not here to see if we
     # can narrow down tth window.
     for sp in ScannedLocation.linked_spawn_points(scan_location['cellid']):
-        if sp['missed_count'] > args.missed_count and args.missed_count:
+        if args.missed_count and sp['missed_count'] > args.missed_count:
                 continue
 
         if sp['id'] in sp_id_list:

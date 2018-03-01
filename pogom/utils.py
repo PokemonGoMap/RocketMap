@@ -502,8 +502,8 @@ def get_args():
                               'Only required once per area.'),
                         action='store_true', default=False)
     parser.add_argument('-mc', '--missed-count',
-                        help=('Amount of times spawnpoint is missed before ' +
-                              'before it\'s disabled (Default: 5). ' +
+                        help=('Number of times that a spawnpoint can be' +
+                              'missed before it gets disabled. (Default: 5).' +
                               '0 to disable.'),
                         type=int, default=5)
     verbose = parser.add_mutually_exclusive_group()

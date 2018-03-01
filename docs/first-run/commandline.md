@@ -406,7 +406,7 @@ environment variables which override config file values which override defaults.
                             repeated up to 3 times.
       --verbosity VERBOSE   Show debug messages from RocketMap and pgoapi. [env
                             var: POGOMAP_VERBOSITY]
-    
+
     Database:
       --db-name DB_NAME     Name of the database to be used. [env var:
                             POGOMAP_DB_NAME]
@@ -418,7 +418,7 @@ environment variables which override config file values which override defaults.
       --db-threads DB_THREADS
                             Number of db threads; increase if the db queue falls
                             behind. [env var: POGOMAP_DB_THREADS]
-    
+
     Dynamic Rarity:
       -Rh RARITY_HOURS, --rarity-hours RARITY_HOURS
                             Number of hours of Pokemon data to use to calculate
