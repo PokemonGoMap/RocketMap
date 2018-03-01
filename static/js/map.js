@@ -1320,7 +1320,7 @@ function createGymImage(item, callback) {
                     let coords = getSpriteCoordinates(raidPokemon)
                     if (results[2]) ctx.drawImage(results[2], coords.x, coords.y, 80, 80, 8, 40, 49, 49)
                 } else {
-                    // Draw questionmark
+                    // Draw question mark
                     drawStroked(ctx, '?', 18, 87, 60, '#33363a', '#d8e5ea')
                 }
             }
