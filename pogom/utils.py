@@ -502,7 +502,7 @@ def get_args():
                               'Only required once per area.'),
                         action='store_true', default=False)
     parser.add_argument('-mc', '--missed-count',
-                        help=('Number of times that a spawnpoint can be' +
+                        help=('Number of times that a spawnpoint can be ' +
                               'missed before it gets disabled. (Default: 5).' +
                               '0 to disable.'),
                         type=int, default=5)
