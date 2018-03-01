@@ -567,7 +567,7 @@ function pokemonLabel(item) {
     })
 
     if (weatherBoostedCondition) {
-        weatherDisplay = `<span class="pokemon weather-boosted">${weatherEmojis[weatherBoostedCondition]}</span>`
+        weatherDisplay = `<span class="pokemon weather-boost">${weatherEmojis[weatherBoostedCondition]}</span>`
     }
 
     var details = ''
