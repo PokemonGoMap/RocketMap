@@ -1332,7 +1332,7 @@ class SpawnPoint(LatLongModel):
 
         for sp in linked_spawn_points:
 
-            if sp['missed_count'] > 5:
+            if sp['missed_count'] > args.missed_count and args.missed_count:
                 continue
 
             endpoints = SpawnPoint.start_end(sp, scan_delay)
@@ -2277,7 +2277,7 @@ def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
     # Look for spawnpoints within scan_loc that are not here to see if we
     # can narrow down tth window.
     for sp in ScannedLocation.linked_spawn_points(scan_location['cellid']):
-        if sp['missed_count'] > 5:
+        if sp['missed_count'] > args.missed_count and args.missed_count:
                 continue
 
         if sp['id'] in sp_id_list:
@@ -2293,11 +2293,15 @@ def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
                 spawn_points[sp['id']] = sp
             endpoints = SpawnPoint.start_end(sp, args.spawn_delay)
             if clock_between(endpoints[0], now_secs, endpoints[1]):
-                sp['missed_count'] += 1
                 spawn_points[sp['id']] = sp
-                log.warning('%s kind spawnpoint %s has no Pokemon %d times'
-                            ' in a row.',
-                            sp['kind'], sp['id'], sp['missed_count'])
+                if args.missed_count:
+                    sp['missed_count'] += 1
+                    log.warning('%s kind spawnpoint %s has no Pokemon %d times'
+                                ' in a row.',
+                                sp['kind'], sp['id'], sp['missed_count'])
+                else:
+                    log.warning('%s kind spawnpoint %s has no Pokemon',
+                                sp['kind'], sp['id'])
                 log.info('Possible causes: Still doing initial scan, super'
                          ' rare double spawnpoint during')
                 log.info('hidden period, or Niantic has removed '

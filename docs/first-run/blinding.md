@@ -32,7 +32,8 @@ On high lvl accounts you can identify blinded accounts when the encounter fails 
 
 ### Spawnpoint Fix
 
-If your accounts are blinded and it starts disabling spawnpoints because it considers them "missed too often", you can run this query safely to re-enable those spawnpoints:
+If your accounts are blinded and it starts disabling spawnpoints because it considers them "missed too often", you can disable missed count by launching with `-mc 0` or `missed-count: 0` in your config.  
+To re-enable deactivated spawnpoints, you can safely run this query:
 ```sql
 UPDATE spawnpoint SET missed_count = 0;
 ```
