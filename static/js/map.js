@@ -92,7 +92,7 @@ const excludedRaritiesList = [
   ['common', 'uncommon', 'rare', 'very rare', 'ultra rare']
 ]
 
-const weatherEmojis = [ '',  "☀️", "☔️", "⛅", "☁️", "💨", "⛄️", "🌁" ]
+const weatherEmojis = [ '', '☀️', '☔️', '⛅', '☁️', '💨', '⛄️', '🌁' ]
 
 /*
  text place holders:
