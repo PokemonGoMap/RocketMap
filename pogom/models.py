@@ -3278,7 +3278,7 @@ def database_migrate(db, old_ver):
         migrate(
             # Add `shiny` column to `gympokemon`
             migrator.add_column('gympokemon', 'shiny',
-                                SmallIntegerField(null=True)))
+                                SmallIntegerField(null=True))
         )
 
     # Always log that we're done.
