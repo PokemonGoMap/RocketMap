@@ -371,11 +371,6 @@ function getStats(i, worker) {
     elapsedHours = elapsedSecs / 3600
 }
 
-function getAccountStats(i, account) {
-    idle += (account['message'] === 'Nothing to scan.') ? 1 : 0
-    busy += (account['message'] !== 'Nothing to scan.') ? 1 : 0
-}
-
 function addTotalStats(result) {
     var statmsg, title
     active = 0
@@ -403,7 +398,14 @@ function addTotalStats(result) {
     if ((mainWorkers > 1) || !(showWorkers && showInstances)) {
         active += result.workers.length
 
-        $.each(result.workers, getAccountStats)
+        // Calculate the number of idle workers and then busy from that.
+        idle = result.workers.reduce((accumulator, account) => {
+            if (account['message'] === 'Nothing to scan.') {
+                accumulator += 1
+            }
+            return accumulator
+        }, 0)
+        busy = result.workers.length - idle
 
         // Avoid division by zero.
         elapsedSecs = Math.max(elapsedSecs, 1)
