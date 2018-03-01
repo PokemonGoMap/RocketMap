@@ -2036,12 +2036,15 @@ def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
 
             }
 
-            # Check Weather
-            weather = p.pokemon_data.pokemon_display.weather_boosted_condition
-            if weather:
-                pokemon[p.encounter_id]['weather_boosted_condition'] = weather
+            # Store Pokémon boosted condition.
+            # TODO: Move pokemon_display to the top.
+            pokemon_display = p.pokemon_data.pokemon_display
+            boosted = pokemon_display.weather_boosted_condition
+            if boosted:
+                pokemon[p.encounter_id]['weather_boosted_condition'] = boosted
 
-            # We need to check if exist and is not false due to a request error
+            # We need to check if exist and is not false due to a
+            # request error.
             if pokemon_info:
                 pokemon[p.encounter_id].update({
                     'individual_attack': pokemon_info.individual_attack,
