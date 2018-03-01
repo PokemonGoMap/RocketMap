@@ -402,7 +402,14 @@ function addTotalStats(result) {
 
         const accountsBusy = result.workers.length - accountsIdle
 
-        $.each(result.workers, getAccountStats)
+        // Calculate the number of idle workers and then busy from that.
+        idle = result.workers.reduce((accumulator, account) => {
+            if (account['message'] === 'Nothing to scan.') {
+                accumulator += 1
+            }
+            return accumulator
+        }, 0)
+        busy = result.workers.length - idle
 
         // Avoid division by zero.
         elapsedSecs = Math.max(elapsedSecs, 1)
