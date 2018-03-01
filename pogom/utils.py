@@ -914,7 +914,22 @@ def get_pokemon_name(pokemon_id):
 
 
 def get_pokemon_gen(pokemon_id):
-    return get_pokemon_data(pokemon_id)['generation']
+    pokemon_gen = '?'
+
+    if pokemon_id <= 151:
+        pokemon_gen = ' 1'
+    elif pokemon_id <= 251:
+        pokemon_gen = ' 2'
+    elif pokemon_id <= 386:
+        pokemon_gen = ' 3'
+    elif pokemon_id <= 493:
+        pokemon_gen = ' 4'
+    elif pokemon_id <= 649:
+        pokemon_gen = ' 5'
+    elif pokemon_id <= 721:
+        pokemon_gen = ' 6'
+
+    return pokemon_gen
 
 
 def get_pokemon_types(pokemon_id):
