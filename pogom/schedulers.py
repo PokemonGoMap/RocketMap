@@ -769,8 +769,8 @@ class SpeedScan(HexSearch):
                     self.scans.keys(), self.location_change_date)
                 for sp in spawnpoints:
                     if (self.args.missed_count and
-                                sp['missed_count'] > self.args.missed_count):
-                        continue
+                            sp['missed_count'] > self.args.missed_count):
+                                continue
                     self.active_sp += 1
                     self.tth_found += (sp['earliest_unseen'] ==
                                        sp['latest_seen'])
