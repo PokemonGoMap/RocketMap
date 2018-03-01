@@ -1222,10 +1222,15 @@ function getGymImageId(item) {
     var parts = []
     parts.push(gymTypes[item.team_id])
     parts.push(getGymLevel(item))
-    if (Store.get('showRaids') && isValidRaid(item.raid) && isGymSatisfiesRaidMinMaxFilter(item.raid) && (!Store.get('showActiveRaidsOnly') || isOngoingRaid(item.raid))) {
+    if (Store.get('showRaids') &&
+        isValidRaid(item.raid) &&
+        isGymSatisfiesRaidMinMaxFilter(item.raid) &&
+        (!Store.get('showActiveRaidsOnly') || isOngoingRaid(item.raid)) &&
+        (!Store.get('showParkRaidsOnly') || item.park)) {
         parts.push(getRaidLevel(item.raid))
         if (isOngoingRaid(item.raid)) parts.push(item.raid.pokemon_id)
     }
+    if (item.park) parts.push('park')
     return parts.join('_')
 }
 
@@ -1278,6 +1283,7 @@ function createGymImage(item, callback) {
     const validRaid = Store.get('showRaids') && isValidRaid(item.raid) && isGymSatisfiesRaidMinMaxFilter(item.raid) && (!Store.get('showActiveRaidsOnly') || isOngoingRaid(item.raid))
     const ongoingRaid = isOngoingRaid(item.raid)
     const raidPokemon = validRaid && item.raid.pokemon_id
+    const parkGym = item.park
 
     const baseImage = 'static/images/gym/' + gymTypes[gymTeam] + '.png'
     const raidImage = 'static/icons-large-sprite.png'
@@ -1300,6 +1306,7 @@ function createGymImage(item, callback) {
         ctx.shadowBlur = 3
         // Draw base image
         if (results[0]) ctx.drawImage(results[0], 0, 0)
+        if (parkGym) drawStroked(ctx, 'EX', 13, 27, 21, '#33363a', '#d8e5ea')
         if (validRaid) {
             ctx.shadowColor = 'rgba(0,0,0,.5)'
             // Draw egg
