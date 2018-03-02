@@ -2072,7 +2072,8 @@ def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
                         'seconds_until_despawn': seconds_until_despawn,
                         'spawn_start': start_end[0],
                         'spawn_end': start_end[1],
-                        'player_level': encounter_level
+                        'player_level': encounter_level,
+                        'boosted_weather': boosted
                     })
                     if wh_poke['cp_multiplier'] is not None:
                         wh_poke.update({
