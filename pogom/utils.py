@@ -501,6 +501,11 @@ def get_args():
                               'gyms that are candidates for EX raids. ' +
                               'Only required once per area.'),
                         action='store_true', default=False)
+    parser.add_argument('-mc', '--missed-count',
+                        help=('Number of times that a spawnpoint can be ' +
+                              'missed before it gets disabled. (Default: 5).' +
+                              '0 to disable.'),
+                        type=int, default=5)
     verbose = parser.add_mutually_exclusive_group()
     verbose.add_argument('-v',
                          help=('Show debug messages from RocketMap ' +

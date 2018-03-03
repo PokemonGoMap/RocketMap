@@ -42,7 +42,7 @@
                     [-vci VERSION_CHECK_INTERVAL] [-odt ON_DEMAND_TIMEOUT]
                     [--disable-blacklist] [-tp TRUSTED_PROXIES]
                     [--api-version API_VERSION] [--no-file-logs]
-                    [--log-path LOG_PATH] [--dump] [-exg]
+                    [--log-path LOG_PATH] [--dump] [-exg] [-mc MISSED_COUNT]
                     [-v | --verbosity VERBOSE] [-Rh RARITY_HOURS]
                     [-Rf RARITY_UPDATE_FREQUENCY]
 
@@ -396,8 +396,12 @@ environment variables which override config file values which override defaults.
       --dump                Dump censored debug info about the environment and
                             auto-upload to hastebin.com. [env var: POGOMAP_DUMP]
       -exg, --ex-gyms       Fetch OSM parks within geofence and flag gyms that are
-                            candidates for ex raids. Only required once per area.
+                            candidates for EX raids. Only required once per area.
                             [env var: POGOMAP_EX_GYMS]
+      -mc MISSED_COUNT, --missed-count MISSED_COUNT
+                            Amount of times spawnpoint is missed before before
+                            it's disabled (Default: 5). 0 to disable. [env var:
+                            POGOMAP_MISSED_COUNT]
       -v                    Show debug messages from RocketMap and pgoapi. Can be
                             repeated up to 3 times.
       --verbosity VERBOSE   Show debug messages from RocketMap and pgoapi. [env
