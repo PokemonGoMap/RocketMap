@@ -1188,7 +1188,7 @@ function setupPokemonMarkerDetails(item, map, scaleByRarity = true, isNotifyPkmn
     if (Store.get('downscalePokemon')) {
         const downscaledPokemon = Store.get('downscaledPokemon')
         if (downscaledPokemon.indexOf(item['pokemon_id']) !== -1) {
-            rarityValue = 2;
+            rarityValue = 2
         }
     }
 
