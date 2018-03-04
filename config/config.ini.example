@@ -25,7 +25,7 @@
 #speed-scan                     # Use speed-scan as the search scheduler.
 #location:                      # Location, can be an address or coordinates.
 #step-limit:                    # Steps (default=10)
-#scan-delay:                    # Time delay between requests in scan threads. (default=12)
+#scan-delay:                    # Time delay between requests in scan threads. (default=10)
 #no-gyms                        # Disables gym scanning (default=False)
 #no-pokemon                     # Disables pokemon scanning. (default=False)
 #no-pokestops                   # Disables pokestop scanning. (default=False)
@@ -77,7 +77,7 @@
 #workers-per-hive:              # Only referenced when using --beehive. Sets number of workers per hive. (default=1)
 #workers:                       # Number of search worker threads to start. (default=#accounts)
 #spawn-delay:                   # Number of seconds after spawn time to wait before scanning to be sure the Pokemon is there. (default=10)
-#kph:                           # Set a maximum speed in km/hour for scanner movement. (default=35)
+#kph:                           # Set a maximum speed in km/hour for scanner movement. 0 to disable. (default=35)
 #bad-scan-retry:                # Number of bad scans before giving up on a step. (default=2, 0 to disable)
 #skip-empty                     # Enables skipping of empty cells in normal scans - requires previously populated database. (not to be used with -ss)
 #min-seconds-left:              # Time that must be left on a spawn before considering it too late and skipping it. (default=0)
@@ -107,7 +107,7 @@
 #encounter-delay:               # Delay in seconds before starting an encounter. Must not be zero. (default=1)
 #high-lvl-accounts:             # File containing a list high level accounts, in the format "auth_service,username,password"
 #enc-whitelist-file:            # File containing a list of Pokemon IDs to encounter for IV/CPs. Requires L30 or higher accounts in --high-lvl-accounts.
-#hlvl-kph:                      # Set a maximum speed in km/hour for high level account scanning. (default=25)
+#hlvl-kph:                      # Set a maximum speed in km/hour for high level account scanning. 0 to disable. (default=25)
 
 
 # Webserver settings

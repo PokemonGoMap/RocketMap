@@ -172,10 +172,12 @@ def rpc_login_sequence(args, api, account):
 
     try:
         req = api.create_request()
-        req.download_remote_config_version(platform=1,
-                                           app_version=app_version)
-        send_generic_request(req, account, settings=True, buddy=False,
-                             inbox=False)
+        req.download_remote_config_version(
+            platform=1,
+            device_model=api.device_info['device_model_boot'],
+            app_version=app_version)
+        send_generic_request(
+            req, account, settings=True, buddy=False, inbox=False)
 
         total_req += 1
         time.sleep(random.uniform(.53, 1.1))
@@ -309,7 +311,21 @@ def rpc_login_sequence(args, api, account):
                       e)
         raise LoginSequenceFail('Failed during login sequence.')
 
-    # 8 - Check if there are level up rewards to claim.
+    log.debug('Fetching News...')
+    try:  # 8 - Make an empty request to fetch all News.
+        req = api.create_request()
+        req.fetch_all_news()
+        send_generic_request(req, account, settings=True)
+
+        total_req += 1
+        time.sleep(random.uniform(.45, .7))
+    except Exception as e:
+        log.exception('Login for account %s failed. Exception while ' +
+                      'fetching all news: %s.', account['username'],
+                      e)
+        raise LoginSequenceFail('Failed during login sequence.')
+
+    # 9 - Check if there are level up rewards to claim.
     log.debug('Checking if there are level up rewards to claim...')
 
     try:
@@ -704,11 +720,12 @@ class AccountSet(object):
                 # Check if we're below speed limit for account.
                 last_scanned = account.get('last_scanned', False)
 
-                if last_scanned:
+                if last_scanned and self.kph > 0:
                     seconds_passed = now - last_scanned
                     old_coords = account.get('last_coords', coords_to_scan)
 
                     distance_m = distance(old_coords, coords_to_scan)
+
                     cooldown_time_sec = distance_m / self.kph * 3.6
 
                     # Not enough time has passed for this one.
