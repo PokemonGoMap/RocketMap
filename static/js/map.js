@@ -539,6 +539,8 @@ function pokemonLabel(item) {
     const pokemonRarity = getPokemonRarity(item['pokemon_id'])
 
     var name = item['pokemon_name']
+
+    var generation = item['pokemon_gen']
     var rarityDisplay = pokemonRarity ? '(' + i8ln(pokemonRarity) + ')' : ''
     var types = item['pokemon_types']
     var typesDisplay = ''
@@ -596,7 +598,7 @@ function pokemonLabel(item) {
             <div class='pokemon container content-left'>
               <div>
                 <img class='pokemon sprite' src='static/icons/${id}.png'>
-                <span class='pokemon'>Level: </span><span class='pokemon'>${pokemonLevel}</span>
+                <span class='pokemon'>Gen: </span><span class='pokemon'>${generation}</span><br>
                 <span class='pokemon links exclude'><a href='javascript:excludePokemon(${id})'>Exclude</a></span>
                 <span class='pokemon links notify'><a href='javascript:notifyAboutPokemon(${id})'>Notify</a></span>
                 <span class='pokemon links remove'><a href='javascript:removePokemonMarker("${encounterId}")'>Remove</a></span>
@@ -608,7 +610,10 @@ function pokemonLabel(item) {
                 <span class='label-countdown' disappears-at='${disappearTime}'>00m00s</span> left (${moment(disappearTime).format('HH:mm')})
               </div>
               <div class='pokemon'>
-                CP: <span class='pokemon encounter'>${cp}/${iv.toFixed(1)}%</span> (A${atk}/D${def}/S${sta})
+                CP: <span class='pokemon encounter'>${cp} | IV: ${iv.toFixed(1)}%</span> (A${atk}/D${def}/S${sta})
+              </div>
+              <div class='pokemon'>
+                Level: <span class='pokemon'>${pokemonLevel}</span>
               </div>
               <div class='pokemon'>
                 Moveset: <span class='pokemon encounter'>${pMove1}/${pMove2}</span>
@@ -628,7 +633,7 @@ function pokemonLabel(item) {
         <div class='pokemon container content-left'>
           <div>
             <img class='pokemon sprite' src='static/icons/${id}.png'>
-            <span class='pokemon'>Level: </span><span class='pokemon no-encounter'>n/a</span>
+            <span class='pokemon'>Gen: </span><span class='pokemon'>${generation}</span><br>
             <span class='pokemon links exclude'><a href='javascript:excludePokemon(${id})'>Exclude</a></span>
             <span class='pokemon links notify'><a href='javascript:notifyAboutPokemon(${id})'>Notify</a></span>
             <span class='pokemon links remove'><a href='javascript:removePokemonMarker("${encounterId}")'>Remove</a></span>
@@ -641,6 +646,9 @@ function pokemonLabel(item) {
           </div>
           <div class='pokemon'>
             CP: <span class='pokemon no-encounter'>No information</span>
+          </div>
+          <div class='pokemon'>
+            Level: <span class='pokemon no-encounter'>No information</span>
           </div>
           <div class='pokemon'>
             Moveset: <span class='pokemon no-encounter'>No information</span>
