@@ -10,8 +10,8 @@ $(function () {
     const scaleByRarity = true // Enable scaling by rarity. Default: true.
     const upscalePokemon = false // Enable upscaling of certain Pokemon (upscaledPokemon and notify list). Default: false.
     const upscaledPokemon = [] // Add Pokémon IDs separated by commas (e.g. [1, 2, 3]) to upscale icons. Default: [].
-    const downscalePokemon = true // Enable downscaling of certain Pokemon (downscaledPokemon and notifiy list). Default: false.
-    const downscaledPokemon = [202, 207, 204, 333] // Add Pokémon IDs separated by commas (e.g. [1, 2, 3]) to downscale icons.
+    const downscalePokemon = false // Enable downscaling of certain Pokemon (downscaledPokemon and notifiy list). Default: false.
+    const downscaledPokemon = [] // Add Pokémon IDs separated by commas (e.g. [1, 2, 3]) to downscale icons.
 
     // Google Analytics property ID. Leave empty to disable.
     // Looks like 'UA-XXXXX-Y'.
