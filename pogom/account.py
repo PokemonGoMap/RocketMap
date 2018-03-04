@@ -14,7 +14,7 @@ from .fakePogoApi import FakePogoApi
 from .pgoapiwrapper import PGoApiWrapper
 from .utils import in_radius, generate_device_info, distance
 from .proxy import get_new_proxy
-from .apiRequests import (send_generic_request, fort_details,
+from .apiRequests import (send_generic_request, fort_details, execute_request,
                           recycle_inventory_item, use_item_egg_incubator,
                           release_pokemon, level_up_rewards, fort_search)
 
@@ -130,7 +130,7 @@ def rpc_login_sequence(args, api, account):
 
     try:
         req = api.create_request()
-        req.call(False)
+        execute_request(req)
 
         total_req += 1
         time.sleep(random.uniform(.43, .97))
@@ -149,7 +149,7 @@ def rpc_login_sequence(args, api, account):
     try:
         req = api.create_request()
         req.get_player(player_locale=args.player_locale)
-        resp = req.call(False)
+        resp = execute_request(req)
         parse_get_player(account, resp)
 
         total_req += 1
@@ -301,7 +301,7 @@ def rpc_login_sequence(args, api, account):
     try:  # 7 - Make an empty request to retrieve store items.
         req = api.create_request()
         req.get_store_items()
-        req.call(False)
+        execute_request(req)
 
         total_req += 1
         time.sleep(random.uniform(.6, 1.1))

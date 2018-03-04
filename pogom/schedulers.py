@@ -1247,3 +1247,25 @@ class KeyScheduler(object):
     def next(self):
         self.curr_key = self.key_cycle.next()
         return self.curr_key
+
+    def update_hash_stats(self, key, remaining, maximum, expiration):
+        key_instance = self.keys[key]
+        key_instance['remaining'] = remaining
+        key_instance['maximum'] = maximum
+
+        usage = (key_instance['maximum'] - key_instance['remaining'])
+
+        if key_instance['peak'] < usage:
+            key_instance['peak'] = usage
+
+        if key_instance['expires'] is None:
+            expires = expiration
+
+            if expires is not None:
+                expires = datetime.utcfromtimestamp(expires)
+                key_instance['expires'] = expires
+
+        key_instance['last_updated'] = datetime.utcnow()
+
+        log.debug('Hash key %s has %s/%s RPM left.', key,
+                  key_instance['remaining'], key_instance['maximum'])

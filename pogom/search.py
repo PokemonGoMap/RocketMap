@@ -30,6 +30,8 @@ import terminalsize
 import timeit
 import threading
 
+import apiRequests
+
 from datetime import datetime
 from threading import Thread, Lock
 from queue import Queue, Empty
@@ -40,7 +42,6 @@ from requests.packages.urllib3.util.retry import Retry
 from distutils.version import StrictVersion
 from cachetools import TTLCache
 
-from pgoapi.hash_server import HashServer
 from .models import (parse_map, GymDetails, parse_gyms, MainWorker,
                      WorkerStatus, HashKeys, ScannedLocation)
 from .utils import now, distance
@@ -48,7 +49,6 @@ from .transform import get_new_coords
 from .account import setup_api, check_login, AccountSet
 from .captcha import captcha_overseer_thread, handle_captcha
 from .proxy import get_new_proxy
-from .apiRequests import gym_get_info, get_map_objects as gmo
 from .transform import jitter_location
 
 log = logging.getLogger(__name__)
@@ -397,6 +397,7 @@ def search_overseer_thread(args, new_location_queue, control_flags, heartb,
         log.info('Enabling hashing key scheduler...')
         key_scheduler = schedulers.KeyScheduler(args.hash_key,
                                                 db_updates_queue)
+        apiRequests.configure(key_scheduler)
 
     if (args.print_status):
         log.info('Starting status printer thread...')
@@ -419,8 +420,7 @@ def search_overseer_thread(args, new_location_queue, control_flags, heartb,
     if args.captcha_solving:
         log.info('Starting captcha overseer thread...')
         t = Thread(target=captcha_overseer_thread, name='captcha-overseer',
-                   args=(args, account_queue, account_captchas, key_scheduler,
-                         wh_queue))
+                   args=(args, account_queue, account_captchas, wh_queue))
         t.daemon = True
         t.start()
 
@@ -468,7 +468,7 @@ def search_overseer_thread(args, new_location_queue, control_flags, heartb,
         argset = (
             args, account_queue, account_sets, account_failures,
             account_captchas, control_flags, threadStatus[workerId],
-            db_updates_queue, wh_queue, scheduler, key_scheduler, gym_cache)
+            db_updates_queue, wh_queue, scheduler, gym_cache)
 
         t = Thread(target=search_worker_thread,
                    name='search-worker-{}'.format(i),
@@ -769,7 +769,7 @@ def generate_hive_locations(current_location, step_distance,
 
 def search_worker_thread(args, account_queue, account_sets, account_failures,
                          account_captchas, control_flags, status, dbq, whq,
-                         scheduler, key_scheduler, gym_cache):
+                         scheduler, gym_cache):
 
     log.debug('Search worker thread starting...')
 
@@ -968,11 +968,6 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
                 # to be done when the auth token is refreshed.
                 api.set_position(*scan_coords)
 
-                if args.hash_key:
-                    key = key_scheduler.next()
-                    log.debug('Using key {} for this scan.'.format(key))
-                    api.activate_hash_server(key)
-
                 # Ok, let's get started -- check our login status.
                 status['message'] = 'Logging in...'
                 check_login(args, account, api, status['proxy_url'])
@@ -989,7 +984,8 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
 
                 # Make the actual request.
                 scan_date = datetime.utcnow()
-                response_dict = gmo(api, account, scan_coords)
+                response_dict = apiRequests.get_map_objects(
+                    api, account, scan_coords)
                 status['last_scan_date'] = datetime.utcnow()
 
                 # Record the time and the place that the worker made the
@@ -1018,16 +1014,16 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
                         # Make another request for the same location
                         # since the previous one was captcha'd.
                         scan_date = datetime.utcnow()
-                        response_dict = gmo(api, account, scan_coords)
+                        response_dict = apiRequests.get_map_objects(
+                            api, account, scan_coords)
                     elif captcha is not None:
                         account_queue.task_done()
                         time.sleep(3)
                         break
 
                     parsed = parse_map(args, response_dict, scan_coords,
-                                       scan_location, dbq, whq, key_scheduler,
-                                       api, status, scan_date, account,
-                                       account_sets)
+                                       scan_location, dbq, whq, api, status,
+                                       scan_date, account, account_sets)
 
                     scheduler.task_done(status, parsed)
                     if parsed['count'] > 0:
@@ -1132,8 +1128,8 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
                                          gym['latitude'], gym['longitude']
                                      ]))
 
-                            response = gym_get_info(api, account,
-                                                    scan_coords, gym)
+                            response = apiRequests.gym_get_info(
+                                api, account, scan_coords, gym)
 
                             # Make sure the gym was in range. (Sometimes the
                             # API gets cranky about gyms that are ALMOST 1km
@@ -1162,38 +1158,6 @@ def search_worker_thread(args, account_queue, account_sets, account_failures,
                             parse_gyms(args, gym_responses,
                                        whq, dbq)
                             del gym_responses
-
-                # Update hashing key stats in the database based on the values
-                # reported back by the hashing server.
-                if args.hash_key:
-                    key = HashServer.status.get('token', None)
-                    key_instance = key_scheduler.keys[key]
-                    key_instance['remaining'] = HashServer.status.get(
-                        'remaining', 0)
-
-                    key_instance['maximum'] = (
-                        HashServer.status.get('maximum', 0))
-
-                    usage = (
-                        key_instance['maximum'] -
-                        key_instance['remaining'])
-
-                    if key_instance['peak'] < usage:
-                        key_instance['peak'] = usage
-
-                    if key_instance['expires'] is None:
-                        expires = HashServer.status.get(
-                            'expiration', None)
-
-                        if expires is not None:
-                            expires = datetime.utcfromtimestamp(expires)
-                            key_instance['expires'] = expires
-
-                    key_instance['last_updated'] = datetime.utcnow()
-
-                    log.debug('Hash key %s has %s/%s RPM left.', key,
-                              key_instance['remaining'],
-                              key_instance['maximum'])
 
                 # Delay the desired amount after "scan" completion.
                 delay = scheduler.delay(status['last_scan_date'])

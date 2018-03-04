@@ -1828,7 +1828,7 @@ def hex_bounds(center, steps=None, radius=None):
 
 # todo: this probably shouldn't _really_ be in "models" anymore, but w/e.
 def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
-              wh_update_queue, key_scheduler, api, status, now_date, account,
+              wh_update_queue, api, status, now_date, account,
               account_sets):
     pokemon = {}
     pokestops = {}
@@ -2012,7 +2012,7 @@ def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
             pokemon_info = False
             if args.encounter and (pokemon_id in args.enc_whitelist):
                 pokemon_info = encounter_pokemon(
-                    args, p, account, api, account_sets, status, key_scheduler)
+                    args, p, account, api, account_sets, status)
 
             pokemon[p.encounter_id] = {
                 'encounter_id': p.encounter_id,
@@ -2358,8 +2358,7 @@ def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
     }
 
 
-def encounter_pokemon(args, pokemon, account, api, account_sets, status,
-                      key_scheduler):
+def encounter_pokemon(args, pokemon, account, api, account_sets, status):
     using_accountset = False
     hlvl_account = None
     pokemon_id = None
@@ -2413,13 +2412,6 @@ def encounter_pokemon(args, pokemon, account, api, account_sets, status,
             hlvl_api._auth_provider.set_proxy({
                 'http': proxy_new,
                 'https': proxy_new})
-
-        # Hashing key.
-        # TODO: Rework inefficient threading.
-        if args.hash_key:
-            key = key_scheduler.next()
-            log.debug('Using hashing key %s for this encounter.', key)
-            hlvl_api.activate_hash_server(key)
 
         # We have an API object now. If necessary, store it.
         if using_accountset and not args.no_api_store:
