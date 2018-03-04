@@ -1184,10 +1184,10 @@ function setupPokemonMarkerDetails(item, map, scaleByRarity = true, isNotifyPkmn
         }
     }
 
-    // Apply the override downscale after rarity
+    // Apply the override downscale after rarity but only if not a notify.
     if (Store.get('downscalePokemon')) {
         const downscaledPokemon = Store.get('downscaledPokemon')
-        if (downscaledPokemon.indexOf(item['pokemon_id']) !== -1) {
+        if (downscaledPokemon.indexOf(item['pokemon_id']) !== -1 && !isNotifyPkmn) {
             rarityValue = 2
         }
     }
