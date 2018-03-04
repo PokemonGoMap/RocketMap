@@ -302,6 +302,8 @@ class Pogom(Flask):
         d['oNeLat'] = neLat
         d['oNeLng'] = neLng
 
+        bounding_box = [swLat, swLng, neLat, neLng]
+
         if (request.args.get('pokemon', 'true') == 'true' and
                 not args.no_pokemon):
             if request.args.get('ids'):
@@ -365,13 +367,13 @@ class Pogom(Flask):
 
         if request.args.get('gyms', 'true') == 'true' and not args.no_gyms:
             if lastgyms != 'true':
-                d['gyms'] = Gym.get_gyms(swLat, swLng, neLat, neLng)
+                d['gyms'] = Gym.get_gyms(*bounding_box, hide_trainers=args.hide_trainers)
             else:
-                d['gyms'] = Gym.get_gyms(swLat, swLng, neLat, neLng,
+                d['gyms'] = Gym.get_gyms(*bounding_box, hide_trainers=args.hide_trainers,
                                          timestamp=timestamp)
                 if newArea:
                     d['gyms'].update(
-                        Gym.get_gyms(swLat, swLng, neLat, neLng,
+                        Gym.get_gyms(*bounding_box, hide_trainers=args.hide_trainers,
                                      oSwLat=oSwLat, oSwLng=oSwLng,
                                      oNeLat=oNeLat, oNeLng=oNeLng))
 
@@ -533,7 +535,7 @@ class Pogom(Flask):
 
     def get_gymdata(self):
         gym_id = request.args.get('id')
-        gym = Gym.get_gym(gym_id)
+        gym = Gym.get_gym(gym_id, hide_trainers=get_args().hide_trainers)
 
         return jsonify(gym)
 
