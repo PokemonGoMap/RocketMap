@@ -367,13 +367,16 @@ class Pogom(Flask):
 
         if request.args.get('gyms', 'true') == 'true' and not args.no_gyms:
             if lastgyms != 'true':
-                d['gyms'] = Gym.get_gyms(*bounding_box, hide_trainers=args.hide_trainers)
+                d['gyms'] = Gym.get_gyms(*bounding_box,
+                                         hide_trainers=args.hide_trainers)
             else:
-                d['gyms'] = Gym.get_gyms(*bounding_box, hide_trainers=args.hide_trainers,
+                d['gyms'] = Gym.get_gyms(*bounding_box,
+                                         hide_trainers=args.hide_trainers,
                                          timestamp=timestamp)
                 if newArea:
                     d['gyms'].update(
-                        Gym.get_gyms(*bounding_box, hide_trainers=args.hide_trainers,
+                        Gym.get_gyms(*bounding_box,
+                                     hide_trainers=args.hide_trainers,
                                      oSwLat=oSwLat, oSwLng=oSwLng,
                                      oNeLat=oNeLat, oNeLng=oNeLng))
 

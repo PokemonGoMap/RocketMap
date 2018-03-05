@@ -427,7 +427,8 @@ def get_args():
                               'additional API hit for every gym).'),
                         action='store_true', default=False)
     parser.add_argument('-ht', '--hide-trainers',
-                        help='Hide trainer name and level when displaying gym details.',
+                        help='Hide trainer name and level when displaying ' +
+                             'gym details.',
                         action='store_true', default=False)
     parser.add_argument(
         '--wh-types',

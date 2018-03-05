@@ -521,7 +521,8 @@ class Gym(LatLongModel):
                        .where(GymMember.gym_id << gym_ids)
                        .where(GymMember.last_scanned > Gym.last_modified))
             if not hide_trainers:
-                pokemon = pokemon.join(Trainer, on=(GymPokemon.trainer_name == Trainer.name))
+                pokemon = pokemon.join(
+                    Trainer, on=(GymPokemon.trainer_name == Trainer.name))
             pokemon = pokemon.distinct().dicts()
 
             for p in pokemon:
@@ -612,7 +613,8 @@ class Gym(LatLongModel):
                    .where(GymMember.last_scanned > Gym.last_modified)
                    .order_by(GymMember.deployment_time.desc()))
         if not hide_trainers:
-            pokemon = pokemon.join(Trainer, on=(GymPokemon.trainer_name == Trainer.name))
+            pokemon = pokemon.join(
+                Trainer, on=(GymPokemon.trainer_name == Trainer.name))
         pokemon = pokemon.distinct().dicts()
 
         for p in pokemon:
