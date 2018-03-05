@@ -443,7 +443,7 @@ class Gym(LatLongModel):
 
     @staticmethod
     def get_gyms(swLat, swLng, neLat, neLng, timestamp=0, oSwLat=None,
-                 oSwLng=None, oNeLat=None, oNeLng=None):
+                 oSwLng=None, oNeLat=None, oNeLng=None, hide_trainers=False):
         if not (swLat and swLng and neLat and neLng):
             results = (Gym
                        .select()
@@ -497,28 +497,33 @@ class Gym(LatLongModel):
             gym_ids.append(g['gym_id'])
 
         if len(gym_ids) > 0:
+            gym_member_fields = [
+               GymMember.gym_id,
+               GymPokemon.cp.alias('pokemon_cp'),
+               GymMember.cp_decayed,
+               GymMember.deployment_time,
+               GymMember.last_scanned,
+               GymPokemon.pokemon_id,
+               GymPokemon.costume,
+               GymPokemon.form,
+               GymPokemon.shiny
+            ]
+            if not hide_trainers:
+                gym_member_fields.extend([
+                   Trainer.name.alias('trainer_name'),
+                   Trainer.level.alias('trainer_level')
+                ])
             pokemon = (GymMember
-                       .select(
-                           GymMember.gym_id,
-                           GymPokemon.cp.alias('pokemon_cp'),
-                           GymMember.cp_decayed,
-                           GymMember.deployment_time,
-                           GymMember.last_scanned,
-                           GymPokemon.pokemon_id,
-                           GymPokemon.costume,
-                           GymPokemon.form,
-                           GymPokemon.shiny,
-                           Trainer.name.alias('trainer_name'),
-                           Trainer.level.alias('trainer_level'))
+                       .select(*gym_member_fields)
                        .join(Gym, on=(GymMember.gym_id == Gym.gym_id))
                        .join(GymPokemon, on=(GymMember.pokemon_uid ==
                                              GymPokemon.pokemon_uid))
-                       .join(Trainer, on=(GymPokemon.trainer_name ==
-                                          Trainer.name))
                        .where(GymMember.gym_id << gym_ids)
-                       .where(GymMember.last_scanned > Gym.last_modified)
-                       .distinct()
-                       .dicts())
+                       .where(GymMember.last_scanned > Gym.last_modified))
+            if not hide_trainers:
+                pokemon = pokemon.join(
+                    Trainer, on=(GymPokemon.trainer_name == Trainer.name))
+            pokemon = pokemon.distinct().dicts()
 
             for p in pokemon:
                 p['pokemon_name'] = get_pokemon_name(p['pokemon_id'])
@@ -551,7 +556,7 @@ class Gym(LatLongModel):
         return gyms
 
     @staticmethod
-    def get_gym(id):
+    def get_gym(id, hide_trainers=False):
 
         try:
             result = (Gym
@@ -578,32 +583,39 @@ class Gym(LatLongModel):
             result['guard_pokemon_id']) if result['guard_pokemon_id'] else ''
         result['pokemon'] = []
 
+        gym_member_fields = [
+            GymPokemon.cp.alias('pokemon_cp'),
+            GymMember.cp_decayed,
+            GymMember.deployment_time,
+            GymMember.last_scanned,
+            GymPokemon.pokemon_id,
+            GymPokemon.pokemon_uid,
+            GymPokemon.move_1,
+            GymPokemon.move_2,
+            GymPokemon.iv_attack,
+            GymPokemon.iv_defense,
+            GymPokemon.iv_stamina,
+            GymPokemon.costume,
+            GymPokemon.form,
+            GymPokemon.shiny
+        ]
+        if not hide_trainers:
+            gym_member_fields.extend([
+               Trainer.name.alias('trainer_name'),
+               Trainer.level.alias('trainer_level')
+            ])
         pokemon = (GymMember
-                   .select(GymPokemon.cp.alias('pokemon_cp'),
-                           GymMember.cp_decayed,
-                           GymMember.deployment_time,
-                           GymMember.last_scanned,
-                           GymPokemon.pokemon_id,
-                           GymPokemon.pokemon_uid,
-                           GymPokemon.move_1,
-                           GymPokemon.move_2,
-                           GymPokemon.iv_attack,
-                           GymPokemon.iv_defense,
-                           GymPokemon.iv_stamina,
-                           GymPokemon.costume,
-                           GymPokemon.form,
-                           GymPokemon.shiny,
-                           Trainer.name.alias('trainer_name'),
-                           Trainer.level.alias('trainer_level'))
+                   .select(*gym_member_fields)
                    .join(Gym, on=(GymMember.gym_id == Gym.gym_id))
                    .join(GymPokemon,
                          on=(GymMember.pokemon_uid == GymPokemon.pokemon_uid))
-                   .join(Trainer, on=(GymPokemon.trainer_name == Trainer.name))
                    .where(GymMember.gym_id == id)
                    .where(GymMember.last_scanned > Gym.last_modified)
-                   .order_by(GymMember.deployment_time.desc())
-                   .distinct()
-                   .dicts())
+                   .order_by(GymMember.deployment_time.desc()))
+        if not hide_trainers:
+            pokemon = pokemon.join(
+                Trainer, on=(GymPokemon.trainer_name == Trainer.name))
+        pokemon = pokemon.distinct().dicts()
 
         for p in pokemon:
             p['pokemon_name'] = get_pokemon_name(p['pokemon_id'])

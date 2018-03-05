@@ -426,6 +426,10 @@ def get_args():
                         help=('Get all details about gyms (causes an ' +
                               'additional API hit for every gym).'),
                         action='store_true', default=False)
+    parser.add_argument('-ht', '--hide-trainers',
+                        help='Hide trainer name and level when displaying ' +
+                             'gym details.',
+                        action='store_true', default=False)
     parser.add_argument(
         '--wh-types',
         help=('Defines the type of messages to send to webhooks.'),

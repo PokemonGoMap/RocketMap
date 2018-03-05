@@ -2340,6 +2340,11 @@ function getSidebarGymMember(pokemon) {
     // Skip getDateStr() so we can re-use the moment.js object.
     var relativeTime = 'Unknown'
     var absoluteTime = ''
+    var trainerDetails = ''
+
+    if (pokemon.trainer_name) {
+        trainerDetails = `<div class="gym pokemon">${pokemon.trainer_name} (${pokemon.trainer_level})</div>`
+    }
 
     if (pokemon.deployment_time) {
         let deploymentTime = moment(pokemon.deployment_time)
@@ -2363,7 +2368,7 @@ function getSidebarGymMember(pokemon) {
                             </div>
                         </td>
                         <td width="190" align="center">
-                            <div class="gym pokemon">${pokemon.trainer_name} (${pokemon.trainer_level})</div>
+                            ${trainerDetails}
                             <div class="gym pokemon">Deployed ${relativeTime}</div>
                             ${absoluteTime}
                         </td>
