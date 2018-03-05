@@ -2343,7 +2343,7 @@ function getSidebarGymMember(pokemon) {
     var trainerDetails = ''
 
     if (pokemon.trainer_name) {
-	trainerDetails = `<div class="gym pokemon">${pokemon.trainer_name} (${pokemon.trainer_level})</div>`
+        trainerDetails = `<div class="gym pokemon">${pokemon.trainer_name} (${pokemon.trainer_level})</div>`
     }
 
     if (pokemon.deployment_time) {
@@ -2368,7 +2368,7 @@ function getSidebarGymMember(pokemon) {
                             </div>
                         </td>
                         <td width="190" align="center">
-			    ${trainerDetails}
+                            ${trainerDetails}
                             <div class="gym pokemon">Deployed ${relativeTime}</div>
                             ${absoluteTime}
                         </td>
