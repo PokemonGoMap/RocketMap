@@ -429,8 +429,6 @@ def get_args():
     parser.add_argument('-ht', '--hide-trainers',
                         help='Hide trainer name and level when displaying gym details.',
                         action='store_true', default=False)
-    parser.add_argument('-DC', '--enable-clean', help='Enable DB cleaner.',
-                        action='store_true', default=False)
     parser.add_argument(
         '--wh-types',
         help=('Defines the type of messages to send to webhooks.'),
