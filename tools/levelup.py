@@ -50,7 +50,7 @@ def get_location_forts(api, account, location):
 
     for cell in cells:
         for fort in cell.forts:
-            # Only use pokestops.
+            # Only use Pokestops.
             if fort.type == 1:
                 forts.append(fort)
 
@@ -104,16 +104,20 @@ def level_up_account(args, location, accounts, errors):
                 lambda fort: pokestop_spinnable(fort, location), forts)
 
             # No stops in spin range.
+            first_fort = forts[0]
             if not spinnable_pokestops:
-                log.critical('No pokestops in spinnable range. Please move'
-                             ' the location.')
+                log.critical('No Pokestops in spinnable range. Please move'
+                             " the location. There's a Pokestop at"
+                             ' %s, %s.',
+                             first_fort.latitude,
+                             first_fort.longitude)
                 os._exit(1)
 
             # Past this point, guaranteed to have a spinnable stop.
             fort = spinnable_pokestops[0]
             spin_pokestop(api, account, args, fort, location)
 
-            log.info('Spun pokestop with account %s, level %d.',
+            log.info('Spun Pokestop with account %s, level %d.',
                      account['username'],
                      account['level'])
         except TooManyLoginAttempts:
@@ -181,7 +185,7 @@ except KeyboardInterrupt:
     exit(1)
 
 account_queue.join()
-log.info('Process finished')
+log.info('Process finished.')
 
 for error_type in ErrorType:
     if len(errors[error_type]) > 0:
