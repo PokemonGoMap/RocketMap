@@ -514,8 +514,10 @@ def get_args():
                         help=('Defines directory to save log files to.'),
                         default='logs/')
     parser.add_argument('--log-filename',
-                        help=('Defines the log filename to be saved.'),
-                        default=None),
+                        help=('Defines the log filename to be saved.'
+                              ' Allows date formatting, and replaces <SN>'
+                              " with the instance's status name."),
+                        default='%Y%m%d_%H%M_<SN>'),
     parser.add_argument('--dump',
                         help=('Dump censored debug info about the ' +
                               'environment and auto-upload to ' +
@@ -557,9 +559,9 @@ def get_args():
 
     args = parser.parse_args()
 
-    if args.log_filename is None:
-        date = strftime('%Y%m%d_%H%M')
-        args.log_filename = '{}_{}.log'.format(date, args.status_name)
+    # Allow status name and date formatting in log filename.
+    args.log_filename = args.log_filename.replace('<SN>', args.status_name)
+    args.log_filename = strftime(args.log_filename)
 
     if args.only_server:
         if args.location is None:
