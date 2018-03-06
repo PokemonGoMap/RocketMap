@@ -560,8 +560,8 @@ def get_args():
     args = parser.parse_args()
 
     # Allow status name and date formatting in log filename.
-    args.log_filename = args.log_filename.replace('<SN>', args.status_name)
     args.log_filename = strftime(args.log_filename)
+    args.log_filename = args.log_filename.replace('<SN>', args.status_name)
 
     if args.only_server:
         if args.location is None:
