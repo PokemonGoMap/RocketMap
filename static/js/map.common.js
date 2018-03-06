@@ -878,13 +878,9 @@ var StoreOptions = {
         default: false,
         type: StoreTypes.Boolean
     },
-    'showParkRaidsOnly': {
-        default: false,
-        type: StoreTypes.Boolean
-    },
-    'showActiveRaidsOnly': {
-        default: false,
-        type: StoreTypes.Boolean
+    'showRaidSelector': {
+        default: 0,
+        type: StoreTypes.Number
     },
     'showRaidMinLevel': {
         default: 1,
@@ -898,15 +894,11 @@ var StoreOptions = {
         default: false,
         type: StoreTypes.Boolean
     },
+    'showGymSelector': {
+        default: 0,
+        type: StoreTypes.Number
+    },
     'useGymSidebar': {
-        default: false,
-        type: StoreTypes.Boolean
-    },
-    'showParkGymsOnly': {
-        default: false,
-        type: StoreTypes.Boolean
-    },
-    'showOpenGymsOnly': {
         default: false,
         type: StoreTypes.Boolean
     },
