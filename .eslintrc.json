@@ -65,6 +65,7 @@
     "updatePokemonLabel": true,
     "updatePokemonLabels": true,
 
+    "pokemonRarities": true,
     "getPokemonRarity": true,
     "updatePokemonRarities": true
   }

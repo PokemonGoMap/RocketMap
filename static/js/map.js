@@ -2879,7 +2879,9 @@ $(function () {
             var excludedRaritySelection = $selectExcludeRarity.val()
             var excludedRarities = excludedRaritiesList[excludedRaritySelection]
             buffer = excludedPokemonByRarity.slice()
-            if (excludedPokemonByRarity.length > 0) { // remove currently excluded Pokemon if their rarity is now below the threshold
+
+            // Remove currently excluded Pokémon if their rarity is now below the threshold.
+            if (excludedPokemonByRarity.length > 0) {
                 for (var k3 in buffer) {
                     var pokemonRarity = getPokemonRarity(buffer[k3]).toLowerCase()
                     if (excludedRarities.indexOf(pokemonRarity) === -1) {
@@ -2887,23 +2889,28 @@ $(function () {
                     }
                 }
             }
-            if (Object.keys(pokemonRarities).length > 0) { // update excluded pokemon by rarity based on dynamic rarity
+
+            // Update excluded pokemon by rarity based on dynamic rarity.
+            if (Object.keys(pokemonRarities).length > 0) {
                 for (var k4 in pokemonRarities) {
                     if (excludedRarities.indexOf(pokemonRarities[k4]) !== -1) {
                         addPokemonToRarityExcludes(k4)
                     }
                 }
-            }
-            else { // default behavior, dump the entire list and let it rebuild as Pokemon are processed
+            } else {
+                // Default behavior, dump the entire list and let it rebuild as Pokemon are processed.
                 for (var k5 in excludedPokemonByRarity) {
                     removePokemonFromRarityExcludes(excludedPokemonByRarity[k5])
                 }
             }
+
             buffer = buffer.filter(function (e) {
                 return this.indexOf(e) < 0
             }, excludedPokemonByRarity)
             reincludedPokemon = reincludedPokemon.concat(buffer)
+
             clearStaleMarkers()
+
             Store.set('excludedRarity', excludedRaritySelection)
         })
         $selectPokemonNotify.on('change', function (e) {
