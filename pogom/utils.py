@@ -516,7 +516,9 @@ def get_args():
     parser.add_argument('--log-filename',
                         help=('Defines the log filename to be saved.'
                               ' Allows date formatting, and replaces <SN>'
-                              " with the instance's status name."),
+                              " with the instance's status name. Read the"
+                              ' python time module docs for details.'
+                              ' Default: %%Y%%m%%d_%%H%%M_<SN>.'),
                         default='%Y%m%d_%H%M_<SN>'),
     parser.add_argument('--dump',
                         help=('Dump censored debug info about the ' +
