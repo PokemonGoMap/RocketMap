@@ -393,7 +393,7 @@ variables which override config file values which override defaults.
                             Defines the log filename to be saved. Allows date
                             formatting, and replaces <SN> with the instance's
                             status name. Read the python time module docs for
-                            details. Default: %Y%m%d_%H%M_<SN>. [env var:
+                            details. Default: %Y%m%d_%H%M_<SN>.log. [env var:
                             POGOMAP_LOG_FILENAME]
       --dump                Dump censored debug info about the environment and
                             auto-upload to hastebin.com. [env var: POGOMAP_DUMP]

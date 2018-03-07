@@ -518,8 +518,8 @@ def get_args():
                               ' Allows date formatting, and replaces <SN>'
                               " with the instance's status name. Read the"
                               ' python time module docs for details.'
-                              ' Default: %%Y%%m%%d_%%H%%M_<SN>.'),
-                        default='%Y%m%d_%H%M_<SN>'),
+                              ' Default: %%Y%%m%%d_%%H%%M_<SN>.log.'),
+                        default='%Y%m%d_%H%M_<SN>.log'),
     parser.add_argument('--dump',
                         help=('Dump censored debug info about the ' +
                               'environment and auto-upload to ' +
@@ -563,6 +563,7 @@ def get_args():
 
     # Allow status name and date formatting in log filename.
     args.log_filename = strftime(args.log_filename)
+    args.log_filename = args.log_filename.replace('<sn>', '<SN>')
     args.log_filename = args.log_filename.replace('<SN>', args.status_name)
 
     if args.only_server:
