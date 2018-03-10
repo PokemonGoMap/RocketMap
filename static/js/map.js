@@ -1803,7 +1803,6 @@ function processGym(i, item) {
 
     if (Store.get('showGymSelector') === 1) {
         if (item['gym_id'] in mapData.gyms) {
-            item.marker = updateGymMarker(item, mapData.gyms[item['gym_id']].marker)
             return true
         }
     } else if (Store.get('showGymSelector') === 2) {
