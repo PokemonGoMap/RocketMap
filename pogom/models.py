@@ -40,7 +40,7 @@ args = get_args()
 flaskDb = FlaskDB()
 cache = TTLCache(maxsize=100, ttl=60 * 5)
 
-db_schema_version = 28
+db_schema_version = 29
 
 
 class MyRetryDB(RetryOperationalError, PooledMySQLDatabase):
@@ -507,14 +507,10 @@ class Gym(LatLongModel):
                            GymPokemon.pokemon_id,
                            GymPokemon.costume,
                            GymPokemon.form,
-                           GymPokemon.shiny,
-                           Trainer.name.alias('trainer_name'),
-                           Trainer.level.alias('trainer_level'))
+                           GymPokemon.shiny)
                        .join(Gym, on=(GymMember.gym_id == Gym.gym_id))
                        .join(GymPokemon, on=(GymMember.pokemon_uid ==
                                              GymPokemon.pokemon_uid))
-                       .join(Trainer, on=(GymPokemon.trainer_name ==
-                                          Trainer.name))
                        .where(GymMember.gym_id << gym_ids)
                        .where(GymMember.last_scanned > Gym.last_modified)
                        .distinct()
@@ -592,13 +588,10 @@ class Gym(LatLongModel):
                            GymPokemon.iv_stamina,
                            GymPokemon.costume,
                            GymPokemon.form,
-                           GymPokemon.shiny,
-                           Trainer.name.alias('trainer_name'),
-                           Trainer.level.alias('trainer_level'))
+                           GymPokemon.shiny)
                    .join(Gym, on=(GymMember.gym_id == Gym.gym_id))
                    .join(GymPokemon,
                          on=(GymMember.pokemon_uid == GymPokemon.pokemon_uid))
-                   .join(Trainer, on=(GymPokemon.trainer_name == Trainer.name))
                    .where(GymMember.gym_id == id)
                    .where(GymMember.last_scanned > Gym.last_modified)
                    .order_by(GymMember.deployment_time.desc())
@@ -1733,7 +1726,6 @@ class GymPokemon(BaseModel):
     pokemon_uid = UBigIntegerField(primary_key=True)
     pokemon_id = SmallIntegerField()
     cp = SmallIntegerField()
-    trainer_name = Utf8mb4CharField(index=True)
     num_upgrades = SmallIntegerField(null=True)
     move_1 = SmallIntegerField(null=True)
     move_2 = SmallIntegerField(null=True)
@@ -1753,9 +1745,7 @@ class GymPokemon(BaseModel):
 
 
 class Trainer(BaseModel):
-    name = Utf8mb4CharField(primary_key=True, max_length=50)
     team = SmallIntegerField()
-    level = SmallIntegerField()
     last_seen = DateTimeField(default=datetime.utcnow)
 
 
@@ -2565,7 +2555,6 @@ def parse_gyms(args, gym_responses, wh_update_queue, db_update_queue):
                 'pokemon_uid': pokemon.id,
                 'pokemon_id': pokemon.pokemon_id,
                 'cp': member.motivated_pokemon.cp_when_deployed,
-                'trainer_name': pokemon.owner_name,
                 'num_upgrades': pokemon.num_upgrades,
                 'move_1': pokemon.move_1,
                 'move_2': pokemon.move_2,
@@ -2585,9 +2574,7 @@ def parse_gyms(args, gym_responses, wh_update_queue, db_update_queue):
             }
 
             trainers[i] = {
-                'name': member.trainer_public_profile.name,
                 'team': member.trainer_public_profile.team_color,
-                'level': member.trainer_public_profile.level,
                 'last_seen': datetime.utcnow(),
             }
 
@@ -2597,8 +2584,6 @@ def parse_gyms(args, gym_responses, wh_update_queue, db_update_queue):
                 wh_pokemon.update({
                     'cp_decayed':
                         member.motivated_pokemon.cp_now,
-                    'trainer_level':
-                        member.trainer_public_profile.level,
                     'deployment_time': calendar.timegm(
                         gym_members[i]['deployment_time'].timetuple())
                 })
@@ -3368,7 +3353,6 @@ def database_migrate(db, old_ver):
             migrator.add_index('gym', ('last_scanned',), False),
             migrator.add_index('gymmember', ('last_scanned',), False),
             migrator.add_index('gymmember', ('pokemon_uid',), False),
-            migrator.add_index('gympokemon', ('trainer_name',), False),
             migrator.add_index('pokestop', ('active_fort_modifier',), False),
             migrator.add_index('spawnpointdetectiondata', ('spawnpoint_id',),
                                False),
@@ -3547,6 +3531,11 @@ def database_migrate(db, old_ver):
         migrate(
             migrator.add_column('pokemon', 'weather_boosted_condition',
                                 SmallIntegerField(null=True))
+        )
+
+    if old_ver < 29:
+        migrate(
+            migrator.drop_column('trainer', 'trainer_name', 'trainer_level')
         )
 
     # Always log that we're done.
