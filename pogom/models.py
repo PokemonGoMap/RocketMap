@@ -1746,7 +1746,6 @@ class GymPokemon(BaseModel):
 
 class Trainer(BaseModel):
     team = SmallIntegerField()
-    last_seen = DateTimeField(default=datetime.utcnow)
 
 
 class GymDetails(BaseModel):
@@ -3535,7 +3534,7 @@ def database_migrate(db, old_ver):
 
     if old_ver < 29:
         migrate(
-            migrator.drop_column('trainer', 'trainer_name', 'trainer_level')
+            migrator.drop_column('trainer', 'trainer_level')
         )
 
     # Always log that we're done.
