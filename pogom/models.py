@@ -3535,7 +3535,8 @@ def database_migrate(db, old_ver):
     if old_ver < 29:
         migrate(
             migrator.drop_column('trainer', 'trainer_name'),
-            migrator.drop_column('trainer', 'trainer_level')
+            migrator.drop_column('trainer', 'trainer_level'),
+            migrator.drop_column('trainer', 'last_seen')
         )
 
     # Always log that we're done.
