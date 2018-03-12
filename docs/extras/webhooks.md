@@ -346,7 +346,6 @@ A `gym-info` event is sent whenever RocketMap fetches a gym's details.
 | `num_upgrades`             | The number of times that the Pokémon has been powered up |         `31` |
 | `deployment_time`          | The time at which the Pokémon was added to the gym       | `1504361277` |
 
-1. The trainer's level at the time that they added their Pokémon to the gym.
 
 ### `egg`
 

@@ -1744,10 +1744,6 @@ class GymPokemon(BaseModel):
     last_seen = DateTimeField(default=datetime.utcnow)
 
 
-class Trainer(BaseModel):
-    team = SmallIntegerField()
-
-
 class GymDetails(BaseModel):
     gym_id = Utf8mb4CharField(primary_key=True, max_length=50)
     name = Utf8mb4CharField()
@@ -2511,7 +2507,6 @@ def parse_gyms(args, gym_responses, wh_update_queue, db_update_queue):
     gym_details = {}
     gym_members = {}
     gym_pokemon = {}
-    trainers = {}
     i = 0
     for g in gym_responses.values():
         gym_state = g.gym_status_and_defenders
@@ -2572,11 +2567,6 @@ def parse_gyms(args, gym_responses, wh_update_queue, db_update_queue):
                 'last_seen': datetime.utcnow(),
             }
 
-            trainers[i] = {
-                'team': member.trainer_public_profile.team_color,
-                'last_seen': datetime.utcnow(),
-            }
-
             if 'gym-info' in args.wh_types:
                 wh_pokemon = gym_pokemon[i].copy()
                 del wh_pokemon['last_seen']
@@ -2606,8 +2596,6 @@ def parse_gyms(args, gym_responses, wh_update_queue, db_update_queue):
         db_update_queue.put((GymDetails, gym_details))
     if gym_pokemon:
         db_update_queue.put((GymPokemon, gym_pokemon))
-    if trainers:
-        db_update_queue.put((Trainer, trainers))
 
     # Get rid of all the gym members, we're going to insert new records.
     if gym_details:
@@ -3087,7 +3075,7 @@ def bulk_upsert(cls, data, db):
 
 def create_tables(db):
     tables = [Pokemon, Pokestop, Gym, Raid, ScannedLocation, GymDetails,
-              GymMember, GymPokemon, Trainer, MainWorker, WorkerStatus,
+              GymMember, GymPokemon, MainWorker, WorkerStatus,
               SpawnPoint, ScanSpawnPoint, SpawnpointDetectionData,
               Token, LocationAltitude, PlayerLocale, HashKeys]
     with db.execution_context():
@@ -3102,7 +3090,7 @@ def create_tables(db):
 
 def drop_tables(db):
     tables = [Pokemon, Pokestop, Gym, Raid, ScannedLocation, Versions,
-              GymDetails, GymMember, GymPokemon, Trainer, MainWorker,
+              GymDetails, GymMember, GymPokemon, MainWorker,
               WorkerStatus, SpawnPoint, ScanSpawnPoint,
               SpawnpointDetectionData, LocationAltitude, PlayerLocale,
               Token, HashKeys]
@@ -3341,11 +3329,6 @@ def database_migrate(db, old_ver):
             'MODIFY COLUMN `iv_stamina` SMALLINT NULL DEFAULT NULL,'
             'MODIFY COLUMN `iv_attack` SMALLINT NULL DEFAULT NULL;'
         )
-        db.execute_sql(
-            'ALTER TABLE `trainer` '
-            'MODIFY COLUMN `team` SMALLINT NOT NULL,'
-            'MODIFY COLUMN `level` SMALLINT NOT NULL;'
-        )
 
         # add some missing indexes
         migrate(
@@ -3534,9 +3517,7 @@ def database_migrate(db, old_ver):
 
     if old_ver < 29:
         migrate(
-            migrator.drop_column('trainer', 'trainer_name'),
-            migrator.drop_column('trainer', 'trainer_level'),
-            migrator.drop_column('trainer', 'last_seen')
+            migrator.drop_tables('trainer')
         )
 
     # Always log that we're done.
