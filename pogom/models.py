@@ -40,7 +40,7 @@ args = get_args()
 flaskDb = FlaskDB()
 cache = TTLCache(maxsize=100, ttl=60 * 5)
 
-db_schema_version = 28
+db_schema_version = 29
 
 
 class MyRetryDB(RetryOperationalError, PooledMySQLDatabase):
@@ -437,6 +437,7 @@ class Gym(LatLongModel):
     total_cp = SmallIntegerField()
     last_modified = DateTimeField(index=True)
     last_scanned = DateTimeField(default=datetime.utcnow, index=True)
+    is_in_battle = BooleanField(default=False)
 
     class Meta:
         indexes = ((('latitude', 'longitude'), False),)
@@ -565,7 +566,8 @@ class Gym(LatLongModel):
                               Gym.longitude,
                               Gym.last_modified,
                               Gym.last_scanned,
-                              Gym.total_cp)
+                              Gym.total_cp,
+                              Gym.is_in_battle)
                       .join(GymDetails, JOIN.LEFT_OUTER,
                             on=(Gym.gym_id == GymDetails.gym_id))
                       .where(Gym.gym_id == id)
@@ -2207,7 +2209,9 @@ def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
                         'last_modified':
                             f.last_modified_timestamp_ms,
                         'raid_active_until':
-                            raid_active_until
+                            raid_active_until,
+                        'is_in_battle':
+                            f.is_in_battle
                     }))
                 gyms[f.id] = {
                     'gym_id':
@@ -2231,7 +2235,8 @@ def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
                     'last_modified':
                         datetime.utcfromtimestamp(
                             f.last_modified_timestamp_ms / 1000.0),
-
+                    'is_in_battle':
+                        f.is_in_battle
                 }
 
                 if not args.no_raids and f.type == 0:
@@ -3547,6 +3552,13 @@ def database_migrate(db, old_ver):
         migrate(
             migrator.add_column('pokemon', 'weather_boosted_condition',
                                 SmallIntegerField(null=True))
+        )
+
+    if old_ver < 29:
+        migrate(
+            # Add `is_in_battle` column to `gym`
+            migrator.add_column('gym', 'is_in_battle',
+                                BooleanField(null=False, default=False))
         )
 
     # Always log that we're done.

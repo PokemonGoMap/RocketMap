@@ -1217,20 +1217,28 @@ function updateGymMarker(item, marker) {
         }
         marker.setIcon({
             url: markerImage,
-            scaledSize: new google.maps.Size(48, 48)
+            scaledSize: new google.maps.Size(48, 48),
+            labelOrigin: new google.maps.Point(10, 10)
         })
         marker.setZIndex(google.maps.Marker.MAX_ZINDEX + 1)
     } else if (hasActiveRaid && raidLevelVisible && showRaidSetting) {
         marker.setIcon({
             url: 'static/images/gym/' + gymTypes[item.team_id] + '_' + getGymLevel(item) + '_' + item['raid']['level'] + '.png',
-            scaledSize: new google.maps.Size(48, 48)
+            scaledSize: new google.maps.Size(48, 48),
+            labelOrigin: new google.maps.Point(10, 10)
         })
     } else {
         marker.setIcon({
             url: 'static/images/gym/' + gymTypes[item.team_id] + '_' + getGymLevel(item) + '.png',
-            scaledSize: new google.maps.Size(48, 48)
+            scaledSize: new google.maps.Size(48, 48),
+            labelOrigin: new google.maps.Point(10, 10)
         })
         marker.setZIndex(1)
+    }
+    if (item.is_in_battle) {
+        marker.setLabel({ text: '⚔', fontSize: '16px' })
+    } else {
+        marker.setLabel({})
     }
     marker.infoWindow.setContent(gymLabel(item))
     return marker
