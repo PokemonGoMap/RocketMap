@@ -3516,9 +3516,7 @@ def database_migrate(db, old_ver):
         )
 
     if old_ver < 29:
-        migrate(
-            migrator.drop_tables('trainer')
-        )
+        db.execute_sql('DROP TABLE `trainer`;')
 
     # Always log that we're done.
     log.info('Schema upgrade complete.')
