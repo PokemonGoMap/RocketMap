@@ -2993,7 +2993,7 @@ $(function () {
         }
         resetGymFilter()
         var wrapperGyms = $('#gyms-filter-wrapper')
-        var switchRaids = $('#raids-switch')
+        var switchRaids = $('#raid-selector-switch')
         var wrapperSidebar = $('#gym-sidebar-wrapper')
         if (this.checked) {
             lastgyms = false
@@ -3013,7 +3013,7 @@ $(function () {
             'duration': 500
         }
         var wrapperRaids = $('#raids-filter-wrapper')
-        var switchGyms = $('#gyms-switch')
+        var switchGyms = $('#gym-selector-switch')
         var wrapperSidebar = $('#gym-sidebar-wrapper')
         if (this.checked) {
             lastgyms = false
