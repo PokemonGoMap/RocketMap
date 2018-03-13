@@ -1218,20 +1218,20 @@ function updateGymMarker(item, marker) {
         marker.setIcon({
             url: markerImage,
             scaledSize: new google.maps.Size(48, 48),
-            labelOrigin: new google.maps.Point(10, 10)
+            labelOrigin: new google.maps.Point(15, 12)
         })
         marker.setZIndex(google.maps.Marker.MAX_ZINDEX + 1)
     } else if (hasActiveRaid && raidLevelVisible && showRaidSetting) {
         marker.setIcon({
             url: 'static/images/gym/' + gymTypes[item.team_id] + '_' + getGymLevel(item) + '_' + item['raid']['level'] + '.png',
             scaledSize: new google.maps.Size(48, 48),
-            labelOrigin: new google.maps.Point(10, 10)
+            labelOrigin: new google.maps.Point(15, 12)
         })
     } else {
         marker.setIcon({
             url: 'static/images/gym/' + gymTypes[item.team_id] + '_' + getGymLevel(item) + '.png',
             scaledSize: new google.maps.Size(48, 48),
-            labelOrigin: new google.maps.Point(10, 10)
+            labelOrigin: new google.maps.Point(15, 12)
         })
         marker.setZIndex(1)
     }
