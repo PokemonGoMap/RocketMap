@@ -3519,7 +3519,7 @@ def database_migrate(db, old_ver):
         db.execute_sql('DROP TABLE `trainer`;')
         migrate(
             # drop trainer from gympokemon
-            migrator.drop_column('GymPokemon', 'trainer_name')
+            migrator.drop_column('gympokemon', 'trainer_name')
         )
 
     # Always log that we're done.
