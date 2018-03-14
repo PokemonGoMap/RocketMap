@@ -1238,7 +1238,7 @@ function updateGymMarker(item, marker) {
     if (item.is_in_battle) {
         marker.setLabel({ text: '⚔', fontSize: '16px' })
     } else {
-        marker.setLabel({})
+        marker.setLabel(null)
     }
     marker.infoWindow.setContent(gymLabel(item))
     return marker
