@@ -1,8 +1,14 @@
 .pokemon.container {
   display: flex;
+  margin-bottom: 0px;
 
   &.content-left {
-    width:64px;
+    width: 70px;
+
+    .links {
+      display: block;
+      margin-top: 5px;
+    }
   }
 
   &.content-right {
@@ -13,28 +19,30 @@
 .pokemon {
   color: rgb(93,109,126);
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 600;
   margin-bottom: 3px;
 
   &.name {
     font-size: 13px;
-    font-weight: 900;
+    font-weight: 700;
+    margin-bottom: 13px;
 
     &.pokedex {
       font-size: 12px;
+      margin: 0 3px;
     }
   }
 
+  &.values {
+    font-size: 13px !important;
+  }
+
   &.encounter {
-    font-weight: 900;
+    font-weight: 700;
   }
 
-  &.no-encounter {
-    font-weight: 300;
-  }
-
-  &.gender.rarity {
-    font-size: 11px;
+  &.rarity {
+    margin-right: 3px;
   }
 
   &.weather-boost {
@@ -44,8 +52,8 @@
 
   &.disappear {
     font-size: 14px;
-    font-weight: 900;
-    margin: 10px 0px 10px 0px;
+    font-weight: 700;
+    margin-bottom: 10px;
 
     &:before {
       content: '\f017';
@@ -59,12 +67,15 @@
 
   &.links {
     color: rgb(93,109,126);
+    margin-right: 3px;
 
     &.exclude:before {
       content: '\f056';
       font-family: FontAwesome;
       margin-right: 3px;
       -webkit-font-smoothing: antialiased;
+      width: 12px;
+      display: inline-block;
     }
 
     &.notify:before {
@@ -72,6 +83,8 @@
       font-family: FontAwesome;
       margin-right: 3px;
       -webkit-font-smoothing: antialiased;
+      width: 12px;
+      display: inline-block;
     }
 
     &.remove:before {
@@ -79,6 +92,8 @@
       font-family: FontAwesome;
       margin-right: 3px;
       -webkit-font-smoothing: antialiased;
+      width: 12px;
+      display: inline-block;
     }
   }
 
@@ -89,9 +104,7 @@
       content: '\f018';
       display: inline-block;
       font-family: FontAwesome;
-      margin: 6px 3px 0px 0px;
-      height: 16px;
-      width: 16px;
+      margin-top: 5px;
       -webkit-font-smoothing: antialiased;
     }
   }
@@ -100,5 +113,106 @@
     display: block;
     height: 48px;
     width: 48px;
+    margin: 5px 0 16px 0;
+  }
+
+  .type {
+    font-size: 8px;
+    display: inline-block;
+    text-transform: uppercase;
+    padding: 1px 5px;
+    border-radius: 4px;
+    line-height: 14px;
+    color: white;
+    vertical-align: middle;
+    margin: 0 5px 0 0;
+
+    &.fairy {
+        background-color: #e898e8;
+        // color: _get_text_color(#e898e8);
+    }
+
+    &.ghost {
+        background-color: #705898;
+        // color: _get_text_color(#705898);
+    }
+
+    &.normal {
+        background-color: #8a8a59;
+        // color: _get_text_color(#8a8a59);
+    }
+
+    &.grass {
+        background-color: #78c850;
+        // color: _get_text_color(#78c850);
+    }
+
+    &.water {
+        background-color: #6890f0;
+        // color: _get_text_color(#6890f0);
+    }
+
+    &.bug {
+        background-color: #a8b820;
+        // color: _get_text_color(#a8b820);
+    }
+
+    &.fighting {
+        background-color: #c03028;
+        // color: _get_text_color(#c03028);
+    }
+
+    &.electric {
+        background-color: #f8d030;
+        // color: _get_text_color(#f8d030);
+    }
+
+    &.rock {
+        background-color: #b8a038;
+        // color: _get_text_color(#b8a038);
+    }
+
+    &.fire {
+        background-color: #f08030;
+        // color: _get_text_color(#f08030);
+    }
+
+    &.flying {
+        background-color: #a890f0;
+        // color: _get_text_color(#a890f0);
+    }
+
+    &.ice {
+        background-color: #98d8d8;
+        // color: _get_text_color(#98d8d8);
+    }
+
+    &.ground {
+        background-color: #e0c068;
+        // color: _get_text_color(#e0c068);
+    }
+
+    &.steel {
+        background-color: #b8b8d0;
+        // color: _get_text_color(#b8b8d0);
+    }
+
+    &.dragon {
+        background-color: #7038f8;
+        // color: _get_text_color(#7038f8);
+    }
+
+    &.poison {
+        background-color: #a040a0;
+        // color: _get_text_color(#a040a0);
+    }
+
+    &.psychic {
+        background-color: #f85888;
+        // color: _get_text_color(#f85888);
+    }
+    &.dark {
+        background-color: #705848;
+    }
   }
 }

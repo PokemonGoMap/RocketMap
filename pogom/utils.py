@@ -961,7 +961,7 @@ def get_pokemon_name(pokemon_id):
 
 def get_pokemon_types(pokemon_id):
     pokemon_types = get_pokemon_data(pokemon_id)['types']
-    return map(lambda x: {"type": i8ln(x['type']), "color": x['color']},
+    return map(lambda x: {"type": x['type'], "color": x['color']},
                pokemon_types)
 
 

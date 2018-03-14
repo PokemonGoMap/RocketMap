@@ -511,10 +511,6 @@ function initSidebar() {
     $('#pokemon-icon-size').val(Store.get('iconSizeModifier'))
 }
 
-function getTypeSpan(type) {
-    return `<span style='padding: 2px 5px; text-transform: uppercase; color: white; margin-right: 2px; border-radius: 4px; font-size: 0.6em; vertical-align: middle; background-color: ${type['color']}'>${type['type']}</span>`
-}
-
 function openMapDirections(lat, lng) { // eslint-disable-line no-unused-vars
     var url = ''
     if (Store.get('mapServiceProvider') === 'googlemaps') {
@@ -563,25 +559,27 @@ function pokemonLabel(item) {
     const showStats = Store.get('showPokemonStats')
 
     $.each(types, function (index, type) {
-        typesDisplay += getTypeSpan(type)
+        typesDisplay += `<span class='pokemon type ${type.type.toLowerCase()}'>${i8ln(type.type)}</span>`
     })
 
     if (weatherBoostedCondition) {
         weatherDisplay = `<span class="pokemon weather-boost">${weatherEmojis[weatherBoostedCondition]}</span>`
     }
 
-    var details = ''
-
     var contentstring = ''
     var formString = ''
 
     if (form !== null && form > 0 && forms.length > form) {
-        formString += `(${forms[item['form']]})`
+        formString += `<span class='pokemon form'>(${forms[item.form]})</span> `
+    }
+
+    if (id === 29 || id === 32) {
+        name = name.slice(0, -1)
     }
 
     contentstring += `
     <div class='pokemon name'>
-      ${name} <span class='pokemon name pokedex'><a href='http://pokemon.gameinfo.io/en/pokemon/${id}' target='_blank' title='View in Pokédex'>#${id}</a></span> ${formString} <span class='pokemon gender rarity'>${genderType[gender - 1]} ${rarityDisplay}</span> ${typesDisplay} ${weatherDisplay}
+      ${name} ${genderType[gender - 1]} ${formString}<span class='pokemon name pokedex'><a href='http://pokemon.gameinfo.io/en/pokemon/${id}' target='_blank' title='View in Pokédex'>#${id}</a></span> <span class='pokemon rarity'>${rarityDisplay}</span> ${typesDisplay} ${weatherDisplay}
     </div>`
 
     if (showStats && cp !== null && cpMultiplier !== null) {
@@ -596,28 +594,36 @@ function pokemonLabel(item) {
             <div class='pokemon container content-left'>
               <div>
                 <img class='pokemon sprite' src='static/icons/${id}.png'>
-                <span class='pokemon'>Level: </span><span class='pokemon'>${pokemonLevel}</span>
-                <span class='pokemon links exclude'><a href='javascript:excludePokemon(${id})'>Exclude</a></span>
-                <span class='pokemon links notify'><a href='javascript:notifyAboutPokemon(${id})'>Notify</a></span>
-                <span class='pokemon links remove'><a href='javascript:removePokemonMarker("${encounterId}")'>Remove</a></span>
+                <div class='pokemon'>
+                  <span class='pokemon links exclude'><a href='javascript:excludePokemon(${id})'>Exclude</a></span>
+                </div>
+                <div class='pokemon'>
+                  <span class='pokemon links notify'><a href='javascript:notifyAboutPokemon(${id})'>Notify</a></span>
+                </div>
+                <div class='pokemon'>
+                  <span class='pokemon links remove'><a href='javascript:removePokemonMarker("${encounterId}")'>Remove</a></span>
+                </div>
               </div>
           </div>
           <div class='pokemon container content-right'>
             <div>
               <div class='pokemon disappear'>
-                <span class='label-countdown' disappears-at='${disappearTime}'>00m00s</span> left (${moment(disappearTime).format('HH:mm')})
+                <span class='label-countdown' disappears-at='${disappearTime}'>00:00:00</span> left (${moment(disappearTime).format('HH:mm')})
               </div>
               <div class='pokemon'>
-                CP: <span class='pokemon encounter'>${cp}/${iv.toFixed(1)}%</span> (A${atk}/D${def}/S${sta})
+                IV: <span class='pokemon encounter values'>${iv.toFixed(1)}% (A${atk}/D${def}/S${sta})</span>
               </div>
               <div class='pokemon'>
-                Moveset: <span class='pokemon encounter'>${pMove1}/${pMove2}</span>
+                CP: <span class='pokemon encounter values'>${cp}</span> | Level: <span class='pokemon encounter values'>${pokemonLevel}</span>
               </div>
               <div class='pokemon'>
-                Weight: ${weight.toFixed(2)}kg | Height: ${height.toFixed(2)}m
+                Moves: <span class='pokemon encounter'>${pMove1} / ${pMove2}</span>
               </div>
-              <div>
-                <span class='pokemon navigate'><a href='javascript:void(0);' onclick='javascript:openMapDirections(${latitude},${longitude});' title='Open in Google Maps'>${latitude.toFixed(6)}, ${longitude.toFixed(7)}</a></span>
+              <div class='pokemon'>
+                Weight: <span class='pokemon encounter'>${weight.toFixed(2)}kg</span> | Height: <span class='pokemon encounter'>${height.toFixed(2)}m</span>
+              </div>
+              <div class='pokemon navigate'>
+                <a href='javascript:void(0);' onclick='javascript:openMapDirections(${latitude},${longitude});' title='Open in Google Maps'>${latitude.toFixed(6)}, ${longitude.toFixed(7)}</a></span>
               </div>
           </div>
         </div>
@@ -628,36 +634,25 @@ function pokemonLabel(item) {
         <div class='pokemon container content-left'>
           <div>
             <img class='pokemon sprite' src='static/icons/${id}.png'>
-            <span class='pokemon'>Level: </span><span class='pokemon no-encounter'>n/a</span>
-            <span class='pokemon links exclude'><a href='javascript:excludePokemon(${id})'>Exclude</a></span>
-            <span class='pokemon links notify'><a href='javascript:notifyAboutPokemon(${id})'>Notify</a></span>
-            <span class='pokemon links remove'><a href='javascript:removePokemonMarker("${encounterId}")'>Remove</a></span>
           </div>
       </div>
       <div class='pokemon container content-right'>
         <div>
           <div class='pokemon disappear'>
-            <span class='label-countdown' disappears-at='${disappearTime}'>00m00s</span> left (${moment(disappearTime).format('HH:mm')})
+            <span class='label-countdown' disappears-at='${disappearTime}'>00:00:00</span> left (${moment(disappearTime).format('HH:mm')})
           </div>
           <div class='pokemon'>
-            CP: <span class='pokemon no-encounter'>No information</span>
+            <span class='pokemon links exclude'><a href='javascript:excludePokemon(${id})'>Exclude</a></span>
+            <span class='pokemon links notify'><a href='javascript:notifyAboutPokemon(${id})'>Notify</a></span>
+            <span class='pokemon links remove'><a href='javascript:removePokemonMarker("${encounterId}")'>Remove</a></span>
           </div>
-          <div class='pokemon'>
-            Moveset: <span class='pokemon no-encounter'>No information</span>
-          </div>
-          <div class='pokemon'>
-            Weight: <span class='pokemon no-encounter'>n/a</span> | Height: <span class='pokemon no-encounter'>n/a</span>
-          </div>
-          <div>
-            <span class='pokemon navigate'><a href='javascript:void(0);' onclick='javascript:openMapDirections(${latitude},${longitude});' title='Open in Google Maps'>${latitude.toFixed(6)}, ${longitude.toFixed(7)}</a></span>
+          <div class='pokemon navigate'>
+            <a href='javascript:void(0);' onclick='javascript:openMapDirections(${latitude},${longitude});' title='Open in Google Maps'>${latitude.toFixed(6)}, ${longitude.toFixed(7)}</a>
           </div>
       </div>
     </div>
   </div>`
     }
-
-    contentstring += `
-      ${details}`
 
     return contentstring
 }
@@ -712,7 +707,7 @@ function gymLabel(gym, includeMembers = true) {
     const gymPoints = gym.total_cp
     const titleText = gym.name ? gym.name : (gym.team_id === 0 ? teamName : 'Team ' + teamName)
     const title = `
-      <div class='gym name'>
+      <div class='gym gymname'>
         <span class='team ${gymTypes[gym.team_id].toLowerCase()}'>${titleText}</span>
       </div>`
 
@@ -734,27 +729,24 @@ function gymLabel(gym, includeMembers = true) {
         if (isRaidStarted) {
             // set Pokémon-specific image if we have one.
             if (raid.pokemon_id !== null && pokemonWithImages.indexOf(raid.pokemon_id) !== -1) {
-                raidImage = `<img class='gym sprite' src='static/icons/${raid.pokemon_id}.png'>`
+                raidImage = `<span class="gym pokemon-large-sprite n${raid.pokemon_id}"></span>`
             } else {
                 raidImage = `<img class='gym sprite' src='static/images/raid/${gymTypes[gym.team_id]}_${raid.level}_unknown.png'>`
             }
             if (raid.pokemon_id === null) {
                 image = `
                     ${raidImage}
-                    <div class='raid'>
-                        <span style='color:rgb(${raidColor[Math.floor((raid.level - 1) / 2)]})'>
-                            ${levelStr}
-                        </span>
-                        <span class='raid countdown label-countdown' disappears-at='${raid.end}'></span> left (${moment(raid.end).format('HH:mm')})
+                    <div class='raid time'>
+                        <span class='raid time' style='color:rgb(${raidColor[Math.floor((raid.level - 1) / 2)]})'>${levelStr}</span>
+                        <span class='raid time countdown label-countdown' disappears-at='${raid.end}'>00:00:00</span> left<br>
+                        <span class='raid time'>${moment(raid.start).format('HH:mm')} - ${moment(raid.end).format('HH:mm')}</span>
                     </div>
                 `
             } else {
                 image = `
                     <div class='raid container'>
                         <div class='raid container content-left'>
-                            <div>
-                                ${raidImage}
-                            </div>
+                            <div>${raidImage}</div>
                         </div>
                         <div class='raid container content-right'>
                             <div>
@@ -765,11 +757,10 @@ function gymLabel(gym, includeMembers = true) {
                             </div>
                         </div>
                     </div>
-                    <div class='raid'>
-                        <span style='color:rgb(${raidColor[Math.floor((raid.level - 1) / 2)]})'>
-                            ${levelStr}
-                        </span>
-                        <span class='raid countdown label-countdown' disappears-at='${raid.end}'></span> left (${moment(raid.end).format('HH:mm')})
+                    <div class='raid time'>
+                        <span class='raid time' style='color:rgb(${raidColor[Math.floor((raid.level - 1) / 2)]})'>${levelStr}</span>
+                        <span class='raid time countdown label-countdown' disappears-at='${raid.end}'>00:00:00</span> left<br>
+                        <span class='raid time'>${moment(raid.start).format('HH:mm')} - ${moment(raid.end).format('HH:mm')}</span>
                     </div>
                 `
             }
@@ -779,11 +770,10 @@ function gymLabel(gym, includeMembers = true) {
 
         if (isUpcomingRaid) {
             imageLbl = `
-                <div class='raid'>
-                  <span style='color:rgb(${raidColor[Math.floor((raid.level - 1) / 2)]})'>
-                  ${levelStr}
-                  </span>
-                  Raid in <span class='raid countdown label-countdown' disappears-at='${raid.start}'> (${moment(raid.start).format('HH:mm')})</span>
+                <div class='raid time'>
+                  <span class='raid time' style='color:rgb(${raidColor[Math.floor((raid.level - 1) / 2)]})'>${levelStr}</span>
+                  Raid in <span class='raid time countdown label-countdown' disappears-at='${raid.start}'></span><br>
+                  <span class='raid time'>${moment(raid.start).format('HH:mm')} - ${moment(raid.end).format('HH:mm')}</span>
                 </div>`
         }
     } else {
@@ -793,22 +783,11 @@ function gymLabel(gym, includeMembers = true) {
 
     navInfo = `
             <div class='gym container'>
-                <div>
-                  <span class='gym info navigate'>
-                    <a href='javascript:void(0);' onclick='javascript:openMapDirections(${gym.latitude},${gym.longitude});' title='Open in Google Maps'>
-                      ${gym.latitude.toFixed(6)}, ${gym.longitude.toFixed(7)}
-                    </a>
-                  </span>
-                </div>
-                <div class='gym info last-scanned'>
-                    Last Scanned: ${lastScannedStr}
-                </div>
-                <div class='gym info last-modified'>
-                    Last Modified: ${lastModifiedStr}
-                </div>
+                <div class='gym info navigate'><a href='javascript:void(0);' onclick='javascript:openMapDirections(${gym.latitude},${gym.longitude});' title='Open in Google Maps'>${gym.latitude.toFixed(6)}, ${gym.longitude.toFixed(7)}</a></div>
+                <div class='gym info last-scanned'>Last Scanned: ${lastScannedStr}</div>
+                <div class='gym info last-modified'>Last Modified: ${lastModifiedStr}</div>
             </div>
         </div>`
-
 
     if (includeMembers) {
         memberStr = '<div>'
@@ -855,31 +834,27 @@ function pokestopLabel(expireTime, latitude, longitude) {
     if (expireTime) {
         str = `
             <div>
-              <div class='pokestop lure'>
-                Lured Pokéstop
-              </div>
-              <div class='pokestop-expire'>
-                  <span class='label-countdown' disappears-at='${expireTime}'>00m00s</span> left (${moment(expireTime).format('HH:mm')})
-              </div>
+              <div class='pokestop lure'>Lured Pokéstop</div>
               <div>
                 <img class='pokestop sprite' src='static/images/pokestop//PokestopLured.png'>
               </div>
+              <div class='pokestop-expire'>
+                  <span class='label-countdown' disappears-at='${expireTime}'>00:00:00</span> left (${moment(expireTime).format('HH:mm')})
+              </div>
               <div>
-                <span class='pokestop navigate'><a href='javascript:void(0);' onclick='javascript:openMapDirections(${latitude},${longitude});' title='Open in Google Maps'; class='pokestop lure'>${latitude.toFixed(6)}, ${longitude.toFixed(7)}</a></span>
+                <span class='pokestop navigate'><a href='javascript:void(0);' onclick='javascript:openMapDirections(${latitude},${longitude});' title='Open in Google Maps'; class='pokestop'>${latitude.toFixed(6)}, ${longitude.toFixed(7)}</a></span>
               </div>
             </div>
           </div>`
     } else {
         str = `
             <div>
-              <div class='pokestop nolure'>
-                Pokéstop
-              </div>
+              <div class='pokestop nolure'>Pokéstop</div>
               <div>
                 <img class='pokestop sprite' src='static/images/pokestop//Pokestop.png'>
               </div>
               <div>
-                <span class='pokestop navigate'><a href='javascript:void(0);' onclick='javascript:openMapDirections(${latitude},${longitude});' title='Open in Google Maps'; class='pokestop nolure'>${latitude.toFixed(6)}, ${longitude.toFixed(7)}</a></span>
+                <span class='pokestop navigate'><a href='javascript:void(0);' onclick='javascript:openMapDirections(${latitude},${longitude});' title='Open in Google Maps'; class='pokestop'>${latitude.toFixed(6)}, ${longitude.toFixed(7)}</a></span>
               </div>
             </div>
           </div>`
@@ -2300,7 +2275,7 @@ function showGymDetails(id) { // eslint-disable-line no-unused-vars
                     <i class="pokemon-large-sprite n${result.guard_pokemon_id}"></i><br>
                     <b>${result.guard_pokemon_name}</b>
 
-                    <p style="font-size: .75em; margin: 5px;">
+                    <p style="font-size: .75em; margin: 5px; line-height: 1.65em;">
                         No additional gym information is available for this gym. Make sure you are collecting <a href="https://rocketmap.readthedocs.io/en/develop/extras/gyminfo.html">detailed gym info.</a>
                         If you have detailed gym info collection running, this gym's Pokemon information may be out of date.
                     </p>
@@ -2345,12 +2320,12 @@ function getSidebarGymMember(pokemon) {
         let deploymentTime = moment(pokemon.deployment_time)
         relativeTime = deploymentTime.fromNow()
         // Append as string so we show nothing when the time is Unknown.
-        absoluteTime = '<div class="gym pokemon">(' + deploymentTime.format('MMM Do HH:mm') + ')</div>'
+        absoluteTime = '<div class="gym pokemon deploy">(' + deploymentTime.format('MMM Do HH:mm') + ')</div>'
     }
 
     return `
                     <tr onclick=toggleGymPokemonDetails(this)>
-                        <td width="30px">
+                        <td width="30">
                             <img class="gym pokemon sprite" src="static/icons/${pokemon.pokemon_id}.png">
                         </td>
                         <td>
@@ -2362,15 +2337,13 @@ function getSidebarGymMember(pokemon) {
                                 <span class="gym pokemon motivation cp">Max: ${pokemon.pokemon_cp}</span>
                             </div>
                         </td>
-                        <td width="190" align="center">
-                            <div class="gym pokemon">${pokemon.trainer_name} (${pokemon.trainer_level})</div>
-                            <div class="gym pokemon">Deployed ${relativeTime}</div>
+                        <td align="center">
+                            <div class="gym pokemon trainer">${pokemon.trainer_name} (${pokemon.trainer_level})</div>
+                            <div class="gym pokemon deploy">${relativeTime}</div>
                             ${absoluteTime}
                         </td>
-                        <td width="10">
-                            <!--<a href="#" onclick="toggleGymPokemonDetails(this)">-->
-                                <i class="fa fa-angle-double-down"></i>
-                            <!--</a>-->
+                        <td>
+                            <i class="fa fa-angle-double-down"></i>
                         </td>
                     </tr>
                     <tr class="details">
@@ -2378,27 +2351,19 @@ function getSidebarGymMember(pokemon) {
                             <div class="ivs">
                                 <div class="iv">
                                     <div class="type">ATK</div>
-                                    <div class="value">
-                                        ${pokemon.iv_attack}
-                                    </div>
+                                    <div class="value">${pokemon.iv_attack}</div>
                                 </div>
                                 <div class="iv">
                                     <div class="type">DEF</div>
-                                    <div class="value">
-                                        ${pokemon.iv_defense}
-                                    </div>
+                                    <div class="value">${pokemon.iv_defense}</div>
                                 </div>
                                 <div class="iv">
                                     <div class="type">STA</div>
-                                    <div class="value">
-                                        ${pokemon.iv_stamina}
-                                    </div>
+                                    <div class="value">${pokemon.iv_stamina}</div>
                                 </div>
-                                <div class="iv" style="width: 36px;"">
+                                <div class="iv" style="width:3em;"">
                                     <div class="type">PERFECT</div>
-                                    <div class="value">
-                                        ${perfectPercent.toFixed(0)}<span style="font-size: .6em;">%</span>
-                                    </div>
+                                    <div class="value">${perfectPercent.toFixed(0)}<span style="font-size:.7em">%</span></div>
                                 </div>
                             </div>
                         </td>
@@ -2418,13 +2383,13 @@ function getSidebarGymMember(pokemon) {
                                     <div class="name">
                                         ${pokemon.move_2_name}
                                         <div class="type ${pokemon.move_2_type['type_en'].toLowerCase()}">${pokemon.move_2_type['type']}</div>
-                                        <div>
-                                            <i class="move-bar-sprite move-bar-sprite-${moveEnergy}"></i>
-                                        </div>
                                     </div>
                                     <div class="damage">
                                         ${pokemon.move_2_damage}
                                     </div>
+                                </div>
+                                <div>
+                                    <i class="move-bar-sprite move-bar-sprite-${moveEnergy}"></i>
                                 </div>
                             </div>
                         </td>

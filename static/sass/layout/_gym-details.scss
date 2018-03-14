@@ -1,8 +1,5 @@
 /* Gym-Details */
 
-
-
-
   #gym-details {
     @include vendor('transform', 'translateX(25em)');
     @include vendor('transition', ('transform #{_duration(stats)} ease', 'box-shadow #{_duration(stats)} ease', 'visibility #{_duration(stats)}'));
@@ -21,12 +18,8 @@
     visibility: hidden;
     width: 25em;
     z-index: 500;
-    line-height:1.65em;
-    h3 {
-      font-size: 18px;
-      font-family: 'Open Sans', sans-serif;
-      color: darken(_palette(accent2, bg), 12);
-    }
+    line-height: 1.65em;
+    padding-top: 10px;
     p {
       margin-bottom: 20px;
       color: darken(_palette(accent2, bg), 12);
@@ -89,12 +82,6 @@
       &:hover {
         color: _palette(accent2, fg-bold);
       }
-
-      @include breakpoint(small) {
-        padding: 0.5em;
-        height: 4em;
-        line-height: 4em;
-      }
     }
 
     &.visible {
@@ -104,81 +91,88 @@
     }
 
     @include breakpoint(small) {
-      padding: 2em 0em;
-      font-size: 70%;
+      
     }
 
     td {
       @media screen and (max-width: 480px) {
-        padding: 0.25em !important;
+        padding: 2px 0.25em !important;
         vertical-align: middle !important;
       }
       @media screen and (max-width: 320px) {
-        padding: 0em !important;
+        padding: 0 !important;
         vertical-align: middle !important;
       }
-      padding: 0.25em 1em;
+      padding: 0.1em 1em;
       vertical-align: middle;
     }
 
+    td:last-child {
+      padding: .1em 10px .1em 0;
+    }
+
     .ivs {
+      @media screen and (max-width: 480px) {
+        font-size: 14px !important;
+      }
+
       color: rgb(93,109,126);
-      float:left;
+      float: left;
+      min-width: 110px;
+      font-size: 16px;
 
       .iv {
         text-align: center;
-        width: 20px;
+        width: 1.3em;
         display: inline-block;
       }
 
       .type {
-        font-size: .5em;
-        line-height:1em;
+        font-size: .65em;
+        line-height: 1em;
       }
 
       .value {
-        font-family: 'Open Sans', sans-serif;
-        font-weight: bold;
+        font-size: .8em;
+        font-weight: 700;
       }
     }
 
     .moves {
-      line-height: 1em;
+      @media screen and (max-width: 400px) {
+        font-size: .6em;
+      }
+
+      line-height: 1.65em;
       color: rgb(93,109,126);
-      font-size: .8em;
-      // float: right;
+      font-size: .75em;
 
-      // .move {
-      //   display: block;
-      // }
-
-      // .move:after {
-      //   content: "";
-      //   display: table;
-      //   clear: both;
-      // }
+      .move-bar-sprite {
+        margin-bottom: 7px;
+        clear: both;
+      }
 
       .move {
         .name {
           float: left;
           clear: left;
+        }
 
-          .move-bar-sprite {
-            margin-top: 2px;
-          }
+        .name:last-child {
+          margin-bottom: 5px;
         }
 
         .type {
-          margin-top: 2px;
-          font-size: 9px;
+          margin-bottom: 2px;
+          font-size: 8px;
           display: inline-block;
           text-transform: uppercase;
-          padding: 2px 3px;
+          padding: 3px 3px;
           border-radius: 4px;
           color: white;
-          font-family: 'Open Sans', sans-serif;
           font-weight: 300;
-
+          line-height: 1em;
+          vertical-align: middle;
 
           &.fairy {
               background-color: #e898e8;
@@ -274,20 +268,21 @@
         @media screen and (max-width: 480px) {
           margin-right: 2px !important;
         }
+        @media screen and (max-width: 400px) {
+          display: none;
+        }
         float: right;
-        margin-top: 5px;
-        font-family: 'Open Sans', sans-serif;
       }
     }
 
-    .trainer-level {
-      font-size: 1.25em;
-      font-family: 'Open Sans', sans-serif;
-      line-height: 1em;
-      font-weight: 900;
+    table {
+      margin: 0;
     }
 
     tbody {
+      line-height: 1em;
+      font-size: 16px;
+
       tr {
         background-color: inherit;
         border: 0;
@@ -307,7 +302,7 @@
     }
 
     tr.details {
-      display:none;
+      display: none;
       &.visible {
         display: table-row;
       }
@@ -315,34 +310,35 @@
 
     .gym {
       @media screen and (max-width: 480px) {
-        font-size: 10px !important;
+        font-size: 11px !important;
       }
       @media screen and (max-width: 320px) {
-        font-size: 9px !important;
+        font-size: 10px !important;
       }
       color: rgb(93,109,126);
-      font-size: 14px;
+      font-size: 12px;
+      line-height: 1.65em;
 
       &.container {
         display: grid;
         justify-content: center;
+        line-height: 1em;
+        margin-bottom: 1em;
       }
 
-      &.name {
+      &.gymname {
         @media screen and (max-width: 480px) {
-          font-size: 12px !important;
-          margin-bottom: 0px;
+          font-size: 14px !important;
         }
         font-size: 16px;
-        font-weight: 900;
-        margin-bottom: -5px;
-        text-decoration: underline;
+        font-weight: 800;
+        line-height: 1.65em;
       }
 
       &.sprite {
         @media screen and (max-width: 480px) {
-          height: 48px !important;
-          width: 48px !important;
+          height: 64px !important;
+          width: 64px !important;
         }
         display: block;
         height: 96px;
@@ -350,13 +346,21 @@
 
         &.pokemon {
           @media screen and (max-width: 480px) {
-            height: 30px !important;
-            width: 30px !important;
+            height: 40px !important;
+            width: 40px !important;
+            padding: 5px;
           }
           display: block;
           height: 48px;
           width: 48px;
         }
+      }
+
+      &.pokemon-large-sprite {
+        @media screen and (max-width: 480px) {
+          transform: scale(.9);
+        }
+        transform: scale(1.1);
       }
 
       &.info {
@@ -366,7 +370,8 @@
           display: inline-block;
           font-family: FontAwesome;
           height: 16px;
-          width: 16px;
+          width: 18px;
+          line-height: 16px;
           -webkit-font-smoothing: antialiased;
         }
 
@@ -375,7 +380,8 @@
           display: inline-block;
           font-family: FontAwesome;
           height: 16px;
-          width: 16px;
+          width: 18px;
+          line-height: 16px;
           -webkit-font-smoothing: antialiased;
         }
 
@@ -384,7 +390,8 @@
           display: inline-block;
           font-family: FontAwesome;
           height: 16px;
-          width: 16px;
+          width: 18px;
+          line-height: 16px;
           -webkit-font-smoothing: antialiased;
         }
 
@@ -392,10 +399,12 @@
           @media screen and (max-width: 480px) {
             height: 12px !important;
             width: 12px !important;
+            font-size: 11px;
           }
-          font-weight: 900;
+          font-weight: 700;
           height: 16px;
           width: 16px;
+          font-size: 13px;
           vertical-align: middle;
         }
       }
@@ -404,21 +413,44 @@
         font-size: 12px;
         line-height: 1rem;
 
+        &.name {
+          @media screen and (max-width: 480px) {
+            font-size: 12px !important;
+          }
+          font-weight: 600;
+        }
+
+        &.trainer {
+          @media screen and (max-width: 360px) {
+            font-size: 10px !important;
+          }
+          font-size: 12px !important;
+          font-weight: 600;
+        }
+
+        &.deploy {
+          @media screen and (max-width: 360px) {
+            font-size: 9px !important;
+          }
+          font-weight: 400
+        }
+
         &.motivation.decayed:before {
           content: '\f004';
           display: inline-block;
           font-family: FontAwesome;
-          width: 24px;
+          width: 1.4em;
           -webkit-font-smoothing: antialiased;
         }
 
         &.motivation.decayed {
           @media screen and (max-width: 480px) {
-            font-size: 9px !important;
+            font-size: 12px !important;
           }
-          font-weight: 900;
-          font-size: 16px;
+          font-weight: 700;
+          font-size: 14px;
           white-space: nowrap;
+          line-height: 1em;
           &.zone {
             &.good {
               color: rgba(16,155,49,1);
@@ -443,11 +475,11 @@
 
         &.motivation.cp {
           @media screen and (max-width: 480px) {
-            font-size: 8px !important;
+            font-size: 10px !important;
           }
           color: #000;
           font-size: 10px;
-          font-weight: 500;
+          font-weight: 400;
           text-align: inherit;
           white-space: nowrap;
         }
@@ -456,28 +488,33 @@
 
     .raid {
       @media screen and (max-width: 480px) {
-        font-size: 10px !important;
+        font-size: 12px !important;
+        margin: 0 0 10px 0;
       }
       @media screen and (max-width: 320px) {
-        font-size: 9px !important;
+        font-size: 11px !important;
       }
       color: rgb(93,109,126);
       font-size: 14px;
-      font-weight: 900;
-      @media screen and (max-width: 480px) {
-        margin-bottom: 0px !important;
-      }
-      margin-bottom: 5px;
+      font-weight: 700;
+      margin: 10px 0;
+      line-height: 1.65em;
 
       &.container {
+        line-height: 1.65em;
         display: flex;
         justify-content: center;
+        margin-bottom: 0;
 
         &.content-left {
           @media screen and (max-width: 480px) {
-            width: 64px !important;
+            width: 80px !important;
           }
-          width:96px;
+          @media screen and (max-width: 360px) {
+              width: 50px !important;
+          }
+          width: 96px;
+          margin: 0;
         }
 
         &.content-right {
@@ -489,55 +526,51 @@
       &.countdown {
 
         &:before {
-          @media screen and (max-width: 480px) {
-            margin: 0px -2px 0px -2px !important;
-          }
           content: '\f017';
           display: inline-block;
           font-family: FontAwesome;
-          margin: 0px 2px 0px 0px;
+          margin: 0 2px 0 0;
           height: 16px;
           width: 16px;
           -webkit-font-smoothing: antialiased;
         }
       }
 
+      &.time {
+        font-size: 14px !important;
+      }
+
       &.pokemon {
         font-size: 16px;
-        font-weight: 900;
+        font-weight: 700;
         float: left;
+        margin: 0 0 5px 0;
       }
 
       .move {
+
         .name {
           @media screen and (max-width: 480px) {
-            font-size: 10px !important;
-            margin: 0px 0px 2px 0px !important;
-          }
-          @media screen and (max-width: 320px) {
-            font-size: 9px !important;
+            font-size: 12px !important;
           }
           font-size: 14px;
           float: left;
           clear: left;
-          margin: 0px 5px 5px 10px
+          margin-bottom: 4px;
         }
-        @media screen and (max-width: 480px) {
-          font-size: 6px !important;
-        }
+
         .type {
           @media screen and (max-width: 480px) {
-            font-size: 6px !important;
-            margin: 0px 0px 2px 0px !important;
+            font-size: 9px !important;
+            line-height: 16px;
           }
-          margin: 0px 0px 5px 0px;
           font-size: 10px;
           padding: 0px 5px;
           border-radius: 4px;
           color: white;
           float: right;
           clear: right;
-
+          line-height: 20px;
 
           &.fairy {
               background-color: #e898e8;

@@ -1,6 +1,6 @@
 /* Type */
 
-@import url(https://fonts.googleapis.com/css?family=Open+Sans:400,700);
+@import url(https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700,800);
 
 body, input, select, textarea {
   color: _palette(fg);
@@ -30,9 +30,19 @@ body, input, select, textarea {
   }
 }
 
+.ui-widget {
+  font-family: _font(family) !important;
+}
+
+.gm-style .gm-style-iw {
+  font-family: _font(family) !important;
+  font-size: 13pt !important;
+  font-weight: _font(weight) !important;
+}
+
 a {
   color: _palette(accent1, bg);
-  text-decoration: underline;
+  text-decoration: none;
 
   &:hover {
     text-decoration: none;

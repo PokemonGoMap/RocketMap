@@ -1,8 +1,7 @@
 .pokestop {
   font-size: 14px;
-  font-weight: 900;
+  font-weight: 800;
   text-align: center;
-  text-decoration: underline;
 
   &.lure {
     color: rgb(249,53,133);
@@ -17,7 +16,7 @@
   &.navigate {
     color: rgb(93,109,126);
     font-size: 11px;
-    font-weight: 500;
+    font-weight: 400;
 
     &.navigate:before {
       content: '\f018';
@@ -32,10 +31,11 @@
 }
 
 .pokestop-expire {
-  color: rgb(249,53,133);
+  color: rgb(93,109,126);
   font-size: 14px;
-  font-weight: 900;
+  font-weight: 700;
   text-align: center;
+  margin: 5px 0;
 
   &:before {
     color: rgb(93,109,126);
@@ -51,21 +51,12 @@
 
 a.pokestop:link {
   font-size: 11px;
-  font-weight: 500;
-
-  &.lure {
-    color: rgb(249,53,133);
-  }
-
-  &.nolure {
-    color: rgb(54,198,255);
-  }
+  font-weight: 400;
 }
 
 .pokestop.sprite {
   display: block;
   height: 32px;
   width: 32px;
-  margin-left: auto;
-  margin-right: auto;
+  margin: 10px auto;
 }

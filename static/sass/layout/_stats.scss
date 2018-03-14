@@ -21,7 +21,6 @@
     z-index: 500;
     h3 {
       font-size: 18px;
-      font-family: 'Open Sans', sans-serif;
       color: darken(_palette(accent2, bg), 12);
     }
     p {
@@ -126,7 +125,6 @@
     .stats-label-container h1 {
       margin: 0.25em;
       font-size: 1.2em;
-      font-family: 'Open Sans', sans-serif;
     }
 
     // Styling for statistics dataTable
@@ -143,17 +141,13 @@
     {
       text-align: center;
     }
-
     .pokemonListString {
-      width: 30px;
+      height: 38px;
     }
-
     .arenaListString {
-      width: 48px;
+      height: 38px;
     }
-
     .pokestopListString {
-      width: 32px;
+      height: 38px;
     }
-
   }

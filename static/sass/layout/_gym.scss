@@ -1,23 +1,25 @@
 .gym {
   color: rgb(93,109,126);
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 600;
 
   &.container {
     display: grid;
     justify-content: center;
+    line-height: 1em;
   }
 
   &.member {
     display: inline-block;
     margin-left: 1px;
+    width: 40px;
+    overflow: hidden;
   }
 
-  &.name {
+  &.gymname {
     font-size: 14px;
-    font-weight: 900;
-    margin-bottom: 2px;
-    text-decoration: underline;
+    font-weight: 800;
+    line-height: 1.65em;
 
     .team {
       &.uncontested {
@@ -39,7 +41,12 @@
     display: block;
     height: 64px;
     width: 64px;
-    margin: 5px 0px 5px 0px;
+    margin: 8px 0;
+  }
+
+  &.pokemon-large-sprite {
+    transform: scale(.9);
+    top: 3px;
   }
 
   &.info {
@@ -72,9 +79,10 @@
     }
 
     &.strength {
-      font-weight: 900;
+      font-weight: 700;
       height: 12px;
       width: 12px;
+      font-size: 12px;
       vertical-align: middle;
     }
   }
@@ -84,8 +92,9 @@
       font-size: 8px !important;
     }
     font-size: 9px;
-    margin-bottom: 0px;
+    margin-bottom: 0;
     vertical-align: middle;
+    line-height: 1em;
 
     &.motivation {
 
@@ -96,7 +105,6 @@
         }
         height: 8px;
         width: 8px;
-        margin-right: -1px;
       }
     }
   }
@@ -104,15 +112,17 @@
 
 .raid {
   color: rgb(93,109,126);
-  font-size: 11px;
-  font-weight: 900;
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 1em;
 
   &.container {
     display: flex;
     justify-content: center;
+    margin: 0;
 
     &.content-left {
-      width:64px;
+      width: 80px;
     }
 
     &.content-right {
@@ -121,13 +131,18 @@
     }
   }
 
+  &.time {
+    font-size: 14px !important;
+    line-height: 1.65em;
+  }
+
   &.countdown {
 
     &:before {
       content: '\f017';
       display: inline-block;
       font-family: FontAwesome;
-      margin: 0px 0px 0px -2px;
+      margin: 0 2px 0 0;
       height: 16px;
       width: 16px;
       -webkit-font-smoothing: antialiased;
@@ -135,30 +150,32 @@
   }
 
   &.pokemon {
-    font-size: 12px;
-    font-weight: 900;
+    font-size: 13px;
+    font-weight: 700;
     float: left;
+    margin-bottom: 5px;
   }
 
   .move {
+    font-weight: 600;
+
     .name {
       font-size: 12px;
       float: left;
       clear: left;
-      margin: 5px 0px 0px 10px;
+      margin-bottom: 4px;
     }
 
     .type {
-      margin: 5px 0px 0px 10px;
-      font-size: 8px;
-      display: inline-block;
+      font-size: 9px;
+      display: block;
       text-transform: uppercase;
-      padding: 2px 3px;
+      padding: 0px 5px;
       border-radius: 4px;
+      line-height: 16px;
       color: white;
       float: right;
       clear: right;
-
 
       &.fairy {
           background-color: #e898e8;

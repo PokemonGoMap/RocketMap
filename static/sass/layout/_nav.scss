@@ -16,12 +16,14 @@
     top: 3.50em;
     left: 0;
     visibility: hidden;
-    width: 20.50em;
+    width: 20em;
     z-index: 500;
+    padding: 10px;
     h3 {
-      font-size: 18px;
-      font-family: 'Open Sans', sans-serif;
+      font-size: 15px;
       color: darken(_palette(accent2, bg), 12);
+      line-height: 20px;
+      font-weight: 400;
     }
     p {
       margin-bottom: 20px;
@@ -105,10 +107,7 @@
     }
 
     .ui-accordion-content {
-      padding-top: 0.5em;
-      padding-right: 0.5em;
-      padding-bottom: 0.5em;
-      padding-left: 0.5em;
+      padding: .5em .75em;
     }
     .ui-state-active,
     .onoffswitch-checkbox:checked+.onoffswitch-label {
@@ -130,6 +129,9 @@
     .ui-state-focus {
       outline: none;
     }
+    .select2-container {
+      font-size: 14px;
+    }
 
     .fa {
       font-weight: 700;
@@ -138,4 +140,9 @@
     .fa-fw {
       margin: 0px 5px 0px 0px;
     }
+  }
+
+  .select2-results__option {
+    padding: 4px 8px !important;
+    font-size: 14px !important;
   }
