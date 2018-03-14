@@ -3517,6 +3517,10 @@ def database_migrate(db, old_ver):
 
     if old_ver < 29:
         db.execute_sql('DROP TABLE `trainer`;')
+        migrate(
+            # drop trainer from gympokemon
+            migrator.drop_column('GymPokemon', 'trainer_name')
+        )
 
     # Always log that we're done.
     log.info('Schema upgrade complete.')
