@@ -288,9 +288,10 @@ def main():
         'devkat': 'https://hashing.devkat.org'
     }
 
-    endpoint = legal_endpoints.get(args.hash_service, False)
+    hash_service = args.hash_service.lower()
+    endpoint = legal_endpoints.get(hash_service, False)
     if endpoint:
-        log.info('Using hash service: %s.', args.hash_service)
+        log.info('Using hash service: %s.', hash_service)
         HashServer.endpoint = endpoint
 
     # Make sure they are warned.
