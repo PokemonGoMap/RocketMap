@@ -57,11 +57,19 @@ class PGoRequestWrapper:
             except HashingQuotaExceededException:
                 # Sleep until the RPM reset to free some RPM and don't use
                 # one of our retries, just retry until we have RPM left.
+                # If RPM reset was in the past, we'll still sleep for a
+                # little bit to introduce variation.
                 now = int(time.time())
                 rpm_reset = HashServer.status.get('period', now)
+                secs_till_reset = rpm_reset - now
                 random_sleep_secs = random.uniform(0.75, 1.5)
-                secs_till_reset = now - rpm_reset
-                secs_to_sleep = secs_till_reset + random_sleep_secs
+                secs_to_sleep = random_sleep_secs
+
+                # Could be outdated key header, or already passed.
+                if secs_till_reset > 0:
+                    secs_to_sleep = secs_till_reset + random_sleep_secs
+
+                # Shhhhhh. Only happy dreams now.
                 log.debug('Hashing quota exceeded. If this delays requests for'
                           ' too long, consider adding more RPM. Sleeping for'
                           ' %ss before retrying...', secs_to_sleep)
