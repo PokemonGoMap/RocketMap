@@ -1801,35 +1801,36 @@ function processGym(i, item) {
         }
     }
 
-    if (Store.get('showGymFilter') === 1) {
-        if (item['gym_id'] in mapData.gyms) {
-            return true
-        }
-    } else if (Store.get('showGymFilter') === 2) {
-		// showOpenGymsOnly
-        if (item.slots_available === 0) {
-            removeGymFromMap(item['gym_id'])
-            return true
-        }
-    } else if (Store.get('showGymFilter') === 3) {
-		// showParkGymsOnly
-        if (!item.park) {
-            removeGymFromMap(item['gym_id'])
-            return true
-        }
-    } else if (Store.get('showGymFilter') === 4) {
-		// showSponsorGymsOnly
-        if (!item.sponsor) {
-            removeGymFromMap(item['gym_id'])
-            return true
-        }
-    } else if (Store.get('showGymFilter') === 5) {
-		// showExGymsOnly
-        if (!(item.sponsor | item.park)) {
-            removeGymFromMap(item['gym_id'])
-            return true
-        }
-    } else { return false }
+    switch (Store.get('showGymFilter')) {
+        case 1: // ShowAllGyms
+            if (item['gym_id'] in mapData.gyms) {
+                return true
+            }
+            break
+        case 2: // showOpenGymsOnly
+            if (item.slots_available === 0) {
+                removeGymFromMap(item['gym_id'])
+                return true
+            }
+            break
+        case 3: // showParkGymsOnly
+            if (!item.park) {
+                removeGymFromMap(item['gym_id'])
+                return true
+            }
+            break
+        case 4: // showSponsorGymsOnly
+            if (!item.sponsor) {
+                removeGymFromMap(item['gym_id'])
+                return true
+            }
+            break
+        case 5: // showExGymsOnly
+            if (!(item.sponsor | item.park)) {
+                removeGymFromMap(item['gym_id'])
+                return true
+            }
+    }
 
     if (!Store.get('showGyms')) {
         if (Store.get('showRaids') && !isValidRaid(item.raid)) {
@@ -1837,37 +1838,37 @@ function processGym(i, item) {
             return true
         }
 
-        if (Store.get('showRaidFilter') === 1) {
-            // showAllRaids
-            if (Store.get('showRaids') && !isValidRaid(item.raid)) {
-                removeGymFromMap(item['gym_id'])
-                return true
-            }
-        } else if (Store.get('showRaidFilter') === 2) {
-            // showActiveRaidsOnly
-            if (!isOngoingRaid(item.raid)) {
-                removeGymFromMap(item['gym_id'])
-                return true
-            }
-        } else if (Store.get('showRaidFilter') === 3) {
-            // showParkRaidsOnly
-            if (!item.park) {
-                removeGymFromMap(item['gym_id'])
-                return true
-            }
-        } else if (Store.get('showRaidFilter') === 4) {
-            // showSponsorRaidsOnly
-            if (!item.sponsor) {
-                removeGymFromMap(item['gym_id'])
-                return true
-            }
-        } else if (Store.get('showRaidFilter') === 5) {
-            // showExRaidsOnly
-            if (!(item.sponsor || item.park)) {
-                removeGymFromMap(item['gym_id'])
-                return true
-            }
-        } else { return false }
+        switch (Store.get('showRaidFilter')) {
+            case 1: // showAllRaids
+                if (!isValidRaid(item.raid)) {
+                    removeGymFromMap(item['gym_id'])
+                    return true
+                }
+                break
+            case 2: // showActiveRaidsOnly
+                if (!isOngoingRaid(item.raid)) {
+                    removeGymFromMap(item['gym_id'])
+                    return true
+                }
+                break
+            case 3: // showParkRaidsOnly
+                if (!(item.park && isValidRaid(item.raid))) {
+                    removeGymFromMap(item['gym_id'])
+                    return true
+                }
+                break
+            case 4: // showSponsorRaidsOnly
+                if (!(item.sponsor && isValidRaid(item.raid))) {
+                    removeGymFromMap(item['gym_id'])
+                    return true
+                }
+                break
+            case 5: // showExRaidsOnly
+                if (!((item.sponsor || item.park) && isValidRaid(item.raid))) {
+                    removeGymFromMap(item['gym_id'])
+                    return true
+                }
+        }
 
         if (raidLevel > Store.get('showRaidMaxLevel') || raidLevel < Store.get('showRaidMinLevel')) {
             removeGymFromMap(item['gym_id'])
@@ -2577,7 +2578,7 @@ $(function () {
     $selectRaidFilter = $('#raid-filter-switch')
 
     $selectRaidFilter.select2({
-        placeholder: 'Raid Views',
+        placeholder: 'Filter Raids',
         minimumResultsForSearch: Infinity
     })
 
@@ -2616,7 +2617,7 @@ $(function () {
     $selectGymFilter = $('#gym-filter-switch')
 
     $selectGymFilter.select2({
-        placeholder: 'Gym Views',
+        placeholder: 'Filter Gyms',
         minimumResultsForSearch: Infinity
     })
 
@@ -2971,7 +2972,7 @@ $(function () {
     }
 
     function resetGymFilter() {
-        Store.set('showGymFilter', 0)
+        Store.set('showGymFilter', 1)
         Store.set('showTeamGymsOnly', 0)
         Store.set('minGymLevel', 0)
         Store.set('maxGymLevel', 6)
