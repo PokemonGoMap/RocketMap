@@ -1802,30 +1802,30 @@ function processGym(i, item) {
     }
 
     switch (Store.get('showGymFilter')) {
-        case 1: // show all gyms
+        case 0: // show all gyms
             if (item['gym_id'] in mapData.gyms) {
                 return true
             }
             break
-        case 2: // only show gyms with open slots
+        case 1: // only show gyms with open slots
             if (item.slots_available === 0) {
                 removeGymFromMap(item['gym_id'])
                 return true
             }
             break
-        case 3: // only show park gyms
+        case 2: // only show park gyms
             if (!item.park) {
                 removeGymFromMap(item['gym_id'])
                 return true
             }
             break
-        case 4: // only show sponsored gyms
+        case 3: // only show sponsored gyms
             if (!item.sponsor) {
                 removeGymFromMap(item['gym_id'])
                 return true
             }
             break
-        case 5: // only show ex-eligible gyms
+        case 4: // only show ex-eligible gyms
             if (!(item.sponsor | item.park)) {
                 removeGymFromMap(item['gym_id'])
                 return true
@@ -1839,32 +1839,32 @@ function processGym(i, item) {
         }
 
         switch (Store.get('showRaidFilter')) {
-            case 1: // show all raids & eggs
+            case 0: // show all raids & eggs
                 if (!isValidRaid(item.raid)) {
                     removeGymFromMap(item['gym_id'])
                     return true
                 }
                 break
-            case 2: // only show active raids
+            case 1: // only show active raids
                 if (!isOngoingRaid(item.raid)) {
                     removeGymFromMap(item['gym_id'])
                     return true
                 }
                 break
-            case 3: // only only show raids and eggs at park gyms
-                if (!(item.park && isValidRaid(item.raid))) {
+            case 2: // only only show raids and eggs at park gyms
+                if (!(isValidRaid(item.raid) && item.park)) {
                     removeGymFromMap(item['gym_id'])
                     return true
                 }
                 break
-            case 4: // only show raids and eggs at sponsored gyms
-                if (!(item.sponsor && isValidRaid(item.raid))) {
+            case 3: // only show raids and eggs at sponsored gyms
+                if (!(isValidRaid(item.raid) && item.sponsor)) {
                     removeGymFromMap(item['gym_id'])
                     return true
                 }
                 break
-            case 5: // only show raids and eggs at ex-eligible gyms
-                if (!((item.sponsor || item.park) && isValidRaid(item.raid))) {
+            case 4: // only show raids and eggs at ex-eligible gyms
+                if (!(isValidRaid(item.raid) && (item.sponsor || item.park))) {
                     removeGymFromMap(item['gym_id'])
                     return true
                 }
@@ -2972,7 +2972,7 @@ $(function () {
     }
 
     function resetGymFilter() {
-        Store.set('showGymFilter', 1)
+        Store.set('showGymFilter', 0)
         Store.set('showTeamGymsOnly', 0)
         Store.set('minGymLevel', 0)
         Store.set('maxGymLevel', 6)
@@ -2994,7 +2994,7 @@ $(function () {
         }
         resetGymFilter()
         var wrapperGyms = $('#gyms-filter-wrapper')
-        var switchRaids = $('#raid-filter-switch')
+        var switchRaids = $('#raids-switch')
         var wrapperSidebar = $('#gym-sidebar-wrapper')
         if (this.checked) {
             lastgyms = false
@@ -3014,7 +3014,7 @@ $(function () {
             'duration': 500
         }
         var wrapperRaids = $('#raids-filter-wrapper')
-        var switchGyms = $('#gym-filter-switch')
+        var switchGyms = $('#gyms-switch')
         var wrapperSidebar = $('#gym-sidebar-wrapper')
         if (this.checked) {
             lastgyms = false

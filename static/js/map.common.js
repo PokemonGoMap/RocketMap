@@ -879,7 +879,7 @@ var StoreOptions = {
         type: StoreTypes.Boolean
     },
     'showRaidFilter': {
-        default: 1,
+        default: 0,
         type: StoreTypes.Number
     },
     'showRaidMinLevel': {
@@ -895,7 +895,7 @@ var StoreOptions = {
         type: StoreTypes.Boolean
     },
     'showGymFilter': {
-        default: 1,
+        default: 0,
         type: StoreTypes.Number
     },
     'useGymSidebar': {
