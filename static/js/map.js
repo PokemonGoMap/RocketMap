@@ -1802,30 +1802,30 @@ function processGym(i, item) {
     }
 
     switch (Store.get('showGymFilter')) {
-        case 1: // ShowAllGyms
+        case 1: // show all gyms
             if (item['gym_id'] in mapData.gyms) {
                 return true
             }
             break
-        case 2: // showOpenGymsOnly
+        case 2: // only show gyms with open slots
             if (item.slots_available === 0) {
                 removeGymFromMap(item['gym_id'])
                 return true
             }
             break
-        case 3: // showParkGymsOnly
+        case 3: // only show park gyms
             if (!item.park) {
                 removeGymFromMap(item['gym_id'])
                 return true
             }
             break
-        case 4: // showSponsorGymsOnly
+        case 4: // only show sponsored gyms
             if (!item.sponsor) {
                 removeGymFromMap(item['gym_id'])
                 return true
             }
             break
-        case 5: // showExGymsOnly
+        case 5: // only show ex-eligible gyms
             if (!(item.sponsor | item.park)) {
                 removeGymFromMap(item['gym_id'])
                 return true
@@ -1839,31 +1839,31 @@ function processGym(i, item) {
         }
 
         switch (Store.get('showRaidFilter')) {
-            case 1: // showAllRaids
+            case 1: // show all raids & eggs
                 if (!isValidRaid(item.raid)) {
                     removeGymFromMap(item['gym_id'])
                     return true
                 }
                 break
-            case 2: // showActiveRaidsOnly
+            case 2: // only show active raids
                 if (!isOngoingRaid(item.raid)) {
                     removeGymFromMap(item['gym_id'])
                     return true
                 }
                 break
-            case 3: // showParkRaidsOnly
+            case 3: // only only show raids and eggs at park gyms
                 if (!(item.park && isValidRaid(item.raid))) {
                     removeGymFromMap(item['gym_id'])
                     return true
                 }
                 break
-            case 4: // showSponsorRaidsOnly
+            case 4: // only show raids and eggs at sponsored gyms
                 if (!(item.sponsor && isValidRaid(item.raid))) {
                     removeGymFromMap(item['gym_id'])
                     return true
                 }
                 break
-            case 5: // showExRaidsOnly
+            case 5: // only show raids and eggs at ex-eligible gyms
                 if (!((item.sponsor || item.park) && isValidRaid(item.raid))) {
                     removeGymFromMap(item['gym_id'])
                     return true
