@@ -64,7 +64,7 @@ class PGoRequestWrapper:
                 secs_to_sleep = secs_till_reset + random_sleep_secs
                 log.debug('Hashing quota exceeded. If this delays requests for'
                           ' too long, consider adding more RPM. Sleeping for'
-                          ' %ss before retrying...')
+                          ' %ss before retrying...', secs_to_sleep)
                 time.sleep(secs_to_sleep)
             except (ServerSideRequestThrottlingException,
                     NianticThrottlingException) as ex:
