@@ -1292,7 +1292,8 @@ def _censor_args_namespace(args, censored_tag, empty_tag):
         'hash_key',
         'trusted_proxies',
         'data_dir',
-        'locales_dir'
+        'locales_dir',
+        'shared_config'
     ]
 
     for field in fields_to_censor:
