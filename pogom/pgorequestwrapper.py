@@ -69,6 +69,10 @@ class PGoRequestWrapper:
                 if secs_till_reset > 0:
                     secs_to_sleep = secs_till_reset + random_sleep_secs
 
+                # Don't be too enthusiastic about sleeping. Failsafe against a
+                # bugged header, timezone problems, ...
+                secs_to_sleep = min(secs_to_sleep, 60)
+
                 # Shhhhhh. Only happy dreams now.
                 log.debug('Hashing quota exceeded. If this delays requests for'
                           ' too long, consider adding more RPM. Sleeping for'
