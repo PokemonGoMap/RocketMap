@@ -3328,7 +3328,7 @@ def database_migrate(db, old_ver):
             # drop trainer from gympokemon
             migrator.drop_column('gympokemon', 'trainer_name')
         )
-    
+
     if old_ver < 30:
         db.execute_sql(
             'ALTER TABLE `hashkeys` '
