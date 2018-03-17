@@ -22,6 +22,7 @@ from requests.packages.urllib3.util.retry import Retry
 from requests.adapters import HTTPAdapter
 from cHaversine import haversine
 from pprint import pformat
+from time import strftime
 from timeit import default_timer
 
 log = logging.getLogger(__name__)
@@ -411,8 +412,8 @@ def get_args():
                              'Default: 720, 0 to disable.'),
                        type=int, default=720)
     group.add_argument('-DCf', '--db-cleanup-forts',
-                       help=('Clear gyms and pokestops from database X days ' +
-                             'after last valid scan. ' +
+                       help=('Clear gyms and pokestops from database X hours '
+                             'after last valid scan. '
                              'Default: 0, 0 to disable.'),
                        type=int, default=0)
     parser.add_argument(
@@ -483,7 +484,11 @@ def get_args():
                         help=('Enable status page database update using ' +
                               'STATUS_NAME as main worker name.'))
     parser.add_argument('-hk', '--hash-key', default=None, action='append',
-                        help='Key for hash server')
+                        help='Key for hash server.')
+    parser.add_argument('-hs', '--hash-service', default='bossland', type=str,
+                        help=('Hash service name. Supports bossland and'
+                              ' devkat hashing.'),
+                        choices=['bossland', 'devkat'])
     parser.add_argument('-novc', '--no-version-check', action='store_true',
                         help='Disable API version check.',
                         default=False)
@@ -512,6 +517,13 @@ def get_args():
     parser.add_argument('--log-path',
                         help=('Defines directory to save log files to.'),
                         default='logs/')
+    parser.add_argument('--log-filename',
+                        help=('Defines the log filename to be saved.'
+                              ' Allows date formatting, and replaces <SN>'
+                              " with the instance's status name. Read the"
+                              ' python time module docs for details.'
+                              ' Default: %%Y%%m%%d_%%H%%M_<SN>.log.'),
+                        default='%Y%m%d_%H%M_<SN>.log'),
     parser.add_argument('--dump',
                         help=('Dump censored debug info about the ' +
                               'environment and auto-upload to ' +
@@ -552,6 +564,11 @@ def get_args():
     parser.set_defaults(DEBUG=False)
 
     args = parser.parse_args()
+
+    # Allow status name and date formatting in log filename.
+    args.log_filename = strftime(args.log_filename)
+    args.log_filename = args.log_filename.replace('<sn>', '<SN>')
+    args.log_filename = args.log_filename.replace('<SN>', args.status_name)
 
     if args.only_server:
         if args.location is None:
@@ -1232,9 +1249,10 @@ def check_output_catch(command):
         return result.strip()
 
 
-# Automatically censor all necessary fields. Lists will return
-# their length, all other items will return 'censored_tag'.
-def _censor_args_namespace(args, censored_tag):
+# Automatically censor all necessary fields. Lists will return their
+# length, all other items will return 'empty_tag' if they're empty
+# or 'censored_tag' if not.
+def _censor_args_namespace(args, censored_tag, empty_tag):
     fields_to_censor = [
         'accounts',
         'accounts_L30',
@@ -1257,6 +1275,7 @@ def _censor_args_namespace(args, censored_tag):
         'db',
         'proxy_file',
         'log_path',
+        'log_filename',
         'encrypt_lib',
         'ssl_certificate',
         'ssl_privatekey',
@@ -1275,7 +1294,10 @@ def _censor_args_namespace(args, censored_tag):
         'status_name',
         'status_page_password',
         'hash_key',
-        'trusted_proxies'
+        'trusted_proxies',
+        'data_dir',
+        'locales_dir',
+        'shared_config'
     ]
 
     for field in fields_to_censor:
@@ -1287,7 +1309,10 @@ def _censor_args_namespace(args, censored_tag):
             if isinstance(value, list):
                 args[field] = len(value)
             else:
-                args[field] = censored_tag
+                if args[field]:
+                    args[field] = censored_tag
+                else:
+                    args[field] = empty_tag
 
     return args
 
@@ -1295,7 +1320,8 @@ def _censor_args_namespace(args, censored_tag):
 # Get censored debug info about the environment we're running in.
 def get_censored_debug_info():
     CENSORED_TAG = '<censored>'
-    args = _censor_args_namespace(vars(get_args()), CENSORED_TAG)
+    EMPTY_TAG = '<empty>'
+    args = _censor_args_namespace(vars(get_args()), CENSORED_TAG, EMPTY_TAG)
 
     # Get git status.
     status = check_output_catch('git status')
