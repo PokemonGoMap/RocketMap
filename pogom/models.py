@@ -139,8 +139,10 @@ class Pokemon(LatLongModel):
                    oSwLng=None, oNeLat=None, oNeLng=None, exclude=None):
         now_date = datetime.utcnow()
         query = Pokemon.select()
+
         if exclude:
-          query = query.where(Pokemon.pokemon_id.not_in(list(exclude))
+            query = query.where(Pokemon.pokemon_id.not_in(list(exclude)))
+
         if not (swLat and swLng and neLat and neLng):
             query = (query
                      .where(Pokemon.disappear_time > now_date)

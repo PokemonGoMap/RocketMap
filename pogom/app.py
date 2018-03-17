@@ -311,20 +311,23 @@ class Pogom(Flask):
         if (request.args.get('pokemon', 'true') == 'true' and
                 not args.no_pokemon):
             if request.args.get('ids'):
-                ids = [int(x) for x in request.args.get('ids').split(',') if int(x) not in eids]
+                request_ids = request.args.get('ids').split(',')
+                ids = [int(x) for x in request_ids if int(x) not in eids]
                 d['pokemons'] = convert_pokemon_list(
                     Pokemon.get_active_by_id(ids, swLat, swLng, neLat, neLng))
             elif lastpokemon != 'true':
                 # If this is first request since switch on, load
                 # all pokemon on screen.
                 d['pokemons'] = convert_pokemon_list(
-                    Pokemon.get_active(swLat, swLng, neLat, neLng, exclude=eids))
+                    Pokemon.get_active(
+                        swLat, swLng, neLat, neLng, exclude=eids))
             else:
                 # If map is already populated only request modified Pokemon
                 # since last request time.
                 d['pokemons'] = convert_pokemon_list(
                     Pokemon.get_active(
-                        swLat, swLng, neLat, neLng, timestamp=timestamp, exclude=eids))
+                        swLat, swLng, neLat, neLng,
+                        timestamp=timestamp, exclude=eids))
                 if newArea:
                     # If screen is moved add newly uncovered Pokemon to the
                     # ones that were modified since last request time.
