@@ -302,14 +302,15 @@ class Pogom(Flask):
         d['oNeLat'] = neLat
         d['oNeLng'] = neLng
 
-        eids = set([])
-        if request.args.get('eids'):
-            # Exclude ids of Pokemon that are hidden.
-            for x in request.args.get('eids').split(','):
-                eids.add(int(x))
-
         if (request.args.get('pokemon', 'true') == 'true' and
                 not args.no_pokemon):
+
+            # Exclude ids of Pokemon that are hidden.
+            eids = set([])
+            if request.args.get('eids'):
+                for x in request.args.get('eids').split(','):
+                    eids.add(int(x))
+
             if request.args.get('ids'):
                 request_ids = request.args.get('ids').split(',')
                 ids = [int(x) for x in request_ids if int(x) not in eids]
