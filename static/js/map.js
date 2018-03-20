@@ -154,28 +154,28 @@ function createServiceWorkerReceiver() {
 }
 
 function download(name, settings) {
-    var a = document.createElement("a");
-    a.setAttribute("href", "data:text/plain;charset=utf-8," + encodeURIComponent(settings)),
-    a.setAttribute("download", name + "_" + moment().format("DD-MM-YYYY HH:mm")),
-    a.style.display = "none",
-    document.body.appendChild(a),
-    a.click(),
+    var a = document.createElement('a')
+    a.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(settings))
+    a.setAttribute('download', name + '_' + moment().format('DD-MM-YYYY HH:mm'))
+    a.style.display = 'none'
+    document.body.appendChild(a)
+    a.click()
     document.body.removeChild(a)
 }
 function upload(e) {
-    var t = JSON.parse(JSON.parse(e));
-    Object.keys(t).forEach(function(e) {
+    var t = JSON.parse(JSON.parse(e))
+    Object.keys(t).forEach(function (e) {
         localStorage.setItem(e, t[e])
-    }),
+    })
     window.location.reload()
 }
 function openFile(file) {
-    var t = file.target,
-	fr = new FileReader;
-    fr.onload = function() {
-        console.log(fr.result),
+    var t = file.target
+    var fr = new FileReader()
+    fr.onload = function () {
+        console.log(fr.result)
         upload(fr.result)
-    },
+    }
     fr.readAsText(t.files[0])
 }
 
