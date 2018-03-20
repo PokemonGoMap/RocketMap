@@ -153,7 +153,7 @@ function createServiceWorkerReceiver() {
     })
 }
 
-function download(name, settings) {
+function download(name, settings) { // eslint-disable-line no-unused-vars
     var a = document.createElement('a')
     a.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(settings))
     a.setAttribute('download', name + '_' + moment().format('DD-MM-YYYY HH:mm'))
@@ -169,7 +169,7 @@ function upload(e) {
     })
     window.location.reload()
 }
-function openFile(file) {
+function openFile(file) { // eslint-disable-line no-unused-vars
     var t = file.target
     var fr = new FileReader()
     fr.onload = function () {
