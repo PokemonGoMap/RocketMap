@@ -326,6 +326,8 @@ A `gym-info` event is sent whenever RocketMap fetches a gym's details.
 
 | Field                      | Details                                                  | Example      |
 | -------------------------- | -------------------------------------------------------- | ------------ |
+| `trainer_name`             | The name of the trainer that the Pokémon belongs to   | `"johndoe9876"` |
+| `trainer_level`            | The trainer's level<sup>1</sup>                          |         `34` |
 | `pokemon_uid`              | The Pokémon's unique ID                         | `4348002772281054056` |
 | `pokemon_id`               | The Pokémon's ID                                         |        `242` |
 | `cp`                       | The Pokémon's base CP                                    |       `2940` |
