@@ -461,8 +461,8 @@
           </div>
         </div>
       <div>
-        <center><button class="settings" onclick="downloadSettings('RocketMap', JSON.stringify(JSON.stringify(localStorage)))"><i class="fa fa-upload fa-fw"></i>Export Settings</button></center>
-        <center><input id="fileInput" type="file" style="display:none;" onchange="openSettingsFile(event)"> <button class="settings" onclick="document.getElementById('fileInput').click()"><i class="fa fa-download fa-fw"></i>Import Settings</button></center>
+        <center><button class="settings" onclick="downloadSettings('RocketMap', JSON.stringify(localStorage))"><i class="fa fa-upload fa-fw"></i>Export Settings</button></center>
+        <center><input id="settingsFileInput" type="file" style="display:none;" onchange="loadSettingsFile(event)"> <button class="settings" onclick="document.getElementById('settingsFileInput').click()"><i class="fa fa-download fa-fw"></i>Import Settings</button></center>
         <center><button class="settings" onclick="confirm('Are you sure you want to reset settings to default values?') ? (localStorage.clear(), window.location.reload()) : false"><i class="fa fa-refresh fa-fw"></i>Reset Settings</button></center>
       </div>
       </nav>

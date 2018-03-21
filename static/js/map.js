@@ -163,21 +163,13 @@ function downloadSettings(name, settings) { // eslint-disable-line no-unused-var
     document.body.removeChild(a)
 }
 
-function loadSettings(e) {
-    var t = JSON.parse(JSON.parse(e))
-    Object.keys(t).forEach(function (e) {
-        localStorage.setItem(e, t[e])
-    })
-    window.location.reload()
-}
-
-function openSettingsFile(file) { // eslint-disable-line no-unused-vars
-    var fr = new FileReader()
-    fr.onload = function () {
-        console.log(fr.result)
-        loadSettings(fr.result)
+function loadSettingsFile(file) { // eslint-disable-line no-unused-vars
+    var reader = new FileReader()
+    reader.onload = function () {
+        Object.assign(localStorage, JSON.parse(reader.result))
     }
-    fr.readAsText(file.target.files[0])
+    reader.readAsText(file.target.files[0])
+    window.location.reload()
 }
 
 function initMap() { // eslint-disable-line no-unused-vars
