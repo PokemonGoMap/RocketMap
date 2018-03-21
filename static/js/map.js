@@ -153,7 +153,7 @@ function createServiceWorkerReceiver() {
     })
 }
 
-function download(name, settings) { // eslint-disable-line no-unused-vars
+function downloadSettings(name, settings) { // eslint-disable-line no-unused-vars
     var a = document.createElement('a')
     a.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(settings))
     a.setAttribute('download', name + '_' + moment().format('DD-MM-YYYY HH:mm'))
@@ -162,21 +162,22 @@ function download(name, settings) { // eslint-disable-line no-unused-vars
     a.click()
     document.body.removeChild(a)
 }
-function upload(e) {
+
+function loadSettings(e) {
     var t = JSON.parse(JSON.parse(e))
     Object.keys(t).forEach(function (e) {
         localStorage.setItem(e, t[e])
     })
     window.location.reload()
 }
-function openFile(file) { // eslint-disable-line no-unused-vars
-    var t = file.target
+
+function openSettingsFile(file) { // eslint-disable-line no-unused-vars
     var fr = new FileReader()
     fr.onload = function () {
         console.log(fr.result)
-        upload(fr.result)
+        loadSettings(fr.result)
     }
-    fr.readAsText(t.files[0])
+    fr.readAsText(file.target.files[0])
 }
 
 function initMap() { // eslint-disable-line no-unused-vars
