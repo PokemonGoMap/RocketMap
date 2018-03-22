@@ -78,9 +78,9 @@ const audio = new Audio('static/sounds/ding.mp3')
 const cryFileTypes = ['wav', 'mp3']
 
 const genderType = ['♂', '♀', '⚲']
-const unownForm = ['unset', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '!', '?']
+const forms = ['unset', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '!', '?', '👤', '☀️', '☔️', '⛄️', '👤', '⚔️', '🛡️', '⚡️']
 const pokemonWithImages = [
-    2, 3, 5, 6, 8, 9, 11, 28, 31, 34, 38, 59, 62, 65, 68, 71, 73, 76, 82, 87, 89, 91, 94, 103, 105, 110, 112, 123, 124, 125, 126, 129, 131, 134, 135, 136, 137, 139, 143, 144, 145, 146, 150, 153, 156, 159, 160, 184, 221, 243, 244, 245, 248, 249, 250, 302, 303, 306, 320, 333, 359, 361, 382, 383, 384
+    2, 3, 5, 6, 8, 9, 11, 28, 31, 34, 38, 59, 62, 65, 68, 71, 73, 76, 80, 82, 87, 89, 91, 94, 103, 105, 110, 112, 121, 123, 124, 125, 126, 129, 131, 134, 135, 136, 137, 139, 142, 143, 144, 145, 146, 150, 153, 156, 159, 160, 184, 221, 243, 244, 245, 248, 249, 250, 302, 303, 306, 320, 333, 344, 359, 361, 382, 383, 384
 ]
 
 const excludedRaritiesList = [
@@ -92,16 +92,7 @@ const excludedRaritiesList = [
   ['common', 'uncommon', 'rare', 'very rare', 'ultra rare']
 ]
 
-const weatherTypes = ['none', 'clear', 'rain', 'partly_cloudy', 'cloudy', 'windy', 'snow', 'fog']
-
-function weatherImage(weatherCondition, timeOfDay) {
-    var weatherType = weatherTypes[weatherCondition]
-    if (timeOfDay && ((weatherCondition === 1) || (weatherCondition === 3))) {
-        return `weather_${weatherType}_${timeOfDay}.png`
-    } else {
-        return `weather_${weatherType}.png`
-    }
-}
+const weatherEmojis = [ '', '☀️', '☔️', '⛅', '☁️', '💨', '⛄️', '🌁' ]
 
 /*
  text place holders:
@@ -565,9 +556,6 @@ function pokemonLabel(item) {
     var cpMultiplier = item['cp_multiplier']
     var weatherBoostedCondition = item['weather_boosted_condition']
     var weatherDisplay = ''
-    var currentDate = new Date()
-    var currentHour = currentDate.getHours()
-    var timeOfDay = (currentHour >= 6 && currentHour < 19) ? 'day' : 'night'
     const showStats = Store.get('showPokemonStats')
 
     $.each(types, function (index, type) {
@@ -575,7 +563,7 @@ function pokemonLabel(item) {
     })
 
     if (weatherBoostedCondition) {
-        weatherDisplay = `<img src='static/images/weather/${weatherImage(weatherBoostedCondition, timeOfDay)}' style="width: 24px; vertical-align: middle;">`
+        weatherDisplay = `<span class="pokemon weather-boost">${weatherEmojis[weatherBoostedCondition]}</span>`
     }
 
     var details = ''
@@ -583,8 +571,8 @@ function pokemonLabel(item) {
     var contentstring = ''
     var formString = ''
 
-    if (id === 201 && form !== null && form > 0) {
-        formString += `(${unownForm[item['form']]})`
+    if (form !== null && form > 0 && forms.length > form) {
+        formString += `(${forms[item['form']]})`
     }
 
     if (id === 29 || id === 32) {
