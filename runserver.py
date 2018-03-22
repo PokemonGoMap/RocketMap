@@ -17,13 +17,16 @@ from flask_cors import CORS
 from flask_cache_bust import init_cache_busting
 
 from pogom.app import Pogom
+from pogom.accountManager import AccountManager
 from pogom.utils import (get_args, now, gmaps_reverse_geolocate,
                          log_resource_usage_loop, get_debug_dump_link,
-                         dynamic_loading_refresher, dynamic_rarity_refresher)
+                         dynamic_loading_refresher, dynamic_rarity_refresher,
+                         generate_instance_id, parse_accounts_csv)
 from pogom.altitude import get_gmaps_altitude
 
-from pogom.models import (init_database, create_tables, drop_tables,
-                          PlayerLocale, db_updater, clean_db_loop,
+from pogom.models import (Account, MainWorker, PlayerLocale,
+                          init_database, clean_db_loop,
+                          create_tables, drop_tables, db_updater,
                           verify_table_encoding, verify_database_schema)
 from pogom.webhook import wh_updater
 
@@ -263,11 +266,17 @@ def main():
             "You can't use no-server and only-server at the same time, silly.")
         sys.exit(1)
 
-    # Abort if status name is not valid.
-    regexp = re.compile('^([\w\s\-.]+)$')
-    if not regexp.match(args.status_name):
-        log.critical('Status name contains illegal characters.')
-        sys.exit(1)
+    # Generate a unique identifier for this instance.
+    generate_instance_id(args)
+
+    if not args.status_name:
+        args.status_name = str(os.getpid())
+    else:
+        # Abort if status name is not valid.
+        regexp = re.compile('^([\w\s\-.]+)$')
+        if not regexp.match(args.status_name):
+            log.critical('Status name contains illegal characters.')
+            sys.exit(1)
 
     # Stop if we're just looking for a debug dump.
     if args.dump:
@@ -400,7 +409,32 @@ def main():
             t.daemon = True
             t.start()
 
+    # Check MainWorker table to avoid running duplicate instances.
+    if MainWorker.get_by_instance(args.instance_id, 10):
+        log.critical('Detected a possible duplicate instance launch with ' +
+                     'ID %s. Please wait 10 seconds before restarting.',
+                     args.instance_id)
+        sys.exit(1)
+
+    # Clear all accounts from the database.
+    if args.clear_db_accounts:
+        Account.clear_all()
+
+    # Parse accounts from CSV file into the database.
+    if args.accounts_csv:
+        accounts = parse_accounts_csv(args.accounts_csv)
+        if not accounts:
+            log.critical('Found some errors in accounts CSV file: %s',
+                         args.accounts_csv)
+            sys.exit(1)
+        else:
+            Account.insert_new(accounts.values())
+
     if not args.only_server:
+        # Check if we are able to scan.
+        if not can_start_scanning(args):
+            sys.exit(1)
+
         # Speed limit.
         log.info('Scanning speed limit %s.',
                  'set to {} km/h'.format(args.kph)
@@ -412,6 +446,16 @@ def main():
         # Check if we are able to scan.
         if not can_start_scanning(args):
             sys.exit(1)
+
+        # Create account manager.
+        account_manager = AccountManager(
+            args, db_updates_queue, wh_updates_queue)
+
+        # Start account manager thread.
+        log.info('Starting account manager thread...')
+        t = Thread(target=account_manager.run_manager, name='account-manager')
+        t.daemon = True
+        t.start()
 
         initialize_proxies(args)
 
@@ -462,7 +506,7 @@ def main():
                 'Existing player locale has been retrieved from the DB.')
 
         # Gather the Pokemon!
-        argset = (args, new_location_queue, control_flags,
+        argset = (args, account_manager, new_location_queue, control_flags,
                   heartbeat, db_updates_queue, wh_updates_queue)
 
         log.debug('Starting a %s search thread', args.scheduler)
@@ -470,6 +514,11 @@ def main():
                                name='search-overseer', args=argset)
         search_thread.daemon = True
         search_thread.start()
+    else:
+        # Check if we are able to solve captchas.
+        if args.captcha_solving and not args.hash_key:
+            log.critical('Hash key is required for captcha solving. Exiting.')
+            sys.exit(1)
 
     if args.no_server:
         # This loop allows for ctrl-c interupts to work since flask won't be

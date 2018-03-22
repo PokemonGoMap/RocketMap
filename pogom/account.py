@@ -4,29 +4,29 @@
 import logging
 import time
 import random
-from threading import Lock
-from timeit import default_timer
 
 from pgoapi import PGoApi
 from pgoapi.exceptions import AuthException
 
 from .fakePogoApi import FakePogoApi
 from .pgoapiwrapper import PGoApiWrapper
-from .utils import in_radius, generate_device_info, distance
+from .utils import in_radius, generate_device_info
 from .proxy import get_new_proxy
+
 from .apiRequests import (send_generic_request, fort_details,
                           recycle_inventory_item, use_item_egg_incubator,
-                          release_pokemon, level_up_rewards, fort_search)
+                          release_pokemon, level_up_rewards, fort_search,
+                          AccountBannedException)
 
 log = logging.getLogger(__name__)
 
 
-class TooManyLoginAttempts(Exception):
-    pass
-
-
-class LoginSequenceFail(Exception):
-    pass
+# Keep track of different types of bans using a single field.
+class AccountBanned:
+    Clear = 0
+    Shadowban = 1
+    Temporary = 2
+    Permanent = 3
 
 
 # Create the API object that'll be used to scan.
@@ -69,7 +69,7 @@ def setup_api(args, status, account):
 
 
 # Use API to check the login status, and retry the login if possible.
-def check_login(args, account, api, proxy_url):
+def check_login(account_manager, status, api, account):
     # Logged in? Enough time left? Cool!
     if api._auth_provider and api._auth_provider._access_token:
         remaining_time = api._auth_provider._access_token_expiry - time.time()
@@ -78,13 +78,19 @@ def check_login(args, account, api, proxy_url):
             log.debug(
                 'Credentials remain valid for another %f seconds.',
                 remaining_time)
-            return
+            return True
 
     # Try to login. Repeat a few times, but don't get stuck here.
+    status['message'] = 'Logging in Pokemon Go with account {}...'.format(
+        account['username'])
+    log.info(status['message'])
     num_tries = 0
+    login_delay = account_manager.args.login_delay
+    login_retries = account_manager.args.login_retries
+    proxy_url = status['proxy_url']
 
     # One initial try + login_retries.
-    while num_tries < (args.login_retries + 1):
+    while num_tries < (login_retries + 1):
         try:
             if proxy_url:
                 api.set_authentication(
@@ -101,27 +107,52 @@ def check_login(args, account, api, proxy_url):
             break
         except AuthException:
             num_tries += 1
-            log.error(
-                ('Failed to login to Pokemon Go with account %s. ' +
-                 'Trying again in %g seconds.'),
-                account['username'], args.login_delay)
-            time.sleep(args.login_delay)
+            status['message'] = (
+                'Failed attempt #{} to login to Pokemon Go with account {}. ' +
+                'Trying again in {} seconds.').format(
+                    num_tries, account['username'], login_delay)
+            log.error(status['message'])
+            time.sleep(login_delay)
 
-    if num_tries > args.login_retries:
-        log.error(
-            ('Failed to login to Pokemon Go with account %s in ' +
-             '%d tries. Giving up.'),
-            account['username'], num_tries)
-        raise TooManyLoginAttempts('Exceeded login attempts.')
+    if num_tries > login_retries:
+        account['failed'] += 1
+        failed_count = num_tries * account['failed']
+        if account['failed'] < account_manager.args.account_max_failures:
+            status['message'] = (
+                'Unable to login to Pokemon Go with account {}. ' +
+                'Failed {} login attempts on {} separate occasions.').format(
+                    account['username'], failed_count, account['failed'])
 
+            account_manager.failed_account(account, 'login')
+        else:
+            status['message'] = (
+                'Account {} assumed permanently banned. ' +
+                'Failed {} login attempts on {} separate occasions.').format(
+                    account['username'], failed_count, account['failed'])
+
+            account['banned'] = AccountBanned.Permanent
+            account_manager.failed_account(account, 'permanent ban')
+
+        log.error(status['message'])
+        return False
+
+    account['failed'] = 0
     time.sleep(random.uniform(2, 4))
 
     # Simulate login sequence.
-    rpc_login_sequence(args, api, account)
+    if not rpc_login_sequence(account_manager, status, api, account):
+        fail_reason = 'exception'
+        if account['banned'] == AccountBanned.Temporary:
+            fail_reason = 'temporary ban'
+
+        account_manager.failed_account(account, fail_reason)
+        return False
+
+    return True
 
 
 # Simulate real app via login sequence.
-def rpc_login_sequence(args, api, account):
+def rpc_login_sequence(account_manager, status, api, account):
     total_req = 0
     app_version = PGoApi.get_api_version()
 
@@ -135,20 +166,21 @@ def rpc_login_sequence(args, api, account):
         total_req += 1
         time.sleep(random.uniform(.43, .97))
     except Exception as e:
-        log.exception('Login for account %s failed.'
-                      + ' Exception in call request: %s.',
-                      account['username'],
-                      e)
-        raise LoginSequenceFail('Failed during empty request in login'
-                                + ' sequence for account {}.'.format(
-                                    account['username']))
+        log.exception('Login sequence for account %s failed. ' +
+                      'Exception in call request: %s.',
+                      account['username'], e)
+
+        status['message'] = (
+            'Account {} failed RPC login sequence step #1.').format(
+                account['username'])
+        return False
 
     # 2 - Get player information.
     log.debug('Fetching player information...')
 
     try:
         req = api.create_request()
-        req.get_player(player_locale=args.player_locale)
+        req.get_player(player_locale=account_manager.args.player_locale)
         resp = req.call(False)
         parse_get_player(account, resp)
 
@@ -158,18 +190,17 @@ def rpc_login_sequence(args, api, account):
             log.warning('Account %s has received a warning.',
                         account['username'])
     except Exception as e:
-        log.exception('Login for account %s failed. Exception in ' +
-                      'player request: %s.',
-                      account['username'],
-                      e)
-        raise LoginSequenceFail('Failed while retrieving player information in'
-                                + ' login sequence for account {}.'.format(
-                                    account['username']))
+        log.exception('Login sequence for account %s failed. ' +
+                      'Exception in player request: %s.',
+                      account['username'], e)
+
+        status['message'] = (
+            'Account {} failed RPC login sequence step #2.').format(
+                account['username'])
+        return False
 
     # 3 - Get remote config version.
     log.debug('Downloading remote config version...')
-    old_config = account.get('remote_config', {})
-
     try:
         req = api.create_request()
         req.download_remote_config_version(
@@ -181,17 +212,30 @@ def rpc_login_sequence(args, api, account):
 
         total_req += 1
         time.sleep(random.uniform(.53, 1.1))
+    except AccountBannedException as e:
+        status['message'] = (
+            'Account {} is temporarily banned.').format(account['username'])
+        log.error(status['message'])
+        account['banned'] = AccountBanned.Temporary
+
+        return False
     except Exception as e:
-        log.exception('Error while downloading remote config: %s.', e)
-        raise LoginSequenceFail('Failed while getting remote config version in'
-                                + ' login sequence for account {}.'.format(
-                                    account['username']))
+        log.exception('Login sequence for account %s failed. ' +
+                      'Exception downloading remote config: %s.',
+                      account['username'], e)
+
+        status['message'] = (
+            'Account {} failed RPC login sequence step #3.').format(
+                account['username'])
+        return False
+
+    remote_config = account.get('remote_config', {})
 
     # 4 - Get asset digest.
-    log.debug('Fetching asset digest...')
-    config = account.get('remote_config', {})
-
-    if config.get('asset_time', 0) > old_config.get('asset_time', 0):
+    if remote_config.get('asset_time', 0) <= account['time_assets']:
+        log.debug('Skipped fetching asset digest.')
+    else:
+        log.debug('Fetching asset digest...')
         i = random.randint(0, 3)
         req_count = 0
         result = 2
@@ -234,9 +278,10 @@ def rpc_login_sequence(args, api, account):
                       req_count)
 
     # 5 - Get item templates.
-    log.debug('Fetching item templates...')
-
-    if config.get('template_time', 0) > old_config.get('template_time', 0):
+    if remote_config.get('template_time', 0) <= account['time_templates']:
+        log.debug('Skipped fetching item templates.')
+    else:
+        log.debug('Fetching item templates...')
         i = random.randint(0, 3)
         req_count = 0
         result = 2
@@ -276,8 +321,10 @@ def rpc_login_sequence(args, api, account):
 
     # Check tutorial completion.
     if not all(x in account['tutorials'] for x in (0, 1, 3, 4, 7)):
-        log.info('Completing tutorial steps for %s.', account['username'])
-        complete_tutorial(args, api, account)
+        status['message'] = (
+            'Completing tutorial steps for {}.').format(account['username'])
+        log.info(status['message'])
+        complete_tutorial(api, account, account_manager.args.player_locale)
     else:
         log.debug('Account %s already did the tutorials.', account['username'])
         # 6 - Get player profile.
@@ -289,16 +336,18 @@ def rpc_login_sequence(args, api, account):
             total_req += 1
             time.sleep(random.uniform(.2, .3))
         except Exception as e:
-            log.exception('Login for account %s failed. Exception occurred ' +
-                          'while fetching player profile: %s.',
-                          account['username'],
-                          e)
-            raise LoginSequenceFail('Failed while getting player profile in'
-                                    + ' login sequence for account {}.'.format(
-                                        account['username']))
+            log.exception('Login sequence for account %s failed. ' +
+                          'Exception getting player profile: %s.',
+                          account['username'], e)
 
+            status['message'] = (
+                'Account {} failed RPC login sequence step #6.').format(
+                    account['username'])
+            return False
+
+    # 7 - Make an empty request to retrieve store items.
     log.debug('Retrieving Store Items...')
-    try:  # 7 - Make an empty request to retrieve store items.
+    try:
         req = api.create_request()
         req.get_store_items()
         req.call(False)
@@ -306,13 +355,18 @@ def rpc_login_sequence(args, api, account):
         total_req += 1
         time.sleep(random.uniform(.6, 1.1))
     except Exception as e:
-        log.exception('Login for account %s failed. Exception in ' +
-                      'retrieving Store Items: %s.', account['username'],
-                      e)
-        raise LoginSequenceFail('Failed during login sequence.')
+        log.exception('Login sequence for account %s failed. ' +
+                      'Exception retrieving store items: %s.',
+                      account['username'], e)
 
+        status['message'] = (
+            'Account {} failed RPC login sequence step #7.').format(
+                account['username'])
+        return False
+
+    # 8 - Make an empty request to fetch all News.
     log.debug('Fetching News...')
-    try:  # 8 - Make an empty request to fetch all News.
+    try:
         req = api.create_request()
         req.fetch_all_news()
         send_generic_request(req, account, settings=True)
@@ -320,14 +374,17 @@ def rpc_login_sequence(args, api, account):
         total_req += 1
         time.sleep(random.uniform(.45, .7))
     except Exception as e:
-        log.exception('Login for account %s failed. Exception while ' +
-                      'fetching all news: %s.', account['username'],
-                      e)
-        raise LoginSequenceFail('Failed during login sequence.')
+        log.exception('Login sequence for account %s failed. ' +
+                      'Exception fetching all news: %s.',
+                      account['username'], e)
+
+        status['message'] = (
+            'Account {} failed RPC login sequence step #8.').format(
+                account['username'])
+        return False
 
     # 9 - Check if there are level up rewards to claim.
     log.debug('Checking if there are level up rewards to claim...')
-
     try:
         req = api.create_request()
         req.level_up_rewards(level=account['level'])
@@ -336,17 +393,19 @@ def rpc_login_sequence(args, api, account):
         total_req += 1
         time.sleep(random.uniform(.45, .7))
     except Exception as e:
-        log.exception('Login for account %s failed. Exception occurred ' +
-                      'while fetching level-up rewards: %s.',
-                      account['username'],
-                      e)
-        raise LoginSequenceFail('Failed while getting level-up rewards in'
-                                + ' login sequence for account {}.'.format(
-                                    account['username']))
+        log.exception('Login sequence for account %s failed. ' +
+                      'Exception fetching level-up rewards: %s.',
+                      account['username'], e)
 
-    log.info('RPC login sequence for account %s successful with %s requests.',
-             account['username'],
-             total_req)
+        status['message'] = (
+            'Account {} failed RPC login sequence step #9.').format(
+                account['username'])
+        return False
+
+    status['message'] = (
+            'Login RPC sequence for {} successful with {} requests.'.format(
+                account['username'], total_req))
+    log.info(status['message'])
 
     time.sleep(random.uniform(3, 5))
 
@@ -358,12 +417,13 @@ def rpc_login_sequence(args, api, account):
         send_generic_request(req, account)
 
     time.sleep(random.uniform(10, 20))
+    return True
 
 
 # Complete minimal tutorial steps.
 # API argument needs to be a logged in API instance.
 # TODO: Check if game client bundles these requests, or does them separately.
-def complete_tutorial(args, api, account):
+def complete_tutorial(api, account, player_locale):
     tutorial_state = account['tutorials']
     if 0 not in tutorial_state:
         time.sleep(random.uniform(1, 5))
@@ -374,7 +434,7 @@ def complete_tutorial(args, api, account):
 
         time.sleep(random.uniform(0.5, 0.6))
         req = api.create_request()
-        req.get_player(player_locale=args.player_locale)
+        req.get_player(player_locale=player_locale)
         send_generic_request(req, account, buddy=False, inbox=False)
 
     if 1 not in tutorial_state:
@@ -424,7 +484,7 @@ def complete_tutorial(args, api, account):
 
         time.sleep(random.uniform(0.5, 0.6))
         req = api.create_request()
-        req.get_player(player_locale=args.player_locale)
+        req.get_player(player_locale=player_locale)
         send_generic_request(req, account, inbox=False)
 
     if 4 not in tutorial_state:
@@ -436,7 +496,7 @@ def complete_tutorial(args, api, account):
 
         time.sleep(0.1)
         req = api.create_request()
-        req.get_player(player_locale=args.player_locale)
+        req.get_player(player_locale=player_locale)
         send_generic_request(req, account, inbox=False)
 
         time.sleep(random.uniform(1, 1.3))
@@ -461,13 +521,11 @@ def complete_tutorial(args, api, account):
 
 def reset_account(account):
     account['start_time'] = time.time()
-    account['warning'] = None
     account['tutorials'] = []
     account['items'] = {}
     account['pokemons'] = {}
     account['incubators'] = []
     account['eggs'] = []
-    account['level'] = 0
     account['spins'] = 0
     account['session_spins'] = 0
     account['walked'] = 0.0
@@ -498,34 +556,40 @@ def pokestop_spinnable(fort, step_location):
     return in_range and not pause_needed
 
 
-def spin_pokestop(api, account, args, fort, step_location):
-    if not can_spin(account, args.account_max_spins):
+def spin_pokestop(account_manager, status, api, account, fort):
+    if not can_spin(account, account_manager.args.account_max_spins):
         log.warning('Account %s has reached its Pokestop spinning limits.',
                     account['username'])
         return False
     # Set 50% Chance to spin a Pokestop.
     if random.random() > 0.5 or account['level'] == 1:
+        location = (account['latitude'], account['longitude'])
         time.sleep(random.uniform(0.8, 1.8))
         fort_details(api, account, fort)
         time.sleep(random.uniform(0.8, 1.8))  # Don't let Niantic throttle.
-        response = fort_search(api, account, fort, step_location)
+        response = fort_search(api, account, fort, location)
         time.sleep(random.uniform(2, 4))  # Don't let Niantic throttle.
 
         # Check for reCaptcha.
-        if 'CHECK_CHALLENGE' in response['responses']:
-            captcha_url = response[
-                'responses']['CHECK_CHALLENGE'].challenge_url
-            if len(captcha_url) > 1:
-                log.debug('Account encountered a reCaptcha.')
-                return False
+        captcha = account_manager.handle_captcha(
+            account, status, api, response)
+        if captcha['found'] and captcha['failed']:
+            # Note: Account was removed from rotation.
+            return False
+        elif captcha['found']:
+            # Make another fort search request.
+            response = fort_search(api, account, fort, location)
+
+        if not response or 'FORT_SEARCH' not in response['responses']:
+            log.error('Failed to spin a Pokestop.')
+            return False
 
         spin_result = response['responses']['FORT_SEARCH'].result
         if spin_result == 1:
-            log.info('Successful Pokestop spin with %s.',
-                     account['username'])
+            log.info('Successful Pokestop spin with %s.', account['username'])
             # Update account stats and clear inventory if necessary.
             parse_level_up_rewards(api, account)
-            clear_inventory(api, account)
+            clear_inventory(account_manager, status, api, account)
             account['session_spins'] += 1
             incubate_eggs(api, account)
             return True
@@ -535,13 +599,12 @@ def spin_pokestop(api, account, args, fort, step_location):
             log.debug('Failed to spin Pokestop. Has recently been spun.')
         elif spin_result == 4:
             log.debug('Failed to spin Pokestop. Inventory is full.')
-            clear_inventory(api, account)
+            clear_inventory(account_manager, status, api, account)
         elif spin_result == 5:
             log.debug('Maximum number of Pokestops spun for this day.')
         else:
-            log.debug(
-                'Failed to spin a Pokestop. Unknown result %d.',
-                spin_result)
+            log.error('Failed to spin a Pokestop. Unknown result %d.',
+                      spin_result)
 
     return False
 
@@ -555,7 +618,7 @@ def parse_get_player(account, api_response):
         account['buddy'] = player_data.buddy_pokemon.id
 
 
-def clear_inventory(api, account):
+def clear_inventory(account_manager, status, api, account):
     items = [(1, 'Pokeball'), (2, 'Greatball'), (3, 'Ultraball'),
              (101, 'Potion'), (102, 'Super Potion'), (103, 'Hyper Potion'),
              (104, 'Max Potion'),
@@ -572,24 +635,31 @@ def clear_inventory(api, account):
             release_ids.remove(account['buddy'])
         # Don't let Niantic throttle.
         time.sleep(random.uniform(2, 4))
-        release_p_response = release_pokemon(api, account, 0, release_ids)
+        response = release_pokemon(api, account, 0, release_ids)
 
-        if 'CHECK_CHALLENGE' in release_p_response['responses']:
-            captcha_url = release_p_response[
-                'responses']['CHECK_CHALLENGE'].challenge_url
-            if len(captcha_url) > 1:
-                log.info('Account encountered a reCaptcha.')
-                return False
+        # Check for reCaptcha.
+        captcha = account_manager.handle_captcha(
+            account, status, api, response)
+        if captcha['found'] and captcha['failed']:
+            # Note: Account was removed from rotation.
+            return False
+        elif captcha['found']:
+            # Make another release pokemon request.
+            response = release_pokemon(api, account, 0, release_ids)
 
-        release_response = release_p_response['responses']['RELEASE_POKEMON']
-        release_result = release_response.result
+        if not response or 'RELEASE_POKEMON' not in response['responses']:
+            log.error('Failed to release Pokemon.')
+            return False
+
+        release_result = response['responses']['RELEASE_POKEMON'].result
 
         if release_result == 1:
             log.info('Sucessfully Released %s Pokemon', len(release_ids))
             for p_id in release_ids:
                 account['pokemons'].pop(p_id, None)
         else:
-            log.error('Failed to release Pokemon.')
+            log.error('Failed to release Pokemon. Unknown result %d.',
+                      release_result)
 
     for item_id, item_name in items:
         item_count = account['items'].get(item_id, 0)
@@ -601,26 +671,31 @@ def clear_inventory(api, account):
             time.sleep(random.uniform(2, 4))
             resp = recycle_inventory_item(api, account, item_id, drop_count)
 
-            if 'CHECK_CHALLENGE' in resp['responses']:
-                captcha_url = resp[
-                    'responses']['CHECK_CHALLENGE'].challenge_url
-                if len(captcha_url) > 1:
-                    log.info('Account encountered a reCaptcha.')
-                    return False
+            # Check for reCaptcha.
+            captcha = account_manager.handle_captcha(
+                account, status, api, resp)
+            if captcha['found'] and captcha['failed']:
+                # Note: Account was removed from rotation.
+                return False
+            elif captcha['found']:
+                # Make another release inventory item request.
+                resp = recycle_inventory_item(
+                    api, account, item_id, drop_count)
 
-            clear_response = resp['responses']['RECYCLE_INVENTORY_ITEM']
-            clear_result = clear_response.result
+            if not resp or 'RECYCLE_INVENTORY_ITEM' not in resp['responses']:
+                log.error('Failed to clear inventory items.')
+                return False
+
+            clear_result = resp['responses']['RECYCLE_INVENTORY_ITEM'].result
             if clear_result == 1:
-                log.info('Clearing %s %ss succeeded.', drop_count,
-                         item_name)
+                log.info('Clearing %s %ss succeeded.', drop_count, item_name)
             elif clear_result == 2:
                 log.debug('Not enough items to clear, parsing failed.')
             elif clear_result == 3:
                 log.debug('Tried to recycle incubator, parsing failed.')
             else:
-                log.warning('Failed to clear inventory.')
-
-            log.debug('Recycled inventory: \n\r{}'.format(clear_result))
+                log.error('Failed to clear inventory. Unknown result %d.',
+                          clear_result)
 
     return
 
@@ -656,90 +731,3 @@ def parse_level_up_rewards(api, account):
     else:
         log.error('Error collecting rewards of account %s.',
                   account['username'])
-
-
-# The AccountSet returns a scheduler that cycles through different
-# sets of accounts (e.g. L30). Each set is defined at runtime, and is
-# (currently) used to separate regular accounts from L30 accounts.
-# TODO: Migrate the old account Queue to a real AccountScheduler, preferably
-# handled globally via database instead of per instance.
-# TODO: Accounts in the AccountSet are exempt from things like the
-# account recycler thread. We could've hardcoded support into it, but that
-# would have added to the amount of ugly code. Instead, we keep it as is
-# until we have a proper account manager.
-class AccountSet(object):
-
-    def __init__(self, kph):
-        self.sets = {}
-
-        # Scanning limits.
-        self.kph = kph
-
-        # Thread safety.
-        self.next_lock = Lock()
-
-    # Set manipulation.
-    def create_set(self, name, values=None):
-        if values is None:
-            values = []
-        if name in self.sets:
-            raise Exception('Account set ' + name + ' is being created twice.')
-
-        self.sets[name] = values
-
-    # Release an account back to the pool after it was used.
-    def release(self, account):
-        if 'in_use' not in account:
-            log.error('Released account %s back to the AccountSet,'
-                      + " but it wasn't locked.",
-                      account['username'])
-        else:
-            account['in_use'] = False
-
-    # Get next account that is ready to be used for scanning.
-    def next(self, set_name, coords_to_scan):
-        # Yay for thread safety.
-        with self.next_lock:
-            # Readability.
-            account_set = self.sets[set_name]
-
-            # Loop all accounts for a good one.
-            now = default_timer()
-
-            for i in range(len(account_set)):
-                account = account_set[i]
-
-                # Make sure it's not in use.
-                if account.get('in_use', False):
-                    continue
-
-                # Make sure it's not captcha'd.
-                if account.get('captcha', False):
-                    continue
-
-                # Check if we're below speed limit for account.
-                last_scanned = account.get('last_scanned', False)
-
-                if last_scanned and self.kph > 0:
-                    seconds_passed = now - last_scanned
-                    old_coords = account.get('last_coords', coords_to_scan)
-
-                    distance_m = distance(old_coords, coords_to_scan)
-
-                    cooldown_time_sec = distance_m / self.kph * 3.6
-
-                    # Not enough time has passed for this one.
-                    if seconds_passed < cooldown_time_sec:
-                        continue
-
-                # We've found an account that's ready.
-                account['last_scanned'] = now
-                account['last_coords'] = coords_to_scan
-                account['in_use'] = True
-
-                return account
-
-        # TODO: Instead of returning False, return the amount of min. seconds
-        # the instance needs to wait until the first account becomes available,
-        # so it doesn't need to keep asking if we know we need to wait.
-        return False

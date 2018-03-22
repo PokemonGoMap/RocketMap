@@ -63,7 +63,7 @@ function addMainWorker(hash) {
 }
 
 function processMainWorker(i, worker) {
-    var hash = hashFnv32a(worker['worker_name'], true)
+    var hash = worker['instance_id']
 
     if ($('#worker_' + hash).length === 0) {
         addMainWorker(hash)
@@ -81,8 +81,9 @@ function addWorker(mainWorkerHash, workerHash) {
        <div id="username_${workerHash}" class="status_cell"/>
        <div id="success_${workerHash}"  class="status_cell"/>
        <div id="fail_${workerHash}"     class="status_cell"/>
-       <div id="no_items_${workerHash}"  class="status_cell"/>
        <div id="skip_${workerHash}"     class="status_cell"/>
+       <div id="no_items_${workerHash}" class="status_cell"/>
+       <div id="no_rares_${workerHash}" class="status_cell"/>
        <div id="captchas_${workerHash}" class="status_cell"/>
        <div id="lastmod_${workerHash}"  class="status_cell"/>
        <div id="message_${workerHash}"  class="status_cell"/>
@@ -110,7 +111,7 @@ function processWorker(i, worker) {
     const hash = hashFnv32a(worker['username'], true)
     var mainWorkerHash
     if (showWorkers && showInstances) {
-        mainWorkerHash = hashFnv32a(worker['worker_name'], true)
+        mainWorkerHash = worker['instance_id']
         if ($('#table_' + mainWorkerHash).length === 0) {
             return
         }
@@ -130,8 +131,9 @@ function processWorker(i, worker) {
     $('#username_' + hash).html(worker['username'])
     $('#success_' + hash).html(worker['success'])
     $('#fail_' + hash).html(worker['fail'])
-    $('#no_items_' + hash).html(worker['no_items'])
     $('#skip_' + hash).html(worker['skip'])
+    $('#no_items_' + hash).html(worker['no_items'])
+    $('#no_rares_' + hash).html(worker['no_rares'])
     $('#captchas_' + hash).html(worker['captcha'])
     $('#lastmod_' + hash).html(lastModified)
     $('#message_' + hash).html(worker['message'])
@@ -264,10 +266,13 @@ function addTable(hash) {
            Fail
          </div>
          <div class="status_cell">
+           Skipped
+         </div>
+         <div class="status_cell">
            No Items
          </div>
          <div class="status_cell">
-           Skipped
+           No Rares
          </div>
          <div class="status_cell">
            Captchas

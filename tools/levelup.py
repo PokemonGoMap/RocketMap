@@ -13,14 +13,21 @@ from enum import Enum
 sys.path.append('.')
 from pogom.schedulers import KeyScheduler  # noqa: E402
 from pogom.account import (check_login, setup_api, pokestop_spinnable,
-                           spin_pokestop, TooManyLoginAttempts)  # noqa: E402
+                           spin_pokestop)  # noqa: E402
 from pogom.utils import get_args, gmaps_reverse_geolocate  # noqa: E402
-from pogom.apiRequests import (get_map_objects as gmo,
-                               AccountBannedException)  # noqa: E402
+from pogom.apiRequests import get_map_objects as gmo  # noqa: E402
 from runserver import (set_log_and_verbosity, startup_db,
                        extract_coordinates)  # noqa: E402
 from pogom.proxy import initialize_proxies  # noqa: E402
 from pogom.models import PlayerLocale  # noqa: E402
+
+
+class FakeAccountManager(object):
+    def __init__(self, args):
+        self.args = args
+
+    def failed_account(self, account, reason):
+        pass
 
 
 class FakeQueue:
@@ -60,7 +67,7 @@ def get_location_forts(api, account, location):
     return (None, forts)
 
 
-def level_up_account(args, location, accounts, errors):
+def level_up_account(account_manager, args, location, accounts, errors):
     while True:
         try:
             # Loop the queue.
@@ -75,7 +82,7 @@ def level_up_account(args, location, accounts, errors):
                 'message': 'Creating thread...',
                 'success': 0,
                 'fail': 0,
-                'noitems': 0,
+                'no_items': 0,
                 'skip': 0,
                 'captcha': 0,
                 'username': '',
@@ -88,7 +95,15 @@ def level_up_account(args, location, accounts, errors):
 
             api.set_position(*location)
             api.activate_hash_server(key)
-            check_login(args, account, api, status['proxy_url'])
+
+            if not check_login(account_manager, status, api, account):
+                if account['banned'] != 0:
+                    errors[ErrorType.banned].append(account)
+                else:
+                    errors[ErrorType.login_error].append(account)
+
+                accounts.task_done()
+                continue
 
             log.info('Logged in account %s, level %d.', account['username'],
                      account['level'])
@@ -120,10 +135,6 @@ def level_up_account(args, location, accounts, errors):
             log.info('Spun Pokestop with account %s, level %d.',
                      account['username'],
                      account['level'])
-        except TooManyLoginAttempts:
-            errors[ErrorType.login_error].append(account)
-        except AccountBannedException:
-            errors[ErrorType.banned].append(account)
         except Exception as e:
             if error_count < 2:
                 log.exception('Exception in worker: %s. Retrying.', e)
@@ -144,6 +155,7 @@ if not args.hash_key:
     sys.exit(1)
 
 fake_queue = FakeQueue()
+account_manager = FakeAccountManager(args)
 key_scheduler = KeyScheduler(args.hash_key, fake_queue)
 position = extract_coordinates(args.location)
 args.player_locale = PlayerLocale.get_locale(args.location)
@@ -170,7 +182,7 @@ for i in range(0, args.workers):
     log.debug('Starting level-up worker thread %d...', i)
     t = Thread(target=level_up_account,
                name='worker-{}'.format(i),
-               args=(args, position, account_queue, errors))
+               args=(account_manager, args, position, account_queue, errors))
     t.daemon = True
     t.start()
 

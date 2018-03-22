@@ -64,19 +64,26 @@ def get_args():
                         is_config_file=True, help='Set configuration file')
     parser.add_argument('-scf', '--shared-config',
                         is_config_file=True, help='Set a shared config')
-    parser.add_argument('-a', '--auth-service', type=str.lower,
-                        action='append', default=[],
-                        help=('Auth Services, either one for all accounts ' +
-                              'or one per account: ptc or google. Defaults ' +
-                              'all to ptc.'))
-    parser.add_argument('-u', '--username', action='append', default=[],
-                        help='Usernames, one per account.')
-    parser.add_argument('-p', '--password', action='append', default=[],
-                        help=('Passwords, either single one for all ' +
-                              'accounts or one per account.'))
     parser.add_argument('-w', '--workers', type=int,
-                        help=('Number of search worker threads to start. ' +
-                              'Defaults to the number of accounts specified.'))
+                        help='Number of search worker threads to start.')
+    parser.add_argument('-wht', '--workers-holding-time', type=int,
+                        default=300,
+                        help=('Keep excess scanner accounts allocated ' +
+                              'for at least X seconds. 0 to disable.'))
+    parser.add_argument('-hw', '--hlvl-workers', type=int, default=0,
+                        help=('Number of high-level accounts to allocate.' +
+                              'Default is 0: enable "on-the-fly" allocation.'))
+    parser.add_argument('-hwm', '--hlvl-workers-max', type=int, default=2,
+                        help=('Maximum number of high-level accounts that ' +
+                              'can be allocated "on-the-fly". Default is 2.'))
+    parser.add_argument('-hwht', '--hlvl-workers-holding-time', type=int,
+                        default=120,
+                        help=('Keep excess high-level accounts allocated ' +
+                              'for at least X seconds. 0 to disable.'))
+    parser.add_argument('-amf', '--account-max-failures', type=int,
+                        default=5,
+                        help=('Consecutive login failures required to ' +
+                              'flag the account as permanently banned.'))
     parser.add_argument('-asi', '--account-search-interval', type=int,
                         default=0,
                         help=('Seconds for accounts to search before ' +
@@ -85,14 +92,17 @@ def get_args():
                         default=7200,
                         help=('Seconds for accounts to rest when they fail ' +
                               'or are switched out.'))
-    parser.add_argument('-ac', '--accountcsv',
-                        help=('Load accounts from CSV file containing ' +
-                              '"auth_service,username,password" lines.'))
-    parser.add_argument('-hlvl', '--high-lvl-accounts',
-                        help=('Load high level accounts from CSV file '
-                              + ' containing '
-                              + '"auth_service,username,password"'
-                              + ' lines.'))
+    parser.add_argument('-cdba', '--clear-db-accounts',
+                        help=('Deletes the existing accounts in the ' +
+                              'database before starting the Scanners.'),
+                        action='store_true', default=False)
+    parser.add_argument('-ac', '--accounts-csv',
+                        help=('Load accounts from CSV file containing one ' +
+                              'account per line with format:' +
+                              '<ptc/google>,<username>,<password>[,<level>]'))
+    parser.add_argument('-sh', '--scan-hlvl',
+                        help='Use high-level accounts as regular accounts.',
+                        action='store_true', default=False)
     parser.add_argument('-bh', '--beehive',
                         help=('Use beehive configuration for multiple ' +
                               'accounts, one account per hex.  Make sure ' +
@@ -171,6 +181,24 @@ def get_args():
                         help=('Time delay between encounter pokemon ' +
                               'in scan threads.'),
                         type=float, default=1)
+    parser.add_argument('-er', '--encounter-retries',
+                        help='Number of attempts to retry a failed encounter.',
+                        type=int, default=5)
+    parser.add_argument('-sbs', '--shadow-ban-scan',
+                        help='Allow shadow banned accounts to keep scanning.',
+                        action='store_true', default=False)
+    common_list = parser.add_mutually_exclusive_group()
+    common_list.add_argument('-cpl', '--common-pokemon-list', action='append',
+                             default=[16, 19, 23, 27, 29, 32, 43, 46, 52, 54,
+                                      60, 69, 77, 81, 98, 118, 120, 129, 177,
+                                      183, 187, 191, 194, 209, 218, 293, 304,
+                                      320, 325, 333, 339],
+                             help=('List of Pokemon IDs considered common. ' +
+                                   'Used to detect shadow banned accounts.'))
+    common_list.add_argument('-cplf', '--common-pokemon-list-file', default='',
+                             help=('File containing a list of Pokemon IDs ' +
+                                   'considered common. Used to detect ' +
+                                   'shadow banned accounts.'))
     parser.add_argument('-ignf', '--ignorelist-file',
                         default='', help='File containing a list of ' +
                         'Pokemon IDs to ignore, one line per ID. ' +
@@ -214,6 +242,10 @@ def get_args():
                         help=('Number of times to retry the login before ' +
                               'refreshing a thread.'),
                         type=int, default=3)
+    parser.add_argument('-lt', '--login-timeout',
+                        help=('Time, in hours, an account must wait after ' +
+                              'failing to login, 0 to disable. Default: 8'),
+                        type=int, default=8)
     parser.add_argument('-mf', '--max-failures',
                         help=('Maximum number of failures to parse ' +
                               'locations before an account will go into a ' +
@@ -482,7 +514,7 @@ def get_args():
     parser.add_argument('-slt', '--stats-log-timer',
                         help='In log view, list per hr stats every X seconds',
                         type=int, default=0)
-    parser.add_argument('-sn', '--status-name', default=str(os.getpid()),
+    parser.add_argument('-sn', '--status-name', default=None,
                         help=('Enable status page database update using ' +
                               'STATUS_NAME as main worker name.'))
     parser.add_argument('-hk', '--hash-key', default=None, action='append',
@@ -584,211 +616,34 @@ def get_args():
                   ": error: arguments -l/--location is required.")
             sys.exit(1)
     else:
-        # If using a CSV file, add the data where needed into the username,
-        # password and auth_service arguments.
-        # CSV file should have lines like "ptc,username,password",
-        # "username,password" or "username".
-        if args.accountcsv is not None:
-            # Giving num_fields something it would usually not get.
-            num_fields = -1
-            with open(args.accountcsv, 'r') as f:
-                for num, line in enumerate(f, 1):
-
-                    fields = []
-
-                    # First time around populate num_fields with current field
-                    # count.
-                    if num_fields < 0:
-                        num_fields = line.count(',') + 1
-
-                    csv_input = []
-                    csv_input.append('')
-                    csv_input.append('<username>')
-                    csv_input.append('<username>,<password>')
-                    csv_input.append('<ptc/google>,<username>,<password>')
-
-                    # If the number of fields is different,
-                    # then this is not a CSV.
-                    if num_fields != line.count(',') + 1:
-                        print(sys.argv[0] +
-                              ": Error parsing CSV file on line " + str(num) +
-                              ". Your file started with the following " +
-                              "input, '" + csv_input[num_fields] +
-                              "' but now you gave us '" +
-                              csv_input[line.count(',') + 1] + "'.")
-                        sys.exit(1)
-
-                    field_error = ''
-                    line = line.strip()
-
-                    # Ignore blank lines and comment lines.
-                    if len(line) == 0 or line.startswith('#'):
-                        continue
-
-                    # If number of fields is more than 1 split the line into
-                    # fields and strip them.
-                    if num_fields > 1:
-                        fields = line.split(",")
-                        fields = map(str.strip, fields)
-
-                    # If the number of fields is one then assume this is
-                    # "username". As requested.
-                    if num_fields == 1:
-                        # Empty lines are already ignored.
-                        args.username.append(line)
-
-                    # If the number of fields is two then assume this is
-                    # "username,password". As requested.
-                    if num_fields == 2:
-                        # If field length is not longer than 0 something is
-                        # wrong!
-                        if len(fields[0]) > 0:
-                            args.username.append(fields[0])
-                        else:
-                            field_error = 'username'
-
-                        # If field length is not longer than 0 something is
-                        # wrong!
-                        if len(fields[1]) > 0:
-                            args.password.append(fields[1])
-                        else:
-                            field_error = 'password'
-
-                    # If the number of fields is three then assume this is
-                    # "ptc,username,password". As requested.
-                    if num_fields >= 3:
-                        # If field 0 is not ptc or google something is wrong!
-                        if (fields[0].lower() == 'ptc' or
-                                fields[0].lower() == 'google'):
-                            args.auth_service.append(fields[0])
-                        else:
-                            field_error = 'method'
-
-                        # If field length is not longer then 0 something is
-                        # wrong!
-                        if len(fields[1]) > 0:
-                            args.username.append(fields[1])
-                        else:
-                            field_error = 'username'
-
-                        # If field length is not longer then 0 something is
-                        # wrong!
-                        if len(fields[2]) > 0:
-                            args.password.append(fields[2])
-                        else:
-                            field_error = 'password'
-
-                    # If something is wrong display error.
-                    if field_error != '':
-                        type_error = 'empty!'
-                        if field_error == 'method':
-                            type_error = (
-                                'not ptc or google instead we got \'' +
-                                fields[0] + '\'!')
-                        print(sys.argv[0] +
-                              ": Error parsing CSV file on line " + str(num) +
-                              ". We found " + str(num_fields) + " fields, " +
-                              "so your input should have looked like '" +
-                              csv_input[num_fields] + "'\nBut you gave us '" +
-                              line + "', your " + field_error +
-                              " was " + type_error)
-                        sys.exit(1)
-
         errors = []
-
-        num_auths = len(args.auth_service)
-        num_usernames = 0
-        num_passwords = 0
-
-        if len(args.username) == 0:
-            errors.append(
-                'Missing `username` either as -u/--username, csv file ' +
-                'using -ac, or in config.')
-        else:
-            num_usernames = len(args.username)
-
         if args.location is None:
             errors.append(
                 'Missing `location` either as -l/--location or in config.')
-
-        if len(args.password) == 0:
-            errors.append(
-                'Missing `password` either as -p/--password, csv file, ' +
-                'or in config.')
-        else:
-            num_passwords = len(args.password)
 
         if args.step_limit is None:
             errors.append(
                 'Missing `step_limit` either as -st/--step-limit or ' +
                 'in config.')
 
-        if num_auths == 0:
-            args.auth_service = ['ptc']
+        # Since we use accounts from database we need to specify how many
+        # workers we want scanning.
+        if args.workers is None:
+            errors.append(
+                'Missing `workers` either as -w/--workers or in config.')
 
-        num_auths = len(args.auth_service)
-
-        if num_usernames > 1:
-            if num_passwords > 1 and num_usernames != num_passwords:
-                errors.append((
-                    'The number of provided passwords ({}) must match the ' +
-                    'username count ({})').format(num_passwords,
-                                                  num_usernames))
-            if num_auths > 1 and num_usernames != num_auths:
-                errors.append((
-                    'The number of provided auth ({}) must match the ' +
-                    'username count ({}).').format(num_auths, num_usernames))
+        # Ban detection is important to avoid clogging up spare account pools.
+        # AccountManager tries to re-use accounts when possible, failing/banned
+        # accounts will continue to be allocated instead of valid accounts.
+        if args.account_max_failures <= 0 or args.account_max_failures > 100:
+            errors.append(
+                'Do not disable permanent ban detection. -amf/' +
+                '--account-max-failures must be set to a reasonable value.')
 
         if len(errors) > 0:
             parser.print_usage()
             print(sys.argv[0] + ": errors: \n - " + "\n - ".join(errors))
             sys.exit(1)
-
-        # Fill the pass/auth if set to a single value.
-        if num_passwords == 1:
-            args.password = [args.password[0]] * num_usernames
-        if num_auths == 1:
-            args.auth_service = [args.auth_service[0]] * num_usernames
-
-        # Make the accounts list.
-        args.accounts = []
-        for i, username in enumerate(args.username):
-            args.accounts.append({'username': username,
-                                  'password': args.password[i],
-                                  'auth_service': args.auth_service[i]})
-
-        # Prepare the L30 accounts for the account sets.
-        args.accounts_L30 = []
-
-        if args.high_lvl_accounts:
-            # Context processor.
-            with open(args.high_lvl_accounts, 'r') as accs:
-                for line in accs:
-                    # Make sure it's not an empty line.
-                    if not line.strip():
-                        continue
-
-                    line = line.split(',')
-
-                    # We need "service, username, password".
-                    if len(line) < 3:
-                        raise Exception('L30 account is missing a'
-                                        + ' field. Each line requires: '
-                                        + '"service,user,pass".')
-
-                    # Let's remove trailing whitespace.
-                    service = line[0].strip()
-                    username = line[1].strip()
-                    password = line[2].strip()
-
-                    hlvl_account = {
-                        'auth_service': service,
-                        'username': username,
-                        'password': password,
-                        'captcha': False
-                    }
-
-                    args.accounts_L30.append(hlvl_account)
 
         # Prepare the IV/CP scanning filters.
         args.enc_whitelist = []
@@ -798,23 +653,9 @@ def get_args():
             with open(args.enc_whitelist_file) as f:
                 args.enc_whitelist = frozenset([int(l.strip()) for l in f])
 
-        # Make max workers equal number of accounts if unspecified, and disable
-        # account switching.
-        if args.workers is None:
-            args.workers = len(args.accounts)
-            args.account_search_interval = None
-
         # Disable search interval if 0 specified.
         if args.account_search_interval == 0:
             args.account_search_interval = None
-
-        # Make sure we don't have an empty account list after adding command
-        # line and CSV accounts.
-        if len(args.accounts) == 0:
-            print(sys.argv[0] +
-                  ": Error: no accounts specified. Use -a, -u, and -p or " +
-                  "--accountcsv to add accounts.")
-            sys.exit(1)
 
         if args.webhook_whitelist_file:
             with open(args.webhook_whitelist_file) as f:
@@ -835,6 +676,15 @@ def get_args():
         if args.ignorelist_file:
             with open(args.ignorelist_file) as f:
                 args.ignorelist = frozenset([int(l.strip()) for l in f])
+
+        # Common Pokemon list - used to detect shadow banned accounts.
+        if args.common_pokemon_list_file:
+            with open(args.common_pokemon_list_file) as f:
+                args.common_pokemon_list = frozenset(
+                    [int(l.strip()) for l in f])
+        else:
+            args.common_pokemon_list = frozenset(
+                [int(i) for i in args.common_pokemon_list])
 
         # Decide which scanning mode to use.
         if args.spawnpoint_scanning:
@@ -1023,6 +873,97 @@ def dottedQuadToNum(ip):
     return struct.unpack("!L", socket.inet_aton(ip))[0]
 
 
+def parse_accounts_csv(filename):
+    csv_lines = []
+    with open(filename, 'r') as file:
+        csv_lines = file.read().splitlines()
+
+    if not csv_lines:
+        log.error('Accounts CSV file "%s" could not be read.', filename)
+        return False
+
+    accounts = {}
+    num_fields = -1
+    error = False
+    for num, line in enumerate(csv_lines, 1):
+        account = {
+            'auth_service': 'ptc',
+            'username': '',
+            'password': '',
+            'level': 0
+        }
+        line = line.strip()
+
+        # Ignore blank lines and comment lines.
+        if len(line) == 0 or line.startswith('#'):
+            continue
+
+        fields = line.split(",")
+        fields = map(str.strip, fields)
+        if num_fields < 0:
+            num_fields = len(fields)
+
+        if num_fields != len(fields):
+            log.error((
+                'File "%s" has an error on line "%d": ' +
+                'field count must remain constant across all lines.'),
+                filename, num)
+            error = True
+            continue
+
+        if num_fields == 2:
+            account['username'] = fields[0]
+            account['password'] = fields[1]
+            accounts[fields[0]] = account
+
+        elif num_fields == 3 or num_fields == 4:
+            auth_service = fields[0].lower()
+            if auth_service != 'ptc' and auth_service != 'google':
+                log.error((
+                    'File "%s" has an error on line "%d": ' +
+                    'first field must be either "ptc" or "google."'),
+                    filename, num)
+                error = True
+                continue
+
+            level = 0
+            # Check if account level is present.
+            if num_fields == 4 and fields[3]:
+                if not fields[3].isdigit():
+                    log.error((
+                        'File "%s" has an error on line "%d": ' +
+                        'last field must contain the account level.'),
+                        filename, num)
+                    error = True
+                    continue
+
+                level = int(fields[3])
+                if level < 0 or level > 40:
+                    log.error((
+                        'File "%s" has an error on line "%d": ' +
+                        'account level must be between 0 and 40.'),
+                        filename, num)
+                    error = True
+                    continue
+                account['level'] = level
+
+            account['auth_service'] = fields[0]
+            account['username'] = fields[1]
+            account['password'] = fields[2]
+            accounts[fields[1]] = account
+        else:
+            log.error((
+                'File "%s" has an error on line "%d": ' +
+                'invalid field count, check syntax.'), filename, num)
+            error = True
+            continue
+
+    if error:
+        return False
+
+    return accounts
+
+
 # Generate random device info.
 # Original by Noctem.
 IPHONES = {'iPhone6,1': 'N51AP',
@@ -1082,6 +1023,29 @@ def generate_device_info(identifier):
 
     device_info['firmware_type'] = ios_pool[pick_hash % len(ios_pool)]
     return device_info
+
+
+def generate_instance_id(args):
+    md5 = hashlib.md5()
+    if args.status_name:
+        md5.update(args.status_name)
+    md5.update(args.location)
+    md5.update(str(args.step_limit))
+    md5.update(str(args.workers))
+    if args.beehive:
+        md5.update(str(args.workers_per_hive))
+    if args.no_gyms:
+        md5.update('no-gyms')
+    if args.no_pokemon:
+        md5.update('no-pokemon')
+    if args.no_pokestops:
+        md5.update('no-pokestops')
+    if args.no_raids:
+        md5.update('no-raids')
+
+    instance_id = md5.hexdigest()
+    args.instance_id = instance_id
+    log.info('Instance ID: %s', instance_id)
 
 
 def calc_pokemon_level(cp_multiplier):

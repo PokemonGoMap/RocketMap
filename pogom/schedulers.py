@@ -14,8 +14,7 @@ queues - A list of queues for the workers they control. For now, this is a
 status - A list of status dicts for the workers. Schedulers can use this
             information to make more intelligent scheduling decisions.
             Useful values include:
-            - last_scan_date: unix timestamp of when the last scan was
-                completed
+            - last_scan: datetime object (can be null)
             - location: [lat,lng,alt] of the last scan
 args - The configuration arguments. This may not include all of the arguments,
             just ones that are relevant to this scheduler instance (eg. if
@@ -459,13 +458,13 @@ class SpawnScan(BaseScheduler):
         wait = 0
         wait_msg = 'Waiting for item from queue.'
 
-        worker_loc = (status['latitude'], status['longitude'])
-        if worker_loc[0] and worker_loc[1] and self.args.kph > 0:
-            now_date = datetime.utcnow()
-            last_action = status['last_scan_date']
+        last_action = status['last_scan']
+        if last_action and self.args.kph > 0:
+            worker_loc = (status['latitude'], status['longitude'])
             meters = distance(step_location, worker_loc)
-            wait = int(max(meters / self.args.kph * 3.6
-                           - (now_date - last_action).total_seconds(), 0))
+            wait = int(max(meters / self.args.kph * 3.6 -
+                           (datetime.utcnow() - last_action).total_seconds(),
+                       0))
             if wait > 0:
                 wait_msg = 'Moving {}m to step {}, arriving in {}s.'.format(
                     int(meters), step, wait)
@@ -667,11 +666,15 @@ class SpeedScan(HexSearch):
         self.queues = [[]]
 
     # How long to delay since last action
-    def delay(self, last_scan_date):
-        return max(
-            ((last_scan_date - datetime.utcnow()).total_seconds() +
-             self.args.scan_delay),
-            2)
+    def delay(self, last_scan):
+        delay = self.args.scan_delay
+        if last_scan:
+            scan_delay = (last_scan - datetime.utcnow()).total_seconds()
+            scan_delay += delay
+            if scan_delay > 0:
+                return scan_delay
+
+        return delay
 
     def band_status(self):
         try:
@@ -911,11 +914,8 @@ class SpeedScan(HexSearch):
             ms = ((now_date - self.refresh_date).total_seconds() +
                   self.refresh_ms)
             best = {}
-            if not status['latitude']:
-                worker_loc = None
-            else:
-                worker_loc = [status['latitude'], status['longitude']]
-            last_action = status['last_scan_date']
+
+            last_action = status['last_scan']
 
             # Logging.
             log.debug('Enumerating %s scan locations in queue.',
@@ -993,7 +993,8 @@ class SpeedScan(HexSearch):
 
                 # If we are going to get there before it starts then ignore.
                 loc = item['loc']
-                if worker_loc and self.args.kph > 0:
+                if last_action and self.args.kph > 0:
+                    worker_loc = (status['latitude'], status['longitude'])
                     meters = distance(loc, worker_loc)
                     secs_to_arrival = meters / self.args.kph * 3.6
                     secs_waited = (now_date - last_action).total_seconds()
@@ -1054,15 +1055,17 @@ class SpeedScan(HexSearch):
             log.debug('step {} start {} end {} secs to arrival {}'.format(
                 step, st, end, secs_to_arrival))
 
+            late_delay = 0
+            if last_action:
+                late_delay = int((now_date - last_action).total_seconds())
+
             messages = {
                 'wait': 'Nothing to scan.',
                 'early': 'Early for step {}; waiting a few seconds...'.format(
                     step),
                 'late': ('API response on step {} delayed by {} seconds. ' +
                          'Possible causes: slow proxies, internet, or ' +
-                         'Niantic servers.').format(
-                             step,
-                             int((now_date - last_action).total_seconds())),
+                         'Niantic servers.').format(step, late_delay),
                 'search': 'Searching at step {}.'.format(step),
                 'invalid': ('Invalid response at step {}, abandoning ' +
                             'location.').format(step)
@@ -1080,10 +1083,16 @@ class SpeedScan(HexSearch):
                                         + ' under the speed limit.')
                 return -1, 0, 0, 0, messages, 0
 
-            meters = distance(loc, worker_loc) if worker_loc else 0
-            if self.args.kph > 0 and (meters >
-                                      (now_date - last_action).total_seconds()
-                                      * self.args.kph / 3.6):
+            meters = 0
+            secs_travel = 0
+            secs_waited = 1
+            if last_action and self.args.kph > 0:
+                worker_loc = (status['latitude'], status['longitude'])
+                meters = distance(loc, worker_loc)
+                secs_travel = meters / self.args.kph * 3.6
+                secs_waited = (now_date - last_action).total_seconds()
+
+            if secs_travel > secs_waited:
                 # Flag item as "parked" by a specific thread, because
                 # we're waiting for it. This will avoid all threads "walking"
                 # to the same item.

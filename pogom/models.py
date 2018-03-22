@@ -21,6 +21,7 @@ from playhouse.migrate import migrate, MySQLMigrator
 from datetime import datetime, timedelta
 from cachetools import TTLCache
 from cachetools import cached
+from random import uniform
 from timeit import default_timer
 
 from .utils import (get_pokemon_name, get_pokemon_types,
@@ -30,7 +31,8 @@ from .utils import (get_pokemon_name, get_pokemon_types,
 from .transform import transform_from_wgs_to_gcj, get_new_coords
 from .customLog import printPokemon
 
-from .account import check_login, setup_api, pokestop_spinnable, spin_pokestop
+from .account import (AccountBanned, check_login, setup_api,
+                      pokestop_spinnable, spin_pokestop)
 from .proxy import get_new_proxy
 from .apiRequests import encounter
 
@@ -40,7 +42,7 @@ args = get_args()
 flaskDb = FlaskDB()
 cache = TTLCache(maxsize=100, ttl=60 * 5)
 
-db_schema_version = 30
+db_schema_version = 31
 
 
 class MyRetryDB(RetryOperationalError, PooledMySQLDatabase):
@@ -56,6 +58,10 @@ class Utf8mb4CharField(CharField):
 
 class UBigIntegerField(BigIntegerField):
     db_field = 'bigint unsigned'
+
+
+class UIntegerField(IntegerField):
+    db_field = 'int unsigned'
 
 
 def init_database(app):
@@ -101,6 +107,81 @@ class LatLongModel(BaseModel):
                     transform_from_wgs_to_gcj(
                         result['latitude'], result['longitude'])
         return results
+
+
+class Account(LatLongModel):
+    auth_service = Utf8mb4CharField(max_length=6)
+    username = Utf8mb4CharField(primary_key=True, max_length=50)
+    password = Utf8mb4CharField(max_length=64)
+    instance_id = Utf8mb4CharField(index=True, null=True, max_length=32)
+    allocated = BooleanField(index=True, default=False)
+    latitude = DoubleField(null=True)
+    longitude = DoubleField(null=True)
+    failed = SmallIntegerField(index=True, default=0)
+    captcha = BooleanField(index=True, default=False)
+    warning = BooleanField(index=True, default=False)
+    banned = SmallIntegerField(index=True, default=AccountBanned.Clear)
+    level = SmallIntegerField(index=True, default=0)
+    time_assets = UIntegerField(default=0)
+    time_templates = UIntegerField(default=0)
+    last_scan = DateTimeField(index=True, null=True)
+    last_modified = DateTimeField(index=True, default=datetime.utcnow)
+
+    # Format account dictionary accordingly to database model.
+    @staticmethod
+    def db_format(account):
+        account['last_modified'] = datetime.utcnow()
+        remote_config = account.get('remote_config', {})
+        return {
+            'auth_service': account['auth_service'],
+            'username': account['username'],
+            'password': account['password'],
+            'instance_id': account.get('instance_id', None),
+            'allocated': account.get('allocated', False),
+            'latitude': account.get('latitude', None),
+            'longitude': account.get('longitude', None),
+            'failed': account.get('failed', 0),
+            'captcha': account.get('captcha', False),
+            'warning': account.get('warning', False),
+            'banned': account.get('banned', AccountBanned.Clear),
+            'level': account['level'],
+            'time_assets': remote_config.get('asset_time', 0),
+            'time_templates': remote_config.get('template_time', 0),
+            'last_scan': account.get('last_scan', None),
+            'last_modified': account['last_modified']}
+
+    # Clears all accounts in the database.
+    @staticmethod
+    def clear_all():
+        query = Account.delete().execute()
+        if query:
+            log.info('Cleared %d accounts from database.', query)
+
+    # Filter account list and insert new accounts in the database.
+    @staticmethod
+    def insert_new(accounts):
+        log.info('Processing %d accounts into the database.', len(accounts))
+        step = 250
+        count = 0
+        for idx in range(0, len(accounts), step):
+            accounts_batch = accounts[idx:idx+step]
+            usernames = [a['username'] for a in accounts_batch]
+            query = (Account
+                     .select(Account.username)
+                     .where(Account.username << usernames)
+                     .dicts())
+
+            db_usernames = [dbu['username'] for dbu in query]
+            new_accounts = [x for x in accounts_batch
+                            if x['username'] not in db_usernames]
+            if not new_accounts:
+                continue
+
+            with Account.database().atomic():
+                if Account.insert_many(new_accounts).execute():
+                    count += len(new_accounts)
+
+        log.info('Inserted %d new accounts into the database.', count)
 
 
 class Pokemon(LatLongModel):
@@ -329,6 +410,30 @@ class Pokemon(LatLongModel):
                  )
 
         return list(itertools.chain(*query))
+
+    @staticmethod
+    def get_nearby_pokemon_ids(location, timestamp):
+        # Pokemon are visible up to 200 meters.
+        n, e, s, w = hex_bounds(location, radius=0.200)
+
+        # Get active Pokemon inside box of visible distance.
+        query = (Pokemon
+                 .select(Pokemon.latitude.alias('lat'),
+                         Pokemon.longitude.alias('lng'),
+                         Pokemon.pokemon_id)
+                 .where((Pokemon.disappear_time >= timestamp) &
+                        (Pokemon.latitude <= n) &
+                        (Pokemon.latitude >= s) &
+                        (Pokemon.longitude >= w) &
+                        (Pokemon.longitude <= e))
+                 .dicts())
+
+        pokemon_ids = set()
+        for p in query:
+            if in_radius(location, (p['lat'], p['lng']), 200):
+                pokemon_ids.add(p['pokemon_id'])
+
+        return pokemon_ids
 
 
 class Pokestop(LatLongModel):
@@ -1072,7 +1177,8 @@ class ScannedLocation(LatLongModel):
 
 
 class MainWorker(BaseModel):
-    worker_name = Utf8mb4CharField(primary_key=True, max_length=50)
+    instance_id = Utf8mb4CharField(primary_key=True, max_length=32)
+    worker_name = Utf8mb4CharField(index=True, max_length=50)
     message = TextField(null=True, default="")
     method = Utf8mb4CharField(max_length=50)
     last_modified = DateTimeField(index=True)
@@ -1124,37 +1230,87 @@ class MainWorker(BaseModel):
 
         return status
 
+    @staticmethod
+    def get_by_instance(instance_id, timeout=30):
+        with MainWorker.database().execution_context():
+            query = (MainWorker
+                     .select()
+                     .where((MainWorker.instance_id == args.instance_id) &
+                            (MainWorker.last_modified >
+                             (datetime.utcnow() - timedelta(seconds=timeout))))
+                     .dicts())
+            if len(query) > 0:
+                return query[0]
+
+        return False
+
 
 class WorkerStatus(LatLongModel):
     username = Utf8mb4CharField(primary_key=True, max_length=50)
-    worker_name = Utf8mb4CharField(index=True, max_length=50)
+    instance_id = Utf8mb4CharField(index=True, max_length=32)
+    message = Utf8mb4CharField(max_length=191)
     success = IntegerField()
     fail = IntegerField()
-    no_items = IntegerField()
     skip = IntegerField()
+    no_items = IntegerField()
+    no_rares = IntegerField()
     captcha = IntegerField()
-    last_modified = DateTimeField(index=True)
-    message = Utf8mb4CharField(max_length=191)
-    last_scan_date = DateTimeField(index=True)
     latitude = DoubleField(null=True)
     longitude = DoubleField(null=True)
+    last_scan = DateTimeField(null=True)
+    last_modified = DateTimeField(index=True)
 
     @staticmethod
-    def db_format(status, name='status_worker_db'):
-        status['worker_name'] = status.get('worker_name', name)
-        return {'username': status['username'],
-                'worker_name': status['worker_name'],
-                'success': status['success'],
-                'fail': status['fail'],
-                'no_items': status['noitems'],
-                'skip': status['skip'],
-                'captcha': status['captcha'],
-                'last_modified': datetime.utcnow(),
-                'message': status['message'],
-                'last_scan_date': status.get('last_scan_date',
-                                             datetime.utcnow()),
-                'latitude': status.get('latitude', None),
-                'longitude': status.get('longitude', None)}
+    def db_format(status):
+        return {
+            'username': status['username'],
+            'instance_id': status['instance_id'],
+            'message': status['message'],
+            'success': status['success'],
+            'fail': status['fail'],
+            'skip': status['skip'],
+            'no_items': status['no_items'],
+            'no_rares': status['no_rares'],
+            'captcha': status['captcha'],
+            'latitude': status['latitude'],
+            'longitude': status['longitude'],
+            'last_scan': status['last_scan'],
+            'last_modified': datetime.utcnow()
+        }
+
+    @staticmethod
+    def default_status():
+        return {
+            'username': '',
+            'instance_id': args.instance_id,
+            'message': 'Initializing search worker...',
+            'success': 0,
+            'fail': 0,
+            'skip': 0,
+            'no_items': 0,
+            'no_rares': 0,
+            'captcha': 0,
+            'latitude': None,
+            'longitude': None,
+            'last_scan': None,
+            'last_modified': datetime.utcnow()
+        }
+
+    @staticmethod
+    def get_stats(username):
+        status = {}
+        with WorkerStatus.database().execution_context():
+            try:
+                query = (WorkerStatus
+                         .select(WorkerStatus.no_rares,
+                                 WorkerStatus.captcha)
+                         .where(WorkerStatus.username == username)
+                         .dicts())
+                status = query.get()
+            except WorkerStatus.DoesNotExist:
+                pass
+
+        return status
 
     @staticmethod
     def get_recent(age_minutes=30):
@@ -1173,17 +1329,6 @@ class WorkerStatus(LatLongModel):
             log.exception('Failed to retrieve worker status: %s.', e)
 
         return status
-
-    @staticmethod
-    def get_worker(username):
-        res = None
-        with WorkerStatus.database().execution_context():
-            try:
-                res = WorkerStatus.select().where(
-                    WorkerStatus.username == username).dicts().get()
-            except WorkerStatus.DoesNotExist:
-                pass
-        return res
 
 
 class SpawnPoint(LatLongModel):
@@ -1837,20 +1982,21 @@ def hex_bounds(center, steps=None, radius=None):
 
 # todo: this probably shouldn't _really_ be in "models" anymore, but w/e.
 def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
-              wh_update_queue, key_scheduler, api, status, now_date, account,
-              account_sets):
+              wh_update_queue, api, status, now_date, account,
+              account_manager):
     pokemon = {}
     pokestops = {}
     gyms = {}
     raids = {}
     skipped = 0
     filtered = 0
-    stopsskipped = 0
+    stops_skipped = 0
     forts = []
     forts_count = 0
     wild_pokemon = []
     wild_pokemon_count = 0
     nearby_pokemon = 0
+    nearby_pokemon_ids = set()
     spawn_points = {}
     scan_spawn_points = {}
     sightings = {}
@@ -1878,6 +2024,8 @@ def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
         # if a scan was actually bad.
         if not args.no_pokemon:
             wild_pokemon += cell.wild_pokemons
+            for p in cell.nearby_pokemons:
+                nearby_pokemon_ids.add(p.pokemon_id)
 
         if not args.no_pokestops or not args.no_gyms:
             forts += cell.forts
@@ -1927,6 +2075,7 @@ def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
                 (p['encounter_id'], p['spawnpoint_id']) for p in query]
 
         for p in wild_pokemon:
+            nearby_pokemon_ids.add(p.pokemon_data.pokemon_id)
             spawn_id = int(p.spawn_point_id, 16)
             sp = SpawnPoint.get_by_id(spawn_id, p.latitude,
                                       p.longitude)
@@ -2021,7 +2170,7 @@ def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
             pokemon_info = False
             if args.encounter and (pokemon_id in args.enc_whitelist):
                 pokemon_info = encounter_pokemon(
-                    args, p, account, api, account_sets, status, key_scheduler)
+                    args, account_manager, status, api, account, p)
 
             pokemon[p.encounter_id] = {
                 'encounter_id': p.encounter_id,
@@ -2119,7 +2268,7 @@ def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
                         in encountered_pokestops):
                     # If pokestop has been encountered before and hasn't
                     # changed don't process it.
-                    stopsskipped += 1
+                    stops_skipped += 1
                     continue
                 pokestops[f.id] = {
                     'pokestop_id': f.id,
@@ -2269,21 +2418,46 @@ def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
             for f in forts:
                 # Spin Pokestop with 50% chance.
                 if f.type == 1 and pokestop_spinnable(f, scan_coords):
-                    spin_pokestop(api, account, args, f, scan_coords)
+                    spin_pokestop(account_manager, status, api, account, f)
 
         # Helping out the GC.
         del forts
+
+    # Check nearby Pokemon to validate if account is shadow banned.
+    if nearby_pokemon_ids:
+        # Remove common Pokemon from nearby list.
+        rare_finds = [p for p in nearby_pokemon_ids
+                      if p not in args.common_pokemon_list]
+
+        # Check if last scan had any rare Pokemon.
+        if not rare_finds:
+            status['no_rares'] += 1
+
+            if status['no_rares'] > 20:
+                account['banned'] = AccountBanned.Shadowban
+            elif status['no_rares'] > 3:
+                # Get nearby active Pokemon IDs from database.
+                active_pokemon_ids = Pokemon.get_nearby_pokemon_ids(
+                    scan_coords, now_date + timedelta(seconds=10))
+
+                for p_id in active_pokemon_ids:
+                    if (p_id not in nearby_pokemon_ids and
+                            p_id not in args.common_pokemon_list):
+                        account['banned'] = AccountBanned.Shadowban
+        else:
+            # Reset status counter if rare Pokemon are present.
+            status['no_rares'] = 0
 
     log.info('Parsing found Pokemon: %d (%d filtered), nearby: %d, ' +
              'pokestops: %d, gyms: %d, raids: %d.',
              len(pokemon) + skipped,
              filtered,
              nearby_pokemon,
-             len(pokestops) + stopsskipped,
+             len(pokestops) + stops_skipped,
              len(gyms),
              len(raids))
 
-    log.debug('Skipped Pokemon: %d, pokestops: %d.', skipped, stopsskipped)
+    log.debug('Skipped Pokemon: %d, pokestops: %d.', skipped, stops_skipped)
 
     # Look for spawnpoints within scan_loc that are not here to see if we
     # can narrow down tth window.
@@ -2348,29 +2522,17 @@ def parse_map(args, map_dict, scan_coords, scan_location, db_update_queue,
         if sightings:
             db_update_queue.put((SpawnpointDetectionData, sightings))
 
-    if not nearby_pokemon and not wild_pokemon:
-        # After parsing the forts, we'll mark this scan as bad due to
-        # a possible speed violation.
-        return {
-            'count': wild_pokemon_count + forts_count,
-            'gyms': gyms,
-            'sp_id_list': sp_id_list,
-            'bad_scan': True,
-            'scan_secs': now_secs
-        }
-
     return {
         'count': wild_pokemon_count + forts_count,
         'gyms': gyms,
         'sp_id_list': sp_id_list,
-        'bad_scan': False,
+        'bad_scan': (not nearby_pokemon and not wild_pokemon),
         'scan_secs': now_secs
     }
 
 
-def encounter_pokemon(args, pokemon, account, api, account_sets, status,
-                      key_scheduler):
-    using_accountset = False
+def encounter_pokemon(args, account_manager, status, api, account, pokemon):
+    using_db_account = False
     hlvl_account = None
     pokemon_id = None
     result = False
@@ -2378,44 +2540,64 @@ def encounter_pokemon(args, pokemon, account, api, account_sets, status,
         hlvl_api = None
         pokemon_id = pokemon.pokemon_data.pokemon_id
         scan_location = [pokemon.latitude, pokemon.longitude]
-        # If the host has L30s in the regular account pool, we
-        # can just use the current account.
+
+        # Allow scanner accounts to encounter Pokemon if they're high-level.
         if account['level'] >= 30:
             hlvl_account = account
             hlvl_api = api
         else:
-            # Get account to use for IV and CP scanning.
-            hlvl_account = account_sets.next('30', scan_location)
-            using_accountset = True
+            using_db_account = True
+            attempts = 0
+            while attempts < (args.encounter_retries + 1):
+                attempts += 1
+                if attempts > 1:
+                    fetch_delay = attempts + 3
+                    log.debug('Unable to allocate high-level account. ' +
+                              'Retrying in %d seconds.', fetch_delay)
+                    time.sleep(fetch_delay)
+                # Get account to use for IV and CP scanning.
+                hlvl_account = account_manager.get_account(scan_location, True)
 
-        time.sleep(args.encounter_delay)
+                if not hlvl_account:
+                    continue
+                else:
+                    break
 
-        # If we didn't get an account, we can't encounter.
+        # If we didn't get an account, we can't perform the encounter.
         if not hlvl_account:
-            log.error('No L30 accounts are available, please' +
-                      ' consider adding more. Skipping encounter.')
+            log.error('No high-level accounts available, please consider ' +
+                      'adding more. Skipping encounter on Pokemon ID %s.',
+                      pokemon_id)
             return False
 
-        # Logging.
+        hlvl_username = hlvl_account['username']
         log.info('Encountering Pokemon ID %s with account %s at %s, %s.',
-                 pokemon_id, hlvl_account['username'], scan_location[0],
-                 scan_location[1])
+                 pokemon_id, hlvl_username, scan_location[0], scan_location[1])
 
-        # If not args.no_api_store is enabled, we need to
-        # re-use an old API object if it's stored and we're
-        # using an account from the AccountSet.
-        if not args.no_api_store and using_accountset:
-            hlvl_api = hlvl_account.get('api', None)
+        check_proxy = args.proxy
+        if using_db_account:
+            # Check if a previously API object is stored.
+            if not args.no_api_store:
+                hlvl_api = hlvl_account.get('api', None)
 
-        # Make new API for this account if we're not using an
-        # API that's already logged in.
-        if not hlvl_api:
-            hlvl_api = setup_api(args, status, hlvl_account)
+            # No luck, we need to create a new API object.
+            if not hlvl_api:
+                hlvl_api = setup_api(args, status, hlvl_account)
+                check_proxy = False
+
+                # Store new API object for later reusage.
+                if not args.no_api_store:
+                    hlvl_account['api'] = hlvl_api
+
+            # Update account information.
+            hlvl_account['latitude'] = scan_location[0]
+            hlvl_account['longitude'] = scan_location[1]
+            hlvl_account['last_scan'] = datetime.utcnow()
 
         # If the already existent API is using a proxy but
         # it's not alive anymore, we need to get a new proxy.
-        elif (args.proxy and
-              (hlvl_api._session.proxies['http'] not in args.proxy)):
+        if (check_proxy and
+                (hlvl_api._session.proxies['http'] not in args.proxy)):
             proxy_idx, proxy_new = get_new_proxy(args)
             hlvl_api.set_proxy({
                 'http': proxy_new,
@@ -2427,81 +2609,94 @@ def encounter_pokemon(args, pokemon, account, api, account_sets, status,
         # Hashing key.
         # TODO: Rework inefficient threading.
         if args.hash_key:
-            key = key_scheduler.next()
+            key = account_manager.key_scheduler.next()
             log.debug('Using hashing key %s for this encounter.', key)
             hlvl_api.activate_hash_server(key)
-
-        # We have an API object now. If necessary, store it.
-        if using_accountset and not args.no_api_store:
-            hlvl_account['api'] = hlvl_api
 
         # Set location.
         hlvl_api.set_position(*scan_location)
 
         # Log in.
-        check_login(args, hlvl_account, hlvl_api, status['proxy_url'])
-        encounter_level = hlvl_account['level']
-
-        # User error -> we skip freeing the account.
-        if encounter_level < 30:
-            log.warning('Expected account of level 30 or higher, ' +
-                        'but account %s is only level %d',
-                        hlvl_account['username'], encounter_level)
+        if not check_login(account_manager, status, hlvl_api, hlvl_account):
             return False
 
-        # Encounter Pokémon.
-        encounter_result = encounter(
-            hlvl_api, hlvl_account, pokemon.encounter_id,
-            pokemon.spawn_point_id, scan_location)
+        # Account was inserted as being high-level but it's not.
+        if hlvl_account['level'] < 30:
+            log.warning('Expected account of level 30 or higher, ' +
+                        'but account %s is only level %d',
+                        hlvl_username, hlvl_account['level'])
+            account_manager.failed_account(hlvl_account, 'not high-level')
+            return False
 
-        # Handle errors.
-        if encounter_result:
-            enc_responses = encounter_result['responses']
-            # Check for captcha.
-            if 'CHECK_CHALLENGE' in enc_responses:
-                captcha_url = enc_responses['CHECK_CHALLENGE'].challenge_url
-
-                # Throw warning but finish parsing.
-                if len(captcha_url) > 1:
-                    # Flag account.
-                    hlvl_account['captcha'] = True
-                    log.error('Account %s encountered a captcha.' +
-                              ' Account will not be used.',
-                              hlvl_account['username'])
-
-            if ('ENCOUNTER' in enc_responses and
-                    enc_responses['ENCOUNTER'].status != 1):
-                log.error('There was an error encountering Pokemon ID %s with '
-                          + 'account %s: %d.', pokemon_id,
-                          hlvl_account['username'],
-                          enc_responses['ENCOUNTER'].status)
+        attempts = 0
+        enc_status = 0
+        while attempts < (args.encounter_retries + 1):
+            attempts += 1
+            if attempts > 1:
+                enc_delay = args.encounter_delay + uniform(0.5, 1.5)
+                log.error('Account %s failed encounter (code %d) on Pokemon ' +
+                          'ID %s. Attempt #%d, retrying in %.3f seconds.',
+                          hlvl_username, enc_status, pokemon_id, attempts,
+                          enc_delay)
+                time.sleep(enc_delay)
             else:
-                pokemon_info = enc_responses[
-                    'ENCOUNTER'].wild_pokemon.pokemon_data
-                # Logging: let the user know we succeeded.
-                log.info('Encounter for Pokemon ID %s at %s, %s ' +
-                         'successful: %s/%s/%s, %s CP.', pokemon_id,
-                         pokemon.latitude, pokemon.longitude,
-                         pokemon_info.individual_attack,
-                         pokemon_info.individual_defense,
-                         pokemon_info.individual_stamina, pokemon_info.cp)
+                time.sleep(args.encounter_delay)
 
-                result = pokemon_info
+            # Encounter Pokémon.
+            response = encounter(
+                hlvl_api, hlvl_account, pokemon.encounter_id,
+                pokemon.spawn_point_id, scan_location)
 
+            # Check for reCaptcha.
+            captcha = account_manager.handle_captcha(
+                    hlvl_account, status, hlvl_api, response)
+            if captcha['found'] and captcha['failed']:
+                # Note: Account was removed from rotation.
+                break
+            elif captcha['found']:
+                # Make another encounter request for the same location
+                # since the previous one was captcha'd.
+                response = encounter(
+                    hlvl_api, hlvl_account, pokemon.encounter_id,
+                    pokemon.spawn_point_id, scan_location)
+
+            # Verify if encounter request was successful.
+            if not response or 'ENCOUNTER' not in response['responses']:
+                continue
+
+            # Validate encounter status.
+            responses = response['responses']
+            enc_status = responses['ENCOUNTER'].status
+            if enc_status != 1:
+                continue
+
+            pokemon_info = responses['ENCOUNTER'].wild_pokemon.pokemon_data
+            log.info('Successfuly encountered Pokemon ID %s at ' +
+                     '%s, %s on attempt #%d: %s CP, %s/%s/%s IVs.',
+                     pokemon_id, pokemon.latitude, pokemon.longitude,
+                     attempts, pokemon_info.cp,
+                     pokemon_info.individual_attack,
+                     pokemon_info.individual_defense,
+                     pokemon_info.individual_stamina)
+
+            result = pokemon_info
+            break
+
+        if not result:
+            log.error('Account %s failed encounter (code %d) on Pokemon ' +
+                      'ID %s. Attempt #%d, skipping encounter.',
+                      hlvl_username, enc_status, pokemon_id, attempts)
     except Exception as e:
-        # Account may not be selected yet.
-        if hlvl_account:
-            log.warning('Exception occured during encounter with'
-                        ' high-level account %s.',
-                        hlvl_account['username'])
-        log.exception('There was an error encountering Pokemon ID %s: %s.',
-                      pokemon_id,
-                      e)
+        log.exception('There was an exception encountering Pokemon ID %s ' +
+                      'with account %s: %s.', pokemon_id, hlvl_username, e)
+        # Signal account manager that this account has failed.
+        if using_db_account:
+            account_manager.failed_account(hlvl_account, 'exception')
+        return False
 
-    # We're done with the encounter. If it's from an
-    # AccountSet, release account back to the pool.
-    if using_accountset:
-        account_sets.release(hlvl_account)
+    # We're done with the encounter, release account back to the pool.
+    if using_db_account:
+        account_manager.release_account(hlvl_account)
 
     return result
 
@@ -3077,8 +3272,8 @@ def bulk_upsert(cls, data, db):
 
 
 def create_tables(db):
-    tables = [Pokemon, Pokestop, Gym, Raid, ScannedLocation, GymDetails,
-              GymMember, GymPokemon, MainWorker, WorkerStatus,
+    tables = [Account, Pokemon, Pokestop, Gym, Raid, ScannedLocation,
+              GymDetails, GymMember, GymPokemon, MainWorker, WorkerStatus,
               SpawnPoint, ScanSpawnPoint, SpawnpointDetectionData,
               Token, LocationAltitude, PlayerLocale, HashKeys]
     with db.execution_context():
@@ -3092,8 +3287,8 @@ def create_tables(db):
 
 
 def drop_tables(db):
-    tables = [Pokemon, Pokestop, Gym, Raid, ScannedLocation, Versions,
-              GymDetails, GymMember, GymPokemon, MainWorker,
+    tables = [Account, Pokemon, Pokestop, Gym, Raid, ScannedLocation,
+              Versions, GymDetails, GymMember, GymPokemon, MainWorker,
               WorkerStatus, SpawnPoint, ScanSpawnPoint,
               SpawnpointDetectionData, LocationAltitude, PlayerLocale,
               Token, HashKeys]
@@ -3282,10 +3477,6 @@ def database_migrate(db, old_ver):
                        'ADD CONSTRAINT CONSTRAINT_4 CHECK ' +
                        '(`latest_seen` <= 3600);')
 
-    if old_ver < 23:
-        db.drop_tables([WorkerStatus])
-        db.drop_tables([MainWorker])
-
     if old_ver < 24:
         migrate(
             migrator.drop_index('pokemon', 'pokemon_disappear_time'),
@@ -3339,6 +3530,10 @@ def database_migrate(db, old_ver):
             'MODIFY COLUMN `remaining` INTEGER,'
             'MODIFY COLUMN `peak` INTEGER;'
         )
+
+    if old_ver < 31:
+        db.drop_tables([WorkerStatus])
+        db.drop_tables([MainWorker])
 
     # Always log that we're done.
     log.info('Schema upgrade complete.')
