@@ -694,6 +694,11 @@ function gymLabel(gym, includeMembers = true) {
                       <span class='name'>${pMove2}</span><span class='type ${moves[raid['move_2']]['type'].toLowerCase()}'>${i8ln(moves[raid['move_2']]['type'])}</span>
                     </div>`
         }
+        
+        if (raid.exclusive) {
+            raidStr += `
+                <b>🔒 Exclusive</b>`
+        }
     }
     const lastScannedStr = getDateStr(gym.last_scanned)
     const lastModifiedStr = getDateStr(gym.last_modified)
