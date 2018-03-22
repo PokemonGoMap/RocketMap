@@ -481,6 +481,9 @@ function initSidebar() {
     $('#spawnpoints-switch').prop('checked', Store.get('showSpawnpoints'))
     $('#ranges-switch').prop('checked', Store.get('showRanges'))
     $('#notify-perfection-wrapper').toggle(Store.get('showPokemonStats'))
+    $('#hideunnotified-switch').prop('checked', Store.get('hideNotNotified'))
+    $('#popups-switch').prop('checked', Store.get('showPopups'))
+    $('#bounce-switch').prop('checked', Store.get('isBounceDisabled'))
     $('#sound-switch').prop('checked', Store.get('playSound'))
     $('#pokemoncries').toggle(Store.get('playSound'))
     $('#cries-switch').prop('checked', Store.get('playCries'))
@@ -1693,17 +1696,17 @@ function processPokemon(item) {
 
     if (!(item['encounter_id'] in mapData.pokemons) &&
          !isPokeExcluded && !isRarityExcluded && isPokeAlive) {
-        // Add marker to map and item to dict.
-        if (!item.hidden) {
+    // Add marker to map and item to dict.
+        const isNotifyPkmn = isNotifyPoke(item)
+        if (!item.hidden && (!Store.get('hideNotNotified') || isNotifyPkmn)) {
             const isBounceDisabled = Store.get('isBounceDisabled')
             const scaleByRarity = Store.get('scaleByRarity')
-            const isNotifyPkmn = isNotifyPoke(item)
 
             if (item.marker) {
                 updatePokemonMarker(item.marker, map, scaleByRarity, isNotifyPkmn)
             } else {
                 newMarker = setupPokemonMarker(item, map, isBounceDisabled, scaleByRarity, isNotifyPkmn)
-                customizePokemonMarker(newMarker, item)
+                customizePokemonMarker(newMarker, item, !Store.get('showPopups'))
                 item.marker = newMarker
             }
 
@@ -2574,11 +2577,11 @@ $(function () {
     $switchActiveRaidGymsOnly.on('change', function () {
         Store.set('showActiveRaidsOnly', this.checked)
         lastgyms = false
+
         updateMap()
     })
 
     $switchRaidMinLevel = $('#raid-min-level-only-switch')
-
     $switchRaidMinLevel.select2({
         placeholder: 'Minimum raid level',
         minimumResultsForSearch: Infinity
@@ -3064,6 +3067,21 @@ $(function () {
         } else {
             criesWrapper.hide(options)
         }
+    })
+
+    $('#bounce-switch').change(function () {
+        Store.set('isBounceDisabled', this.checked)
+        location.reload()
+    })
+
+    $('#hideunnotified-switch').change(function () {
+        Store.set('hideNotNotified', this.checked)
+        location.reload()
+    })
+
+    $('#popups-switch').change(function () {
+        Store.set('showPopups', this.checked)
+        location.reload()
     })
 
     $('#cries-switch').change(function () {

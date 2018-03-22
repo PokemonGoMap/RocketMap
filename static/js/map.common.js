@@ -954,6 +954,14 @@ var StoreOptions = {
         default: false,
         type: StoreTypes.Boolean
     },
+    'hideNotNotified': {
+        default: false,
+        type: StoreTypes.Boolean
+    },
+    'showPopups': {
+        default: true,
+        type: StoreTypes.Boolean
+    },
     'playSound': {
         default: false,
         type: StoreTypes.Boolean
