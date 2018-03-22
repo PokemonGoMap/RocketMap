@@ -153,7 +153,7 @@ function createServiceWorkerReceiver() {
     })
 }
 
-function initMap() { // eslint-disable-line no-unused-vars
+function _initMap() { // eslint-disable-line
     map = new google.maps.Map(document.getElementById('map'), {
         center: {
             lat: Number(getParameterByName('lat')) || centerLat,
@@ -308,6 +308,12 @@ function initMap() { // eslint-disable-line no-unused-vars
     if (Push._agents.chrome.isSupported()) {
         createServiceWorkerReceiver()
     }
+}
+
+// wrapper function for real initMap (_initMap) to
+// avoid race conditions with custom.js
+function initMap() { // eslint-disable-line no-unused-vars
+    setTimeout(_initMap, 100)
 }
 
 function updateLocationMarker(style) {

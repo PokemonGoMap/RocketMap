@@ -519,7 +519,7 @@
     </script>
     <script src="{{ url_for('static', filename='dist/js/app.min.js').lstrip('/') }}"></script>
     <script src="{{ url_for('static', filename='dist/js/map.common.min.js').lstrip('/') }}"></script>
-    <!-- Load custom JS before map.js so it can change Store defaults. -->
+    <!-- Custom JS is loaded but not actually executed prior to map.js as all its code is executed in jQuerys onload function. -->
       {% if show.custom_js %}
     <script src="{{ url_for('static', filename='dist/js/custom.min.js').lstrip('/') }}"></script>
       {% endif %}
