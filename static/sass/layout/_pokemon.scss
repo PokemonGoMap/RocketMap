@@ -1,5 +1,6 @@
 .pokemon.container {
   display: flex;
+  margin-bottom: 0px;
 
   &.content-left {
     width:64px;
@@ -19,9 +20,21 @@
   &.name {
     font-size: 13px;
     font-weight: 900;
+    margin-bottom: 13px;
 
     &.pokedex {
       font-size: 12px;
+      margin-right: 5px;
+    }
+
+    &.type {
+      padding: 2px 5px;
+      text-transform: uppercase;
+      color: white;
+      border-radius: 4px;
+      font-size: 0.8em;
+      vertical-align: middle;
+      margin-right: 2px;
     }
   }
 
@@ -29,23 +42,21 @@
     font-weight: 900;
   }
 
-  &.no-encounter {
-    font-weight: 300;
-  }
-
-  &.gender.rarity {
-    font-size: 11px;
+  &.rarity {
+    font-size: 12px;
+    margin-right: 5px;
   }
 
   &.weather-boost {
     font-size: 16px;
     vertical-align: middle;
+    margin-left: 3px;
   }
 
   &.disappear {
     font-size: 14px;
     font-weight: 900;
-    margin: 10px 0px 10px 0px;
+    margin-bottom: 10px;
 
     &:before {
       content: '\f017';
@@ -59,6 +70,7 @@
 
   &.links {
     color: rgb(93,109,126);
+    margin-right: 3px;
 
     &.exclude:before {
       content: '\f056';
@@ -89,7 +101,7 @@
       content: '\f018';
       display: inline-block;
       font-family: FontAwesome;
-      margin: 6px 3px 0px 0px;
+      margin-top: 5px;
       height: 16px;
       width: 16px;
       -webkit-font-smoothing: antialiased;
@@ -100,5 +112,6 @@
     display: block;
     height: 48px;
     width: 48px;
+    margin-bottom: 15px;
   }
 }
