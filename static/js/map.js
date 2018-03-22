@@ -35,8 +35,8 @@ var searchMarkerStyles
 
 var timestamp
 var excludedPokemon = []
+var excludedPokemonByHidden = []
 var excludedPokemonByRarity = []
-var excludedRarity
 var notifiedPokemon = []
 var notifiedRarity = []
 var notifiedMinPerfection = null
@@ -1429,19 +1429,19 @@ function clearStaleMarkers() {
     $.each(mapData.pokemons, function (key, pokemon) {
         const pokemonId = pokemon['pokemon_id']
         const isPokeExpired = pokemon['disappear_time'] < Date.now()
-        const isPokeExcluded = excludedPokemon.indexOf(pokemonId) !== -1
+        const isPokeHidden = excludedPokemonByHidden.indexOf(pokemonId) !== -1
         // Limit choice to our options [0, 5].
         const excludedRarityOption = Math.min(Math.max(Store.get('excludedRarity'), 0), 5)
         const excludedRarity = excludedRaritiesList[excludedRarityOption]
         const pokemonRarity = getPokemonRarity(pokemon['pokemon_id']).toLowerCase()
         const isRarityExcluded = excludedRarity.indexOf(pokemonRarity) !== -1
 
-        if (isPokeExpired || isPokeExcluded || isRarityExcluded) {
+        if (isPokeExpired || isPokeHidden || isRarityExcluded) {
             const oldMarker = pokemon.marker
             const isPokeExcludedByRarity = excludedPokemonByRarity.indexOf(pokemonId) !== -1
 
             if (isRarityExcluded && !isPokeExcludedByRarity) {
-                excludedPokemonByRarity.push(pokemonId)
+                addPokemonToRarityExcludes(pokemonId)
             }
 
             if (oldMarker.rangeCircle) {
@@ -1679,7 +1679,7 @@ function processPokemonChunked(pokemon, chunkSize) {
 }
 
 function processPokemon(item) {
-    const isPokeExcluded = excludedPokemon.indexOf(item['pokemon_id']) !== -1
+    const isPokeHidden = excludedPokemonByHidden.indexOf(item['pokemon_id']) !== -1
     const isPokeAlive = item['disappear_time'] > Date.now()
     // Limit choice to our options [0, 5].
     const excludedRarityOption = Math.min(Math.max(Store.get('excludedRarity'), 0), 5)
@@ -1692,7 +1692,7 @@ function processPokemon(item) {
     var newMarker = null
 
     if (!(item['encounter_id'] in mapData.pokemons) &&
-         !isPokeExcluded && !isRarityExcluded && isPokeAlive) {
+         !isPokeHidden && !isRarityExcluded && isPokeAlive) {
         // Add marker to map and item to dict.
         if (!item.hidden) {
             const isBounceDisabled = Store.get('isBounceDisabled')
@@ -1712,10 +1712,53 @@ function processPokemon(item) {
             oldMarker = item.marker
         }
     } else if (isRarityExcluded && !isPokeExcludedByRarity) {
-        excludedPokemonByRarity.push(item['pokemon_id'])
+        addPokemonToRarityExcludes(item['pokemon_id'])
     }
 
     return [newMarker, oldMarker]
+}
+
+function addPokemonToGlobalExcludes(pokemonId) {
+    if (excludedPokemon.indexOf(pokemonId) === -1) {
+        excludedPokemon.push(pokemonId)
+    }
+}
+
+function addPokemonToRarityExcludes(pokemonId) {
+    if (excludedPokemonByRarity.indexOf(pokemonId) === -1) {
+        excludedPokemonByRarity.push(pokemonId)
+        addPokemonToGlobalExcludes(pokemonId)
+    }
+}
+
+function addPokemonToHiddenExcludes(pokemonId) {
+    if (excludedPokemonByHidden.indexOf(pokemonId) === -1) {
+        excludedPokemonByHidden.push(pokemonId)
+        addPokemonToGlobalExcludes(pokemonId)
+    }
+}
+
+function removePokemonFromGlobalExcludes(pokemonId) {
+    const index = excludedPokemon.indexOf(pokemonId)
+    if (index !== -1) {
+        excludedPokemon.splice(index, 1)
+    }
+}
+
+function removePokemonFromHiddenExcludes(pokemonId) {
+    const index = excludedPokemonByHidden.indexOf(pokemonId)
+    if (index !== -1) {
+        excludedPokemonByHidden.splice(index, 1)
+        removePokemonFromGlobalExcludes(pokemonId)
+    }
+}
+
+function removePokemonFromRarityExcludes(pokemonId) {
+    const index = excludedPokemonByRarity.indexOf(pokemonId)
+    if (index !== -1) {
+        excludedPokemonByRarity.splice(index, 1)
+        removePokemonFromGlobalExcludes(pokemonId)
+    }
 }
 
 function processPokestop(i, item) {
@@ -2816,21 +2859,58 @@ $(function () {
 
         // setup list change behavior now that we have the list to work from
         $selectExclude.on('change', function (e) {
-            buffer = excludedPokemon
-            excludedPokemon = $selectExclude.val().map(Number)
+            buffer = excludedPokemonByHidden
+            var excludedPokemonByHiddenSelection = $selectExclude.val().map(Number)
             buffer = buffer.filter(function (e) {
                 return this.indexOf(e) < 0
-            }, excludedPokemon)
+            }, excludedPokemonByHiddenSelection)
             reincludedPokemon = reincludedPokemon.concat(buffer)
+            for (var k1 in excludedPokemonByHiddenSelection) {
+                addPokemonToHiddenExcludes(excludedPokemonByHiddenSelection[k1])
+            }
+            for (var k2 in buffer) {
+                removePokemonFromHiddenExcludes(buffer[k2])
+            }
             clearStaleMarkers()
-            Store.set('remember_select_exclude', excludedPokemon)
+            Store.set('remember_select_exclude', excludedPokemonByHidden)
         })
         $selectExcludeRarity.on('change', function (e) {
-            excludedRarity = $selectExcludeRarity.val()
-            reincludedPokemon = reincludedPokemon.concat(excludedPokemonByRarity)
-            excludedPokemonByRarity = []
+            var excludedRaritySelection = $selectExcludeRarity.val()
+            var excludedRarities = excludedRaritiesList[excludedRaritySelection]
+            buffer = excludedPokemonByRarity.slice()
+
+            // Remove currently excluded Pokémon if their rarity is now below the threshold.
+            if (excludedPokemonByRarity.length > 0) {
+                for (var k3 in buffer) {
+                    var pokemonRarity = getPokemonRarity(buffer[k3]).toLowerCase()
+                    if (excludedRarities.indexOf(pokemonRarity) === -1) {
+                        removePokemonFromRarityExcludes(buffer[k3])
+                    }
+                }
+            }
+
+            // Update excluded pokemon by rarity based on dynamic rarity.
+            if (Object.keys(pokemonRarities).length > 0) {
+                for (var k4 in pokemonRarities) {
+                    if (excludedRarities.indexOf(pokemonRarities[k4]) !== -1) {
+                        addPokemonToRarityExcludes(k4)
+                    }
+                }
+            } else {
+                // Default behavior, dump the entire list and let it rebuild as Pokemon are processed.
+                for (var k5 in excludedPokemonByRarity) {
+                    removePokemonFromRarityExcludes(excludedPokemonByRarity[k5])
+                }
+            }
+
+            buffer = buffer.filter(function (e) {
+                return this.indexOf(e) < 0
+            }, excludedPokemonByRarity)
+            reincludedPokemon = reincludedPokemon.concat(buffer)
+
             clearStaleMarkers()
-            Store.set('excludedRarity', excludedRarity)
+
+            Store.set('excludedRarity', excludedRaritySelection)
         })
         $selectPokemonNotify.on('change', function (e) {
             notifiedPokemon = $selectPokemonNotify.val().map(Number)
