@@ -580,7 +580,7 @@ def search_overseer_thread(args, new_location_queue, control_flags, heartb,
         threadStatus['Overseer']['accounts_captcha'] = len(account_captchas)
 
         # Send webhook updates when scheduler status changes.
-        if args.speed_scan and 'tth' in args.wh_types:
+        if args.scheduler == 'SpeedScan' and 'tth' in args.wh_types:
             wh_status_update(args, threadStatus['Overseer'], wh_queue,
                              scheduler_array[0])
 

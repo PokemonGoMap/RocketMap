@@ -66,8 +66,8 @@ from .models import (hex_bounds, SpawnPoint, ScannedLocation,
 from .utils import now, cur_sec, cellid, distance
 from .altitude import get_altitude
 from .geofence import Geofences
-from .cluster import cluster_spawnpoints
-
+from .cluster import cluster_spawnpoints, cluster_locations
+from models import Gym, Pokestop
 log = logging.getLogger(__name__)
 
 
@@ -1198,6 +1198,99 @@ class SpeedScan(HexSearch):
                             item['done'] = 'Scanned'
 
 
+# Fort Search is used to find and scan only gyms and pokemon with the intent
+# of finding raids (or lured stops) in a quick and predictable fashion.
+class FortSearch(BaseScheduler):
+    # Call base initialization, set step_distance.
+    def __init__(self, queues, status, args):
+        BaseScheduler.__init__(self, queues, status,
+                               args)
+
+        # We are only scanning for gyms, the scan radius is 450m.
+        self.scan_radius = 450
+
+        # Scanning for pokemon won't work. make sure we don't try.
+        if not self.args.no_pokemon:
+            log.error("Fort search doesn't work with pokemon, exiting!")
+            sys.exit()
+
+        if self.args.no_gyms and self.args.no_pokestops:
+            log.error("Fort search must have gyms or pokestops enabled,"
+                      " exiting!")
+            sys.exit()
+
+        # This will hold the list of locations to scan so it can be reused,
+        # instead of recalculating on each loop.
+        self.locations = False
+
+    # On location change, empty the current queue and the locations list.
+    def location_changed(self, scan_location, dbq):
+        self.scan_location = scan_location
+        self.empty_queues()
+        self.locations = False
+
+    # Generates the list of locations to scan.
+    def _generate_locations(self):
+        if self.args.no_pokestops:
+            forts = Gym.get_all()
+        elif self.args.no_gyms:
+            forts = Pokestop.get_all()
+        else:
+            forts = Gym.get_all() + Pokestop.get_all()
+
+        log.info("Found %s gyms (and stops)", len(forts))
+
+        clustered_gyms = []
+
+        # Geofence the forts.
+        if self.geofences.is_enabled():
+            locations = self.geofences.get_geofenced_coordinates(forts)
+            if not locations:
+                log.error(
+                    'No locations regarded as valid for desired scan area. '
+                    'Check your provided geofences. Aborting.')
+                sys.exit()
+        else:
+            locations = forts
+
+        clusters = cluster_locations(locations, self.scan_radius)
+
+        for cluster in clusters:
+            clustered_gyms.append(cluster.centroid)
+
+        log.info("Clustered %d forts into %d search locations",
+                 len(forts), len(clusters))
+
+        # Add the altitudes and make the list.
+        points = []
+        for step, location in enumerate(clustered_gyms):
+            altitude = get_altitude(self.args,
+                                    location)
+            points.append(
+                (step,
+                 (location[0], location[1], altitude),
+                 0, 0))
+        return points
+
+    # Schedule the work to be done.
+    def schedule(self):
+        if not self.scan_location:
+            log.warning(
+                'Cannot schedule work until scan location has been set.')
+            return
+
+        # Only generate the list of locations if we don't have it already
+        # calculated.
+        if not self.locations:
+            self.locations = self._generate_locations()
+
+        # Queue up the locations.
+        for location in self.locations:
+            self.queues[0].put(location)
+            log.debug("Added location {}.".format(location))
+        self.ready = True
+
+
 # The SchedulerFactory returns an instance of the correct type of scheduler.
 class SchedulerFactory():
     __schedule_classes = {
@@ -1205,6 +1298,7 @@ class SchedulerFactory():
         "hexsearchspawnpoint": HexSearchSpawnpoint,
         "spawnscan": SpawnScan,
         "speedscan": SpeedScan,
+        "fortsearch": FortSearch,
     }
 
     @staticmethod

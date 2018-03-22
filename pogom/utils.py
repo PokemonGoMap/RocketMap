@@ -302,19 +302,16 @@ def get_args():
                         help=('Disables PokeStops from the map (including ' +
                               'parsing them into local db).'),
                         action='store_true', default=False)
-    parser.add_argument('-ss', '--spawnpoint-scanning',
-                        help=('Use spawnpoint scanning (instead of hex ' +
-                              'grid). Scans in a circle based on step_limit ' +
-                              'when on DB.'),
-                        action='store_true', default=False)
+    parser.add_argument('-sch', '--scheduler',
+                        help='Set scan scheduler to use.',
+                        choices=['SpeedScan', 'SpawnScan',
+                                 'FortSearch', 'HexSearch',
+                                 'HexSearchSpawnpoint'],
+                        default='SpeedScan')
     parser.add_argument('-ssct', '--ss-cluster-time',
                         help=('Time threshold in seconds for spawn point ' +
                               'clustering (0 to disable).'),
                         type=int, default=0)
-    parser.add_argument('-speed', '--speed-scan',
-                        help=('Use speed scanning to identify spawn points ' +
-                              'and then scan closest spawns.'),
-                        action='store_true', default=False)
     parser.add_argument('-spin', '--pokestop-spinning',
                         help=('Spin Pokestops with 50%% probability.'),
                         action='store_true', default=False)
@@ -836,15 +833,9 @@ def get_args():
             with open(args.ignorelist_file) as f:
                 args.ignorelist = frozenset([int(l.strip()) for l in f])
 
-        # Decide which scanning mode to use.
-        if args.spawnpoint_scanning:
-            args.scheduler = 'SpawnScan'
-        elif args.skip_empty:
-            args.scheduler = 'HexSearchSpawnpoint'
-        elif args.speed_scan:
-            args.scheduler = 'SpeedScan'
-        else:
-            args.scheduler = 'HexSearch'
+        if args.scheduler.lower() == 'fortsearch' and args.beehive:
+            print(sys.argv[0] + "Beehive is not compatible with Fort search!")
+            sys.exit(1)
 
         # Disable webhook scheduler updates if webhooks are disabled
         if args.webhooks is None:

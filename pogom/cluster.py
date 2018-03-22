@@ -2,33 +2,84 @@ from .utils import distance
 from .transform import intermediate_point
 
 
-class SpawnCluster(object):
+class LocationCluster(object):
+    def __init__(self, location):
+        self._locations = [location]
+        self.centroid = self.get_position(location)
+
+    def __getitem__(self, key):
+        return self._locations[key]
+
+    def __iter__(self):
+        for x in self._locations:
+            yield x
+
+    def __contains__(self, item):
+        return item in self._locations
+
+    def __len__(self):
+        return len(self._locations)
+
+    def append(self, location):
+        self.centroid = self.new_centroid(location)
+
+        self._locations.append(location)
+
+    def get_score(self, location, time_threshold=-1):
+        position = self.get_position(location)
+        return distance(position, self.centroid)
+
+    # The finest Duck programming money can offer.
+    @staticmethod
+    def get_position(location):
+        if 'lat' in location:
+            position = (location['lat'], location['lng'])
+        elif 'latitude' in location:
+            position = (location['latitude'], location['longitude'])
+        else:
+            # Assume it's a tuple/list already.
+            position = location
+        return position
+
+    def new_centroid(self, location):
+        sp_count = len(self._locations)
+        f = sp_count / (sp_count + 1.0)
+        new_centroid = intermediate_point(
+            self.get_position(location), self.centroid, f)
+
+        return new_centroid
+
+    def test_location(self, location, radius, time_threshold=-1):
+        # Discard spawn points outside the time frame or too far away.
+        if self.get_score(location, time_threshold) > 2 * radius:
+            return False
+
+        new_centroid = self.new_centroid(location)
+
+        # Check if spawn point is within range of the new centroid.
+        if (distance(self.get_position(location), new_centroid) >
+                radius):
+            return False
+
+        # Check if cluster's spawn points remain in range of the new centroid.
+        if any(distance(self.get_position(x), new_centroid) >
+                radius for x in self._locations):
+            return False
+
+        return True
+
+
+class SpawnCluster(LocationCluster):
     def __init__(self, spawnpoint):
-        self._spawnpoints = [spawnpoint]
-        self.centroid = (spawnpoint['lat'], spawnpoint['lng'])
+        LocationCluster.__init__(self, spawnpoint)
         self.min_time = spawnpoint['time']
         self.max_time = spawnpoint['time']
         self.spawnpoint_id = spawnpoint['spawnpoint_id']
         self.appears = spawnpoint['appears']
         self.leaves = spawnpoint['leaves']
 
-    def __getitem__(self, key):
-        return self._spawnpoints[key]
-
-    def __iter__(self):
-        for x in self._spawnpoints:
-            yield x
-
-    def __contains__(self, item):
-        return item in self._spawnpoints
-
-    def __len__(self):
-        return len(self._spawnpoints)
-
     def append(self, spawnpoint):
-        self.centroid = self.new_centroid(spawnpoint)
-
-        self._spawnpoints.append(spawnpoint)
+        super(self).append(spawnpoint)
 
         if spawnpoint['time'] < self.min_time:
             self.min_time = spawnpoint['time']
@@ -39,42 +90,30 @@ class SpawnCluster(object):
             self.appears = spawnpoint['appears']
             self.leaves = spawnpoint['leaves']
 
-    def get_score(self, spawnpoint, time_threshold):
-        min_time = min(self.min_time, spawnpoint['time'])
-        max_time = max(self.max_time, spawnpoint['time'])
-        sp_position = (spawnpoint['lat'], spawnpoint['lng'])
+    def get_score(self, location, time_threshold=-1):
+        min_time = min(self.min_time, location['time'])
+        max_time = max(self.max_time, location['time'])
 
         if max_time - min_time > time_threshold:
             return float('inf')
         else:
-            return distance(sp_position, self.centroid)
+            return super(self).get_score(self, location)
 
-    def new_centroid(self, spawnpoint):
-        sp_count = len(self._spawnpoints)
-        f = sp_count / (sp_count + 1.0)
-        new_centroid = intermediate_point(
-            (spawnpoint['lat'], spawnpoint['lng']), self.centroid, f)
 
-        return new_centroid
+def cluster_locations(locations, radius=70):
+    # Initialize cluster list with the first spawn point available.
+    clusters = [LocationCluster(locations.pop())]
+    for l in locations:
+        # Pick the closest cluster compatible to current spawn point.
+        c = min(clusters, key=lambda x: x.get_score(l, -1))
 
-    def test_spawnpoint(self, spawnpoint, radius, time_threshold):
-        # Discard spawn points outside the time frame or too far away.
-        if self.get_score(spawnpoint, time_threshold) > 2 * radius:
-            return False
+        if c.test_location(l, radius, -1):
+            c.append(l)
+        else:
+            c = LocationCluster(l)
+            clusters.append(c)
 
-        new_centroid = self.new_centroid(spawnpoint)
-
-        # Check if spawn point is within range of the new centroid.
-        if (distance((spawnpoint['lat'], spawnpoint['lng']), new_centroid) >
-                radius):
-            return False
-
-        # Check if cluster's spawn points remain in range of the new centroid.
-        if any(distance((x['lat'], x['lng']), new_centroid) >
-                radius for x in self._spawnpoints):
-            return False
-
-        return True
+    return clusters
 
 
 # Group spawn points with similar spawn times that are close to each other.
@@ -85,7 +124,7 @@ def cluster_spawnpoints(spawnpoints, radius=70, time_threshold=240):
         # Pick the closest cluster compatible to current spawn point.
         c = min(clusters, key=lambda x: x.get_score(sp, time_threshold))
 
-        if c.test_spawnpoint(sp, radius, time_threshold):
+        if c.test_location(sp, radius, time_threshold):
             c.append(sp)
         else:
             c = SpawnCluster(sp)

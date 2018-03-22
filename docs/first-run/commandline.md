@@ -19,8 +19,8 @@
                     [-me MAX_EMPTY] [-bsr BAD_SCAN_RETRY]
                     [-msl MIN_SECONDS_LEFT] [-dc] [-H HOST] [-P PORT]
                     [-L LOCALE] [-c] [-m MOCK] [-ns] [-os] [-sc] [-nfl] -k
-                    GMAPS_KEY [--skip-empty] [-C] [-cd] [-np] [-ng] [-nr]
-                    [-nk] [-ss] [-ssct SS_CLUSTER_TIME] [-speed] [-spin]
+                    GMAPS_KEY [-C] [-cd] [-np] [-ng] [-nr]
+                    [-nk] [-scheduler SCHEDULER] [-ssct SS_CLUSTER_TIME] [-spin]
                     [-ams ACCOUNT_MAX_SPINS] [-kph KPH] [-hkph HLVL_KPH]
                     [-ldur LURE_DURATION] [-px PROXY] [-pxsc]
                     [-pxt PROXY_TEST_TIMEOUT] [-pxre PROXY_TEST_RETRIES]
@@ -240,9 +240,6 @@ variables which override config file values which override defaults.
       -k GMAPS_KEY, --gmaps-key GMAPS_KEY
                             Google Maps Javascript API Key. [env var:
                             POGOMAP_GMAPS_KEY]
-      --skip-empty          Enables skipping of empty cells in normal scans -
-                            requires previously populated database (not to be used
-                            with -ss) [env var: POGOMAP_SKIP_EMPTY]
       -C, --cors            Enable CORS on web server. [env var: POGOMAP_CORS]
       -cd, --clear-db       Deletes the existing database before starting the
                             Webserver. [env var: POGOMAP_CLEAR_DB]
@@ -254,15 +251,27 @@ variables which override config file values which override defaults.
                             into local db). [env var: POGOMAP_NO_RAIDS]
       -nk, --no-pokestops   Disables PokeStops from the map (including parsing
                             them into local db). [env var: POGOMAP_NO_POKESTOPS]
-      -ss, --spawnpoint-scanning
+      -sch, --scheduler
+                            Sets the method of scanning (default: SpeedScan)
+                            ''SpeedScan''
+                            Recommended value for normal scanning of pokémon.
+                            Identify spawn points and then scan closest spawns.
+                            ''HexSearch''
+                            Default scan method, scans all cells around 
+                            location based on step size 
+                            ''HexSearchSpawnpoint''
+                            Requires previously populated database. Scans only
+                            hex cells that aren't empty.
+                            ''SpawnScan''
                             Use spawnpoint scanning (instead of hex grid). Scans
-                            in a circle based on step_limit when on DB. [env var:
-                            POGOMAP_SPAWNPOINT_SCANNING]
+                            in a circle based on step_limit when on DB.
+                            ''FortSearch''
+                            Requires previously populated database. 
+                            Cluster and scan only gyms and/or pokestops. 
+                            [env var: POGOMAP_SCHEDULER]
       -ssct SS_CLUSTER_TIME, --ss-cluster-time SS_CLUSTER_TIME
                             Time threshold in seconds for spawn point clustering
                             (0 to disable). [env var: POGOMAP_SS_CLUSTER_TIME]
-      -speed, --speed-scan  Use speed scanning to identify spawn points and then
-                            scan closest spawns. [env var: POGOMAP_SPEED_SCAN]
       -spin, --pokestop-spinning
                             Spin Pokestops with 50% probability. [env var:
                             POGOMAP_POKESTOP_SPINNING]
