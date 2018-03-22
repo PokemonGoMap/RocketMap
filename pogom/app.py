@@ -4,6 +4,7 @@
 import calendar
 import logging
 import gc
+import math
 
 from datetime import datetime
 from s2sphere import LatLng
@@ -13,13 +14,21 @@ from flask import Flask, abort, jsonify, render_template, request,\
 from flask.json import JSONEncoder
 from flask_compress import Compress
 
+from pogom.weather import (get_weather_cells, get_s2_coverage,
+                           get_weather_alerts)
 from .models import (Pokemon, Gym, Pokestop, ScannedLocation,
                      MainWorker, WorkerStatus, Token, HashKeys,
-                     SpawnPoint)
+                     SpawnPoint, Weather)
 from .utils import (get_args, get_pokemon_name, get_pokemon_types,
-                    now, dottedQuadToNum)
+                    now, dottedQuadToNum, degrees_to_cardinal)
 from .transform import transform_from_wgs_to_gcj
 from .blacklist import fingerprints, get_ip_blacklist
+
+from pgoapi.protos.pogoprotos.map.weather.weather_alert_pb2 import WeatherAlert
+from pgoapi.protos.pogoprotos.map.weather.gameplay_weather_pb2 \
+    import GameplayWeather
+from pgoapi.protos.pogoprotos.networking.responses \
+    .get_map_objects_response_pb2 import GetMapObjectsResponse
 
 log = logging.getLogger(__name__)
 compress = Compress()
@@ -89,6 +98,65 @@ class Pogom(Flask):
         self.route("/robots.txt", methods=['GET'])(self.render_robots_txt)
         self.route("/serviceWorker.min.js", methods=['GET'])(
             self.render_service_worker_js)
+        self.route("/weather", methods=['GET'])(self.get_weather)
+
+    def get_weather(self, page=1):
+        args = get_args()
+        db_weather = Weather.get_all_weather()
+
+        def prepare_cell(s):
+            s['loc'] = '{:.6f}, {:.6f}'.format(s['latitude'], s['longitude'])
+            s['wind_direction'] = degrees_to_cardinal(s['wind_direction'])
+            s['gameplay_weather'] = GameplayWeather\
+                .WeatherCondition.Name(s['gameplay_weather'])
+            s['severity'] = WeatherAlert.Severity.Name(s['severity'])
+            s['world_time'] = GetMapObjectsResponse\
+                .TimeOfDay.Name(s['world_time'])
+            return s
+
+        headers = [
+            'S2CellLoc',
+            'Gameplay Weather',
+            'CloudLvl',
+            'RainLvl',
+            'WindLvl',
+            'Wind Direction',
+            'SnowLvl',
+            'FogLvl',
+            'Severity',
+            'Warn',
+            'LastUpdated',
+            'Time'
+        ]
+
+        max_weather_per_page = 25
+        max_page = int(math.ceil(len(db_weather) /
+                                 float(max_weather_per_page)))
+        if page * max_weather_per_page > len(db_weather):
+            # Page number is too great, set to last page.
+            page = max_page
+        if page < 1:
+            page = 1
+
+        weather = map(
+            prepare_cell,
+            db_weather[
+                (page - 1) * max_weather_per_page:page * max_weather_per_page
+            ]
+        )
+
+        return render_template(
+            'weather.html',
+            single_page=(len(db_weather) <= max_weather_per_page),
+            page=page,
+            max_page=max_page,
+            headers=headers,
+            weather=weather,
+            show={
+                'custom_css': args.custom_css,
+                'custom_js': args.custom_js
+            }
+        )
 
     def render_robots_txt(self):
         return render_template('robots.txt')
@@ -200,6 +268,7 @@ class Pogom(Flask):
             'gyms': not args.no_gyms,
             'pokemons': not args.no_pokemon,
             'pokestops': not args.no_pokestops,
+            'weather_cells': not args.no_weather_cells,
             'raids': not args.no_raids,
             'gym_info': args.gym_info,
             'encounter': args.encounter,
@@ -423,6 +492,21 @@ class Pogom(Flask):
                             oSwLat=oSwLat, oSwLng=oSwLng,
                             oNeLat=oNeLat, oNeLng=oNeLng))
 
+        # Weather.
+        if (request.args.get('weather', 'false') == 'true'
+                and not args.no_weather_cells):
+            d['weather'] = get_weather_cells(swLat, swLng,
+                                             neLat, neLng)
+        if (request.args.get('s2cells', 'false') == 'true'
+                and not args.no_weather_cells):
+            d['s2cells'] = get_s2_coverage(swLat, swLng,
+                                           neLat, neLng)
+        if (request.args.get('weatherAlerts', 'false') == 'true'
+                and not args.no_weather_cells):
+            d['weatherAlerts'] = get_weather_alerts(swLat, swLng,
+                                                    neLat, neLng)
+
+        # Status page.
         if request.args.get('status', 'false') == 'true':
             args = get_args()
             d = {}

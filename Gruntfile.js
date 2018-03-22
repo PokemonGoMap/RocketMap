@@ -46,7 +46,8 @@ module.exports = function (grunt) {
                     'static/dist/js/status.built.js': 'static/js/status.js',
                     'static/dist/js/custom.built.js': 'static/js/custom.js',
                     'static/dist/js/vendor/markerclusterer.built.js': 'static/js/vendor/markerclusterer.js',
-                    'static/dist/js/serviceWorker.built.js': 'static/js/serviceWorker.js'
+                    'static/dist/js/serviceWorker.built.js': 'static/js/serviceWorker.js',
+                    'static/dist/js/weather.built.js': 'static/js/weather.js'
                 }
             }
         },
@@ -69,7 +70,8 @@ module.exports = function (grunt) {
                     'static/dist/js/status.min.js': 'static/dist/js/status.built.js',
                     'static/dist/js/custom.min.js': 'static/dist/js/custom.built.js',
                     'static/dist/js/vendor/markerclusterer.min.js': 'static/dist/js/vendor/markerclusterer.built.js',
-                    'static/dist/js/serviceWorker.min.js': 'static/dist/js/serviceWorker.built.js'
+                    'static/dist/js/serviceWorker.min.js': 'static/dist/js/serviceWorker.built.js',
+                    'static/dist/js/weather.min.js': 'static/dist/js/weather.built.js'
                 }
             }
         },

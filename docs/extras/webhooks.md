@@ -27,6 +27,7 @@ Every time a webhook-enabled event occurs (for example a new Pokémon appearing)
   - [`raid`](#raid)
   - [`tth`](#tth)
   - [`captcha`](#captcha)
+  - [`weather`](#weather)
 - [PokeAlarm](#pokealarm)
 - [RocketMap Public Webhook](#rocketmap-public-webhook)
 
@@ -435,6 +436,31 @@ A `captcha` event is sent whenever a scan worker encounters a captcha.
 | `"success"`   | The captcha has been solved                |
 | `"failure"`   | The captcha has not been solved            |
 | `"error"`     | An error occurred while solving the captcha |
+
+### `weather`
+
+| Field                 | Details                                       | Example                   |
+| --------------------- | --------------------------------------------- | ------------------------- |
+| `s2_cell_id`          | The id of level 10 s2_cell                    |  `"5086306705231314944"`  |
+| `latitude`            | Latitude of s2_cell center                    |  `"59.92277927271055"`    |
+| `longitude`           | Longitude of s2_cell center                   |  `"30.32412623472067"`    |
+| `gameplay_weather`    | Weather condition in cell                     |  `4`                      |
+| `severity`            | Dangerous weather warning level: 0, 1 or 3    |  `0`                      |
+| `world_time`          | Day = 1, night = 2                            |  `1`                      |
+
+Possible weather conditions:
+
+| Status | Description                                |
+| ------ | ------------------------------------------ |
+| `0`    | No weather                                 |
+| `1`    | Clear                                      |
+| `2`    | Rain                                       |
+| `3`    | Partly cloudy                              |
+| `4`    | Cloudy                                     |
+| `5`    | Windy                                      |
+| `6`    | Snow                                       |
+| `7`    | Fog                                        |
+
 
 ## PokeAlarm
 

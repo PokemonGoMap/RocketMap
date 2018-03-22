@@ -66,6 +66,15 @@
     "updatePokemonLabels": true,
 
     "getPokemonRarity": true,
-    "updatePokemonRarities": true
+    "updatePokemonRarities": true,
+
+    "getS2CellBounds": true,
+    "processWeather": true,
+    "processS2Cell": true,
+    "processWeatherAlerts": true,
+    "updateMainCellWeather": true,
+    "map": true,
+    "jsts": true,
+    "resizeWeatherMarkers": true
   }
 }

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>RocketMap - weather Report</title>
+
+    <!-- Fav- & Apple-Touch-Icons -->
+    <!-- Favicon -->
+    <link rel="shortcut icon" href="{{ url_for('static', filename='images/appicons/favicon.ico').lstrip('/') }}"
+          type="image/x-icon">
+    <!-- non-retina iPhone pre iOS 7 -->
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/appicons/114x114.png').lstrip('/') }}"
+          sizes="57x57">
+    <!-- non-retina iPad pre iOS 7 -->
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/appicons/144x144.png').lstrip('/') }}"
+          sizes="72x72">
+    <!-- non-retina iPad iOS 7 -->
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/appicons/152x152.png').lstrip('/') }}"
+          sizes="76x76">
+    <!-- retina iPhone pre iOS 7 -->
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/appicons/114x114.png').lstrip('/') }}"
+          sizes="114x114">
+    <!-- retina iPhone iOS 7 -->
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/appicons/120x120.png').lstrip('/') }}"
+          sizes="120x120">
+    <!-- retina iPad pre iOS 7 -->
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/appicons/144x144.png').lstrip('/') }}"
+          sizes="144x144">
+    <!-- retina iPad iOS 7 -->
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/appicons/152x152.png').lstrip('/') }}"
+          sizes="152x152">
+    <!-- retina iPhone 6 iOS 7 -->
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/appicons/180x180.png').lstrip('/') }}"
+          sizes="180x180">
+
+    <style> th, td {
+        padding-left: 10px;
+        padding-right: 10px;
+        border: 1px solid #ddd;
+    }
+
+    table {
+        border-collapse: collapse
+    }
+
+    td {
+        text-align: center
+    }</style>
+
+    <!-- Custom CSS code-->
+    {% if show.custom_css %}
+        <link rel="stylesheet" type="text/css" href="static/css/custom.css">
+    {% endif %}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+</head>
+<body>
+
+<table>
+    <thead>
+    <tr>
+        {% for cell_header in headers %}
+            <th>{{ cell_header }}</th>
+        {% endfor %}
+    </tr>
+    </thead>
+    <tbody>
+    {% for cell in weather %}
+        <tr>
+            <td>{{ cell['loc'] }}</td>
+            <td>{{ cell['gameplay_weather'] }}</td>
+            <td>{{ cell['cloud_level'] }}</td>
+            <td>{{ cell['rain_level'] }}</td>
+            <td>{{ cell['wind_level'] }}</td>
+            <td>{{ cell['wind_direction'] }}</td>
+            <td>{{ cell['snow_level'] }}</td>
+            <td>{{ cell['fog_level'] }}</td>
+            <td>{{ cell['severity'] }}</td>
+            <td>{{ cell['warn_weather'] }}</td>
+            <td>{{ cell['last_updated'] }}</td>
+            <td>{{ cell['world_time'] }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+{% if not single_page %}
+    {% if max_page > 1 and page > 1 %}
+        <a href={{ url_for('weather', page=page - 1) }}>&lt;</a> |
+    {% endif %}
+
+    {% if max_page > 1 and page < max_page %}
+        <a href={{ url_for('weather', page=page + 1) }}>&gt;</a>
+    {% endif %}
+{% endif %}
+
+{% if show.custom_js %}
+    <script src="{{ url_for('static', filename='dist/js/custom.min.js').lstrip('/') }}"></script>
+{% endif %}
+</body>
+</html>

@@ -320,6 +320,8 @@ def main():
              'disabled' if args.no_gyms else 'enabled')
     log.info('Pokemon encounters %s.',
              'enabled' if args.encounter else 'disabled')
+    log.info('Parsing of weather cells %s.',
+             'disabled' if args.no_weather_cells else 'enabled')
 
     app = None
     if not args.no_server and not args.clear_db:

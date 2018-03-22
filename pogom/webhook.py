@@ -2,12 +2,12 @@
 # -*- coding: utf-8 -*-
 
 import logging
-import requests
 import threading
-
-from queue import Empty
-from cachetools import LFUCache
 from timeit import default_timer
+
+import requests
+from cachetools import LFUCache
+from queue import Empty
 
 from .utils import get_async_requests_session
 
@@ -220,7 +220,11 @@ def __get_key_fields(whtype):
         'gym_details': ['latitude', 'longitude', 'team', 'pokemon'],
         'raid': [
             'spawn', 'start', 'end', 'pokemon_id', 'latitude', 'longitude'
-        ]
+        ],
+        'weather': [
+            's2_cell_id', 'latitude', 'longitude', 'gameplay_weather',
+            'severity', 'world_time'
+        ],
     }
 
     return key_fields.get(whtype, [])
