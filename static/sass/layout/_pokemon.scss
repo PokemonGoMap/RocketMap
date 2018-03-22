@@ -32,7 +32,7 @@
       text-transform: uppercase;
       color: white;
       border-radius: 4px;
-      font-size: 0.7em;
+      font-size: 0.8em;
       vertical-align: middle;
       margin-right: 2px;
     }
@@ -43,13 +43,14 @@
   }
 
   &.rarity {
-    font-size: 11px;
+    font-size: 12px;
     margin-right: 5px;
   }
 
   &.weather-boost {
     font-size: 16px;
     vertical-align: middle;
+    margin-left: 3px;
   }
 
   &.disappear {
