@@ -187,92 +187,96 @@ def rpc_login_sequence(args, api, account):
                                 + ' login sequence for account {}.'.format(
                                     account['username']))
 
-    # 4 - Get asset digest.
-    log.debug('Fetching asset digest...')
-    config = account.get('remote_config', {})
+    if args.no_asset_requests:
+        log.debug('Skipping API requests for game assets...')
+        time.sleep(random.uniform(1.4, 2.4))
+    else:
+        # 4 - Get asset digest.
+        log.debug('Fetching asset digest...')
+        config = account.get('remote_config', {})
 
-    if config.get('asset_time', 0) > old_config.get('asset_time', 0):
-        i = random.randint(0, 3)
-        req_count = 0
-        result = 2
-        page_offset = 0
-        page_timestamp = 0
+        if config.get('asset_time', 0) > old_config.get('asset_time', 0):
+            i = random.randint(0, 3)
+            req_count = 0
+            result = 2
+            page_offset = 0
+            page_timestamp = 0
 
-        time.sleep(random.uniform(.7, 1.2))
+            time.sleep(random.uniform(.7, 1.2))
 
-        while result == 2:
-            req = api.create_request()
-            req.get_asset_digest(
-                platform=1,
-                app_version=app_version,
-                paginate=True,
-                page_offset=page_offset,
-                page_timestamp=page_timestamp)
-            resp = send_generic_request(req, account, settings=True,
-                                        buddy=False, inbox=False)
+            while result == 2:
+                req = api.create_request()
+                req.get_asset_digest(
+                    platform=1,
+                    app_version=app_version,
+                    paginate=True,
+                    page_offset=page_offset,
+                    page_timestamp=page_timestamp)
+                resp = send_generic_request(req, account, settings=True,
+                                            buddy=False, inbox=False)
 
-            req_count += 1
-            total_req += 1
+                req_count += 1
+                total_req += 1
 
-            if i > 2:
-                time.sleep(random.uniform(1.4, 1.6))
-                i = 0
-            else:
-                i += 1
-                time.sleep(random.uniform(.3, .5))
+                if i > 2:
+                    time.sleep(random.uniform(1.4, 1.6))
+                    i = 0
+                else:
+                    i += 1
+                    time.sleep(random.uniform(.3, .5))
 
-            try:
-                # Re-use variable name. Also helps GC.
-                resp = resp['responses']['GET_ASSET_DIGEST']
-            except KeyError:
-                break
+                try:
+                    # Re-use variable name. Also helps GC.
+                    resp = resp['responses']['GET_ASSET_DIGEST']
+                except KeyError:
+                    break
 
-            result = resp.result
-            page_offset = resp.page_offset
-            page_timestamp = resp.timestamp_ms
-            log.debug('Completed %d requests to get asset digest.',
-                      req_count)
+                result = resp.result
+                page_offset = resp.page_offset
+                page_timestamp = resp.timestamp_ms
+                log.debug('Completed %d requests to get asset digest.',
+                          req_count)
 
-    # 5 - Get item templates.
-    log.debug('Fetching item templates...')
+        # 5 - Get item templates.
+        log.debug('Fetching item templates...')
 
-    if config.get('template_time', 0) > old_config.get('template_time', 0):
-        i = random.randint(0, 3)
-        req_count = 0
-        result = 2
-        page_offset = 0
-        page_timestamp = 0
+        if config.get('template_time', 0) > old_config.get('template_time', 0):
+            i = random.randint(0, 3)
+            req_count = 0
+            result = 2
+            page_offset = 0
+            page_timestamp = 0
 
-        while result == 2:
-            req = api.create_request()
-            req.download_item_templates(
-                paginate=True,
-                page_offset=page_offset,
-                page_timestamp=page_timestamp)
-            resp = send_generic_request(req, account, settings=True,
-                                        buddy=False, inbox=False)
+            while result == 2:
+                req = api.create_request()
+                req.download_item_templates(
+                    paginate=True,
+                    page_offset=page_offset,
+                    page_timestamp=page_timestamp)
+                resp = send_generic_request(req, account, settings=True,
+                                            buddy=False, inbox=False)
 
-            req_count += 1
-            total_req += 1
+                req_count += 1
+                total_req += 1
 
-            if i > 2:
-                time.sleep(random.uniform(1.4, 1.6))
-                i = 0
-            else:
-                i += 1
-                time.sleep(random.uniform(.25, .5))
+                if i > 2:
+                    time.sleep(random.uniform(1.4, 1.6))
+                    i = 0
+                else:
+                    i += 1
+                    time.sleep(random.uniform(.25, .5))
 
-            try:
-                # Re-use variable name. Also helps GC.
-                resp = resp['responses']['DOWNLOAD_ITEM_TEMPLATES']
-            except KeyError:
-                break
+                try:
+                    # Re-use variable name. Also helps GC.
+                    resp = resp['responses']['DOWNLOAD_ITEM_TEMPLATES']
+                except KeyError:
+                    break
 
-            result = resp.result
-            page_offset = resp.page_offset
-            page_timestamp = resp.timestamp_ms
-            log.debug('Completed %d requests to download'
-                      + ' item templates.', req_count)
+                result = resp.result
+                page_offset = resp.page_offset
+                page_timestamp = resp.timestamp_ms
+                log.debug('Completed %d requests to download'
+                          + ' item templates.', req_count)
 
     # Check tutorial completion.
     if not all(x in account['tutorials'] for x in (0, 1, 3, 4, 7)):

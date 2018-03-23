@@ -214,6 +214,10 @@ def get_args():
                         help=('Number of times to retry the login before ' +
                               'refreshing a thread.'),
                         type=int, default=3)
+    parser.add_argument('-nar', '--no-asset-requests',
+                        help=('Disable login requests for game assets. ' +
+                              'Saves around 25 requests per new login.'),
+                        action='store_true', default=False)
     parser.add_argument('-mf', '--max-failures',
                         help=('Maximum number of failures to parse ' +
                               'locations before an account will go into a ' +
