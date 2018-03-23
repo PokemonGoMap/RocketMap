@@ -1418,7 +1418,9 @@ def get_pokemon_rarity(total_spawns_all, total_spawns_pokemon):
     spawn_rate_pct = total_spawns_pokemon / float(total_spawns_all)
     spawn_rate_pct = round(100 * spawn_rate_pct, 4)
 
-    if spawn_rate_pct < 0.01:
+    if spawn_rate_pct == 0:
+        spawn_group = 'New Spawn'
+    elif spawn_rate_pct < 0.01:
         spawn_group = 'Ultra Rare'
     elif spawn_rate_pct < 0.03:
         spawn_group = 'Very Rare'

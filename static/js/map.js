@@ -2810,7 +2810,7 @@ $(function () {
         })
         $selectRarityNotify.select2({
             placeholder: i8ln('Select Rarity'),
-            data: [i8ln('Common'), i8ln('Uncommon'), i8ln('Rare'), i8ln('Very Rare'), i8ln('Ultra Rare')],
+            data: [i8ln('Common'), i8ln('Uncommon'), i8ln('Rare'), i8ln('Very Rare'), i8ln('Ultra Rare'), i8ln('New Spawn')],
             templateResult: formatState
         })
 
@@ -2876,9 +2876,10 @@ $(function () {
         }
     })
 
-    // run interval timers to regularly update map and timediffs
+    // run interval timers to regularly update map, rarity and timediffs
     window.setInterval(updateLabelDiffTime, 1000)
     window.setInterval(updateMap, 5000)
+    window.setInterval(updatePokemonRarities, 300000)
     window.setInterval(updateGeoLocation, 1000)
 
     createUpdateWorker()
