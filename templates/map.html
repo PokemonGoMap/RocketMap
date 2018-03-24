@@ -77,15 +77,25 @@
               </div>
             </div>
             <div id="raids-filter-wrapper" style="display:none">
-              <div class="form-control switch-container" id="raid-filter-wrapper">
-                <h3>Filter Raids</h3>
-                <select name="raid-filter-switch" id="raid-filter-switch">
-                  <option value="0">All Raids</option>
-                  <option value="1">Active Raids</option>
-                  <option value="2">Park Raids</option>
-                  <option value="3">Sponsored Raids</option>
-                  <option value="4">EX-eligible Raids</option>
-                </select>
+              <div class="form-control switch-container" id="raid-active-gym-wrapper">
+                <h3>Show Active Raids only</h3>
+                <div class="onoffswitch">
+                  <input id="raid-active-gym-switch" type="checkbox" name="raid-active-gym-switch" class="onoffswitch-checkbox" checked>
+                  <label class="onoffswitch-label" for="raid-active-gym-switch">
+                  <span class="switch-label" data-on="On" data-off="Off"></span>
+                  <span class="switch-handle"></span>
+                  </label>
+                </div>
+              </div>
+              <div class="form-control switch-container" id="park-active-gym-wrapper">
+                <h3>Show Park Raids only</h3>
+                <div class="onoffswitch">
+                  <input id="raid-park-gym-switch" type="checkbox" name="raid-park-gym-switch" class="onoffswitch-checkbox" checked>
+                  <label class="onoffswitch-label" for="raid-park-gym-switch">
+                  <span class="switch-label" data-on="On" data-off="Off"></span>
+                  <span class="switch-handle"></span>
+                  </label>
+                </div>
               </div>
               <div class="form-control switch-container" id="min-raid-level-only-wrapper">
                 <h3>Minimum Raid Level</h3>
@@ -133,16 +143,6 @@
             </div>
               {% endif %}
             <div id="gyms-filter-wrapper" style="display:none">
-              <div class="form-control switch-container" id="gym-filter-wrapper">
-                <h3>Filter Gyms</h3>
-                <select name="gym-filter-switch" id="gym-filter-switch">
-                  <option value="0">All Gyms</option>
-                  <option value="1">Open Gyms</option>
-                  <option value="2">Park Gyms</option>
-                  <option value="3">Sponsored Gyms</option>
-                  <option value="4">EX Raid Gyms</option>
-                </select>
-              </div>
               <div class="form-control switch-container" id="team-gyms-only-wrapper">
                 <h3>Team</h3>
                 <select name="team-gyms-filter-switch" id="team-gyms-only-switch">
@@ -151,6 +151,26 @@
                   <option value="2">Valor</option>
                   <option value="3">Instinct</option>
                 </select>
+              </div>
+              <div class="form-control switch-container" id="open-gyms-only-wrapper">
+                <h3>Open Spot</h3>
+                <div class="onoffswitch">
+                  <input id="open-gyms-only-switch" type="checkbox" name="open-gyms-only-switch" class="onoffswitch-checkbox" checked>
+                  <label class="onoffswitch-label" for="open-gyms-only-switch">
+                  <span class="switch-label" data-on="On" data-off="Off"></span>
+                  <span class="switch-handle"></span>
+                  </label>
+                </div>
+              </div>
+              <div class="form-control switch-container" id="park-gyms-only-wrapper">
+                <h3>Park Gyms Only</h3>
+                <div class="onoffswitch">
+                  <input id="park-gyms-only-switch" type="checkbox" name="park-gyms-only-switch" class="onoffswitch-checkbox" checked>
+                  <label class="onoffswitch-label" for="park-gyms-only-switch">
+                  <span class="switch-label" data-on="On" data-off="Off"></span>
+                  <span class="switch-handle"></span>
+                  </label>
+                </div>
               </div>
               <div class="form-control switch-container" id="min-level-gyms-filter-wrapper">
                 <h3>Minimum Level</h3>
