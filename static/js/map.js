@@ -509,6 +509,127 @@ function initSidebar() {
     }
 
     $('#pokemon-icon-size').val(Store.get('iconSizeModifier'))
+
+    initFavoLocation()
+
+    $('#add-favorit-location-button').on('click', function () {
+        var loc = map.getCenter()
+        var zoom = map.getZoom()
+        var name = $('#add-favorit-location-input').val()
+        addFarvoritLocationToSettings(name, loc.lat(), loc.lng(), zoom)
+        $('#add-favorit-location-input').val('')
+    })
+
+    var searchLocationInput = document.getElementById('search-favorit-location-input')
+    if (searchLocationInput) {
+        var googleSearchBox = new google.maps.places.Autocomplete(searchLocationInput)
+
+        googleSearchBox.addListener('place_changed', function () {
+            var place = googleSearchBox.getPlace()
+
+            if (!place.geometry) return
+
+            var loc = place.geometry.location
+            centerMap(loc.lat(), loc.lng(), 16)
+        })
+    }
+}
+
+/**
+ * Favorit-location
+ * first run load locations from settings / localStorage
+*/
+function initFavoLocation() {
+    var favoritLocationSettings = Store.get('favoritesLocations')[0]
+    Object.keys(favoritLocationSettings).forEach(function (location) {
+        addFavoritLocationToList(location,
+                                 favoritLocationSettings[location]['lat'],
+                                 favoritLocationSettings[location]['lng'],
+                                 favoritLocationSettings[location]['zoom'],
+                                 favoritLocationSettings[location]['deletable']
+                                )
+    })
+}
+
+/**
+ * Favorit-location
+ * add buttons to the navigation
+ *
+ * @param String name
+ * @param long lat – degree of latitude
+ * @param long lng – degree of longitude
+ * @param int zoom – zoomLevel
+ * @param boolean withDeleteButton (optional – default = true)
+*/
+function addFavoritLocationToList(name, lat, lng, zoom, withDeleteButton = true) {
+    var li = document.createElement('li')
+    li.setAttribute('name', name)
+
+    var favoritLocationButton = document.createElement('button')
+    if (!withDeleteButton) { favoritLocationButton.setAttribute('class', 'noDeleteButton') }
+    favoritLocationButton.innerHTML = name
+    favoritLocationButton.addEventListener('click', function () {
+        centerMap(lat, lng, parseInt(zoom))
+    })
+    li.appendChild(favoritLocationButton)
+
+    if (withDeleteButton) {
+        var favoritLocationDeleteButton = document.createElement('button')
+        favoritLocationDeleteButton.setAttribute('class', 'delete-favorit-location-button')
+        favoritLocationDeleteButton.innerHTML = '<span class="fa fa-times"></span>'
+        favoritLocationDeleteButton.addEventListener('click', function () {
+            confirm('Are you sure to delete "' + name + '"?') ? deleteFavoritLocation(li) : false
+        })
+        li.appendChild(favoritLocationDeleteButton)
+    }
+
+    var favoritLocationListElement = document.getElementById('favorit-location-ul')
+    favoritLocationListElement.appendChild(li)
+}
+
+/**
+ * Favorit-location
+ * delete location from localStorage and navigation
+ *
+ * @param HTMLelement li
+ */
+function deleteFavoritLocation(li) {
+    var favoritLocationSettings = Store.get('favoritesLocations')
+    delete favoritLocationSettings[0][li.getAttribute('name')]
+    Store.set('favoritesLocations', favoritLocationSettings)
+
+    var favoritLocationListElement = document.getElementById('favorit-location-ul')
+    favoritLocationListElement.removeChild(li)
+    toastr.success('"' + li.getAttribute('name') + '" is deleted', 'Favorit Location', {closeButton: true, timeOut: 2500})
+}
+
+/**
+ * Favorit-location
+ * save location in the settings / localStorage and add it in the navigation
+ *
+ * @param String name
+ * @param long lat – degree of latitude
+ * @param long lng – degree of longitude
+ * @param int zoom – zoomLevel
+ * @param boolean withDeleteButton (optional – default = true)
+*/
+function addFarvoritLocationToSettings(name, lat, lng, zoom, withDeleteButton = true) {
+    var favoritLocationSettings = Store.get('favoritesLocations')
+
+    if (!name || name.length === 0 || !name.trim() || /^\s*$/.test(name)) {
+        toastr.error('Please enter a valid name', 'Failed to create the view', {closeButton: true})
+        return
+    }
+
+    if (favoritLocationSettings[0][name] !== undefined) {
+        toastr.error('Name is already used', 'Failed to create the view', {closeButton: true})
+        return
+    }
+
+    favoritLocationSettings[0][name] = {'lat': lat, 'lng': lng, 'zoom': zoom, 'deletable': withDeleteButton}
+    Store.set('favoritesLocations', favoritLocationSettings)
+    addFavoritLocationToList(name, lat, lng, zoom, withDeleteButton)
+    toastr.success('New view has been saved', 'Favorit Location', {closeButton: true, timeOut: 2000})
 }
 
 function getTypeSpan(type) {
@@ -3131,6 +3252,34 @@ $(function () {
             heightStyle: 'content'
         })
     }
+
+    // Favorit-location
+    // switch to display "Add this view"
+    $('#add-favorit-location-switch').change(function () {
+        var options = {
+            'duration': 500
+        }
+        var wrapper = $('#add-favorit-location-wrapper')
+        if (this.checked) {
+            wrapper.show(options)
+        } else {
+            wrapper.hide(options)
+        }
+    })
+
+    // Favorit-location
+    // switch to display "search location"
+    $('#search-favorit-location-switch').change(function () {
+        var options = {
+            'duration': 500
+        }
+        var wrapper = $('#search-favorit-location-wrapper')
+        if (this.checked) {
+            wrapper.show(options)
+        } else {
+            wrapper.hide(options)
+        }
+    })
 
     // Initialize dataTable in statistics sidebar
     //   - turn off sorting for the 'icon' column
