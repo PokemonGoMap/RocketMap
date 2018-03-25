@@ -541,12 +541,12 @@ function initSidebar() {
 */
 function initFavoLocation() {
     var favoritLocationSettings = Store.get('favoritesLocations')[0]
-    Object.keys(favoritLocationSettings).forEach(function (location) {
-        addFavoritLocationToList(location,
-                                 favoritLocationSettings[location]['lat'],
-                                 favoritLocationSettings[location]['lng'],
-                                 favoritLocationSettings[location]['zoom'],
-                                 favoritLocationSettings[location]['deletable']
+    Object.keys(favoritLocationSettings).forEach(function (locationName) {
+        addFavoritLocationToList(locationName,
+                                 favoritLocationSettings[locationName]['lat'],
+                                 favoritLocationSettings[locationName]['lng'],
+                                 favoritLocationSettings[locationName]['zoom'],
+                                 favoritLocationSettings[locationName]['deletable']
                                 )
     })
 }
@@ -566,7 +566,7 @@ function addFavoritLocationToList(name, lat, lng, zoom, withDeleteButton = true)
     li.setAttribute('name', name)
 
     var favoritLocationButton = document.createElement('button')
-    if (!withDeleteButton) { favoritLocationButton.setAttribute('class', 'noDeleteButton') }
+    if (!withDeleteButton) { favoritLocationButton.setAttribute('class', 'favorit-location-no-delete-button') }
     favoritLocationButton.innerHTML = name
     favoritLocationButton.addEventListener('click', function () {
         centerMap(lat, lng, parseInt(zoom))
