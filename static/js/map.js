@@ -15,6 +15,7 @@ var $switchParkRaidGymsOnly
 var $switchActiveRaidGymsOnly
 var $switchRaidMinLevel
 var $switchRaidMaxLevel
+var $switchRaidPokemon
 var $selectTeamGymsOnly
 var $selectLastUpdateGymsOnly
 var $selectMinGymLevel
@@ -460,6 +461,7 @@ function initSidebar() {
     $('#raid-active-gym-switch').prop('checked', Store.get('showActiveRaidsOnly'))
     $('#raid-min-level-only-switch').val(Store.get('showRaidMinLevel'))
     $('#raid-max-level-only-switch').val(Store.get('showRaidMaxLevel'))
+    $('#raid-pokemon-only-switch').val(Store.get('showRaidPokemon'))
     $('#raids-filter-wrapper').toggle(Store.get('showRaids'))
     $('#open-gyms-only-switch').prop('checked', Store.get('showOpenGymsOnly'))
     $('#park-gyms-only-switch').prop('checked', Store.get('showParkGymsOnly'))
@@ -992,7 +994,13 @@ function getRaidLevel(raid) {
         return 0
     }
 }
-
+function getRaidPokemon(raid) {
+    if (raid === null) {
+        return 0
+    } else {
+        return raid['pokemon_id']
+    }
+}
 function lpad(str, len, padstr) {
     return Array(Math.max(len - String(str).length + 1, 0)).join(padstr) + str
 }
@@ -1791,6 +1799,7 @@ function updatePokestops() {
 function processGym(i, item) {
     var gymLevel = getGymLevel(item)
     var raidLevel = getRaidLevel(item.raid)
+    var raidPokemon = getRaidPokemon(item.raid)
 
     if (!Store.get('showGyms') && !Store.get('showRaids')) {
         return false // in case the checkbox was unchecked in the meantime.
@@ -1838,6 +1847,11 @@ function processGym(i, item) {
                 removeGymFromMap(item['gym_id'])
                 return true
             }
+        }
+
+        if (Store.get('showRaidPokemon') > 0 && raidPokemon !== Store.get('showRaidPokemon')) {
+            removeGymFromMap(item['gym_id'])
+            return true
         }
 
         if (raidLevel > Store.get('showRaidMaxLevel') || raidLevel < Store.get('showRaidMinLevel')) {
@@ -2603,6 +2617,18 @@ $(function () {
         updateMap()
     })
 
+    $switchRaidPokemon = $('#raid-pokemon-only-switch')
+
+    $switchRaidPokemon.select2({
+        placeholder: 'Raid Pokemon',
+        minimumResultsForSearch: Infinity
+    })
+
+    $switchRaidPokemon.on('change', function () {
+        Store.set('showRaidPokemon', this.value)
+        lastgyms = false
+        updateMap()
+    })
 
     $selectTeamGymsOnly = $('#team-gyms-only-switch')
 

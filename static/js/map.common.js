@@ -894,6 +894,10 @@ var StoreOptions = {
         default: 5,
         type: StoreTypes.Number
     },
+    'showRaidPokemon': {
+        default: 0,
+        type: StoreTypes.Number
+    },
     'showGyms': {
         default: false,
         type: StoreTypes.Boolean
