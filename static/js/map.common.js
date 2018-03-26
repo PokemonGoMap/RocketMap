@@ -1066,13 +1066,8 @@ var StoreOptions = {
         default: false,
         type: StoreTypes.Boolean
     },
-    'favoritesLocations': {
-        default: [{
-            'Amsterdam': {lat: 52.3702157, lng: 4.895167899999933, zoom: 13, deletable: false},
-            'Central Park (NY)': {lat: 40.7828647, lng: -73.96535510000001, zoom: 16, deletable: false},
-            'London': {lat: 51.5073509, lng: -0.12775829999998223, zoom: 14, deletable: true},
-            'Berlin': {lat: 52.52000659999999, lng: 13.404953999999975, zoom: 14}
-        }],
+    'favoriteLocations': {
+        default: [],
         type: StoreTypes.JSON
     }
 }

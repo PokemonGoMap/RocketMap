@@ -144,15 +144,15 @@
       padding-left: 0!important;
 
       > li {
-	    list-style: none;
-        width: 50%;
-        float: left;
-        padding-left: 0;
+	       list-style: none;
+         width: 50%;
+         float: left;
+         padding-left: 0;
 
       > .delete-favorit-location-button {
-	      background-color: red;
-		    color: #fff;
-		    width: 15%;
+	       background-color: red;
+		     color: #fff;
+		     width: 15%;
       }
 
       > button {
@@ -163,7 +163,7 @@
           margin-top: .5em;
 
           &.favorit-location-no-delete-button {
-            width: 100%;
+             width: 100%;
           }
         }
       }

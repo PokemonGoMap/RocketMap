@@ -510,7 +510,7 @@ function initSidebar() {
 
     $('#pokemon-icon-size').val(Store.get('iconSizeModifier'))
 
-    initFavoLocation()
+    initFavoriteLocations()
 
     $('#add-favorit-location-button').on('click', function () {
         var loc = map.getCenter()
@@ -527,7 +527,9 @@ function initSidebar() {
         googleSearchBox.addListener('place_changed', function () {
             var place = googleSearchBox.getPlace()
 
-            if (!place.geometry) return
+            if (!place.geometry) {
+              return
+            }
 
             var loc = place.geometry.location
             centerMap(loc.lat(), loc.lng(), 16)
@@ -539,8 +541,8 @@ function initSidebar() {
  * Favorit-location
  * first run load locations from settings / localStorage
 */
-function initFavoLocation() {
-    var favoritLocationSettings = Store.get('favoritesLocations')[0]
+function initFavoriteLocations() {
+    var favoritLocationSettings = Store.get('favoriteLocations')[0]
     Object.keys(favoritLocationSettings).forEach(function (locationName) {
         addFavoritLocationToList(locationName,
                                  favoritLocationSettings[locationName]['lat'],
@@ -594,9 +596,9 @@ function addFavoritLocationToList(name, lat, lng, zoom, withDeleteButton = true)
  * @param HTMLelement li
  */
 function deleteFavoritLocation(li) {
-    var favoritLocationSettings = Store.get('favoritesLocations')
+    var favoritLocationSettings = Store.get('favoriteLocations')
     delete favoritLocationSettings[0][li.getAttribute('name')]
-    Store.set('favoritesLocations', favoritLocationSettings)
+    Store.set('favoriteLocations', favoritLocationSettings)
 
     var favoritLocationListElement = document.getElementById('favorit-location-ul')
     favoritLocationListElement.removeChild(li)
@@ -614,7 +616,7 @@ function deleteFavoritLocation(li) {
  * @param boolean withDeleteButton (optional – default = true)
 */
 function addFarvoritLocationToSettings(name, lat, lng, zoom, withDeleteButton = true) {
-    var favoritLocationSettings = Store.get('favoritesLocations')
+    var favoritLocationSettings = Store.get('favoriteLocations')
 
     if (!name || name.length === 0 || !name.trim() || /^\s*$/.test(name)) {
         toastr.error('Please enter a valid name', 'Failed to create the view', {closeButton: true})
@@ -627,7 +629,7 @@ function addFarvoritLocationToSettings(name, lat, lng, zoom, withDeleteButton = 
     }
 
     favoritLocationSettings[0][name] = {'lat': lat, 'lng': lng, 'zoom': zoom, 'deletable': withDeleteButton}
-    Store.set('favoritesLocations', favoritLocationSettings)
+    Store.set('favoriteLocations', favoritLocationSettings)
     addFavoritLocationToList(name, lat, lng, zoom, withDeleteButton)
     toastr.success('New view has been saved', 'Favorit Location', {closeButton: true, timeOut: 2000})
 }
