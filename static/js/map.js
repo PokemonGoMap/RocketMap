@@ -626,7 +626,7 @@ function addFarvoritLocationToSettings(name, lat, lng, zoom, withDeleteButton = 
         return
     }
 
-    if (favoritLocationSettings[0] === undefined) {
+    if (favoritLocationSettings.length === 0) {
         favoritLocationSettings[0] = Object.create(Object.prototype)
     } else if (favoritLocationSettings[0][name] !== undefined) {
         toastr.error('Name is already used', 'Failed to create the view', {closeButton: true})
