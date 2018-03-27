@@ -518,7 +518,7 @@ function initSidebar() {
         $('#add-favorite-location-input').val('')
     })
 
-    var searchLocationInput = document.getElementById('search-favorit-location-input')
+    var searchLocationInput = document.getElementById('search-favorite-location-input')
     if (searchLocationInput) {
         var googleSearchBox = new google.maps.places.Autocomplete(searchLocationInput)
 
@@ -536,28 +536,28 @@ function initSidebar() {
 }
 
 /**
- * Favorit-location
+ * Favorite-location
  * first run load locations from settings / localStorage
 */
 function initFavoriteLocations() {
-    var favoritLocationSettings = Store.get('favoriteLocations')[0]
+    var favoriteLocationSettings = Store.get('favoriteLocations')[0]
 
-    if (!favoritLocationSettings) {
+    if (!favoriteLocationSettings) {
         return
     }
 
-    Object.keys(favoritLocationSettings).forEach(function (locationName) {
-        addFavoritLocationToList(locationName,
-                                 favoritLocationSettings[locationName]['lat'],
-                                 favoritLocationSettings[locationName]['lng'],
-                                 favoritLocationSettings[locationName]['zoom'],
-                                 favoritLocationSettings[locationName]['deletable']
+    Object.keys(favoriteLocationSettings).forEach(function (locationName) {
+        addFavoriteLocationToList(locationName,
+                                 favoriteLocationSettings[locationName]['lat'],
+                                 favoriteLocationSettings[locationName]['lng'],
+                                 favoriteLocationSettings[locationName]['zoom'],
+                                 favoriteLocationSettings[locationName]['deletable']
                                 )
     })
 }
 
 /**
- * Favorit-location
+ * Favorite-location
  * add buttons to the navigation
  *
  * @param String name
@@ -566,50 +566,50 @@ function initFavoriteLocations() {
  * @param int zoom – zoomLevel
  * @param boolean withDeleteButton (optional – default = true)
 */
-function addFavoritLocationToList(name, lat, lng, zoom, withDeleteButton = true) {
+function addFavoriteLocationToList(name, lat, lng, zoom, withDeleteButton = true) {
     var li = document.createElement('li')
     li.setAttribute('name', name)
 
-    var favoritLocationButton = document.createElement('button')
-    if (!withDeleteButton) { favoritLocationButton.setAttribute('class', 'favorite-location-no-delete-button') }
-    favoritLocationButton.innerHTML = name
-    favoritLocationButton.addEventListener('click', function () {
+    var favoriteLocationButton = document.createElement('button')
+    if (!withDeleteButton) { favoriteLocationButton.setAttribute('class', 'favorite-location-no-delete-button') }
+    favoriteLocationButton.innerHTML = name
+    favoriteLocationButton.addEventListener('click', function () {
         centerMap(lat, lng, parseInt(zoom))
     })
-    li.appendChild(favoritLocationButton)
+    li.appendChild(favoriteLocationButton)
 
     if (withDeleteButton) {
-        var favoritLocationDeleteButton = document.createElement('button')
-        favoritLocationDeleteButton.setAttribute('class', 'delete-favorite-location-button')
-        favoritLocationDeleteButton.innerHTML = '<span class="fa fa-times"></span>'
-        favoritLocationDeleteButton.addEventListener('click', function () {
-            confirm('Are you sure to delete "' + name + '"?') ? deleteFavoritLocation(li) : false
+        var favoriteLocationDeleteButton = document.createElement('button')
+        favoriteLocationDeleteButton.setAttribute('class', 'delete-favorite-location-button')
+        favoriteLocationDeleteButton.innerHTML = '<span class="fa fa-times"></span>'
+        favoriteLocationDeleteButton.addEventListener('click', function () {
+            confirm('Are you sure to delete "' + name + '"?') ? deleteFavoriteLocation(li) : false
         })
-        li.appendChild(favoritLocationDeleteButton)
+        li.appendChild(favoriteLocationDeleteButton)
     }
 
-    var favoritLocationListElement = document.getElementById('favorit-location-ul')
-    favoritLocationListElement.appendChild(li)
+    var favoriteLocationListElement = document.getElementById('favorite-location-ul')
+    favoriteLocationListElement.appendChild(li)
 }
 
 /**
- * Favorit-location
+ * Favorite-location
  * delete location from localStorage and navigation
  *
  * @param HTMLelement li
  */
-function deleteFavoritLocation(li) {
-    var favoritLocationSettings = Store.get('favoriteLocations')
-    delete favoritLocationSettings[0][li.getAttribute('name')]
-    Store.set('favoriteLocations', favoritLocationSettings)
+function deleteFavoriteLocation(li) {
+    var favoriteLocationSettings = Store.get('favoriteLocations')
+    delete favoriteLocationSettings[0][li.getAttribute('name')]
+    Store.set('favoriteLocations', favoriteLocationSettings)
 
-    var favoritLocationListElement = document.getElementById('favorit-location-ul')
-    favoritLocationListElement.removeChild(li)
-    toastr.success('"' + li.getAttribute('name') + '" is deleted', 'Favorit Location', {closeButton: true, timeOut: 2500})
+    var favoriteLocationListElement = document.getElementById('favorite-location-ul')
+    favoriteLocationListElement.removeChild(li)
+    toastr.success('"' + li.getAttribute('name') + '" is deleted', 'Favorite location', {closeButton: true, timeOut: 2500})
 }
 
 /**
- * Favorit-location
+ * Favorite-location
  * save location in the settings / localStorage and add it in the navigation
  *
  * @param String name
@@ -619,24 +619,24 @@ function deleteFavoritLocation(li) {
  * @param boolean withDeleteButton (optional – default = true)
 */
 function addFarvoritLocationToSettings(name, lat, lng, zoom, withDeleteButton = true) {
-    var favoritLocationSettings = Store.get('favoriteLocations')
+    var favoriteLocationSettings = Store.get('favoriteLocations')
 
     if (!name || name.length === 0 || !name.trim() || /^\s*$/.test(name)) {
         toastr.error('Please enter a valid name', 'Failed to create the view', {closeButton: true})
         return
     }
 
-    if (favoritLocationSettings.length === 0) {
-        favoritLocationSettings[0] = Object.create(Object.prototype)
-    } else if (favoritLocationSettings[0][name] !== undefined) {
+    if (favoriteLocationSettings.length === 0) {
+        favoriteLocationSettings[0] = Object.create(Object.prototype)
+    } else if (favoriteLocationSettings[0][name] !== undefined) {
         toastr.error('Name is already used', 'Failed to create the view', {closeButton: true})
         return
     }
 
-    favoritLocationSettings[0][name] = {'lat': lat, 'lng': lng, 'zoom': zoom, 'deletable': withDeleteButton}
-    Store.set('favoriteLocations', favoritLocationSettings)
-    addFavoritLocationToList(name, lat, lng, zoom, withDeleteButton)
-    toastr.success('New view has been saved', 'Favorit Location', {closeButton: true, timeOut: 2000})
+    favoriteLocationSettings[0][name] = {'lat': lat, 'lng': lng, 'zoom': zoom, 'deletable': withDeleteButton}
+    Store.set('favoriteLocations', favoriteLocationSettings)
+    addFavoriteLocationToList(name, lat, lng, zoom, withDeleteButton)
+    toastr.success('New view has been saved', 'Favorite location', {closeButton: true, timeOut: 2000})
 }
 
 function getTypeSpan(type) {
@@ -3262,13 +3262,13 @@ $(function () {
         })
     }
 
-    // Favorit-location
+    // Favorite-location
     // switch to display "Add this view"
-    $('#add-favorit-location-switch').change(function () {
+    $('#add-favorite-location-switch').change(function () {
         var options = {
             'duration': 500
         }
-        var wrapper = $('#add-favorit-location-wrapper')
+        var wrapper = $('#add-favorite-location-wrapper')
         if (this.checked) {
             wrapper.show(options)
         } else {
@@ -3276,13 +3276,13 @@ $(function () {
         }
     })
 
-    // Favorit-location
+    // Favorite-location
     // switch to display "search location"
-    $('#search-favorit-location-switch').change(function () {
+    $('#search-favorite-location-switch').change(function () {
         var options = {
             'duration': 500
         }
-        var wrapper = $('#search-favorit-location-wrapper')
+        var wrapper = $('#search-favorite-location-wrapper')
         if (this.checked) {
             wrapper.show(options)
         } else {
