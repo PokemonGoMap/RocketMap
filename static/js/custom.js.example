@@ -11,9 +11,12 @@ $(function () {
     const upscalePokemon = false // Enable upscaling of certain Pokemon (upscaledPokemon and notify list). Default: false.
     const upscaledPokemon = [] // Add Pokémon IDs separated by commas (e.g. [1, 2, 3]) to upscale icons. Default: [].
 
-    // Add predefined buttons for favorit location
-    // (e.g. [{'Central Park (NY)': {lat: 40.7828647, lng: -73.9653551, zoom: 16, deletable: false}}] ). Default: [].
-    const favoriteLocations = []
+    // Add predefined buttons for favorite location. Default: [].
+    const favoriteLocations = [
+        {
+            'Central Park (NY)': {lat: 40.7828647, lng: -73.9653551, zoom: 16, deletable: false}
+        }
+    ] 
 
     // Google Analytics property ID. Leave empty to disable.
     // Looks like 'UA-XXXXX-Y'.
@@ -87,7 +90,7 @@ $(function () {
     Store.set('showLocationMarker', showLocationMarker)
     Store.set('isLocationMarkerMovable', isLocationMarkerMovable)
 
-    if (Store.get('favoriteLocations')[0] === undefined) {
+    if (Store.get('favoriteLocations').length === 0) {
         Store.set('favoriteLocations', favoriteLocations)
     }
 
