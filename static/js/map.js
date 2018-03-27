@@ -528,7 +528,7 @@ function initSidebar() {
             var place = googleSearchBox.getPlace()
 
             if (!place.geometry) {
-              return
+                return
             }
 
             var loc = place.geometry.location
