@@ -543,6 +543,11 @@ function initSidebar() {
 */
 function initFavoriteLocations() {
     var favoritLocationSettings = Store.get('favoriteLocations')[0]
+
+    if (!favoritLocationSettings) {
+        return
+    }
+    
     Object.keys(favoritLocationSettings).forEach(function (locationName) {
         addFavoritLocationToList(locationName,
                                  favoritLocationSettings[locationName]['lat'],
