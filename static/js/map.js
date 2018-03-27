@@ -547,7 +547,7 @@ function initFavoriteLocations() {
     if (!favoritLocationSettings) {
         return
     }
-    
+
     Object.keys(favoritLocationSettings).forEach(function (locationName) {
         addFavoritLocationToList(locationName,
                                  favoritLocationSettings[locationName]['lat'],
