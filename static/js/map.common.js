@@ -1065,6 +1065,10 @@ var StoreOptions = {
     'isSearchMarkerMovable': {
         default: false,
         type: StoreTypes.Boolean
+    },
+    'favoriteLocations': {
+        default: [],
+        type: StoreTypes.JSON
     }
 }
 

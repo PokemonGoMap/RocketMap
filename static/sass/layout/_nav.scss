@@ -138,4 +138,49 @@
     .fa-fw {
       margin: 0px 5px 0px 0px;
     }
+
+    #favorite-location-ul {
+      list-style: disc;
+      padding-left: 0!important;
+
+      > li {
+	       list-style: none;
+         width: 50%;
+         float: left;
+         padding-left: 0;
+
+      > .delete-favorite-location-button {
+	       background-color: red;
+	       color: #fff;
+	       width: 14.2%;
+	       margin-left: .8%;
+      }
+
+      > button {
+          width: 85%;
+          overflow: hidden;
+          font-size: 13px;
+          font-weight: normal;
+          margin-top: .5em;
+
+          &.favorite-location-no-delete-button {
+             width: 100%;
+          }
+        }
+      }
+
+      > li:nth-child(2n) {
+        padding-left: .5em;
+      }
+    }
+
+    #add-favorite-location-input {
+      width: 80%;
+      float: left;
+    }
+
+    #add-favorite-location-button {
+      width: 20%;
+      margin-top: 0;
+    }
   }

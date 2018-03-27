@@ -509,6 +509,134 @@ function initSidebar() {
     }
 
     $('#pokemon-icon-size').val(Store.get('iconSizeModifier'))
+
+    $('#add-favorite-location-button').on('click', function () {
+        var loc = map.getCenter()
+        var zoom = map.getZoom()
+        var name = $('#add-favorite-location-input').val()
+        addFarvoritLocationToSettings(name, loc.lat(), loc.lng(), zoom)
+        $('#add-favorite-location-input').val('')
+    })
+
+    var searchLocationInput = document.getElementById('search-favorite-location-input')
+    if (searchLocationInput) {
+        var googleSearchBox = new google.maps.places.Autocomplete(searchLocationInput)
+
+        googleSearchBox.addListener('place_changed', function () {
+            var place = googleSearchBox.getPlace()
+
+            if (!place.geometry) {
+                return
+            }
+
+            var loc = place.geometry.location
+            centerMap(loc.lat(), loc.lng(), 16)
+        })
+    }
+}
+
+/**
+ * Favorite-location
+ * first run load locations from settings / localStorage
+*/
+function initFavoriteLocations() {
+    var favoriteLocationSettings = Store.get('favoriteLocations')[0]
+
+    if (!favoriteLocationSettings) {
+        return
+    }
+
+    Object.keys(favoriteLocationSettings).forEach(function (locationName) {
+        addFavoriteLocationToList(locationName,
+                                 favoriteLocationSettings[locationName]['lat'],
+                                 favoriteLocationSettings[locationName]['lng'],
+                                 favoriteLocationSettings[locationName]['zoom'],
+                                 favoriteLocationSettings[locationName]['deletable']
+                                )
+    })
+}
+
+/**
+ * Favorite-location
+ * add buttons to the navigation
+ *
+ * @param String name
+ * @param long lat – degree of latitude
+ * @param long lng – degree of longitude
+ * @param int zoom – zoomLevel
+ * @param boolean withDeleteButton (optional – default = true)
+*/
+function addFavoriteLocationToList(name, lat, lng, zoom, withDeleteButton = true) {
+    var li = document.createElement('li')
+    li.setAttribute('name', name)
+
+    var favoriteLocationButton = document.createElement('button')
+    if (!withDeleteButton) { favoriteLocationButton.setAttribute('class', 'favorite-location-no-delete-button') }
+    favoriteLocationButton.innerHTML = name
+    favoriteLocationButton.addEventListener('click', function () {
+        centerMap(lat, lng, parseInt(zoom))
+    })
+    li.appendChild(favoriteLocationButton)
+
+    if (withDeleteButton) {
+        var favoriteLocationDeleteButton = document.createElement('button')
+        favoriteLocationDeleteButton.setAttribute('class', 'delete-favorite-location-button')
+        favoriteLocationDeleteButton.innerHTML = '<span class="fa fa-times"></span>'
+        favoriteLocationDeleteButton.addEventListener('click', function () {
+            confirm('Are you sure to delete "' + name + '"?') ? deleteFavoriteLocation(li) : false
+        })
+        li.appendChild(favoriteLocationDeleteButton)
+    }
+
+    var favoriteLocationListElement = document.getElementById('favorite-location-ul')
+    favoriteLocationListElement.appendChild(li)
+}
+
+/**
+ * Favorite-location
+ * delete location from localStorage and navigation
+ *
+ * @param HTMLelement li
+ */
+function deleteFavoriteLocation(li) {
+    var favoriteLocationSettings = Store.get('favoriteLocations')
+    delete favoriteLocationSettings[0][li.getAttribute('name')]
+    Store.set('favoriteLocations', favoriteLocationSettings)
+
+    var favoriteLocationListElement = document.getElementById('favorite-location-ul')
+    favoriteLocationListElement.removeChild(li)
+    toastr.success('"' + li.getAttribute('name') + '" is deleted', 'Favorite location', {closeButton: true, timeOut: 2500})
+}
+
+/**
+ * Favorite-location
+ * save location in the settings / localStorage and add it in the navigation
+ *
+ * @param String name
+ * @param long lat – degree of latitude
+ * @param long lng – degree of longitude
+ * @param int zoom – zoomLevel
+ * @param boolean withDeleteButton (optional – default = true)
+*/
+function addFarvoritLocationToSettings(name, lat, lng, zoom, withDeleteButton = true) {
+    var favoriteLocationSettings = Store.get('favoriteLocations')
+
+    if (!name || name.length === 0 || !name.trim() || /^\s*$/.test(name)) {
+        toastr.error('Please enter a valid name', 'Failed to create the view', {closeButton: true})
+        return
+    }
+
+    if (favoriteLocationSettings.length === 0) {
+        favoriteLocationSettings[0] = Object.create(Object.prototype)
+    } else if (favoriteLocationSettings[0][name] !== undefined) {
+        toastr.error('Name is already used', 'Failed to create the view', {closeButton: true})
+        return
+    }
+
+    favoriteLocationSettings[0][name] = {'lat': lat, 'lng': lng, 'zoom': zoom, 'deletable': withDeleteButton}
+    Store.set('favoriteLocations', favoriteLocationSettings)
+    addFavoriteLocationToList(name, lat, lng, zoom, withDeleteButton)
+    toastr.success('New view has been saved', 'Favorite location', {closeButton: true, timeOut: 2000})
 }
 
 function getTypeSpan(type) {
@@ -2741,6 +2869,8 @@ $(function () {
         })
 
         $selectLocationIconMarker.val(Store.get('locationMarkerStyle')).trigger('change')
+
+        initFavoriteLocations()
     })
 })
 
@@ -3131,6 +3261,34 @@ $(function () {
             heightStyle: 'content'
         })
     }
+
+    // Favorite-location
+    // switch to display "Add this view"
+    $('#add-favorite-location-switch').change(function () {
+        var options = {
+            'duration': 500
+        }
+        var wrapper = $('#add-favorite-location-wrapper')
+        if (this.checked) {
+            wrapper.show(options)
+        } else {
+            wrapper.hide(options)
+        }
+    })
+
+    // Favorite-location
+    // switch to display "search location"
+    $('#search-favorite-location-switch').change(function () {
+        var options = {
+            'duration': 500
+        }
+        var wrapper = $('#search-favorite-location-wrapper')
+        if (this.checked) {
+            wrapper.show(options)
+        } else {
+            wrapper.hide(options)
+        }
+    })
 
     // Initialize dataTable in statistics sidebar
     //   - turn off sorting for the 'icon' column
