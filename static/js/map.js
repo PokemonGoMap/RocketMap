@@ -510,8 +510,6 @@ function initSidebar() {
 
     $('#pokemon-icon-size').val(Store.get('iconSizeModifier'))
 
-    initFavoriteLocations()
-
     $('#add-favorit-location-button').on('click', function () {
         var loc = map.getCenter()
         var zoom = map.getZoom()
@@ -2871,6 +2869,8 @@ $(function () {
         })
 
         $selectLocationIconMarker.val(Store.get('locationMarkerStyle')).trigger('change')
+
+        initFavoriteLocations()
     })
 })
 
