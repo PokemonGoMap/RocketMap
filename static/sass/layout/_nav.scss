@@ -139,7 +139,7 @@
       margin: 0px 5px 0px 0px;
     }
 
-    #favorit-location-ul {
+    #favorite-location-ul {
       list-style: disc;
       padding-left: 0!important;
 
@@ -149,7 +149,7 @@
          float: left;
          padding-left: 0;
 
-      > .delete-favorit-location-button {
+      > .delete-favorite-location-button {
 	       background-color: red;
 	       color: #fff;
 	       width: 14.2%;
@@ -163,7 +163,7 @@
           font-weight: normal;
           margin-top: .5em;
 
-          &.favorit-location-no-delete-button {
+          &.favorite-location-no-delete-button {
              width: 100%;
           }
         }
@@ -174,12 +174,12 @@
       }
     }
 
-    #add-favorit-location-input {
+    #add-favorite-location-input {
       width: 80%;
       float: left;
     }
 
-    #add-favorit-location-button {
+    #add-favorite-location-button {
       width: 20%;
       margin-top: 0;
     }

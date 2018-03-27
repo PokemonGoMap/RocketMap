@@ -510,12 +510,12 @@ function initSidebar() {
 
     $('#pokemon-icon-size').val(Store.get('iconSizeModifier'))
 
-    $('#add-favorit-location-button').on('click', function () {
+    $('#add-favorite-location-button').on('click', function () {
         var loc = map.getCenter()
         var zoom = map.getZoom()
-        var name = $('#add-favorit-location-input').val()
+        var name = $('#add-favorite-location-input').val()
         addFarvoritLocationToSettings(name, loc.lat(), loc.lng(), zoom)
-        $('#add-favorit-location-input').val('')
+        $('#add-favorite-location-input').val('')
     })
 
     var searchLocationInput = document.getElementById('search-favorit-location-input')
@@ -571,7 +571,7 @@ function addFavoritLocationToList(name, lat, lng, zoom, withDeleteButton = true)
     li.setAttribute('name', name)
 
     var favoritLocationButton = document.createElement('button')
-    if (!withDeleteButton) { favoritLocationButton.setAttribute('class', 'favorit-location-no-delete-button') }
+    if (!withDeleteButton) { favoritLocationButton.setAttribute('class', 'favorite-location-no-delete-button') }
     favoritLocationButton.innerHTML = name
     favoritLocationButton.addEventListener('click', function () {
         centerMap(lat, lng, parseInt(zoom))
@@ -580,7 +580,7 @@ function addFavoritLocationToList(name, lat, lng, zoom, withDeleteButton = true)
 
     if (withDeleteButton) {
         var favoritLocationDeleteButton = document.createElement('button')
-        favoritLocationDeleteButton.setAttribute('class', 'delete-favorit-location-button')
+        favoritLocationDeleteButton.setAttribute('class', 'delete-favorite-location-button')
         favoritLocationDeleteButton.innerHTML = '<span class="fa fa-times"></span>'
         favoritLocationDeleteButton.addEventListener('click', function () {
             confirm('Are you sure to delete "' + name + '"?') ? deleteFavoritLocation(li) : false
