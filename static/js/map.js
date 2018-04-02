@@ -153,6 +153,25 @@ function createServiceWorkerReceiver() {
     })
 }
 
+function downloadSettings(name, settings) { // eslint-disable-line no-unused-vars
+    var downloadLink = document.createElement('a')
+    downloadLink.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(settings))
+    downloadLink.setAttribute('download', name + '_' + moment().format('DD-MM-YYYY HH:mm'))
+    downloadLink.style.display = 'none'
+    document.body.appendChild(downloadLink)
+    downloadLink.click()
+    document.body.removeChild(downloadLink)
+}
+
+function loadSettingsFile(file) { // eslint-disable-line no-unused-vars
+    var reader = new FileReader()
+    reader.onload = function () {
+        Object.assign(localStorage, JSON.parse(reader.result))
+    }
+    reader.readAsText(file.target.files[0])
+    window.location.reload()
+}
+
 function initMap() { // eslint-disable-line no-unused-vars
     map = new google.maps.Map(document.getElementById('map'), {
         center: {
