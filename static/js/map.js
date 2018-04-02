@@ -154,13 +154,13 @@ function createServiceWorkerReceiver() {
 }
 
 function downloadSettings(name, settings) { // eslint-disable-line no-unused-vars
-    var a = document.createElement('a')
-    a.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(settings))
-    a.setAttribute('download', name + '_' + moment().format('DD-MM-YYYY HH:mm'))
-    a.style.display = 'none'
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
+    var downloadLink = document.createElement('a')
+    downloadLink.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(settings))
+    downloadLink.setAttribute('download', name + '_' + moment().format('DD-MM-YYYY HH:mm'))
+    downloadLink.style.display = 'none'
+    document.body.appendChild(downloadLink)
+    downloadLink.click()
+    document.body.removeChild(downloadLink)
 }
 
 function loadSettingsFile(file) { // eslint-disable-line no-unused-vars
