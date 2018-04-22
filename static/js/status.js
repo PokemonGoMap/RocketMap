@@ -83,6 +83,7 @@ function addWorker(mainWorkerHash, workerHash) {
        <div id="fail_${workerHash}"     class="status_cell"/>
        <div id="no_items_${workerHash}"  class="status_cell"/>
        <div id="skip_${workerHash}"     class="status_cell"/>
+       <div id="missed_${workerHash}"   class="status_cell"/>
        <div id="captchas_${workerHash}" class="status_cell"/>
        <div id="lastmod_${workerHash}"  class="status_cell"/>
        <div id="message_${workerHash}"  class="status_cell"/>
@@ -132,6 +133,7 @@ function processWorker(i, worker) {
     $('#fail_' + hash).html(worker['fail'])
     $('#no_items_' + hash).html(worker['no_items'])
     $('#skip_' + hash).html(worker['skip'])
+    $('#missed_' + hash).html(worker['missed'])
     $('#captchas_' + hash).html(worker['captcha'])
     $('#lastmod_' + hash).html(lastModified)
     $('#message_' + hash).html(worker['message'])
@@ -268,6 +270,9 @@ function addTable(hash) {
          </div>
          <div class="status_cell">
            Skipped
+         </div>
+         <div class="status_cell">
+           Missed
          </div>
          <div class="status_cell">
            Captchas
