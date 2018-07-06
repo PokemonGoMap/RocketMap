@@ -4,7 +4,8 @@
                     [-u USERNAME] [-p PASSWORD] [-w WORKERS]
                     [-asi ACCOUNT_SEARCH_INTERVAL]
                     [-ari ACCOUNT_REST_INTERVAL] [-ac ACCOUNTCSV]
-                    [-hlvl HIGH_LVL_ACCOUNTS] [-bh] [-wph WORKERS_PER_HIVE]
+                    [-hlvl HIGH_LVL_ACCOUNTS] [-bh BEEHIVE]
+                    [-wph WORKERS_PER_HIVE] [-bhw BEEHIVE_WORKERS]
                     [-l LOCATION] [-alt ALTITUDE] [-altv ALTITUDE_VARIANCE]
                     [-uac] [-j] [-al] [-st STEP_LIMIT] [-gf GEOFENCE_FILE]
                     [-gef GEOFENCE_EXCLUDED_FILE] [-sd SCAN_DELAY]
@@ -94,14 +95,20 @@ variables which override config file values which override defaults.
                             Load high level accounts from CSV file containing
                             "auth_service,username,password" lines. [env var:
                             POGOMAP_HIGH_LVL_ACCOUNTS]
-      -bh, --beehive        Use beehive configuration for multiple accounts, one
-                            account per hex. Make sure to keep -st under 5, and -w
-                            under the total amount of accounts available. [env
-                            var: POGOMAP_BEEHIVE]
+      -bh BEEHIVE, --beehive BEEHIVE
+                            Number of leaps desired for beehive setup. Example: -bh
+                            1 = 7 hexes | -bh 2 = 19 hexes. Default value is 0
+                            (disabled). [env var: POGOMAP_BEEHIVE]
       -wph WORKERS_PER_HIVE, --workers-per-hive WORKERS_PER_HIVE
                             Only referenced when using --beehive. Sets number of
-                            workers per hive. Default value is 1. [env var:
+                            workers per hive. Default value is 0. [env var:
                             POGOMAP_WORKERS_PER_HIVE]
+      -bhw BEEHIVE_WORKERS, --beehive-workers BEEHIVE_WORKERS
+                            Only referenced when using --beehive. Lets you disable
+                            hives individually or force a specific number of
+                            workers. Format is a list of pairs: <hive
+                            index>:<worker count> e.g. [1:0, 3:0, 4:5] [env var:
+                            POGOMAP_BEEHIVE_WORKERS]
       -l LOCATION, --location LOCATION
                             Location, can be an address or coordinates. [env var:
                             POGOMAP_LOCATION]
